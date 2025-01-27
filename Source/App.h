@@ -5,54 +5,50 @@
 #include <stdexcept>
 #include <iostream>
 #include <optional>
-
-struct QueueFamilyIndices {
-	std::optional<uint32_t> graphicsFamily;
-	std::optional<uint32_t> presentFamily;
-
-	bool isComplete() {
-		return graphicsFamily.has_value() && presentFamily.has_value();
-	}
-};
+#include "VkBootstrap.h"
 
 class App
 {
 public:
 
+	void Initialisation();
 	void Run();
-	void InitVulkan();
 	void MainLoop();
-	void SelectPhysicalDevice();
-	void createLogicalDevice();
 	void createSurface();
 
 	void CleanUp();
 
 	// Vulkan Init Tasks
-	void CreateInstance();
-	bool checkValidationLayerSupport();
-	bool IsDeviceSuitable(VkPhysicalDevice device);
-	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+	void InitVulkan();
+	void create_swapchain(uint32_t width, uint32_t height);
 
  private:
 
 	 Window window{ 800,800,"Vulkan Window" };
 
-	 const std::vector<const char*> ValidationLayerToUse = {
-	    "VK_LAYER_KHRONOS_validation"
-	 };
 
 #ifdef NDEBUG
 	 const bool enableValidationLayers = false;
 #else 
 	 const bool enableValidationLayers = true;
 #endif
-	 VkDevice device;
-	 VkInstance instance;
-	 VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
-	 VkQueue graphicsQueue;
-	 VkSurfaceKHR surface;
-	 VkQueue presentQueue;
 
+	 VkDevice device;
+	 VkPhysicalDevice PhysicalDevice;
+
+	 VkInstance Instance;
+	 VkSurfaceKHR surface;
+
+	 VkSwapchainKHR swapChain;
+	 VkFormat swapchainImageFormat;
+	 VkExtent2D swapchainExtent;
+
+	 std::vector<VkImage> swapchainImages;
+	 std::vector<VkImageView> swapchainImageViews;
+
+	 //VK BootStrap
+	 vkb::Instance VKB_Instance;
+	 vkb::Device VKB_Device;
+	 VkDebugUtilsMessengerEXT Debug_Messenger;
 };
 
