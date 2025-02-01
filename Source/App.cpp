@@ -1,15 +1,9 @@
 #include "App.h"
-#include <set>
-
-
-void App::Run()
-{
-	MainLoop();
-
-}
 
 void App::Initialisation()
 {
+	window = new Window(800, 800, "Vulkan Window"); // For pointer
+
 	InitVulkan();
 	createSurface();
 	create_swapchain(800, 800);
@@ -17,14 +11,17 @@ void App::Initialisation()
 
 void App::MainLoop()
 {
-	while (!window.shouldClose())
+	while (!window->shouldClose())
 	{
+		std::cout << "Running Main Loop..." << std::endl;
 		glfwPollEvents();
 	}
+
 }
 
 void App::InitVulkan()
 {
+
 	vkb::InstanceBuilder builder;
 	//make the vulkan instance, with basic debug features
 	auto inst_ret = builder.set_app_name(" Vulkan Application")
@@ -33,7 +30,13 @@ void App::InitVulkan()
 		.require_api_version(1, 3, 0)
 		.build();
 
-	VKB_Instance = inst_ret.value();
+	if (!inst_ret)
+	{
+		throw std::runtime_error("Failed to create Vulkan instance: ");
+
+	}
+
+	vkb::Instance VKB_Instance = inst_ret.value();
 
 	//grab the instance 
 	Instance = VKB_Instance.instance;
@@ -43,36 +46,54 @@ void App::InitVulkan()
 void App::createSurface()
 {
 	
-	glfwCreateWindowSurface(Instance, window.GetWindow(), nullptr, &surface);
+	if (glfwCreateWindowSurface(Instance, window->GetWindow(), nullptr, &surface) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create window surface!");
+	}
 
-	VkPhysicalDeviceVulkan13Features Features1_3{ .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
-	Features1_3.dynamicRendering = true;
-	Features1_3.synchronization2 = true;
+	VkPhysicalDeviceVulkan13Features features_1_3{};
+	features_1_3.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+	features_1_3.dynamicRendering = VK_TRUE;
+	features_1_3.synchronization2 = VK_TRUE;
 
-	VkPhysicalDeviceVulkan12Features Features1_2{ .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES };
-	Features1_2.bufferDeviceAddress = true;
-	Features1_2.descriptorIndexing = true;
+	VkPhysicalDeviceVulkan12Features features_1_2{};
+	features_1_2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+	features_1_2.bufferDeviceAddress = VK_TRUE;
+	features_1_2.descriptorIndexing = VK_TRUE;
 
 	vkb::PhysicalDeviceSelector selector{ VKB_Instance };
+
 	vkb::PhysicalDevice physicalDevice = selector
 		.set_minimum_version(1, 3)
-		.set_required_features_13(Features1_3)
-		.set_required_features_12(Features1_2)
+		.set_required_features_13(features_1_3)
+		.set_required_features_12(features_1_2)
 		.set_surface(surface)
 		.select()
 		.value();
 
+
+	if (!physicalDevice)
+	{
+		throw std::runtime_error("Failed to select a suitable physical device!");
+	}
+
 	vkb::DeviceBuilder deviceBuilder{ physicalDevice };
-	VKB_Device = deviceBuilder.build().value();
+
+	vkb::Device VKB_Device = deviceBuilder.build().value();
 
 	device = VKB_Device.device;
+
+	if (device == VK_NULL_HANDLE)
+	{
+		throw std::runtime_error("Failed to select a suitable device!");
+	}
+
 	PhysicalDevice = physicalDevice.physical_device;
 
 	VkPhysicalDeviceProperties properties;
-	vkGetPhysicalDeviceProperties(physicalDevice.physical_device, &properties);
+	vkGetPhysicalDeviceProperties(PhysicalDevice, &properties);
 	
-
-	std::cout << properties.deviceName << std::endl;
+	std::cout << "GPU: " << std::string(properties.deviceName) << std::endl;
 }
 
 
@@ -102,11 +123,34 @@ void App::create_swapchain(uint32_t width, uint32_t height)
 
 }
 
+void App::Run()
+{
+	MainLoop();
+
+}
+
+
+
+void App::destroy_swapchain()
+{
+	vkDestroySwapchainKHR(device, swapChain, nullptr);
+
+	for (size_t i = 0; i < swapchainImageViews.size(); i++)
+	{
+		vkDestroyImageView(device, swapchainImageViews[i], nullptr);
+	}
+
+	swapchainImageViews.clear();
+	swapchainImages.clear();
+}
+
 
 void App::CleanUp()
 {
+	destroy_swapchain();
 	vkDestroySurfaceKHR(Instance, surface, nullptr);
-	vkb::destroy_instance(VKB_Instance);
 	vkDestroyDevice(device, nullptr);
-
+	vkb::destroy_debug_utils_messenger(Instance, Debug_Messenger);
+	vkDestroyInstance(Instance, nullptr);
+	delete window; 
 }

@@ -2,10 +2,9 @@
 #define VK_USE_PLATFORM_WIN32_KHR
 #include "Window.h"
 #include "vector"
+#include "VkBootstrap.h"
 #include <stdexcept>
 #include <iostream>
-#include <optional>
-#include "VkBootstrap.h"
 
 class App
 {
@@ -21,10 +20,11 @@ public:
 	// Vulkan Init Tasks
 	void InitVulkan();
 	void create_swapchain(uint32_t width, uint32_t height);
+	void destroy_swapchain();
 
  private:
 
-	 Window window{ 800,800,"Vulkan Window" };
+	 Window* window = nullptr;
 
 
 #ifdef NDEBUG
@@ -33,22 +33,21 @@ public:
 	 const bool enableValidationLayers = true;
 #endif
 
-	 VkDevice device;
-	 VkPhysicalDevice PhysicalDevice;
+	 VkDevice                 device          = nullptr;
+	 VkPhysicalDevice         PhysicalDevice  = nullptr;
+	 VkInstance               Instance        = nullptr;
+	 VkSurfaceKHR             surface         = nullptr;
+	 VkSwapchainKHR           swapChain       = nullptr;
+	 VkDebugUtilsMessengerEXT Debug_Messenger = nullptr;
 
-	 VkInstance Instance;
-	 VkSurfaceKHR surface;
 
-	 VkSwapchainKHR swapChain;
-	 VkFormat swapchainImageFormat;
-	 VkExtent2D swapchainExtent;
+	 VkFormat   swapchainImageFormat = VK_FORMAT_UNDEFINED;
+	 VkExtent2D swapchainExtent      = { 0, 0 };
 
-	 std::vector<VkImage> swapchainImages;
-	 std::vector<VkImageView> swapchainImageViews;
+	 std::vector<VkImage>     swapchainImages     = {};
+	 std::vector<VkImageView> swapchainImageViews = {};
 
-	 //VK BootStrap
 	 vkb::Instance VKB_Instance;
-	 vkb::Device VKB_Device;
-	 VkDebugUtilsMessengerEXT Debug_Messenger;
+
 };
 
