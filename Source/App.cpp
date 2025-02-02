@@ -36,7 +36,7 @@ void App::InitVulkan()
 
 	}
 
-	vkb::Instance VKB_Instance = inst_ret.value();
+	 VKB_Instance = inst_ret.value();
 
 	//grab the instance 
 	Instance = VKB_Instance.instance;
