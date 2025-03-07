@@ -1,26 +1,37 @@
 #pragma once
 #define VK_USE_PLATFORM_WIN32_KHR
 #include "Window.h"
-#include "vector"
+#include "ShaderHelper.h"
 #include "VkBootstrap.h"
 #include <stdexcept>
-#include <iostream>
+#include <vulkan/vulkan.hpp>
+
+constexpr unsigned int FRAME_OVERLAP = 2;
 
 class App
 {
 public:
 
 	void Initialisation();
+	void create_swapchain();
 	void Run();
 	void MainLoop();
-	void createSurface();
+	void Draw();
+
+
 
 	void CleanUp();
 
 	// Vulkan Init Tasks
 	void InitVulkan();
-	void create_swapchain(uint32_t width, uint32_t height);
+	void SelectGPU_CreateDevice();
+	void createSurface();
+	void CreateGraphicsPipeline();
+
+	vk::ShaderModule createShaderModule(const std::vector<char>& code);
+
 	void destroy_swapchain();
+	void getqueue();
 
  private:
 
@@ -33,21 +44,23 @@ public:
 	 const bool enableValidationLayers = true;
 #endif
 
-	 VkDevice                 device          = nullptr;
-	 VkPhysicalDevice         PhysicalDevice  = nullptr;
-	 VkInstance               Instance        = nullptr;
-	 VkSurfaceKHR             surface         = nullptr;
-	 VkSwapchainKHR           swapChain       = nullptr;
-	 VkDebugUtilsMessengerEXT Debug_Messenger = nullptr;
+     vk::Device                 LogicalDevice          = nullptr;
+	 vk::PhysicalDevice         PhysicalDevice  = nullptr;
+	 vk::Instance               VulkanInstance  = nullptr;
+	 vk::SurfaceKHR             surface         = nullptr;
+	 vk::SwapchainKHR           swapChain       = nullptr;
+	 vk::DebugUtilsMessengerEXT Debug_Messenger = nullptr;
 
 
-	 VkFormat   swapchainImageFormat = VK_FORMAT_UNDEFINED;
-	 VkExtent2D swapchainExtent      = { 0, 0 };
+	 vk::Extent2D swapchainExtent      = { 0, 0 };
 
 	 std::vector<VkImage>     swapchainImages     = {};
 	 std::vector<VkImageView> swapchainImageViews = {};
 
 	 vkb::Instance VKB_Instance;
+	 vkb::Device   VKB_Device;
 
+	 vk::Queue graphicsQueue;
+	 uint32_t  graphicsQueueFamily;
 };
 

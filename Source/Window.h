@@ -20,9 +20,6 @@ public:
     GLFWwindow* GetWindow() { return window; };
 
 private:
-
-    void initWindow();
-
     const int Width;
     const int Height;
     std::string WindowName;

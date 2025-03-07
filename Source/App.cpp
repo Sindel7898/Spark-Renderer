@@ -6,23 +6,14 @@ void App::Initialisation()
 
 	InitVulkan();
 	createSurface();
-	create_swapchain(800, 800);
-}
-
-void App::MainLoop()
-{
-	while (!window->shouldClose())
-	{
-		std::cout << "Running Main Loop..." << std::endl;
-		glfwPollEvents();
-	}
-
+	SelectGPU_CreateDevice();
+	create_swapchain();
 }
 
 void App::InitVulkan()
 {
-
 	vkb::InstanceBuilder builder;
+
 	//make the vulkan instance, with basic debug features
 	auto inst_ret = builder.set_app_name(" Vulkan Application")
 		.request_validation_layers(enableValidationLayers)
@@ -33,33 +24,37 @@ void App::InitVulkan()
 	if (!inst_ret)
 	{
 		throw std::runtime_error("Failed to create Vulkan instance: ");
-
 	}
 
 	 VKB_Instance = inst_ret.value();
 
 	//grab the instance 
-	Instance = VKB_Instance.instance;
+	VulkanInstance = VKB_Instance.instance;
 	Debug_Messenger = VKB_Instance.debug_messenger;
 }
 
 void App::createSurface()
 {
-	
-	if (glfwCreateWindowSurface(Instance, window->GetWindow(), nullptr, &surface) != VK_SUCCESS)
+
+	if (glfwCreateWindowSurface(VulkanInstance, window->GetWindow(), nullptr, reinterpret_cast<VkSurfaceKHR*>(&surface)) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create window surface!");
 	}
 
-	VkPhysicalDeviceVulkan13Features features_1_3{};
-	features_1_3.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+}
+
+void App::SelectGPU_CreateDevice() {
+
+	vk::PhysicalDeviceVulkan13Features features_1_3{};
+	features_1_3.sType = vk::StructureType::ePhysicalDeviceVulkan13Features;
 	features_1_3.dynamicRendering = VK_TRUE;
 	features_1_3.synchronization2 = VK_TRUE;
 
-	VkPhysicalDeviceVulkan12Features features_1_2{};
-	features_1_2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+	vk::PhysicalDeviceVulkan12Features features_1_2{};
+	features_1_2.sType = vk::StructureType::ePhysicalDeviceVulkan12Features;
 	features_1_2.bufferDeviceAddress = VK_TRUE;
 	features_1_2.descriptorIndexing = VK_TRUE;
+
 
 	vkb::PhysicalDeviceSelector selector{ VKB_Instance };
 
@@ -70,7 +65,7 @@ void App::createSurface()
 		.set_surface(surface)
 		.select()
 		.value();
-
+	
 
 	if (!physicalDevice)
 	{
@@ -79,38 +74,44 @@ void App::createSurface()
 
 	vkb::DeviceBuilder deviceBuilder{ physicalDevice };
 
-	vkb::Device VKB_Device = deviceBuilder.build().value();
+	VKB_Device = deviceBuilder.build().value();
 
-	device = VKB_Device.device;
+	LogicalDevice = VKB_Device.device;
 
-	if (device == VK_NULL_HANDLE)
+	if (LogicalDevice == VK_NULL_HANDLE)
 	{
-		throw std::runtime_error("Failed to select a suitable device!");
+		throw std::runtime_error("Failed to create logical device!");
 	}
 
 	PhysicalDevice = physicalDevice.physical_device;
 
-	VkPhysicalDeviceProperties properties;
-	vkGetPhysicalDeviceProperties(PhysicalDevice, &properties);
-	
-	std::cout << "GPU: " << std::string(properties.deviceName) << std::endl;
+	std::cout << "GPU: " << std::string_view(PhysicalDevice.getProperties().deviceName) << std::endl;
 }
 
 
-void App::create_swapchain(uint32_t width, uint32_t height)
-{
-	vkb::SwapchainBuilder swapChainBuilder(PhysicalDevice, device, surface);
-	swapchainImageFormat = VK_FORMAT_B8G8R8A8_UNORM;
 
-	VkSurfaceFormatKHR format;
-	format.format = swapchainImageFormat;
-	format.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+void App::create_swapchain()
+{
+	vkb::SwapchainBuilder swapChainBuilder(PhysicalDevice, LogicalDevice, surface);
+
+	//vk::Format swapchainImageFormat = vk::Format::eB8G8R8A8Srgb;
+	                    
+
+	vk::SurfaceFormatKHR format;
+        format.format = vk::Format::eB8G8R8A8Srgb;
+	    format.colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
+	
+		int Width  = 0;
+		int Height = 0;
+
+		glfwGetFramebufferSize(window->GetWindow(), &Width, &Height);
+
 
 	vkb::Swapchain vkbswapChain = swapChainBuilder
 		.set_desired_format(format)
 		.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
-		.set_desired_extent(width, height)
-		.add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+		.set_desired_extent(Width, Height)
+		.add_image_usage_flags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
 		.build()
 		.value();
 
@@ -120,37 +121,111 @@ void App::create_swapchain(uint32_t width, uint32_t height)
 	swapchainImages = vkbswapChain.get_images().value();
 	swapchainImageViews = vkbswapChain.get_image_views().value();
 
+}
+
+void App::CreateGraphicsPipeline()
+{
+	auto VertShaderCode = readFile("shaders/vert.spv");
+	auto FragShaderCode = readFile("shaders/frag.spv");
+	
+	VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
+	VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
+
+	vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
+	VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
+	VertShaderStageInfo.module = VertShaderModule;
+	VertShaderStageInfo.pName = "main";
+
+	vk::PipelineShaderStageCreateInfo FragmentShaderStageInfo{};
+	FragmentShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
+	FragmentShaderStageInfo.module = FragShaderModule;
+	FragmentShaderStageInfo.pName = "main";
+
+	vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo ,FragmentShaderStageInfo };
+
+	LogicalDevice.destroyShaderModule(VertShaderModule);
+	LogicalDevice.destroyShaderModule(FragShaderModule);
+
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+	std::vector<vk::DynamicState> DynamicStates = {
+		vk::DynamicState::eViewport,
+		vk::DynamicState::eScissor
+	};
+
+	vk::PipelineDynamicStateCreateInfo DynamicState{};
+	DynamicState.dynamicStateCount = static_cast<uint32_t>(DynamicStates.size());
+	DynamicState.pDynamicStates = DynamicStates.data();
 
 }
+
+vk::ShaderModule App::createShaderModule(const std::vector<char>& code)
+{
+	vk::ShaderModuleCreateInfo createInfo{};
+	createInfo.codeSize = code.size();
+	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+	vk::ShaderModule Shader;
+
+	if ( LogicalDevice.createShaderModule(&createInfo, nullptr, &Shader) != vk::Result::eSuccess)
+	{
+		throw std::runtime_error("failed to create shader module!");
+	}
+	
+	return Shader;
+}
+
 
 void App::Run()
 {
 	MainLoop();
+	Draw();
+}
+
+void App::MainLoop()
+{
+	while (!window->shouldClose())
+	{
+		glfwPollEvents();
+	}
+
+}
+
+void App::Draw()
+{
 
 }
 
 
-
 void App::destroy_swapchain()
 {
-	vkDestroySwapchainKHR(device, swapChain, nullptr);
+	LogicalDevice.destroySwapchainKHR(swapChain, nullptr);
 
 	for (size_t i = 0; i < swapchainImageViews.size(); i++)
 	{
-		vkDestroyImageView(device, swapchainImageViews[i], nullptr);
+		LogicalDevice.destroyImageView(swapchainImageViews[i], nullptr);
 	}
 
 	swapchainImageViews.clear();
 	swapchainImages.clear();
 }
 
+void App::getqueue()
+{
+	graphicsQueue = VKB_Device.get_queue(vkb::QueueType::graphics).value();
+	graphicsQueueFamily = VKB_Device.get_queue_index(vkb::QueueType::graphics).value();
+	
+}
+
 
 void App::CleanUp()
 {
 	destroy_swapchain();
-	vkDestroySurfaceKHR(Instance, surface, nullptr);
-	vkDestroyDevice(device, nullptr);
-	vkb::destroy_debug_utils_messenger(Instance, Debug_Messenger);
-	vkDestroyInstance(Instance, nullptr);
+	VulkanInstance.destroySurfaceKHR(surface, nullptr);
+	LogicalDevice.destroy(nullptr);
+	vkb::destroy_debug_utils_messenger(VulkanInstance, Debug_Messenger);
+	VulkanInstance.destroy(nullptr);
 	delete window; 
 }
