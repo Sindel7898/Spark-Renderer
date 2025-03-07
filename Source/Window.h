@@ -13,9 +13,6 @@ class Window
 public:
     Window(int W, int H, std::string WN);
     ~Window();
-    Window(const Window&) = delete;
-    Window& operator=(const Window&) = delete;
-
     bool shouldClose() { return glfwWindowShouldClose(window); };
     GLFWwindow* GetWindow() { return window; };
 

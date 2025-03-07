@@ -140,14 +140,32 @@ void App::CreateGraphicsPipeline()
 	FragmentShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
 	FragmentShaderStageInfo.module = FragShaderModule;
 	FragmentShaderStageInfo.pName = "main";
-
+	
 	vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo ,FragmentShaderStageInfo };
 
-	LogicalDevice.destroyShaderModule(VertShaderModule);
-	LogicalDevice.destroyShaderModule(FragShaderModule);
+	vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
+	vertexInputInfo.setVertexBindingDescriptionCount(0);
+	vertexInputInfo.setPVertexBindingDescriptions(nullptr);
+	vertexInputInfo.setVertexAttributeDescriptionCount(0);
+	vertexInputInfo.setPVertexAttributeDescriptions(nullptr);
 
+	vk::PipelineInputAssemblyStateCreateInfo inputAssembleInfo{};
+	inputAssembleInfo.topology = vk::PrimitiveTopology::eTriangleList;
+	inputAssembleInfo.primitiveRestartEnable = vk::False;
 
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	vk::Viewport viewport{};
+	viewport.setX(0.0f);
+	viewport.setY(0.0f);
+	viewport.setHeight((float)swapchainExtent.height);
+	viewport.setWidth ((float)swapchainExtent.width );
+	viewport.setMinDepth(0.0f);
+	viewport.setMaxDepth(1.0f);
+
+	vk::Offset2D scissorOffset = { 0,0 };
+
+	vk::Rect2D scissor{};
+	scissor.setOffset(scissorOffset);
+	scissor.setExtent(swapchainExtent);
 
 
 	std::vector<vk::DynamicState> DynamicStates = {
@@ -159,6 +177,19 @@ void App::CreateGraphicsPipeline()
 	DynamicState.dynamicStateCount = static_cast<uint32_t>(DynamicStates.size());
 	DynamicState.pDynamicStates = DynamicStates.data();
 
+	vk::PipelineViewportStateCreateInfo viewportState{};
+	viewportState.setViewportCount(1);
+	viewportState.setViewports(viewport);
+	viewportState.setScissorCount(1);
+	viewportState.setScissors(scissor);
+
+
+
+
+
+
+	LogicalDevice.destroyShaderModule(VertShaderModule);
+	LogicalDevice.destroyShaderModule(FragShaderModule);
 }
 
 vk::ShaderModule App::createShaderModule(const std::vector<char>& code)
