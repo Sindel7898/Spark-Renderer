@@ -1,0 +1,30 @@
+[
+    {
+      "name": "glfw",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/glfw/glfw.git",
+        "revision": "3.4"
+      }
+    },
+  
+    {
+      "name": "glm",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/g-truc/glm.git",
+        "revision": "1.01"
+  
+      }
+    },
+
+    {
+      "name": "vk-bootstrap",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/charles-lunarg/vk-bootstrap.git"  
+      }
+    }
+
+  ]
+  

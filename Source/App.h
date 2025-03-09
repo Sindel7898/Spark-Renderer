@@ -6,17 +6,21 @@
 #include <stdexcept>
 #include <vulkan/vulkan.hpp>
 
-constexpr unsigned int FRAME_OVERLAP = 2;
-
 class App
 {
 public:
 
 	void Initialisation();
+	void CreateRenderPass();
 	void create_swapchain();
+	void CreateFramebuffers();
+
+	void createCommandPool();
+
 	void Run();
-	void MainLoop();
 	void Draw();
+
+	void createSyncObjects();
 
 
 
@@ -28,10 +32,15 @@ public:
 	void createSurface();
 	void CreateGraphicsPipeline();
 
+	void createCommandBuffer();
+
+	void recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
+
 	vk::ShaderModule createShaderModule(const std::vector<char>& code);
 
 	void destroy_swapchain();
-	void getqueue();
+	void destroy_frameBuffers();
+
 
  private:
 
@@ -44,23 +53,38 @@ public:
 	 const bool enableValidationLayers = true;
 #endif
 
-     vk::Device                 LogicalDevice          = nullptr;
+     vk::Device                 LogicalDevice   = nullptr;
 	 vk::PhysicalDevice         PhysicalDevice  = nullptr;
 	 vk::Instance               VulkanInstance  = nullptr;
 	 vk::SurfaceKHR             surface         = nullptr;
 	 vk::SwapchainKHR           swapChain       = nullptr;
 	 vk::DebugUtilsMessengerEXT Debug_Messenger = nullptr;
+	 vk::RenderPass             renderPass      = nullptr;
+	 vk::PipelineLayout         pipelineLayout  = nullptr;
+	 vk::Pipeline              graphicsPipeline = nullptr;
+	 vk::CommandPool           commandPool      = nullptr;
+	 vk::CommandBuffer            commandBuffer = nullptr;
 
+	 vk::Format                 swapchainformat;
 
 	 vk::Extent2D swapchainExtent      = { 0, 0 };
 
 	 std::vector<VkImage>     swapchainImages     = {};
 	 std::vector<VkImageView> swapchainImageViews = {};
+	 std::vector<VkFramebuffer> swapChainFramebuffers;
 
 	 vkb::Instance VKB_Instance;
 	 vkb::Device   VKB_Device;
 
 	 vk::Queue graphicsQueue;
-	 uint32_t  graphicsQueueFamily;
+	 vk::Queue presentQueue;
+
+	 //uint32_t  graphicsQueueFamily;
+
+
+
+	 vk::Semaphore imageAvailableSemaphore;
+	 vk::Semaphore renderFinishedSemaphore;
+	 vk::Fence inFlightFence;
 };
 
