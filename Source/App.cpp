@@ -3,8 +3,7 @@
 
 void App::Initialisation()
 {
-	
-	window = new Window(800, 800, "Vulkan Window"); // For pointer
+	window = new Window(800, 800, "Vulkan Window");
 
 	InitVulkan();
 	createSurface();
@@ -23,7 +22,7 @@ void App::InitVulkan()
 {
 	vkb::InstanceBuilder builder;
 
-	//make the vulkan instance, with basic debug features
+	// Create a Vulkan instance with basic debug features
 	auto inst_ret = builder.set_app_name(" Vulkan Application")
 		.request_validation_layers(enableValidationLayers)
 		.use_default_debug_messenger()
@@ -37,7 +36,7 @@ void App::InitVulkan()
 
 	 VKB_Instance = inst_ret.value();
 
-	//grab the instance 
+	 // Store the Vulkan instance and debug messenger
 	VulkanInstance = VKB_Instance.instance;
 	Debug_Messenger = VKB_Instance.debug_messenger;
 }
@@ -54,6 +53,7 @@ void App::createSurface()
 
 void App::SelectGPU_CreateDevice() {
 
+	//Select Required Vulkan featuers 
 	vk::PhysicalDeviceVulkan13Features features_1_3{};
 	features_1_3.sType = vk::StructureType::ePhysicalDeviceVulkan13Features;
 	features_1_3.dynamicRendering = VK_TRUE;
@@ -81,37 +81,39 @@ void App::SelectGPU_CreateDevice() {
 		throw std::runtime_error("Failed to select a suitable physical device!");
 	}
 
+	//From the selecte device create a logical device
 	vkb::DeviceBuilder deviceBuilder{ physicalDevice };
-
-	VKB_Device = deviceBuilder.build().value();
-
+	vkb::Device   VKB_Device = deviceBuilder.build().value();
 	LogicalDevice = VKB_Device.device;
+
 
 	if (LogicalDevice == VK_NULL_HANDLE)
 	{
 		throw std::runtime_error("Failed to create logical device!");
 	}
 
+	//Print out name of GPU being used
 	PhysicalDevice = physicalDevice.physical_device;
-
 	std::cout << "GPU: " << std::string_view(PhysicalDevice.getProperties().deviceName) << std::endl;
 
+
+	//Information about queues
 	graphicsQueue = VKB_Device.get_queue(vkb::QueueType::graphics).value();
 	presentQueue = VKB_Device.get_queue(vkb::QueueType::present).value();
-
+	graphicsQueueFamilyIndex = VKB_Device.get_queue_index(vkb::QueueType::graphics).value();
 }
 
 
 
 void App::create_swapchain()
 {
-	vkb::SwapchainBuilder swapChainBuilder(PhysicalDevice, LogicalDevice, surface);
 
-	//vk::Format swapchainImageFormat = vk::Format::eB8G8R8A8Srgb;
+	vkb::SwapchainBuilder swapChainBuilder(PhysicalDevice, LogicalDevice, surface);
+	swapchainformat = vk::Format::eB8G8R8A8Srgb;
 	                    
 
 	vk::SurfaceFormatKHR format;
-        format.format = vk::Format::eB8G8R8A8Srgb;
+        format.format = swapchainformat;
 	    format.colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
 	
 		int Width  = 0;
@@ -129,18 +131,63 @@ void App::create_swapchain()
 		.value();
 
 	swapchainExtent = vkbswapChain.extent;
-
 	swapChain = vkbswapChain.swapchain;
 	swapchainImages = vkbswapChain.get_images().value();
-	swapchainformat = static_cast<vk::Format>(vkbswapChain.image_format);
 	swapchainImageViews = vkbswapChain.get_image_views().value();
 
 }
 
+void App::CreateRenderPass()
+{
+	vk::AttachmentReference colorAttachmentRef{};
+	colorAttachmentRef.attachment = 0;
+	colorAttachmentRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+	vk::SubpassDescription subpass{};
+	subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &colorAttachmentRef;
+	
+	vk::SubpassDependency dependency{};
+	dependency.srcSubpass = vk::SubpassExternal;
+	dependency.dstSubpass = 0;
+	dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	dependency.srcAccessMask = vk::AccessFlagBits::eNone;
+	dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+
+	vk::AttachmentDescription colorAttachment{};
+	colorAttachment.format = swapchainformat;
+	colorAttachment.samples = vk::SampleCountFlagBits::e1;
+	colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+	colorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+	colorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+	colorAttachment.initialLayout = vk::ImageLayout::eUndefined;
+	colorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
+
+
+	vk::RenderPassCreateInfo renderpassInfo{};
+	renderpassInfo.attachmentCount = 1;
+	renderpassInfo.pAttachments = &colorAttachment;
+	renderpassInfo.subpassCount = 1;
+	renderpassInfo.pSubpasses = &subpass;
+	renderpassInfo.dependencyCount = 1;
+	renderpassInfo.pDependencies = &dependency;
+
+	renderPass = LogicalDevice.createRenderPass(renderpassInfo);
+	if (!renderPass)
+	{
+		throw std::runtime_error("failed to create render pass!");
+	}
+}
+
+
 void App::CreateGraphicsPipeline()
 {
-	auto VertShaderCode = readFile("C:/Users/Amir sanni/source/repos/Vulkan/Shaders/Compiled_Shader_Files/Simple_Shader.vert.spv");
-	auto FragShaderCode = readFile("C:/Users/Amir sanni/source/repos/Vulkan/Shaders/Compiled_Shader_Files/Simple_Shader.frag.spv");
+	//Read Vertex & Fragment shader  and create modules
+	auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/Simple_Shader.vert.spv");
+	auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/Simple_Shader.frag.spv");
 	
 	VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
 	VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
@@ -162,12 +209,14 @@ void App::CreateGraphicsPipeline()
 	vertexInputInfo.setPVertexBindingDescriptions(nullptr);
 	vertexInputInfo.setVertexAttributeDescriptionCount(0);
 	vertexInputInfo.setPVertexAttributeDescriptions(nullptr);
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	vk::PipelineInputAssemblyStateCreateInfo inputAssembleInfo{};
 	inputAssembleInfo.topology = vk::PrimitiveTopology::eTriangleList;
 	inputAssembleInfo.primitiveRestartEnable = vk::False;
 
-   
+
+	//Create ViewPort and scissor
 	vk::Viewport viewport{};
 	viewport.setX(0.0f);
 	viewport.setY(0.0f);
@@ -183,21 +232,25 @@ void App::CreateGraphicsPipeline()
 	scissor.setExtent(swapchainExtent);
 
 
+	// set states that can be dynamic without having to recreate the whole pipeline
 	std::vector<vk::DynamicState> DynamicStates = {
 		vk::DynamicState::eViewport,
-		vk::DynamicState::eScissor
+		vk::DynamicState::eScissor,
 	};
 
 	vk::PipelineDynamicStateCreateInfo DynamicState{};
 	DynamicState.dynamicStateCount = static_cast<uint32_t>(DynamicStates.size());
 	DynamicState.pDynamicStates = DynamicStates.data();
+	/////////////////////////////////////////////////////////////////////////////
 
 	vk::PipelineViewportStateCreateInfo viewportState{};
 	viewportState.setViewportCount(1);
 	viewportState.setViewports(viewport);
 	viewportState.setScissorCount(1);
 	viewportState.setScissors(scissor);
+	////////////////////////////////////////////////////////////////////////////////
 
+	// Rasteriser information
 	vk::PipelineRasterizationStateCreateInfo rasterizerinfo{};
 	rasterizerinfo.depthClampEnable = vk::False;
 	rasterizerinfo.rasterizerDiscardEnable = vk::False;
@@ -210,6 +263,7 @@ void App::CreateGraphicsPipeline()
 	rasterizerinfo.depthBiasClamp = 0.0f;
 	rasterizerinfo.depthBiasSlopeFactor = 0.0f;
 
+	//Multi Sampling/
 	vk::PipelineMultisampleStateCreateInfo multisampling{}; 
 	multisampling.sampleShadingEnable = vk::False;
 	multisampling.rasterizationSamples = vk::SampleCountFlagBits::e1;
@@ -218,6 +272,7 @@ void App::CreateGraphicsPipeline()
 	multisampling.alphaToCoverageEnable = vk::False;
 	multisampling.alphaToOneEnable = vk::False;
 
+	///////////// Color blending *COME BACK TO THIS////////////////////
 	vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
 	colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR |
 		                                  vk::ColorComponentFlagBits::eG |
@@ -237,14 +292,14 @@ void App::CreateGraphicsPipeline()
 	colorBlend.logicOp = vk::LogicOp::eCopy;
 	colorBlend.setAttachmentCount(1);
 	colorBlend.setPAttachments(&colorBlendAttachment);
+	//////////////////////////////////////////////////////////////////////
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.setLayoutCount = 0; // Optional
 	pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
 	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
-
-	 
+ 
 	pipelineLayout = LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 
 	vk::GraphicsPipelineCreateInfo pipelineInfo{};
@@ -258,10 +313,10 @@ void App::CreateGraphicsPipeline()
 	pipelineInfo.pDepthStencilState = nullptr;
 	pipelineInfo.pColorBlendState = &colorBlend;
 	pipelineInfo.pDynamicState = &DynamicState;
-
 	pipelineInfo.layout = pipelineLayout;
 	pipelineInfo.renderPass = renderPass;
 	pipelineInfo.subpass = 0;
+
 
 	vk::Result result = LogicalDevice.createGraphicsPipelines(nullptr, 1, &pipelineInfo, nullptr, &graphicsPipeline);
 
@@ -274,52 +329,21 @@ void App::CreateGraphicsPipeline()
 	LogicalDevice.destroyShaderModule(FragShaderModule);
 }
 
-void App::CreateRenderPass()
+vk::ShaderModule App::createShaderModule(const std::vector<char>& code)
 {
-	vk::AttachmentDescription colorAttachment{};
-	colorAttachment.format = swapchainformat;
-	colorAttachment.samples = vk::SampleCountFlagBits::e1;
-	colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
-	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
-	colorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-	colorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-	colorAttachment.initialLayout = vk::ImageLayout::eUndefined;
-	colorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
+	vk::ShaderModuleCreateInfo createInfo{};
+	createInfo.codeSize = code.size();
+	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
+	vk::ShaderModule Shader;
 
-	vk::AttachmentReference colorAttachmentRef{};
-	colorAttachmentRef.attachment = 0;
-	colorAttachmentRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
-
-
-	vk::SubpassDescription subpass{};
-	subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &colorAttachmentRef;
-
-	vk::SubpassDependency dependency{};
-	dependency.srcSubpass = vk::SubpassExternal;
-	dependency.dstSubpass = 0;
-	dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput; 
-	dependency.srcAccessMask = vk::AccessFlagBits::eNone;                        
-	dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;  
-	dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;       
-	
-	vk::RenderPassCreateInfo renderpassInfo{};
-	renderpassInfo.attachmentCount = 1;
-	renderpassInfo.pAttachments = &colorAttachment;
-	renderpassInfo.subpassCount = 1;
-	renderpassInfo.pSubpasses = &subpass;
-	renderpassInfo.dependencyCount = 1;
-	renderpassInfo.pDependencies = &dependency;  
-
-	renderPass = LogicalDevice.createRenderPass(renderpassInfo);
-	if (!renderPass)
+	if (LogicalDevice.createShaderModule(&createInfo, nullptr, &Shader) != vk::Result::eSuccess)
 	{
-		throw std::runtime_error("failed to create render pass!");
+		throw std::runtime_error("failed to create shader module!");
 	}
-}
 
+	return Shader;
+}
 
 void App::CreateFramebuffers()
 {
@@ -353,7 +377,7 @@ void App::createCommandPool()
 
 	vk::CommandPoolCreateInfo poolInfo{};
 	poolInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
-	poolInfo.queueFamilyIndex = VKB_Device.get_queue_index(vkb::QueueType::graphics).value(); 
+	poolInfo.queueFamilyIndex = graphicsQueueFamilyIndex;
 
 	commandPool = LogicalDevice.createCommandPool(poolInfo);
 
@@ -385,117 +409,6 @@ void App::createCommandBuffer()
 }
 
 
-void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) {
-
-	vk::ClearValue clearColor{};
-	clearColor.color = { 0.0f, 0.0f, 0.0f, 1.0f };
-
-	vk::CommandBufferBeginInfo begininfo{};
-	begininfo.pInheritanceInfo = nullptr;
-
-	commandBuffer.begin(begininfo);
-	VkOffset2D imageoffset = { 0, 0 };
-	vk::RenderPassBeginInfo renderPassInfo{};
-	renderPassInfo.renderPass = renderPass;
-	renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
-	renderPassInfo.renderArea.offset = imageoffset;
-	renderPassInfo.renderArea.extent = swapchainExtent;
-	renderPassInfo.clearValueCount = 1;
-	renderPassInfo.pClearValues = &clearColor;
-
-	commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
-
-	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
-
-	vk::Viewport viewport{};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(swapchainExtent.width);
-	viewport.height = static_cast<float>(swapchainExtent.height);
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
-	commandBuffer.setViewport(0, 1, &viewport);
-
-	vk::Rect2D scissor{};
-	scissor.offset = imageoffset;
-	scissor.extent = swapchainExtent;
-	commandBuffer.setScissor(0, 1, &scissor);
-	commandBuffer.draw(3, 1, 0, 0);
-
-	commandBuffer.end();
-
-}
-
-
-vk::ShaderModule App::createShaderModule(const std::vector<char>& code)
-{
-	vk::ShaderModuleCreateInfo createInfo{};
-	createInfo.codeSize = code.size();
-	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-	
-	vk::ShaderModule Shader;
-
-	if ( LogicalDevice.createShaderModule(&createInfo, nullptr, &Shader) != vk::Result::eSuccess)
-	{
-		throw std::runtime_error("failed to create shader module!");
-	}
-	
-	return Shader;
-}
-
-
-
-void App::Run()
-{
-	while (!window->shouldClose())
-	{
-		glfwPollEvents();
-		Draw();
-	}
-
-}
-
-void App::Draw()
-{
-	LogicalDevice.waitForFences(1, &inFlightFence, vk::True, UINT64_MAX);
-	LogicalDevice.resetFences(1, &inFlightFence);
-
-	uint32_t imageIndex;
-	LogicalDevice.acquireNextImageKHR(swapChain, UINT64_MAX, imageAvailableSemaphore, nullptr, &imageIndex);
-
-	commandBuffer.reset();
-	recordCommandBuffer(commandBuffer, imageIndex);
-
-	vk::SubmitInfo submitInfo{};
-	submitInfo.sType = vk::StructureType::eSubmitInfo;
-
-	vk::Semaphore waitSemaphores[] = { imageAvailableSemaphore };
-	vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = waitSemaphores;
-	submitInfo.pWaitDstStageMask = waitStages;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer;
-
-
-	vk::Semaphore signalSemaphores[] = { renderFinishedSemaphore };
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = signalSemaphores;
-
-	graphicsQueue.submit(1, &submitInfo, inFlightFence);
-
-	vk::PresentInfoKHR presentInfo{};
-	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = signalSemaphores;
-
-	vk::SwapchainKHR swapChains[] = { swapChain };
-	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = swapChains;
-	presentInfo.pImageIndices = &imageIndex;
-
-	presentQueue.presentKHR(presentInfo);
-}
-
 void App::createSyncObjects() {
 
 	vk::SemaphoreCreateInfo semaphoreInfo{};
@@ -514,9 +427,143 @@ void App::createSyncObjects() {
 	if (LogicalDevice.createFence(&fenceInfo, nullptr, &inFlightFence) != vk::Result::eSuccess) {
 		throw std::runtime_error("failed to create fence!");
 	}
+}
 
+void App::Run()
+{
+	while (!window->shouldClose())
+	{
+		glfwPollEvents();
+		StartFrame();
+		Draw();
+		std::cout << "FPS: " << fps << std::endl;
+	}
 
 }
+
+void App::Draw()
+{
+	// Step 1: Wait for the inFlightFence to be signaled
+   // This ensures that the previous frame has finished rendering before starting a new one.
+   // The CPU waits here until the GPU signals that it's done with the previous frame.
+	if (LogicalDevice.waitForFences(1, &inFlightFence, vk::True, UINT64_MAX) != vk::Result::eSuccess)
+	{
+		throw std::runtime_error("failed to wait for fence");
+
+	}
+
+	// Step 2: Reset the inFlightFence to the unsignaled state
+    // This prepares the fence for reuse in the current frame.
+	if (LogicalDevice.resetFences(1, &inFlightFence) != vk::Result::eSuccess)
+	{
+		throw std::runtime_error("failed to restFences");
+
+	}
+
+	// Step 3: Acquire the next available swapchain image
+    // The GPU will signal the imageAvailableSemaphore when the image is ready for rendering.
+    // imageIndex will store the index of the acquired swapchain image.
+	uint32_t imageIndex;
+	if (LogicalDevice.acquireNextImageKHR(swapChain, UINT64_MAX, imageAvailableSemaphore, nullptr, &imageIndex) != vk::Result::eSuccess)
+	{
+		throw std::runtime_error("failed to acquire Next Image");
+	}
+
+	// Step 4: Reset the command buffer and record rendering commands for the current frame
+	// This prepares the command buffer for reuse and records the rendering commands.
+	commandBuffer.reset();
+	recordCommandBuffer(commandBuffer, imageIndex);
+
+
+	 // Step 5: Set up synchronization for rendering
+     // The GPU will wait for the imageAvailableSemaphore to be signaled before starting rendering.
+    // It will wait at the eColorAttachmentOutput stage, which is where color attachment writes occur
+	vk::Semaphore waitSemaphores[] = { imageAvailableSemaphore };
+	vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
+
+	// The GPU will signal the renderFinishedSemaphore when rendering is complete.	
+	vk::Semaphore signalSemaphores[] = { renderFinishedSemaphore };
+
+	vk::SubmitInfo submitInfo{};
+	submitInfo.sType = vk::StructureType::eSubmitInfo;
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = waitSemaphores;
+	submitInfo.pWaitDstStageMask = waitStages;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffer;
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = signalSemaphores;
+
+
+	// The inFlightFence will be signaled when the GPU is done with the command buffer.
+		if (graphicsQueue.submit(1, &submitInfo, inFlightFence) != vk::Result::eSuccess)
+	{
+		throw std::runtime_error("failed to submit info");
+
+	}
+
+	vk::SwapchainKHR swapChains[] = { swapChain };
+	vk::PresentInfoKHR presentInfo{};
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = signalSemaphores;
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = swapChains;
+	presentInfo.pImageIndices = &imageIndex;
+
+	
+	//wait on renderFinishedSemaphore before this is ran
+	if (presentQueue.presentKHR(presentInfo) != vk::Result::eSuccess)
+	{
+		throw std::runtime_error("failed to submit info");
+
+	}
+
+}
+
+
+void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) {
+
+	vk::ClearValue clearColor{};
+	clearColor.color = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+	vk::CommandBufferBeginInfo begininfo{};
+	begininfo.pInheritanceInfo = nullptr;
+
+	commandBuffer.begin(begininfo);
+
+	//////////////////////////////////////////////////////////////////////
+	VkOffset2D imageoffset = { 0, 0 };
+	vk::RenderPassBeginInfo renderPassInfo{};
+	renderPassInfo.renderPass = renderPass;
+	renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
+	renderPassInfo.renderArea.offset = imageoffset;
+	renderPassInfo.renderArea.extent = swapchainExtent;
+	renderPassInfo.clearValueCount = 1;
+	renderPassInfo.pClearValues = &clearColor;
+
+	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
+	commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
+
+	vk::Viewport viewport{};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = static_cast<float>(swapchainExtent.width);
+	viewport.height = static_cast<float>(swapchainExtent.height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	commandBuffer.setViewport(0, 1, &viewport);
+
+	vk::Rect2D scissor{};
+	scissor.offset = imageoffset;
+	scissor.extent = swapchainExtent;
+	commandBuffer.setScissor(0, 1, &scissor);
+	commandBuffer.draw(3, 1, 0, 0);
+
+	commandBuffer.endRenderPass();
+	commandBuffer.end();
+
+}
+
 
 void App::destroy_swapchain()
 {
@@ -540,10 +587,21 @@ void App::destroy_frameBuffers()
 
 }
 
+
+void  App::StartFrame() {
+	auto now = std::chrono::high_resolution_clock::now();
+	deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(now - lastFrameTime).count();
+	lastFrameTime = now;
+
+	if (deltaTime > 0.0f) {
+		fps = 1.0f / deltaTime;
+	}
+}
+
 void App::CleanUp()
 {
-	LogicalDevice.destroyCommandPool(commandPool);
 	destroy_swapchain();
+	LogicalDevice.destroyCommandPool(commandPool);
 	VulkanInstance.destroySurfaceKHR(surface);
 	LogicalDevice.destroyPipeline(graphicsPipeline);
 	LogicalDevice.destroyPipelineLayout(pipelineLayout);

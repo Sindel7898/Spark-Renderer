@@ -5,10 +5,15 @@
 #include "VkBootstrap.h"
 #include <stdexcept>
 #include <vulkan/vulkan.hpp>
+#include <chrono>
 
 class App
 {
 public:
+
+	std::chrono::time_point<std::chrono::high_resolution_clock> lastFrameTime;
+	float deltaTime = 0.0f;
+	float fps = 0.0f;
 
 	void Initialisation();
 	void CreateRenderPass();
@@ -19,6 +24,7 @@ public:
 
 	void Run();
 	void Draw();
+	void StartFrame();
 
 	void createSyncObjects();
 
@@ -74,9 +80,10 @@ public:
 	 std::vector<VkFramebuffer> swapChainFramebuffers;
 
 	 vkb::Instance VKB_Instance;
-	 vkb::Device   VKB_Device;
 
 	 vk::Queue graphicsQueue;
+	 uint32_t  graphicsQueueFamilyIndex;
+
 	 vk::Queue presentQueue;
 
 	 //uint32_t  graphicsQueueFamily;
