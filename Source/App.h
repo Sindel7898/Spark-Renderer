@@ -30,6 +30,8 @@ public:
 
 
 
+	void DestroySyncObjects();
+
 	void CleanUp();
 
 	// Vulkan Init Tasks
@@ -69,7 +71,6 @@ public:
 	 vk::PipelineLayout         pipelineLayout  = nullptr;
 	 vk::Pipeline              graphicsPipeline = nullptr;
 	 vk::CommandPool           commandPool      = nullptr;
-	 vk::CommandBuffer            commandBuffer = nullptr;
 
 	 vk::Format                 swapchainformat;
 
@@ -86,12 +87,13 @@ public:
 
 	 vk::Queue presentQueue;
 
-	 //uint32_t  graphicsQueueFamily;
+	 std::vector< vk::Semaphore> imageAvailableSemaphores;
+	 std::vector< vk::Semaphore> renderFinishedSemaphores;
+	 std::vector< vk::Fence> inFlightFences;
+	 std::vector< vk::CommandBuffer> commandBuffers;
 
+	 const int MAX_FRAMES_IN_FLIGHT = 2;
+	 uint32_t currentFrame = 0;
 
-
-	 vk::Semaphore imageAvailableSemaphore;
-	 vk::Semaphore renderFinishedSemaphore;
-	 vk::Fence inFlightFence;
 };
 

@@ -392,14 +392,16 @@ void App::createCommandPool()
 
 void App::createCommandBuffer()
 {
+	commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+
 	vk::CommandBufferAllocateInfo allocateInfo{};
 	allocateInfo.commandPool = commandPool;
 	allocateInfo.level = vk::CommandBufferLevel::ePrimary;
-	allocateInfo.commandBufferCount = 1;
+	allocateInfo.commandBufferCount = (uint32_t)commandBuffers.size();
 
-	 LogicalDevice.allocateCommandBuffers(&allocateInfo, &commandBuffer);
+	commandBuffers = LogicalDevice.allocateCommandBuffers(allocateInfo);
 
-	if (!commandBuffer)
+	if (!commandBuffers.empty())
 	{
 		throw std::runtime_error("failed to create command Buffer!");
 
@@ -411,21 +413,32 @@ void App::createCommandBuffer()
 
 void App::createSyncObjects() {
 
+
+	imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+	renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+	inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+
+
 	vk::SemaphoreCreateInfo semaphoreInfo{};
-
-	if (LogicalDevice.createSemaphore(&semaphoreInfo, nullptr, &imageAvailableSemaphore) != vk::Result::eSuccess) {
-		throw std::runtime_error("failed to create image available semaphore!");
-	}
-
-
-	if (LogicalDevice.createSemaphore(&semaphoreInfo, nullptr, &renderFinishedSemaphore) != vk::Result::eSuccess) {
-		throw std::runtime_error("failed to create render finished semaphore!");
-	}
 
 	vk::FenceCreateInfo fenceInfo{};
 	fenceInfo.flags = vk::FenceCreateFlagBits::eSignaled;
-	if (LogicalDevice.createFence(&fenceInfo, nullptr, &inFlightFence) != vk::Result::eSuccess) {
-		throw std::runtime_error("failed to create fence!");
+
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		if (LogicalDevice.createSemaphore(&semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != vk::Result::eSuccess) {
+			throw std::runtime_error("failed to create image available semaphore!");
+		}
+
+
+		if (LogicalDevice.createSemaphore(&semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != vk::Result::eSuccess) {
+			throw std::runtime_error("failed to create render finished semaphore!");
+		}
+
+		if (LogicalDevice.createFence(&fenceInfo, nullptr, &inFlightFences[i]) != vk::Result::eSuccess) {
+			throw std::runtime_error("failed to create fence!");
+		}
+
 	}
 }
 
@@ -439,6 +452,8 @@ void App::Run()
 		std::cout << "FPS: " << fps << std::endl;
 	}
 
+	//waits for the device to finnish all its processes before shutting down
+	LogicalDevice.waitIdle();
 }
 
 void App::Draw()
@@ -446,7 +461,7 @@ void App::Draw()
 	// Step 1: Wait for the inFlightFence to be signaled
    // This ensures that the previous frame has finished rendering before starting a new one.
    // The CPU waits here until the GPU signals that it's done with the previous frame.
-	if (LogicalDevice.waitForFences(1, &inFlightFence, vk::True, UINT64_MAX) != vk::Result::eSuccess)
+	if (LogicalDevice.waitForFences(1, &inFlightFences[currentFrame], vk::True, UINT64_MAX) != vk::Result::eSuccess)
 	{
 		throw std::runtime_error("failed to wait for fence");
 
@@ -454,7 +469,7 @@ void App::Draw()
 
 	// Step 2: Reset the inFlightFence to the unsignaled state
     // This prepares the fence for reuse in the current frame.
-	if (LogicalDevice.resetFences(1, &inFlightFence) != vk::Result::eSuccess)
+	if (LogicalDevice.resetFences(1, &inFlightFences[currentFrame]) != vk::Result::eSuccess)
 	{
 		throw std::runtime_error("failed to restFences");
 
@@ -464,25 +479,25 @@ void App::Draw()
     // The GPU will signal the imageAvailableSemaphore when the image is ready for rendering.
     // imageIndex will store the index of the acquired swapchain image.
 	uint32_t imageIndex;
-	if (LogicalDevice.acquireNextImageKHR(swapChain, UINT64_MAX, imageAvailableSemaphore, nullptr, &imageIndex) != vk::Result::eSuccess)
+	if (LogicalDevice.acquireNextImageKHR(swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], nullptr, &imageIndex) != vk::Result::eSuccess)
 	{
 		throw std::runtime_error("failed to acquire Next Image");
 	}
 
 	// Step 4: Reset the command buffer and record rendering commands for the current frame
 	// This prepares the command buffer for reuse and records the rendering commands.
-	commandBuffer.reset();
-	recordCommandBuffer(commandBuffer, imageIndex);
+	commandBuffers[currentFrame].reset();
+	recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
 
 	 // Step 5: Set up synchronization for rendering
      // The GPU will wait for the imageAvailableSemaphore to be signaled before starting rendering.
     // It will wait at the eColorAttachmentOutput stage, which is where color attachment writes occur
-	vk::Semaphore waitSemaphores[] = { imageAvailableSemaphore };
+	vk::Semaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame]};
 	vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
 
 	// The GPU will signal the renderFinishedSemaphore when rendering is complete.	
-	vk::Semaphore signalSemaphores[] = { renderFinishedSemaphore };
+	vk::Semaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame]};
 
 	vk::SubmitInfo submitInfo{};
 	submitInfo.sType = vk::StructureType::eSubmitInfo;
@@ -490,13 +505,13 @@ void App::Draw()
 	submitInfo.pWaitSemaphores = waitSemaphores;
 	submitInfo.pWaitDstStageMask = waitStages;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer;
+	submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
 
 	// The inFlightFence will be signaled when the GPU is done with the command buffer.
-		if (graphicsQueue.submit(1, &submitInfo, inFlightFence) != vk::Result::eSuccess)
+		if (graphicsQueue.submit(1, &submitInfo, inFlightFences[currentFrame]) != vk::Result::eSuccess)
 	{
 		throw std::runtime_error("failed to submit info");
 
@@ -517,6 +532,7 @@ void App::Draw()
 		throw std::runtime_error("failed to submit info");
 
 	}
+	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
 }
 
@@ -598,6 +614,16 @@ void  App::StartFrame() {
 	}
 }
 
+void App::DestroySyncObjects()
+{
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		LogicalDevice.destroySemaphore(imageAvailableSemaphores[i]);
+		LogicalDevice.destroySemaphore(renderFinishedSemaphores[i]);
+		LogicalDevice.destroyFence(inFlightFences[i]);
+	}
+}
+
 void App::CleanUp()
 {
 	destroy_swapchain();
@@ -606,10 +632,8 @@ void App::CleanUp()
 	LogicalDevice.destroyPipeline(graphicsPipeline);
 	LogicalDevice.destroyPipelineLayout(pipelineLayout);
 	LogicalDevice.destroyRenderPass(renderPass);
+	DestroySyncObjects();
 	destroy_frameBuffers();
-	LogicalDevice.destroySemaphore(imageAvailableSemaphore); 
-	LogicalDevice.destroySemaphore(renderFinishedSemaphore);
-	LogicalDevice.destroyFence(inFlightFence);
 	LogicalDevice.destroy();
 	vkb::destroy_debug_utils_messenger(VulkanInstance, Debug_Messenger);
 	VulkanInstance.destroy();
