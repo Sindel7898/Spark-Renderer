@@ -15,12 +15,10 @@ public:
     ~Window();
     bool shouldClose() { return glfwWindowShouldClose(window); };
     GLFWwindow* GetWindow() { return window; };
-
 private:
     const int Width;
     const int Height;
     std::string WindowName;
     GLFWwindow* window;
-
 };
 

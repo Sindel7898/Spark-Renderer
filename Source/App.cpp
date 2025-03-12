@@ -5,6 +5,9 @@ void App::Initialisation()
 {
 	window = new Window(800, 800, "Vulkan Window");
 
+	glfwSetFramebufferSizeCallback(window->GetWindow(), framebufferResizeCallback);
+	glfwSetWindowUserPointer(window->GetWindow(), this);
+
 	InitVulkan();
 	createSurface();
 	SelectGPU_CreateDevice();
@@ -104,6 +107,22 @@ void App::SelectGPU_CreateDevice() {
 }
 
 
+void App::recreateSwapChain() {
+	int width = 0, height = 0;
+	glfwGetFramebufferSize(window->GetWindow(), &width, &height);
+	
+	while (width == 0 || height == 0) {
+		glfwGetFramebufferSize(window->GetWindow(), &width, &height);
+		glfwWaitEvents();
+	}
+
+	LogicalDevice.waitIdle();
+
+
+	destroy_swapchain();
+	CreateFramebuffers();
+	create_swapchain();
+}
 
 void App::create_swapchain()
 {
@@ -130,12 +149,15 @@ void App::create_swapchain()
 		.build()
 		.value();
 
+	
 	swapchainExtent = vkbswapChain.extent;
 	swapChain = vkbswapChain.swapchain;
 	swapchainImages = vkbswapChain.get_images().value();
 	swapchainImageViews = vkbswapChain.get_image_views().value();
 
 }
+
+
 
 void App::CreateRenderPass()
 {
@@ -237,7 +259,7 @@ void App::CreateGraphicsPipeline()
 		vk::DynamicState::eViewport,
 		vk::DynamicState::eScissor,
 	};
-
+	
 	vk::PipelineDynamicStateCreateInfo DynamicState{};
 	DynamicState.dynamicStateCount = static_cast<uint32_t>(DynamicStates.size());
 	DynamicState.pDynamicStates = DynamicStates.data();
@@ -401,7 +423,7 @@ void App::createCommandBuffer()
 
 	commandBuffers = LogicalDevice.allocateCommandBuffers(allocateInfo);
 
-	if (!commandBuffers.empty())
+	if (commandBuffers.empty())
 	{
 		throw std::runtime_error("failed to create command Buffer!");
 
@@ -467,22 +489,29 @@ void App::Draw()
 
 	}
 
+
+	uint32_t imageIndex;
+
+	vk::Result resultvalue = LogicalDevice.acquireNextImageKHR(swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], nullptr, &imageIndex);
+
+	if (framebufferResized)
+	{
+		recreateSwapChain();
+		//return;
+	}
+	else if (resultvalue != vk::Result::eSuccess)
+	{
+		throw std::runtime_error("failed to acquire swap chain image!");
+	}
+
 	// Step 2: Reset the inFlightFence to the unsignaled state
-    // This prepares the fence for reuse in the current frame.
+   // This prepares the fence for reuse in the current frame.
 	if (LogicalDevice.resetFences(1, &inFlightFences[currentFrame]) != vk::Result::eSuccess)
 	{
 		throw std::runtime_error("failed to restFences");
 
 	}
 
-	// Step 3: Acquire the next available swapchain image
-    // The GPU will signal the imageAvailableSemaphore when the image is ready for rendering.
-    // imageIndex will store the index of the acquired swapchain image.
-	uint32_t imageIndex;
-	if (LogicalDevice.acquireNextImageKHR(swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], nullptr, &imageIndex) != vk::Result::eSuccess)
-	{
-		throw std::runtime_error("failed to acquire Next Image");
-	}
 
 	// Step 4: Reset the command buffer and record rendering commands for the current frame
 	// This prepares the command buffer for reuse and records the rendering commands.
@@ -527,11 +556,18 @@ void App::Draw()
 
 	
 	//wait on renderFinishedSemaphore before this is ran
-	if (presentQueue.presentKHR(presentInfo) != vk::Result::eSuccess)
-	{
-		throw std::runtime_error("failed to submit info");
+   vk::Result result = presentQueue.presentKHR(presentInfo);
 
-	}
+   if (framebufferResized)
+   {
+	   recreateSwapChain();
+   }
+   else if (result != vk::Result::eSuccess) {
+
+	  throw std::runtime_error("failed to present swap chain image!");
+
+    }
+
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
 }
@@ -583,12 +619,14 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 void App::destroy_swapchain()
 {
-	LogicalDevice.destroySwapchainKHR(swapChain, nullptr);
+	destroy_frameBuffers();
 
 	for (size_t i = 0; i < swapchainImageViews.size(); i++)
 	{
 		LogicalDevice.destroyImageView(swapchainImageViews[i], nullptr);
 	}
+
+	LogicalDevice.destroySwapchainKHR(swapChain, nullptr);
 
 	swapchainImageViews.clear();
 	swapchainImages.clear();
@@ -602,6 +640,7 @@ void App::destroy_frameBuffers()
 	}
 
 }
+
 
 
 void  App::StartFrame() {
@@ -633,9 +672,14 @@ void App::CleanUp()
 	LogicalDevice.destroyPipelineLayout(pipelineLayout);
 	LogicalDevice.destroyRenderPass(renderPass);
 	DestroySyncObjects();
-	destroy_frameBuffers();
 	LogicalDevice.destroy();
 	vkb::destroy_debug_utils_messenger(VulkanInstance, Debug_Messenger);
 	VulkanInstance.destroy();
 	delete window; 
+}
+
+void App::framebufferResizeCallback(GLFWwindow* window, int width, int height)
+{
+	auto app = reinterpret_cast<App*>(glfwGetWindowUserPointer(window));
+	app->framebufferResized = true;
 }

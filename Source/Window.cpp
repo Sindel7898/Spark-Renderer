@@ -7,6 +7,7 @@
 #include <dwmapi.h>
 #pragma comment(lib, "Dwmapi.lib")
 #endif
+class App;
 
 Window::Window(int W, int H, std::string WN) : Width(W),Height(H),WindowName(WN)
 {
@@ -35,6 +36,7 @@ Window::Window(int W, int H, std::string WN) : Width(W),Height(H),WindowName(WN)
         delete this;
     }
 }
+
 
 Window::~Window()
 {

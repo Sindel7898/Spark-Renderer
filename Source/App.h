@@ -17,6 +17,7 @@ public:
 
 	void Initialisation();
 	void CreateRenderPass();
+	void recreateSwapChain();
 	void create_swapchain();
 	void CreateFramebuffers();
 
@@ -49,7 +50,9 @@ public:
 	void destroy_swapchain();
 	void destroy_frameBuffers();
 
+	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
+	bool framebufferResized = false;
  private:
 
 	 Window* window = nullptr;
