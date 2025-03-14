@@ -12,9 +12,7 @@ void App::Initialisation()
 	createSurface();
 	SelectGPU_CreateDevice();
 	create_swapchain();
-	CreateRenderPass();
 	CreateGraphicsPipeline();
-	CreateFramebuffers();
 	createCommandPool();
 	createCommandBuffer();
 	createSyncObjects();
@@ -108,6 +106,7 @@ void App::SelectGPU_CreateDevice() {
 
 
 void App::recreateSwapChain() {
+
 	int width = 0, height = 0;
 	glfwGetFramebufferSize(window->GetWindow(), &width, &height);
 	
@@ -120,8 +119,9 @@ void App::recreateSwapChain() {
 
 
 	destroy_swapchain();
-	CreateFramebuffers();
+
 	create_swapchain();
+	//CreateFramebuffers();
 }
 
 void App::create_swapchain()
@@ -149,6 +149,7 @@ void App::create_swapchain()
 		.build()
 		.value();
 
+
 	
 	swapchainExtent = vkbswapChain.extent;
 	swapChain = vkbswapChain.swapchain;
@@ -159,53 +160,7 @@ void App::create_swapchain()
 
 
 
-void App::CreateRenderPass()
-{
-	vk::AttachmentReference colorAttachmentRef{};
-	colorAttachmentRef.attachment = 0;
-	colorAttachmentRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
-
-	vk::SubpassDescription subpass{};
-	subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &colorAttachmentRef;
-	
-	vk::SubpassDependency dependency{};
-	dependency.srcSubpass = vk::SubpassExternal;
-	dependency.dstSubpass = 0;
-	dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-	dependency.srcAccessMask = vk::AccessFlagBits::eNone;
-	dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-	dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-
-	vk::AttachmentDescription colorAttachment{};
-	colorAttachment.format = swapchainformat;
-	colorAttachment.samples = vk::SampleCountFlagBits::e1;
-	colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
-	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
-	colorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
-	colorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
-	colorAttachment.initialLayout = vk::ImageLayout::eUndefined;
-	colorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
-
-
-	vk::RenderPassCreateInfo renderpassInfo{};
-	renderpassInfo.attachmentCount = 1;
-	renderpassInfo.pAttachments = &colorAttachment;
-	renderpassInfo.subpassCount = 1;
-	renderpassInfo.pSubpasses = &subpass;
-	renderpassInfo.dependencyCount = 1;
-	renderpassInfo.pDependencies = &dependency;
-
-	renderPass = LogicalDevice.createRenderPass(renderpassInfo);
-	if (!renderPass)
-	{
-		throw std::runtime_error("failed to create render pass!");
-	}
-}
-
-
-void App::CreateGraphicsPipeline()
+void App::CreateGraphicsPipeline() 
 {
 	//Read Vertex & Fragment shader  and create modules
 	auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/Simple_Shader.vert.spv");
@@ -226,10 +181,14 @@ void App::CreateGraphicsPipeline()
 	
 	vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo ,FragmentShaderStageInfo };
 
+
+	auto BindDesctiptions = Vertex::GetBindingDescription();
+	auto attributeDescriptions = Vertex::GetAttributeDescription();
+
 	vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.setVertexBindingDescriptionCount(0);
-	vertexInputInfo.setPVertexBindingDescriptions(nullptr);
 	vertexInputInfo.setVertexAttributeDescriptionCount(0);
+	vertexInputInfo.setPVertexBindingDescriptions(nullptr);
 	vertexInputInfo.setPVertexAttributeDescriptions(nullptr);
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -267,8 +226,8 @@ void App::CreateGraphicsPipeline()
 
 	vk::PipelineViewportStateCreateInfo viewportState{};
 	viewportState.setViewportCount(1);
-	viewportState.setViewports(viewport);
 	viewportState.setScissorCount(1);
+	viewportState.setViewports(viewport);
 	viewportState.setScissors(scissor);
 	////////////////////////////////////////////////////////////////////////////////
 
@@ -300,8 +259,8 @@ void App::CreateGraphicsPipeline()
 		                                  vk::ColorComponentFlagBits::eG |
 	                                      vk::ColorComponentFlagBits::eB |
 	                                   	  vk::ColorComponentFlagBits::eA;
-
 	colorBlendAttachment.blendEnable = vk::True;
+
 	colorBlendAttachment.setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha);
 	colorBlendAttachment.setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
 	colorBlendAttachment.setColorBlendOp(vk::BlendOp::eAdd);
@@ -324,7 +283,12 @@ void App::CreateGraphicsPipeline()
  
 	pipelineLayout = LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 
+	vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
+	pipelineRenderingCreateInfo.colorAttachmentCount = 1;
+	pipelineRenderingCreateInfo.pColorAttachmentFormats = &swapchainformat;
+
 	vk::GraphicsPipelineCreateInfo pipelineInfo{};
+	pipelineInfo.pNext = &pipelineRenderingCreateInfo; // Add this line
 	pipelineInfo.stageCount = 2;
 	pipelineInfo.pStages = ShaderStages;
 	pipelineInfo.pVertexInputState = &vertexInputInfo;
@@ -336,7 +300,8 @@ void App::CreateGraphicsPipeline()
 	pipelineInfo.pColorBlendState = &colorBlend;
 	pipelineInfo.pDynamicState = &DynamicState;
 	pipelineInfo.layout = pipelineLayout;
-	pipelineInfo.renderPass = renderPass;
+//	pipelineInfo.renderPass = renderPass;
+	pipelineInfo.renderPass = VK_NULL_HANDLE;
 	pipelineInfo.subpass = 0;
 
 
@@ -367,32 +332,7 @@ vk::ShaderModule App::createShaderModule(const std::vector<char>& code)
 	return Shader;
 }
 
-void App::CreateFramebuffers()
-{
-	swapChainFramebuffers.resize(swapchainImageViews.size());
 
-	for (size_t i = 0; i < swapchainImageViews.size(); i++) {
-
-		vk::ImageView attachments[] = {
-			swapchainImageViews[i]
-		};
-
-		vk::FramebufferCreateInfo frameBufferInfo{};
-		frameBufferInfo.renderPass = renderPass;
-		frameBufferInfo.attachmentCount = 1;
-		frameBufferInfo.pAttachments = attachments;
-		frameBufferInfo.width = swapchainExtent.width;
-		frameBufferInfo.height = swapchainExtent.height;
-		frameBufferInfo.layers = 1;
-
-		swapChainFramebuffers[i] = LogicalDevice.createFramebuffer(frameBufferInfo);
-
-		if (!swapChainFramebuffers[i])
-		{
-			throw std::runtime_error("failed to create framebuffer!");
-		}
-	}
-}
 
 void App::createCommandPool()
 { 
@@ -480,41 +420,29 @@ void App::Run()
 
 void App::Draw()
 {
-	// Step 1: Wait for the inFlightFence to be signaled
-   // This ensures that the previous frame has finished rendering before starting a new one.
-   // The CPU waits here until the GPU signals that it's done with the previous frame.
 	if (LogicalDevice.waitForFences(1, &inFlightFences[currentFrame], vk::True, UINT64_MAX) != vk::Result::eSuccess)
 	{
 		throw std::runtime_error("failed to wait for fence");
 
 	}
 
-
 	uint32_t imageIndex;
 
-	vk::Result resultvalue = LogicalDevice.acquireNextImageKHR(swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], nullptr, &imageIndex);
+	try {
+		vk::Result result = LogicalDevice.acquireNextImageKHR(
+			swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], nullptr, &imageIndex
+		);
 
-	if (framebufferResized)
-	{
+	}
+	catch (const std::exception& e) {
 		recreateSwapChain();
-		//return;
-	}
-	else if (resultvalue != vk::Result::eSuccess)
-	{
-		throw std::runtime_error("failed to acquire swap chain image!");
-	}
-
-	// Step 2: Reset the inFlightFence to the unsignaled state
-   // This prepares the fence for reuse in the current frame.
-	if (LogicalDevice.resetFences(1, &inFlightFences[currentFrame]) != vk::Result::eSuccess)
-	{
-		throw std::runtime_error("failed to restFences");
-
+		std::cerr << "Exception: " << e.what() << std::endl;
 	}
 
 
-	// Step 4: Reset the command buffer and record rendering commands for the current frame
-	// This prepares the command buffer for reuse and records the rendering commands.
+
+	LogicalDevice.resetFences(1, &inFlightFences[currentFrame]);
+
 	commandBuffers[currentFrame].reset();
 	recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
@@ -556,20 +484,18 @@ void App::Draw()
 
 	
 	//wait on renderFinishedSemaphore before this is ran
-   vk::Result result = presentQueue.presentKHR(presentInfo);
-
-   if (framebufferResized)
-   {
-	   recreateSwapChain();
+   try {
+	   vk::Result result = presentQueue.presentKHR(presentInfo);
    }
-   else if (result != vk::Result::eSuccess) {
+   catch (const std::exception& e) {
+	   std::cerr << "Exception: " << e.what() << std::endl;
+	   std::cerr << "Attempting to recreate swap chain..." << std::endl;
+	   recreateSwapChain();
+	   framebufferResized = false;
 
-	  throw std::runtime_error("failed to present swap chain image!");
-
-    }
+   }
 
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-
 }
 
 
@@ -583,18 +509,52 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	commandBuffer.begin(begininfo);
 
+
+	vk::ImageMemoryBarrier acquireBarrier{};
+	acquireBarrier.oldLayout = vk::ImageLayout::eUndefined;
+	acquireBarrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	acquireBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	acquireBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	acquireBarrier.image = swapchainImages[imageIndex];
+	acquireBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+	acquireBarrier.subresourceRange.baseMipLevel = 0;
+	acquireBarrier.subresourceRange.levelCount = 1;
+	acquireBarrier.subresourceRange.baseArrayLayer = 0;
+	acquireBarrier.subresourceRange.layerCount = 1;
+
+	acquireBarrier.srcAccessMask = vk::AccessFlagBits::eNone;
+	acquireBarrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+
+	commandBuffer.pipelineBarrier(
+		vk::PipelineStageFlagBits::eTopOfPipe,
+		vk::PipelineStageFlagBits::eColorAttachmentOutput,
+		vk::DependencyFlags(),
+		0, nullptr,
+		0, nullptr,
+		1, &acquireBarrier
+	);
+
 	//////////////////////////////////////////////////////////////////////
 	VkOffset2D imageoffset = { 0, 0 };
-	vk::RenderPassBeginInfo renderPassInfo{};
-	renderPassInfo.renderPass = renderPass;
-	renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
-	renderPassInfo.renderArea.offset = imageoffset;
-	renderPassInfo.renderArea.extent = swapchainExtent;
-	renderPassInfo.clearValueCount = 1;
-	renderPassInfo.pClearValues = &clearColor;
+
+	vk::RenderingAttachmentInfoKHR colorAttachmentInfo{};
+	colorAttachmentInfo.imageView = swapchainImageViews[imageIndex];
+	colorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	colorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
+	colorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+	colorAttachmentInfo.clearValue = clearColor;
+
+
+	vk::RenderingInfoKHR renderingInfo{};
+	renderingInfo.renderArea.offset = imageoffset;
+	renderingInfo.renderArea.extent = swapchainExtent;
+	renderingInfo.layerCount = 1;
+	renderingInfo.colorAttachmentCount = 1;
+	renderingInfo.pColorAttachments = &colorAttachmentInfo;
+
+	commandBuffer.beginRendering(renderingInfo);
 
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
-	commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 
 	vk::Viewport viewport{};
 	viewport.x = 0.0f;
@@ -611,7 +571,33 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	commandBuffer.setScissor(0, 1, &scissor);
 	commandBuffer.draw(3, 1, 0, 0);
 
-	commandBuffer.endRenderPass();
+	commandBuffer.endRendering();
+
+	vk::ImageMemoryBarrier barrier{};
+	barrier.oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	barrier.newLayout = vk::ImageLayout::ePresentSrcKHR;
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	barrier.image = swapchainImages[imageIndex];
+	barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+
+	barrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+	barrier.dstAccessMask = vk::AccessFlagBits::eMemoryRead;
+
+	commandBuffer.pipelineBarrier(
+		vk::PipelineStageFlagBits::eColorAttachmentOutput,
+		vk::PipelineStageFlagBits::eBottomOfPipe,
+		vk::DependencyFlags(),
+		0, nullptr,
+		0, nullptr,
+		1, &barrier
+	);
+
+
 	commandBuffer.end();
 
 }
@@ -629,12 +615,11 @@ void App::destroy_swapchain()
 	LogicalDevice.destroySwapchainKHR(swapChain, nullptr);
 
 	swapchainImageViews.clear();
-	swapchainImages.clear();
+
 }
 
 void App::destroy_frameBuffers()
 {
-
 	for (auto framebuffer : swapChainFramebuffers) {
 		LogicalDevice.destroyFramebuffer(framebuffer);
 	}
@@ -666,6 +651,7 @@ void App::DestroySyncObjects()
 void App::CleanUp()
 {
 	destroy_swapchain();
+	LogicalDevice.destroyBuffer(VertexBuffer);
 	LogicalDevice.destroyCommandPool(commandPool);
 	VulkanInstance.destroySurfaceKHR(surface);
 	LogicalDevice.destroyPipeline(graphicsPipeline);

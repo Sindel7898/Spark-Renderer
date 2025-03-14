@@ -18,13 +18,32 @@
       }
     },
 
-    {
-      "name": "vk-bootstrap",
-      "source": {
-        "type": "git",
-        "url": "https://github.com/charles-lunarg/vk-bootstrap.git"  
-      }
+  {
+    "name": "vk-bootstrap",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/charles-lunarg/vk-bootstrap.git"
     }
+  },
+
+  {
+    "name": "VulkanMemoryAllocator",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git"
+
+    }
+  },
+
+  {
+    "name": "VulkanUtilityLibraries",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/KhronosGroup/Vulkan-Utility-Libraries.git"
+
+    }
+  }
+
 
   ]
   

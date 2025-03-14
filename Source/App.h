@@ -6,6 +6,40 @@
 #include <stdexcept>
 #include <vulkan/vulkan.hpp>
 #include <chrono>
+#include <glm/glm.hpp>
+
+struct Vertex {
+	glm::vec2 position;
+	glm::vec3 color;
+
+
+	static vk::VertexInputBindingDescription GetBindingDescription() {
+		vk::VertexInputBindingDescription  bindingdescription{};
+		
+		bindingdescription.binding = 0;
+		bindingdescription.stride = sizeof(Vertex);
+		bindingdescription.inputRate = vk::VertexInputRate::eVertex;
+
+		return bindingdescription;
+	}
+
+	static std::array< vk::VertexInputAttributeDescription, 2> GetAttributeDescription() {
+
+		std::array<vk::VertexInputAttributeDescription, 2> attributeDescriptions{};
+
+		attributeDescriptions[0].binding  = 0;
+		attributeDescriptions[0].location = 0;
+		attributeDescriptions[0].format = vk::Format::eR32G32Sfloat;
+		attributeDescriptions[0].offset = offsetof(Vertex, position);
+
+		attributeDescriptions[1].binding = 0;
+		attributeDescriptions[1].location = 1;
+		attributeDescriptions[1].format = vk::Format::eR32G32B32Sfloat;
+		attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+		return attributeDescriptions;
+	}
+};
 
 class App
 {
@@ -20,6 +54,7 @@ public:
 	void recreateSwapChain();
 	void create_swapchain();
 	void CreateFramebuffers();
+	void createVertexBuffer();
 
 	void createCommandPool();
 
@@ -98,5 +133,15 @@ public:
 	 const int MAX_FRAMES_IN_FLIGHT = 2;
 	 uint32_t currentFrame = 0;
 
+	 const std::vector<Vertex> vertices = {
+
+	  {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+	  {{0.5f, 0.5f }, {0.0f, 1.0f, 0.0f}},
+	  {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+	 
+	 };
+
+
+	 vk::Buffer VertexBuffer;
 };
 

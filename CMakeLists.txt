@@ -11,6 +11,7 @@ include(${CMAKE_SOURCE_DIR}/CommonMacros.txt)
 add_subdirectory(Bootstrapping/src/glfw)
 add_subdirectory(Bootstrapping/src/glm)
 add_subdirectory(Bootstrapping/src/vk-bootstrap)
+add_subdirectory(Bootstrapping/src/VulkanMemoryAllocator)
 
 # Find all source files
 file(GLOB SOURCES "Source/*.cpp")
@@ -25,4 +26,4 @@ add_executable(VulkanRenderer ${SOURCES})
 target_include_directories(VulkanRenderer PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
 # Link libraries
-target_link_libraries(VulkanRenderer PRIVATE glfw glm vk-bootstrap Vulkan::Vulkan)
+target_link_libraries(VulkanRenderer PRIVATE glfw glm vk-bootstrap VulkanMemoryAllocator Vulkan::Vulkan)
