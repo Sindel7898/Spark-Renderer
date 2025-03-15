@@ -1,5 +1,6 @@
 #pragma once
 #define VK_USE_PLATFORM_WIN32_KHR
+#define GLM_FORCE_RADIANS
 #include "Window.h"
 #include "ShaderHelper.h"
 #include "VkBootstrap.h"
@@ -7,6 +8,14 @@
 #include <vulkan/vulkan.hpp>
 #include <chrono>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <chrono>
+
+struct UniformBufferObject {
+	glm::mat4 model;
+	glm::mat4 view;
+	glm::mat4 proj;
+};
 
 struct Vertex {
 	glm::vec2 position;
@@ -50,12 +59,19 @@ public:
 	float fps = 0.0f;
 
 	void Initialisation();
+	void createDescriptorSetLayout();
 	void InitMemAllocator();
 
 	void recreateSwapChain();
 	void create_swapchain();
 	void createVertexBuffer();
 	void createIndexBuffer();
+
+	void createUniformBuffer();
+
+	void createDescriptorPool();
+
+	void createDescriptorSets();
 
 	void CopyBuffer(vk::Buffer Buffer1, vk::Buffer Buffer2, VkDeviceSize size);
 
@@ -82,6 +98,8 @@ public:
 	void CreateGraphicsPipeline();
 
 	void createCommandBuffer();
+
+	void updateUniformBuffer(uint32_t currentImage);
 
 	void recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
@@ -148,8 +166,14 @@ public:
 		0, 1, 2, 2, 3, 0
 	 };
 
+
+	 vk::DescriptorSetLayout DescriptorSetLayout;
+	 vk::DescriptorPool DescriptorPool;
+	 std::vector<vk::DescriptorSet> DescriptorSets;
 	 vk::Buffer VertexBuffer;
 	 vk::Buffer IndexBuffer;
+	 std::vector<VkBuffer> uniformBuffers;
+	 std::vector<void*> uniformBuffersMapped;
 
 };
 

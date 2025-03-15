@@ -5,7 +5,7 @@
 
 VmaAllocator Allocator;
 VmaAllocation VertexBufferAllocation;
-VmaAllocation IdexBufferAllocation;
+VmaAllocation IndexBufferAllocation;
 
 void App::Initialisation()
 {
@@ -19,14 +19,35 @@ void App::Initialisation()
 	SelectGPU_CreateDevice();
 	InitMemAllocator();
 	create_swapchain();
+	createDescriptorSetLayout();
 	CreateGraphicsPipeline();
 	createCommandPool();
 	createCommandBuffer();
 	createVertexBuffer();
 	createIndexBuffer();
+	createUniformBuffer();
+	createDescriptorPool();
+	createDescriptorSets();
 	createSyncObjects();
 
 }
+void App::createDescriptorSetLayout()
+{
+	vk::DescriptorSetLayoutBinding UniformBufferBinding{};
+	UniformBufferBinding.binding = 0;
+	UniformBufferBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
+	UniformBufferBinding.descriptorCount = 1;
+	UniformBufferBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
+	UniformBufferBinding.pImmutableSamplers = nullptr; // Optional
+
+	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
+	layoutInfo.bindingCount = 1;
+	layoutInfo.pBindings = &UniformBufferBinding;
+
+	LogicalDevice.createDescriptorSetLayout(&layoutInfo,nullptr, &DescriptorSetLayout);
+}
+
+
 
 
 void App::InitVulkan()
@@ -285,7 +306,7 @@ void App::createIndexBuffer()
 	VkBufferCreateInfo cIndexBufferInfo = static_cast<VkBufferCreateInfo>(IndexBufferInfo);
 	VkBuffer cIndexbuffer;
 
-	if (vmaCreateBuffer(Allocator, &cIndexBufferInfo, &IndexAllocInfo, &cIndexbuffer, &IdexBufferAllocation, nullptr) != VK_SUCCESS) {
+	if (vmaCreateBuffer(Allocator, &cIndexBufferInfo, &IndexAllocInfo, &cIndexbuffer, &IndexBufferAllocation, nullptr) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create buffer!");
 	}
 
@@ -297,6 +318,92 @@ void App::createIndexBuffer()
 	vmaDestroyBuffer(Allocator, static_cast<VkBuffer>(StagingBuffer), StagingBufferAllocation);
 }
 
+void App::createUniformBuffer()
+{
+
+   std::vector<VmaAllocation> uniformBufferAllocations;
+
+	uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+	uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
+	uniformBufferAllocations.resize(MAX_FRAMES_IN_FLIGHT);
+
+	VmaAllocationCreateInfo AllocationInfo = {};
+	AllocationInfo.usage = VMA_MEMORY_USAGE_AUTO;
+	AllocationInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
+		VMA_ALLOCATION_CREATE_MAPPED_BIT; 
+
+	vk::BufferCreateInfo UniformBufferCreateInfo;
+	UniformBufferCreateInfo.size = sizeof(UniformBufferObject);
+	UniformBufferCreateInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
+	UniformBufferCreateInfo.sharingMode = vk::SharingMode::eExclusive;
+
+
+	for (size_t i = 0; i < uniformBuffers.size(); i++)
+	{
+		VkBufferCreateInfo cUniformBufferCreateInfo = static_cast<VkBufferCreateInfo>(UniformBufferCreateInfo);
+		VkBuffer cUniformBuffer;
+
+		VmaAllocation vkAllocation;
+
+
+		if (vmaCreateBuffer(Allocator, &cUniformBufferCreateInfo, &AllocationInfo, &cUniformBuffer, &vkAllocation, nullptr) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create buffer!");
+		}
+
+		uniformBufferAllocations[i] = vkAllocation;
+
+		uniformBuffers[i] = static_cast<vk::Buffer>(cUniformBuffer);
+
+		vmaMapMemory(Allocator, uniformBufferAllocations[i], &uniformBuffersMapped[i]);
+	}
+}
+
+void App::createDescriptorPool()
+{
+	vk::DescriptorPoolSize poolsize;
+	poolsize.type = vk::DescriptorType::eUniformBuffer; 
+	poolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+	vk::DescriptorPoolCreateInfo poolInfo{};
+	poolInfo.poolSizeCount = 1;
+	poolInfo.pPoolSizes = &poolsize;
+	poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
+	DescriptorPool = LogicalDevice.createDescriptorPool(poolInfo, nullptr);
+
+}
+
+void App::createDescriptorSets()
+{
+	std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, DescriptorSetLayout);
+
+	vk::DescriptorSetAllocateInfo allocinfo;
+	allocinfo.descriptorPool = DescriptorPool;
+	allocinfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	allocinfo.pSetLayouts = layouts.data();
+
+	DescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+
+	LogicalDevice.allocateDescriptorSets(&allocinfo, DescriptorSets.data());
+
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		vk::DescriptorBufferInfo bufferInfo{};
+
+		bufferInfo.buffer = uniformBuffers[i];
+		bufferInfo.offset = 0;
+		bufferInfo.range = sizeof(UniformBufferObject);
+	
+		vk::WriteDescriptorSet descriptorWrite{};
+		descriptorWrite.dstSet = DescriptorSets[i];
+		descriptorWrite.dstBinding = 0;
+		descriptorWrite.dstArrayElement = 0;
+		descriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+		descriptorWrite.descriptorCount = 1;
+		descriptorWrite.pBufferInfo = &bufferInfo;
+
+		LogicalDevice.updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
+	}
+}
 
 void App::CopyBuffer(vk::Buffer Buffer1, vk::Buffer Buffer2, VkDeviceSize size) {
 
@@ -410,7 +517,7 @@ void App::CreateGraphicsPipeline()
 	rasterizerinfo.polygonMode = vk::PolygonMode::eFill;
     rasterizerinfo.lineWidth = 1.0f;
 	rasterizerinfo.cullMode = vk::CullModeFlagBits::eBack;
-	rasterizerinfo.frontFace = vk::FrontFace::eClockwise;
+	rasterizerinfo.frontFace = vk::FrontFace::eCounterClockwise;
 	rasterizerinfo.depthBiasEnable = vk::False;
 	rasterizerinfo.depthBiasConstantFactor = 0.0f;
 	rasterizerinfo.depthBiasClamp = 0.0f;
@@ -448,8 +555,8 @@ void App::CreateGraphicsPipeline()
 	//////////////////////////////////////////////////////////////////////
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-	pipelineLayoutInfo.setLayoutCount = 0; // Optional
-	pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
+	pipelineLayoutInfo.setLayoutCount = 1; // Optional
+	pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout; // Optional
 	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
  
@@ -617,6 +724,7 @@ void App::Draw()
 	commandBuffers[currentFrame].reset();
 	recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
+	updateUniformBuffer(currentFrame);
 
 	 // Step 5: Set up synchronization for rendering
      // The GPU will wait for the imageAvailableSemaphore to be signaled before starting rendering.
@@ -669,6 +777,22 @@ void App::Draw()
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
+void App::updateUniformBuffer(uint32_t currentImage) {
+
+	static auto startTime = std::chrono::high_resolution_clock::now();
+	auto currentTime = std::chrono::high_resolution_clock::now();
+	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+	UniformBufferObject ubo{};
+	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.proj = glm::perspective(glm::radians(45.0f), swapchainExtent.width / (float)swapchainExtent.height, 0.1f, 10.0f);
+	ubo.proj[1][1] *= -1;
+
+	memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
+
+
+}
 
 void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) {
 
@@ -750,6 +874,9 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	commandBuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets); 
 	commandBuffer.bindIndexBuffer(IndexBuffer, 0, vk::IndexType::eUint16);
 
+	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &DescriptorSets[currentFrame], 0, nullptr);
+
+
 	commandBuffer.drawIndexed(indices.size(), 1, 0, 0, 0);
 	commandBuffer.endRendering();
 
@@ -826,12 +953,16 @@ void App::DestroySyncObjects()
 
 void App::CleanUp()
 {
-	destroy_swapchain();
+	destroy_swapchain(); 
 	vmaDestroyBuffer(Allocator, static_cast<VkBuffer>(VertexBuffer), VertexBufferAllocation);
+	vmaDestroyBuffer(Allocator, static_cast<VkBuffer>(IndexBuffer), IndexBufferAllocation);
+	
 	vmaDestroyAllocator(Allocator);
 	LogicalDevice.destroyCommandPool(commandPool);
 	VulkanInstance.destroySurfaceKHR(surface);
+	LogicalDevice.destroyDescriptorSetLayout(DescriptorSetLayout);
 	LogicalDevice.destroyPipeline(graphicsPipeline);
+	LogicalDevice.destroyDescriptorPool(DescriptorPool);
 	LogicalDevice.destroyPipelineLayout(pipelineLayout);
 	LogicalDevice.destroyRenderPass(renderPass);
 	DestroySyncObjects();
