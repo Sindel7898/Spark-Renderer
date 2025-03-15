@@ -25,5 +25,8 @@ add_executable(VulkanRenderer ${SOURCES})
 # Include the src directory for headers
 target_include_directories(VulkanRenderer PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
+# Include Vulkan Memory Allocator headers if not already handled by subdirectory
+target_include_directories(VulkanRenderer PRIVATE Bootstrapping/src/VulkanMemoryAllocator)
+
 # Link libraries
 target_link_libraries(VulkanRenderer PRIVATE glfw glm vk-bootstrap VulkanMemoryAllocator Vulkan::Vulkan)

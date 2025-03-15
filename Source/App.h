@@ -50,11 +50,14 @@ public:
 	float fps = 0.0f;
 
 	void Initialisation();
-	void CreateRenderPass();
+	void InitMemAllocator();
+
 	void recreateSwapChain();
 	void create_swapchain();
-	void CreateFramebuffers();
 	void createVertexBuffer();
+	void createIndexBuffer();
+
+	void CopyBuffer(vk::Buffer Buffer1, vk::Buffer Buffer2, VkDeviceSize size);
 
 	void createCommandPool();
 
@@ -70,6 +73,8 @@ public:
 
 	void CleanUp();
 
+	void SwapchainResizeCallback(GLFWwindow* window, int width, int height);
+
 	// Vulkan Init Tasks
 	void InitVulkan();
 	void SelectGPU_CreateDevice();
@@ -83,9 +88,7 @@ public:
 	vk::ShaderModule createShaderModule(const std::vector<char>& code);
 
 	void destroy_swapchain();
-	void destroy_frameBuffers();
 
-	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
 	bool framebufferResized = false;
  private:
@@ -116,7 +119,6 @@ public:
 
 	 std::vector<VkImage>     swapchainImages     = {};
 	 std::vector<VkImageView> swapchainImageViews = {};
-	 std::vector<VkFramebuffer> swapChainFramebuffers;
 
 	 vkb::Instance VKB_Instance;
 
@@ -135,13 +137,19 @@ public:
 
 	 const std::vector<Vertex> vertices = {
 
-	  {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-	  {{0.5f, 0.5f }, {0.0f, 1.0f, 0.0f}},
-	  {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}
+		{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+		{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+		{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+		{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
 	 
 	 };
 
+	 const std::vector<uint16_t> indices = {
+		0, 1, 2, 2, 3, 0
+	 };
 
 	 vk::Buffer VertexBuffer;
+	 vk::Buffer IndexBuffer;
+
 };
 
