@@ -1,6 +1,7 @@
 #pragma once
 #define VK_USE_PLATFORM_WIN32_KHR
 #define GLM_FORCE_RADIANS
+
 #include "Window.h"
 #include "ShaderHelper.h"
 #include "VkBootstrap.h"
@@ -12,14 +13,15 @@
 #include <chrono>
 
 struct UniformBufferObject {
-	glm::mat4 model;
-	glm::mat4 view;
-	glm::mat4 proj;
+	alignas(16) glm::mat4 model;
+	alignas(16) glm::mat4 view;
+	alignas(16) glm::mat4 proj;
 };
 
 struct Vertex {
 	glm::vec2 position;
 	glm::vec3 color;
+	glm::vec2 texCoord;
 
 
 	static vk::VertexInputBindingDescription GetBindingDescription() {
@@ -32,9 +34,9 @@ struct Vertex {
 		return bindingdescription;
 	}
 
-	static std::array< vk::VertexInputAttributeDescription, 2> GetAttributeDescription() {
+	static std::array< vk::VertexInputAttributeDescription, 3> GetAttributeDescription() {
 
-		std::array<vk::VertexInputAttributeDescription, 2> attributeDescriptions{};
+		std::array<vk::VertexInputAttributeDescription, 3> attributeDescriptions{};
 
 		attributeDescriptions[0].binding  = 0;
 		attributeDescriptions[0].location = 0;
@@ -45,6 +47,11 @@ struct Vertex {
 		attributeDescriptions[1].location = 1;
 		attributeDescriptions[1].format = vk::Format::eR32G32B32Sfloat;
 		attributeDescriptions[1].offset = offsetof(Vertex, color);
+
+		attributeDescriptions[2].binding = 0;
+		attributeDescriptions[2].location = 2;
+		attributeDescriptions[2].format = vk::Format::eR32G32Sfloat;
+		attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
 
 		return attributeDescriptions;
 	}
@@ -59,6 +66,9 @@ public:
 	float fps = 0.0f;
 
 	void Initialisation();
+	void createTextureImage();
+	void createTextureImageView();
+	void createTextureImageSampler();
 	void createDescriptorSetLayout();
 	void InitMemAllocator();
 
@@ -86,6 +96,9 @@ public:
 
 
 	void DestroySyncObjects();
+
+	void DestroyBuffers();
+
 
 	void CleanUp();
 
@@ -155,10 +168,10 @@ public:
 
 	 const std::vector<Vertex> vertices = {
 
-		{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-		{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-		{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-		{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+	   {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+	   {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+	   {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+	   {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
 	 
 	 };
 
@@ -173,7 +186,11 @@ public:
 	 vk::Buffer VertexBuffer;
 	 vk::Buffer IndexBuffer;
 	 std::vector<VkBuffer> uniformBuffers;
-	 std::vector<void*> uniformBuffersMapped;
+	 std::vector<void*> uniformBuffersMappedMem;
+
+	 vk::Image TextureImage;
+	 vk::ImageView TextureImageView;
+	 vk::Sampler TextureSampler;
 
 };
 
