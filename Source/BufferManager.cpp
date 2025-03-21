@@ -15,28 +15,60 @@ BufferManager::BufferManager(vk::Device LogicalDevice, vk::PhysicalDevice Physic
 }
 
 
-void BufferManager::CreateBuffer(BufferData bufferData, VmaMemoryUsage memoryUsage, VmaAllocationCreateFlags flags)
+void BufferManager::CreateGPUOptimisedBuffer(void* Data, VkDeviceSize BufferSize, VkBufferUsageFlagBits BufferUse, vk::CommandPool commandpool, vk::Queue queue)
 {
-	
+	VmaAllocationCreateInfo AllocationInfo = {};
+	AllocationInfo.usage = VMA_MEMORY_USAGE_AUTO;
+	AllocationInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
+		                   VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+
 	VkBufferCreateInfo BufferCreateInfo = {};
-	                     BufferCreateInfo.size = (VkDeviceSize)bufferData.size;
-	                     BufferCreateInfo.usage = (VkBufferUsageFlags)bufferData.usage;
+	                     BufferCreateInfo.size = BufferSize;
+	                     BufferCreateInfo.usage = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 	                     BufferCreateInfo.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
 
-	 VmaAllocationCreateInfo AllocCreateInfo = {};
-	 AllocCreateInfo.usage = memoryUsage;
-	 AllocCreateInfo.flags = flags;
+	 VkBuffer StagineBuffer;
+	 VmaAllocation StagineBufferAllocation;
 
-	
-	 VkBuffer vkBuffer;
-	 VmaAllocation vkAllocation;
-
-	if (vmaCreateBuffer(allocator, &BufferCreateInfo, &AllocCreateInfo, &vkBuffer, &vkAllocation, nullptr) != VK_SUCCESS) {
+	if (vmaCreateBuffer(allocator, &BufferCreateInfo, &AllocationInfo, &StagineBuffer, &StagineBufferAllocation, nullptr) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create buffer!");
 	}
 
-	bufferData.buffer = vk::Buffer(vkBuffer);
-	bufferData.allocation = vkAllocation;
+	BufferData StagingBufferData;
+	StagingBufferData.buffer = StagineBuffer;
+	StagingBufferData.size = BufferCreateInfo.size;
+	StagingBufferData.usage = vk::BufferUsageFlagBits::eTransferSrc;
+	StagingBufferData.allocation = StagineBufferAllocation;
+
+	CopyDataToBuffer(Data, StagingBufferData);
+
+	VkBufferCreateInfo VertexBufferInfo;
+	VertexBufferInfo.size = BufferSize;
+	VertexBufferInfo.usage = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT | BufferUse;
+	VertexBufferInfo.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
+
+	VmaAllocationCreateInfo vertexAllocInfo = {};
+	vertexAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+	vertexAllocInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+
+	VkBuffer cVertexbuffer;
+	VmaAllocation VertexBufferAllocation;
+
+	if (vmaCreateBuffer(allocator, &VertexBufferInfo, &vertexAllocInfo, &cVertexbuffer, &VertexBufferAllocation, nullptr) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create buffer!");
+	}
+
+	BufferData FinalBufferData;
+
+	FinalBufferData.buffer = cVertexbuffer;
+	FinalBufferData.size = VertexBufferInfo.size;
+	FinalBufferData.usage = vk::BufferUsageFlagBits::eTransferDst;
+	FinalBufferData.allocation = VertexBufferAllocation;
+
+	CopyBufferToAnotherBuffer(commandpool, StagingBufferData, FinalBufferData, queue);
+
+	DestroyBuffer(StagingBufferData);
 }
 
 ImageData BufferManager::CreateTextureImage(const char* FilePath, vk::CommandPool commandpool, vk::Queue Queue)
@@ -253,7 +285,7 @@ void BufferManager::CopyDataToBuffer(const void* data,  BufferData Buffer) {
 	UnmapMemory(Buffer);
 }
 
-void BufferManager::CopyBuffer(vk::CommandPool commandpool , BufferData Buffer1, BufferData Buffer2, vk::Queue Queue) {
+void BufferManager::CopyBufferToAnotherBuffer(vk::CommandPool commandpool , BufferData Buffer1, BufferData Buffer2, vk::Queue Queue) {
 
 
 	vk::CommandBufferAllocateInfo allocateinfo{};
