@@ -14,6 +14,9 @@ struct BufferData {
 
 struct ImageData {
     vk::Image image;
+    vk::ImageView imageView;
+    vk::Sampler imageSampler;
+
     VmaAllocation allocation;
 };
 
@@ -33,12 +36,13 @@ class BufferManager
 {
 public:
 
-
-    BufferManager(vk::Device LogicalDevice);
+    BufferManager(vk::Device LogicalDevice, vk::PhysicalDevice PhysicalDevice);
 
     void CreateBuffer(BufferData bufferData, VmaMemoryUsage memoryUsage, VmaAllocationCreateFlags flags);
 
     ImageData CreateTextureImage(const char* FilePath, vk::CommandPool commandpool, vk::Queue Queue);
+    vk::ImageView  CreateImageView(vk::Image ImageToConvert);
+    vk::Sampler CreateImageSampler();
     void TransitionImage(vk::CommandBuffer CommandBuffer, vk::Image image, ImageTransitionData imagetransinotdata);
 
     vk::CommandBuffer CreateSingleUseCommandBuffer(vk::CommandPool commandpool);
@@ -61,5 +65,7 @@ public:
 private:
    
     vk::Device logicalDevice;
+    vk::PhysicalDevice physicalDevice;
+
 };
 

@@ -9,7 +9,7 @@
 VmaAllocator allocator;
 
 
-BufferManager::BufferManager(vk::Device LogicalDevice) : logicalDevice(LogicalDevice) {
+BufferManager::BufferManager(vk::Device LogicalDevice, vk::PhysicalDevice PhysicalDevice) : logicalDevice(LogicalDevice), physicalDevice(PhysicalDevice) {
 
 
 }
@@ -39,7 +39,7 @@ void BufferManager::CreateBuffer(BufferData bufferData, VmaMemoryUsage memoryUsa
 	bufferData.allocation = vkAllocation;
 }
 
- vk::Image BufferManager::CreateTextureImage(const char* FilePath, vk::CommandPool commandpool, vk::Queue Queue)
+ImageData BufferManager::CreateTextureImage(const char* FilePath, vk::CommandPool commandpool, vk::Queue Queue)
 {
 	int texWidth, textHeight, textchannels;
 
@@ -138,14 +138,52 @@ void BufferManager::CreateBuffer(BufferData bufferData, VmaMemoryUsage memoryUsa
 
 	DestroyBuffer(Buffer);
 
+
 	ImageData imageData;
 	imageData.image = TextureImage;
 	imageData.allocation = imageAllocation;
+	imageData.imageView = CreateImageView(TextureImage);
+	imageData.imageSampler = CreateImageSampler();
 
 	return imageData;
 }
 
+vk::ImageView BufferManager::CreateImageView(vk::Image ImageToConvert) {
 
+	vk::ImageViewCreateInfo imageviewinfo{};
+	imageviewinfo.image = ImageToConvert;
+	imageviewinfo.viewType = vk::ImageViewType::e2D;
+	imageviewinfo.format = vk::Format::eR8G8B8A8Srgb;
+	imageviewinfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+	imageviewinfo.subresourceRange.baseMipLevel = 0;
+	imageviewinfo.subresourceRange.levelCount = 1;
+	imageviewinfo.subresourceRange.baseArrayLayer = 0;
+	imageviewinfo.subresourceRange.layerCount = 1;
+
+   return logicalDevice.createImageView(imageviewinfo);
+}
+
+vk::Sampler BufferManager::CreateImageSampler() {
+
+	vk::SamplerCreateInfo SamplerInfo{};
+	SamplerInfo.magFilter = vk::Filter::eLinear;
+	SamplerInfo.minFilter = vk::Filter::eLinear;
+	SamplerInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
+	SamplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
+	SamplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
+	SamplerInfo.anisotropyEnable = vk::True;
+	SamplerInfo.maxAnisotropy = physicalDevice.getProperties().limits.maxSamplerAnisotropy;
+	SamplerInfo.borderColor = vk::BorderColor::eIntOpaqueBlack;
+	SamplerInfo.unnormalizedCoordinates = vk::False;
+	SamplerInfo.compareEnable = vk::False;
+	SamplerInfo.compareOp = vk::CompareOp::eAlways;
+	SamplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;
+	SamplerInfo.mipLodBias = 0.0f;
+	SamplerInfo.minLod = 0.0f;
+	SamplerInfo.maxLod = 0.0f;
+	
+	return logicalDevice.createSampler(SamplerInfo);
+}
 
 void BufferManager::TransitionImage(vk::CommandBuffer CommandBuffer, vk::Image image, ImageTransitionData imagetransinotdata) {
 	

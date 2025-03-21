@@ -25,8 +25,6 @@ void App::Initialisation()
 	createCommandPool();
 	RecordDepth();
 	createTextureImage();
-	createTextureImage();
-	createTextureImageView();
 	createTextureImageSampler();
 	createCommandBuffer();
 	createVertexBuffer();
@@ -42,21 +40,6 @@ void App::createTextureImage()
 {
 	ImageData TextureData = BufferManger->CreateTextureImage("../Textures/Dog.jpg", commandPool, graphicsQueue);
 
-}
-
-void App::createTextureImageView()
-{
-	vk::ImageViewCreateInfo imageviewinf0{};
-	imageviewinf0.image = TextureImage;
-	imageviewinf0.viewType = vk::ImageViewType::e2D;
-	imageviewinf0.format = vk::Format::eR8G8B8A8Srgb;
-	imageviewinf0.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-	imageviewinf0.subresourceRange.baseMipLevel = 0;
-	imageviewinf0.subresourceRange.levelCount = 1;
-	imageviewinf0.subresourceRange.baseArrayLayer = 0;
-	imageviewinf0.subresourceRange.layerCount = 1;
-
-	LogicalDevice.createImageView(&imageviewinf0, nullptr, &TextureImageView);
 }
 
 void App::createTextureImageSampler()
@@ -77,7 +60,7 @@ void App::createTextureImageSampler()
 	SamplerInfo.mipLodBias = 0.0f;
 	SamplerInfo.minLod = 0.0f;
 	SamplerInfo.maxLod = 0.0f;
-
+	P
 	LogicalDevice.createSampler(&SamplerInfo, nullptr, &TextureSampler);
 
 }
