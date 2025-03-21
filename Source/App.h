@@ -1,6 +1,7 @@
 #pragma once
 #define VK_USE_PLATFORM_WIN32_KHR
 #define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
 #include "Window.h"
 #include "ShaderHelper.h"
@@ -11,6 +12,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <chrono>
+#include "MeshLoader.h"
+#include "BufferManager.h"
 
 struct UniformBufferObject {
 	alignas(16) glm::mat4 model;
@@ -18,44 +21,6 @@ struct UniformBufferObject {
 	alignas(16) glm::mat4 proj;
 };
 
-struct Vertex {
-	glm::vec2 position;
-	glm::vec3 color;
-	glm::vec2 texCoord;
-
-
-	static vk::VertexInputBindingDescription GetBindingDescription() {
-		vk::VertexInputBindingDescription  bindingdescription{};
-		
-		bindingdescription.binding = 0;
-		bindingdescription.stride = sizeof(Vertex);
-		bindingdescription.inputRate = vk::VertexInputRate::eVertex;
-
-		return bindingdescription;
-	}
-
-	static std::array< vk::VertexInputAttributeDescription, 3> GetAttributeDescription() {
-
-		std::array<vk::VertexInputAttributeDescription, 3> attributeDescriptions{};
-
-		attributeDescriptions[0].binding  = 0;
-		attributeDescriptions[0].location = 0;
-		attributeDescriptions[0].format = vk::Format::eR32G32Sfloat;
-		attributeDescriptions[0].offset = offsetof(Vertex, position);
-
-		attributeDescriptions[1].binding = 0;
-		attributeDescriptions[1].location = 1;
-		attributeDescriptions[1].format = vk::Format::eR32G32B32Sfloat;
-		attributeDescriptions[1].offset = offsetof(Vertex, color);
-
-		attributeDescriptions[2].binding = 0;
-		attributeDescriptions[2].location = 2;
-		attributeDescriptions[2].format = vk::Format::eR32G32Sfloat;
-		attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
-
-		return attributeDescriptions;
-	}
-};
 
 class App
 {
@@ -69,6 +34,10 @@ public:
 	void createTextureImage();
 	void createTextureImageView();
 	void createTextureImageSampler();
+	void createDepthResources();
+	void DestroyDepthResources();
+	bool hasStencilComponent(vk::Format format);
+	void RecordDepth();
 	void createDescriptorSetLayout();
 	void InitMemAllocator();
 
@@ -166,18 +135,10 @@ public:
 	 const int MAX_FRAMES_IN_FLIGHT = 2;
 	 uint32_t currentFrame = 0;
 
-	 const std::vector<Vertex> vertices = {
 
-	   {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-	   {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-	   {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-	   {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
-	 
-	 };
-
-	 const std::vector<uint16_t> indices = {
-		0, 1, 2, 2, 3, 0
-	 };
+	 MeshLoader meshloader;
+	 //std::vector<ModelVertex> vertices;
+	 // std::vector<unsigned int> indices;
 
 
 	 vk::DescriptorSetLayout DescriptorSetLayout;
@@ -192,5 +153,11 @@ public:
 	 vk::ImageView TextureImageView;
 	 vk::Sampler TextureSampler;
 
+
+	 vk::Image DepthTexture;
+	 vk::ImageView DepthTextureView;
+
+
+	 BufferManager*  BufferManger;
 };
 

@@ -1,19 +1,16 @@
 #include "App.h"
 #include <optional>
-#define VMA_IMPLEMENTATION
-#include <vk_mem_alloc.h>
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
 
-VmaAllocator Allocator;
 VmaAllocation VertexBufferAllocation;
 VmaAllocation IndexBufferAllocation;
+VmaAllocation DepthImageAllocation;
+VmaAllocation TextureImageBufferAllocation;
 std::vector<VmaAllocation> uniformBufferAllocations;
 
 void App::Initialisation()
 {
 	window = new Window(800, 800, "Vulkan Window");
-
+	BufferManger = new BufferManager(LogicalDevice);
 	//glfwSetFramebufferSizeCallback(window->GetWindow(),);
 	glfwSetWindowUserPointer(window->GetWindow(), this);
 
@@ -23,8 +20,11 @@ void App::Initialisation()
 	InitMemAllocator();
 	create_swapchain();
 	createDescriptorSetLayout();
+	createDepthResources();
 	CreateGraphicsPipeline();
 	createCommandPool();
+	RecordDepth();
+	createTextureImage();
 	createTextureImage();
 	createTextureImageView();
 	createTextureImageSampler();
@@ -40,157 +40,7 @@ void App::Initialisation()
 
 void App::createTextureImage()
 {
-	int texWidth, textHeight, textchannels;
-
-	stbi_uc* pixels = stbi_load("../Textures/Dog.jpg",&texWidth,&textHeight,&textchannels, STBI_rgb_alpha);
-
-	vk::DeviceSize imagesize = texWidth * textHeight * 4;
-
-	if (!pixels) {
-		throw std::runtime_error("failed to load texture image!");
-	}
-
-	VkBuffer cstagingBuffer;
-	VmaAllocation stagingBufferAllocation;
-
-	vk::BufferCreateInfo buffercreateinfo = {};
-	buffercreateinfo.size = imagesize;
-	buffercreateinfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
-
-	VkBufferCreateInfo cbuffercreateinfo = static_cast<VkBufferCreateInfo> (buffercreateinfo);
-
-	VmaAllocationCreateInfo vmaAllocationcreateinfo = {};
-	vmaAllocationcreateinfo.usage = VMA_MEMORY_USAGE_AUTO;
-	vmaAllocationcreateinfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
-		VMA_ALLOCATION_CREATE_MAPPED_BIT; 
-
-	vmaCreateBuffer(Allocator, &cbuffercreateinfo, &vmaAllocationcreateinfo, &cstagingBuffer, &stagingBufferAllocation,nullptr);
-	
-	vk::Buffer stagingBuffer = static_cast<vk::Buffer>(cstagingBuffer);
-
-	void* data;
-	vmaMapMemory(Allocator, stagingBufferAllocation, &data);
-	memcpy(data, pixels, static_cast<size_t>(imagesize));
-	vmaUnmapMemory(Allocator, stagingBufferAllocation);
-
-	stbi_image_free(pixels);
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	VmaAllocation TextureImageBufferAllocation;
-	vk::Extent3D imageExtent = { static_cast<uint32_t>(texWidth),static_cast<uint32_t>(textHeight),1 };
-	vk::ImageCreateInfo imagecreateinfo;
-	imagecreateinfo.imageType = vk::ImageType::e2D;
-	imagecreateinfo.extent = imageExtent;
-	imagecreateinfo.mipLevels = 1;
-	imagecreateinfo.arrayLayers = 1;
-	imagecreateinfo.format = vk::Format::eR8G8B8A8Srgb;
-	imagecreateinfo.tiling = vk::ImageTiling::eOptimal;
-	imagecreateinfo.initialLayout = vk::ImageLayout::eUndefined;
-	imagecreateinfo.usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
-	imagecreateinfo.samples = vk::SampleCountFlagBits::e1;
-
-	VkImageCreateInfo cimagecreateinfo = static_cast<VkImageCreateInfo> (imagecreateinfo);
-	VkImage cTextureImage;
-
-	VmaAllocationCreateInfo imageAllocInfo = {};
-	imageAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
-	vmaAllocationcreateinfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
-
-
-	vmaCreateImage(Allocator, &cimagecreateinfo, &imageAllocInfo, &cTextureImage, &TextureImageBufferAllocation, nullptr);
-
-	TextureImage = static_cast<vk::Image> (cTextureImage);
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	vk::CommandBuffer CommandBuffer; 
-
-	vk::CommandBufferAllocateInfo CommandBufferAllocateInfo;
-	CommandBufferAllocateInfo.commandPool = commandPool;
-	CommandBufferAllocateInfo.level = vk::CommandBufferLevel::ePrimary;
-	CommandBufferAllocateInfo.commandBufferCount = 1;
-
-	CommandBuffer = LogicalDevice.allocateCommandBuffers(CommandBufferAllocateInfo)[0];
-	
-	vk::CommandBufferBeginInfo CommandBufferBeginInfo;
-	CommandBufferBeginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-
-	CommandBuffer.begin(CommandBufferBeginInfo);
-	/////////////////////////////////////////////////////////////////////////////////////
-	vk::ImageMemoryBarrier acquireBarrier{};
-	acquireBarrier.oldLayout = vk::ImageLayout::eUndefined;
-	acquireBarrier.newLayout = vk::ImageLayout::eTransferDstOptimal;
-	acquireBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	acquireBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	acquireBarrier.image = TextureImage;
-	acquireBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-	acquireBarrier.subresourceRange.baseMipLevel = 0;
-	acquireBarrier.subresourceRange.levelCount = 1;
-	acquireBarrier.subresourceRange.baseArrayLayer = 0;
-	acquireBarrier.subresourceRange.layerCount = 1;
-
-	acquireBarrier.srcAccessMask = vk::AccessFlagBits::eNone;
-	acquireBarrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
-	
-	// Bind the transitioned image to the pipeline using a pipeline barrier
-	CommandBuffer.pipelineBarrier(
-		vk::PipelineStageFlagBits::eTopOfPipe,
-		vk::PipelineStageFlagBits::eTransfer,
-		vk::DependencyFlags(),
-		0, nullptr,
-		0, nullptr,
-		1, &acquireBarrier
-	);
-
-	vk::BufferImageCopy copyRegion = {};
-	copyRegion.bufferOffset = 0;
-	copyRegion.bufferRowLength = 0;
-	copyRegion.bufferImageHeight = 0;
-	copyRegion.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-	copyRegion.imageSubresource.mipLevel = 0;
-	copyRegion.imageSubresource.baseArrayLayer = 0;
-	copyRegion.imageSubresource.layerCount = 1;
-	copyRegion.imageOffset = vk::Offset3D{ 0, 0, 0 };
-	copyRegion.imageExtent = imageExtent;
-
-	CommandBuffer.copyBufferToImage(stagingBuffer,TextureImage,vk::ImageLayout::eTransferDstOptimal,1, &copyRegion);
-
-	vk::ImageMemoryBarrier shaderReadBarrier{};
-	shaderReadBarrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
-	shaderReadBarrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-	shaderReadBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	shaderReadBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	shaderReadBarrier.image = TextureImage;
-	shaderReadBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-	shaderReadBarrier.subresourceRange.baseMipLevel = 0;
-	shaderReadBarrier.subresourceRange.levelCount = 1;
-	shaderReadBarrier.subresourceRange.baseArrayLayer = 0;
-	shaderReadBarrier.subresourceRange.layerCount = 1;
-
-	shaderReadBarrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-	shaderReadBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-
-	CommandBuffer.pipelineBarrier(
-		vk::PipelineStageFlagBits::eTransfer,
-		vk::PipelineStageFlagBits::eFragmentShader,
-		vk::DependencyFlags(),
-		0, nullptr,
-		0, nullptr,
-		1, &shaderReadBarrier
-	);
-
-	CommandBuffer.end();
-
-	vk::SubmitInfo submitInfo = {};
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &CommandBuffer;
-
-	graphicsQueue.submit(1, &submitInfo, nullptr);
-	graphicsQueue.waitIdle();
-
-	LogicalDevice.freeCommandBuffers(commandPool, 1, &CommandBuffer);
-
-	// Clean up staging resources
-	vmaDestroyBuffer(Allocator, stagingBuffer, stagingBufferAllocation);
+	ImageData TextureData = BufferManger->CreateTextureImage("../Textures/Dog.jpg", commandPool, graphicsQueue);
 
 }
 
@@ -232,6 +82,109 @@ void App::createTextureImageSampler()
 
 }
 
+
+void App::createDepthResources() {
+	
+	vk::Extent3D imageExtent = { swapchainExtent.width ,swapchainExtent.height,1};
+
+	vk::ImageCreateInfo imagecreateinfo;
+	imagecreateinfo.imageType = vk::ImageType::e2D;
+	imagecreateinfo.extent = imageExtent;
+	imagecreateinfo.mipLevels = 1;
+	imagecreateinfo.arrayLayers = 1;
+	imagecreateinfo.format = vk::Format::eD32SfloatS8Uint;
+	imagecreateinfo.tiling = vk::ImageTiling::eOptimal;
+	imagecreateinfo.initialLayout = vk::ImageLayout::eUndefined;
+	imagecreateinfo.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
+	imagecreateinfo.samples = vk::SampleCountFlagBits::e1; // Add sample count
+	imagecreateinfo.sharingMode = vk::SharingMode::eExclusive; // Add sharing mode
+
+	VkImageCreateInfo cimagecreateinfo = static_cast<VkImageCreateInfo> (imagecreateinfo);
+	VkImage cTextureImage;
+
+	VmaAllocationCreateInfo imageAllocInfo = {};
+	imageAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+
+	if (vmaCreateImage(Allocator, &cimagecreateinfo, &imageAllocInfo, &cTextureImage, &DepthImageAllocation, nullptr) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create depth image!");
+	}
+	DepthTexture = static_cast<vk::Image> (cTextureImage);
+
+	vk::ImageViewCreateInfo imageviewinf0{};
+	imageviewinf0.image = DepthTexture;
+	imageviewinf0.viewType = vk::ImageViewType::e2D;
+	imageviewinf0.format = vk::Format::eD32SfloatS8Uint;
+	imageviewinf0.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
+	imageviewinf0.subresourceRange.baseMipLevel = 0;
+	imageviewinf0.subresourceRange.levelCount = 1;
+	imageviewinf0.subresourceRange.baseArrayLayer = 0;
+	imageviewinf0.subresourceRange.layerCount = 1;
+	
+	LogicalDevice.createImageView(&imageviewinf0, nullptr, &DepthTextureView);
+}
+
+void App::DestroyDepthResources() {
+
+	vmaDestroyImage(Allocator, static_cast<VkImage>(DepthTexture), DepthImageAllocation);
+	LogicalDevice.destroyImageView(DepthTextureView, nullptr);
+}
+
+bool App::hasStencilComponent(vk::Format format) {
+	return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
+}
+
+void App::RecordDepth() {
+
+
+	vk::CommandBuffer commandBuffer = BufferManger->CreateSingleUseCommandBuffer(commandPool);
+
+	// Define the image memory barrier for layout transition
+	vk::ImageMemoryBarrier barrier;
+	barrier.oldLayout = vk::ImageLayout::eUndefined; 
+	barrier.newLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal; 
+	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; 
+	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; 
+	barrier.image = DepthTexture;
+	barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth; // Depth aspect
+
+	if (hasStencilComponent(vk::Format::eD32SfloatS8Uint)) {
+		barrier.subresourceRange.aspectMask |= vk::ImageAspectFlagBits::eStencil;
+	}
+
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
+
+	// Define access masks and pipeline stages
+	barrier.srcAccessMask = vk::AccessFlagBits::eNone; 
+	barrier.dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite; // Access for depth-stencil attachment
+
+	// Insert the pipeline barrier
+	commandBuffer.pipelineBarrier(
+		vk::PipelineStageFlagBits::eTopOfPipe, // Source stage
+		vk::PipelineStageFlagBits::eEarlyFragmentTests, // Destination stage (depth/stencil tests)
+		vk::DependencyFlags(), // No dependency flags
+		nullptr, // No memory barriers
+		nullptr, // No buffer memory barriers
+		barrier // Image memory barrier
+	);
+
+	// End recording the command buffer
+	commandBuffer.end();
+
+	// Submit the command buffer to the queue
+	vk::SubmitInfo submitInfo;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffer;
+
+	graphicsQueue.submit(submitInfo, nullptr); // No fence for now
+	graphicsQueue.waitIdle(); // Wait for the queue to finish (optional, but ensures completion)
+
+	// Free the command buffer (optional if you reuse the command pool)
+	LogicalDevice.freeCommandBuffers(commandPool, commandBuffer);
+	
+}
 
 void App::InitVulkan()
 {
@@ -363,7 +316,6 @@ void App::create_swapchain()
 		.build()
 		.value();
 
-
 	
 	swapchainExtent = vkbswapChain.extent;
 	swapChain = vkbswapChain.swapchain;
@@ -374,6 +326,9 @@ void App::create_swapchain()
 
 void App::createVertexBuffer()
 {
+
+	meshloader.LoadModel("../Textures/Survival_BackPack_2.fbx");
+
    ///Creates slow cpu accessed buffer to transfer it to fast gpu buffer
 	VmaAllocationCreateInfo AllocationInfo = {};
 	AllocationInfo.usage = VMA_MEMORY_USAGE_AUTO;
@@ -385,7 +340,8 @@ void App::createVertexBuffer()
 	vk::Buffer StagingBuffer;
 
 	vk::BufferCreateInfo StagingBufferCreateInfo;
-	StagingBufferCreateInfo.size = sizeof(vertices[0]) * vertices.size();
+	StagingBufferCreateInfo.size = sizeof(meshloader.GetVertices()[0]) * meshloader.GetVertices().size();
+
 	StagingBufferCreateInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
 	StagingBufferCreateInfo.sharingMode = vk::SharingMode::eExclusive;
 
@@ -402,14 +358,14 @@ void App::createVertexBuffer()
 	//Maps the GPU buffer's memory into CPU-accessible address space.
 	vmaMapMemory(Allocator, StagingBufferAllocation, &data);
 	//Copies data from the CPU (vertices) into the mapped GPU buffer memory.
-	memcpy(data, vertices.data(), StagingBufferCreateInfo.size); 
+	memcpy(data, meshloader.GetVertices().data(), StagingBufferCreateInfo.size);
 	//Unmaps the GPU buffer's memory, making it no longer accessible by the CPU
 	vmaUnmapMemory(Allocator, StagingBufferAllocation);
 	/////////////////////////////////////////////////////////////////////////////////////////////
 
     ///Create GPU OPTIMISED VertexBuffer
 	vk::BufferCreateInfo VertexBufferInfo;
-	VertexBufferInfo.size = sizeof(vertices[0]) * vertices.size();
+	VertexBufferInfo.size = sizeof(meshloader.GetVertices()[0]) * meshloader.GetVertices().size();
 	VertexBufferInfo.usage = vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer;
 	VertexBufferInfo.sharingMode = vk::SharingMode::eExclusive;
 
@@ -445,7 +401,7 @@ void App::createIndexBuffer()
 	vk::Buffer StagingBuffer;
 
 	vk::BufferCreateInfo StagingBufferCreateInfo;
-	StagingBufferCreateInfo.size = sizeof(indices[0]) * indices.size();
+	StagingBufferCreateInfo.size = sizeof(meshloader.GetIndices()[0]) * meshloader.GetIndices().size();
 	StagingBufferCreateInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
 	StagingBufferCreateInfo.sharingMode = vk::SharingMode::eExclusive;
 
@@ -460,13 +416,13 @@ void App::createIndexBuffer()
 
 	void* data;
 	vmaMapMemory(Allocator, StagingBufferAllocation, &data);
-	memcpy(data, indices.data(), StagingBufferCreateInfo.size);
+	memcpy(data, meshloader.GetIndices().data(), StagingBufferCreateInfo.size);
 	vmaUnmapMemory(Allocator, StagingBufferAllocation);
 	/////////////////////////////////////////////////////////////////////////////////////////////
 
 	///Create GPU OPTIMISED VertexBuffer
 	vk::BufferCreateInfo IndexBufferInfo;
-	IndexBufferInfo.size = sizeof(indices[0]) * indices.size();
+	IndexBufferInfo.size = sizeof(meshloader.GetIndices()[0]) * meshloader.GetIndices().size();
 	IndexBufferInfo.usage = vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer;
 	IndexBufferInfo.sharingMode = vk::SharingMode::eExclusive;
 
@@ -682,12 +638,12 @@ void App::CreateGraphicsPipeline()
 	vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo ,FragmentShaderStageInfo };
 
 
-	auto BindDesctiptions = Vertex::GetBindingDescription();
-	auto attributeDescriptions = Vertex::GetAttributeDescription();
+	auto BindDesctiptions = ModelVertex::GetBindingDescription();
+	auto attributeDescriptions = ModelVertex::GetAttributeDescription();
 
 	vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.setVertexBindingDescriptionCount(1);
-	vertexInputInfo.setVertexAttributeDescriptionCount(3);
+	vertexInputInfo.setVertexAttributeDescriptionCount(2);
 	vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
 	vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -785,6 +741,23 @@ void App::CreateGraphicsPipeline()
 	vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 	pipelineRenderingCreateInfo.colorAttachmentCount = 1;
 	pipelineRenderingCreateInfo.pColorAttachmentFormats = &swapchainformat;
+	pipelineRenderingCreateInfo.depthAttachmentFormat = vk::Format::eD32SfloatS8Uint;
+
+	vk::PipelineDepthStencilStateCreateInfo depthStencilState;
+	depthStencilState.depthTestEnable = VK_TRUE;
+	depthStencilState.depthWriteEnable = VK_TRUE;
+	depthStencilState.depthCompareOp = vk::CompareOp::eLess;
+	// Stencil test configuration
+	depthStencilState.stencilTestEnable = VK_TRUE;
+	// Stencil operations for front-facing polygons
+	depthStencilState.front.compareOp = vk::CompareOp::eAlways; // Always pass stencil test
+	depthStencilState.front.failOp = vk::StencilOp::eKeep; // Keep the stencil value on fail
+	depthStencilState.front.depthFailOp = vk::StencilOp::eIncrementAndClamp; // Increment on depth fail
+	depthStencilState.front.passOp = vk::StencilOp::eKeep; // Keep the stencil value on pass
+
+	// Stencil operations for back-facing polygons
+	depthStencilState.back = depthStencilState.front; // Use the same operations for back faces
+
 
 	vk::GraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.pNext = &pipelineRenderingCreateInfo; // Add this line
@@ -795,7 +768,7 @@ void App::CreateGraphicsPipeline()
 	pipelineInfo.pViewportState = &viewportState;
 	pipelineInfo.pRasterizationState = &rasterizerinfo;
 	pipelineInfo.pMultisampleState = &multisampling;
-	pipelineInfo.pDepthStencilState = nullptr;
+	pipelineInfo.pDepthStencilState = &depthStencilState;
 	pipelineInfo.pColorBlendState = &colorBlend;
 	pipelineInfo.pDynamicState = &DynamicState;
 	pipelineInfo.layout = pipelineLayout;
@@ -934,6 +907,7 @@ void App::Draw()
 	}
 	catch (const std::exception& e) {
 		recreateSwapChain();
+
 		std::cerr << "Exception: " << e.what() << std::endl;
 	}
 
@@ -1003,7 +977,7 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 	UniformBufferObject ubo{};
-	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	ubo.proj = glm::perspective(glm::radians(45.0f), swapchainExtent.width / (float)swapchainExtent.height, 0.1f, 10.0f);
 	ubo.proj[1][1] *= -1;
@@ -1057,6 +1031,13 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	colorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
 	colorAttachmentInfo.clearValue = clearColor;
 
+	vk::RenderingAttachmentInfo depthStencilAttachment;
+	depthStencilAttachment.imageView = DepthTextureView;
+	depthStencilAttachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+	depthStencilAttachment.loadOp = vk::AttachmentLoadOp::eClear; // Clear the depth-stencil buffer
+	depthStencilAttachment.storeOp = vk::AttachmentStoreOp::eStore; // Store the depth-stencil buffer
+	depthStencilAttachment.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0); // Clear depth to 1.0, stencil to 0
+
 
 	vk::RenderingInfoKHR renderingInfo{};
 	renderingInfo.renderArea.offset = imageoffset;
@@ -1064,8 +1045,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	renderingInfo.layerCount = 1;
 	renderingInfo.colorAttachmentCount = 1;
 	renderingInfo.pColorAttachments = &colorAttachmentInfo;
-
-	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
+	renderingInfo.pDepthAttachment = &depthStencilAttachment;
 
 	commandBuffer.beginRendering(renderingInfo);
 
@@ -1088,13 +1068,15 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	vk::Buffer VertexBuffers[] = { VertexBuffer };
 	vk::DeviceSize offsets[] = { 0 };
 
-	commandBuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets); 
-	commandBuffer.bindIndexBuffer(IndexBuffer, 0, vk::IndexType::eUint16);
 
+
+	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
+	commandBuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets); 
+	commandBuffer.bindIndexBuffer(IndexBuffer, 0, vk::IndexType::eUint32);
 	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &DescriptorSets[currentFrame], 0, nullptr);
 
 
-	commandBuffer.drawIndexed(indices.size(), 1, 0, 0, 0);
+	commandBuffer.drawIndexed(meshloader.GetIndices().size(), 1, 0, 0, 0);
 	commandBuffer.endRendering();
 
 
@@ -1173,8 +1155,9 @@ void App::recreateSwapChain() {
 
 
 	destroy_swapchain();
-
+	DestroyDepthResources();
 	create_swapchain();
+	createDepthResources();
 }
 
 void App::DestroySyncObjects()
@@ -1192,6 +1175,8 @@ void App::DestroyBuffers()
 
 	vmaDestroyBuffer(Allocator, static_cast<VkBuffer>(VertexBuffer), VertexBufferAllocation);
 	vmaDestroyBuffer(Allocator, static_cast<VkBuffer>(IndexBuffer), IndexBufferAllocation);
+	vmaDestroyImage(Allocator, TextureImage, TextureImageBufferAllocation);
+	DestroyDepthResources();
 
 	for (size_t i = 0; i < uniformBuffers.size(); i++)
 	{
@@ -1200,15 +1185,12 @@ void App::DestroyBuffers()
 	}
 
 	vmaDestroyAllocator(Allocator);
-
-
 }
 
 
 void App::CleanUp()
 {
 	destroy_swapchain(); 
-	DestroyBuffers();
 	LogicalDevice.destroyCommandPool(commandPool);
 	VulkanInstance.destroySurfaceKHR(surface);
 	LogicalDevice.destroyDescriptorSetLayout(DescriptorSetLayout);
@@ -1216,7 +1198,10 @@ void App::CleanUp()
 	LogicalDevice.destroyDescriptorPool(DescriptorPool);
 	LogicalDevice.destroyPipelineLayout(pipelineLayout);
 	LogicalDevice.destroyRenderPass(renderPass);
+	LogicalDevice.destroyImageView(TextureImageView, nullptr);  // Add this line
+	LogicalDevice.destroySampler(TextureSampler, nullptr);     // Add this line
 	DestroySyncObjects();
+	DestroyBuffers();
 	LogicalDevice.destroy();
 	vkb::destroy_debug_utils_messenger(VulkanInstance, Debug_Messenger);
 	VulkanInstance.destroy();

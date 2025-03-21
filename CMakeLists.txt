@@ -12,6 +12,7 @@ add_subdirectory(Bootstrapping/src/glfw)
 add_subdirectory(Bootstrapping/src/glm)
 add_subdirectory(Bootstrapping/src/vk-bootstrap)
 add_subdirectory(Bootstrapping/src/VulkanMemoryAllocator)
+add_subdirectory(Bootstrapping/src/assimp)
 
 # Find all source files
 file(GLOB SOURCES "Source/*.cpp")
@@ -29,4 +30,4 @@ target_include_directories(VulkanRenderer PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_include_directories(VulkanRenderer PRIVATE Bootstrapping/src/VulkanMemoryAllocator)
 
 # Link libraries
-target_link_libraries(VulkanRenderer PRIVATE glfw glm vk-bootstrap VulkanMemoryAllocator Vulkan::Vulkan)
+target_link_libraries(VulkanRenderer PRIVATE glfw glm vk-bootstrap VulkanMemoryAllocator assimp Vulkan::Vulkan)
