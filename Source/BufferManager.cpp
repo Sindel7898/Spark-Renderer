@@ -34,10 +34,10 @@ BufferData BufferManager::CreateBuffer(VkDeviceSize BufferSize, vk::BufferUsageF
 	StagingBufferCreateInfo.sharingMode = vk::SharingMode::eExclusive;
 
 	VkBuffer Buffer;
-	VmaAllocation BufferAllocation;
+	VmaAllocation allocation;
 	VkBufferCreateInfo cBufferCreateInfo = StagingBufferCreateInfo;
 
-	if (vmaCreateBuffer(allocator, &cBufferCreateInfo, &AllocationInfo, &Buffer, &BufferAllocation, nullptr) != VK_SUCCESS) {
+	if (vmaCreateBuffer(allocator, &cBufferCreateInfo, &AllocationInfo, &Buffer, &allocation, nullptr) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create buffer!");
 	}
 
@@ -45,8 +45,7 @@ BufferData BufferManager::CreateBuffer(VkDeviceSize BufferSize, vk::BufferUsageF
 	BufferData.buffer = vk::Buffer(Buffer);
 	BufferData.size = cBufferCreateInfo.size;
 	BufferData.usage = BufferUse;
-	BufferData.allocation = BufferAllocation;
-
+	BufferData.allocation = allocation;
 	return BufferData;
 }
 
@@ -111,8 +110,6 @@ BufferData BufferManager::CreateGPUOptimisedBuffer(const void* Data, VkDeviceSiz
 
 ImageData BufferManager::CreateTextureImage(const char* FilePath, vk::CommandPool commandpool, vk::Queue Queue)
 {
-	ImageData imageData;
-
 	int texWidth, textHeight, textchannels;
 
 	stbi_uc* pixels = stbi_load(FilePath, &texWidth, &textHeight, &textchannels, STBI_rgb_alpha);
@@ -150,7 +147,7 @@ ImageData BufferManager::CreateTextureImage(const char* FilePath, vk::CommandPoo
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	vk::Extent3D imageExtent = { static_cast<uint32_t>(texWidth),static_cast<uint32_t>(textHeight),1 };
 
-	vk::Image TextureImage = CreateImage(imageData,imageExtent, vk::Format::eR8G8B8A8Srgb, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
+	ImageData TextureImageData = CreateImage(imageExtent, vk::Format::eR8G8B8A8Srgb, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -165,7 +162,7 @@ ImageData BufferManager::CreateTextureImage(const char* FilePath, vk::CommandPoo
 	DataToTransitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
 	DataToTransitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
 
-	TransitionImage(CommandBuffer,TextureImage,DataToTransitionInfo);
+	TransitionImage(CommandBuffer, TextureImageData.image,DataToTransitionInfo);
 
 	vk::BufferImageCopy copyRegion = {};
 	copyRegion.bufferOffset = 0;
@@ -178,7 +175,7 @@ ImageData BufferManager::CreateTextureImage(const char* FilePath, vk::CommandPoo
 	copyRegion.imageOffset = vk::Offset3D{ 0, 0, 0 };
 	copyRegion.imageExtent = imageExtent;
 
-	CommandBuffer.copyBufferToImage(Buffer.buffer, TextureImage, vk::ImageLayout::eTransferDstOptimal, 1, &copyRegion);
+	CommandBuffer.copyBufferToImage(Buffer.buffer, TextureImageData.image, vk::ImageLayout::eTransferDstOptimal, 1, &copyRegion);
 
 	ImageTransitionData TransitionImageToShaderData;
 	TransitionImageToShaderData.oldlayout = vk::ImageLayout::eTransferDstOptimal;
@@ -189,20 +186,19 @@ ImageData BufferManager::CreateTextureImage(const char* FilePath, vk::CommandPoo
 	TransitionImageToShaderData.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
 	TransitionImageToShaderData.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 
-	TransitionImage(CommandBuffer, TextureImage, TransitionImageToShaderData);
+	TransitionImage(CommandBuffer, TextureImageData.image, TransitionImageToShaderData);
 
 	SubmitAndDestoyCommandBuffer(commandpool, CommandBuffer, Queue);
 
 	DestroyBuffer(Buffer);
 
-	imageData.image = TextureImage;
-	imageData.imageView = CreateImageView(TextureImage);
-	imageData.imageSampler = CreateImageSampler();
+	TextureImageData.imageView = CreateImageView(TextureImageData.image, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor);
+	TextureImageData.imageSampler = CreateImageSampler();
 
-	return imageData;
+	return TextureImageData;
 }
 
-vk::Image BufferManager::CreateImage(ImageData imageData, vk::Extent3D imageExtent, vk::Format imageFormat, vk::ImageUsageFlags UsageFlag) {
+ImageData BufferManager::CreateImage( vk::Extent3D imageExtent, vk::Format imageFormat, vk::ImageUsageFlags UsageFlag) {
 
 	vk::ImageCreateInfo imagecreateinfo;
 	imagecreateinfo.imageType = vk::ImageType::e2D;
@@ -223,20 +219,28 @@ vk::Image BufferManager::CreateImage(ImageData imageData, vk::Extent3D imageExte
 
 	VkImage cTextureImage;
 
-	if (vmaCreateImage(allocator, &cimagecreateinfo, &imageAllocInfo, &cTextureImage, &imageData.allocation, nullptr) != VK_SUCCESS) {
+	VmaAllocation ImageAllocation;
+
+	if (vmaCreateImage(allocator, &cimagecreateinfo, &imageAllocInfo, &cTextureImage, &ImageAllocation, nullptr) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create depth image!");
 	}
 
-	return  static_cast<vk::Image>(cTextureImage);
+	ImageData imageData;
+	imageData.image = vk::Image(cTextureImage);
+	imageData.allocation = ImageAllocation;
+	//imageData.imageView = CreateImageView(imageData.image);
+	//imageData.imageSampler = CreateImageSampler();
+
+	return  imageData;
 }
 
-vk::ImageView BufferManager::CreateImageView(vk::Image ImageToConvert) {
+vk::ImageView BufferManager::CreateImageView(vk::Image ImageToConvert, vk::Format ImageFormat = vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlags ImageAspectBits = vk::ImageAspectFlagBits::eColor) {
 
 	vk::ImageViewCreateInfo imageviewinfo{};
 	imageviewinfo.image = ImageToConvert;
 	imageviewinfo.viewType = vk::ImageViewType::e2D;
-	imageviewinfo.format = vk::Format::eR8G8B8A8Srgb;
-	imageviewinfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+	imageviewinfo.format = ImageFormat;
+	imageviewinfo.subresourceRange.aspectMask = ImageAspectBits;
 	imageviewinfo.subresourceRange.baseMipLevel = 0;
 	imageviewinfo.subresourceRange.levelCount = 1;
 	imageviewinfo.subresourceRange.baseArrayLayer = 0;
@@ -283,7 +287,7 @@ void BufferManager::TransitionImage(vk::CommandBuffer CommandBuffer, vk::Image i
 	acquireBarrier.subresourceRange.layerCount = 1;
 	acquireBarrier.srcAccessMask = imagetransinotdata.SourceAccessflag;
 	acquireBarrier.dstAccessMask = imagetransinotdata.DestinationAccessflag;
-
+	
 	CommandBuffer.pipelineBarrier(
 		imagetransinotdata.SourceOnThePipeline,
 		imagetransinotdata.DestinationOnThePipeline,
@@ -365,4 +369,12 @@ BufferManager::~BufferManager()
 {
 	vmaDestroyAllocator(allocator);
 
+}
+
+void BufferManager::DeleteAllocation(VmaAllocation allocation)
+{
+	if (allocation) {
+		vmaFreeMemory(allocator, allocation);
+		delete allocation;
+	}
 }

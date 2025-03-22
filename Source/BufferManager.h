@@ -4,11 +4,11 @@
 #include <vk_mem_alloc.h>
 #include "stb_image.h"
 
-
 struct BufferData {
-    vk::Buffer buffer;
-    vk::DeviceSize size;
-    vk::BufferUsageFlags usage;
+
+    vk::Buffer buffer{};
+    vk::DeviceSize size{};
+    vk::BufferUsageFlags usage{};
     VmaAllocation allocation;
 };
 
@@ -23,11 +23,11 @@ struct ImageData {
 struct ImageTransitionData {
     vk::ImageLayout oldlayout;
     vk::ImageLayout newlayout;
-    vk::AccessFlagBits SourceAccessflag;
-    vk::AccessFlagBits DestinationAccessflag;
-    vk::PipelineStageFlagBits SourceOnThePipeline;
-    vk::PipelineStageFlagBits DestinationOnThePipeline;
-    vk::ImageAspectFlagBits AspectFlag = vk::ImageAspectFlagBits::eColor;
+    vk::AccessFlags SourceAccessflag = vk::AccessFlagBits::eNone;
+    vk::AccessFlags DestinationAccessflag = vk::AccessFlagBits::eNone;
+    vk::PipelineStageFlags SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
+    vk::PipelineStageFlags DestinationOnThePipeline = vk::PipelineStageFlagBits::eNone;
+    vk::ImageAspectFlags AspectFlag = vk::ImageAspectFlagBits::eColor;
 };
 
 class BufferManager
@@ -40,8 +40,8 @@ public:
 
 
     ImageData CreateTextureImage(const char* FilePath, vk::CommandPool commandpool, vk::Queue Queue);
-    vk::Image CreateImage(ImageData imageData, vk::Extent3D imageExtent, vk::Format imageFormat, vk::ImageUsageFlags UsageFlag);
-    vk::ImageView  CreateImageView(vk::Image ImageToConvert);
+    ImageData CreateImage(vk::Extent3D imageExtent, vk::Format imageFormat, vk::ImageUsageFlags UsageFlag);
+    vk::ImageView CreateImageView(vk::Image ImageToConvert, vk::Format ImageFormat, vk::ImageAspectFlags ImageAspectBits);
     vk::Sampler CreateImageSampler();
 
     void TransitionImage(vk::CommandBuffer CommandBuffer, vk::Image image, ImageTransitionData& imagetransinotdata);
@@ -65,6 +65,9 @@ public:
     ~BufferManager();
   
     VmaAllocator allocator;
+
+
+    void DeleteAllocation(VmaAllocation allocation);
 
 private:
     vk::Device& logicalDevice;

@@ -23,10 +23,11 @@ void App::Initialisation()
 	createSyncObjects();
 	//////////////////////////
 	CreateGraphicsPipeline();
+	//////////////////////////
 	createCommandPool();
 	createCommandBuffer();
-
 	/////////////////////////////////
+	createDepthTextureImage();
 	createTextureImage();
 	createVertexBuffer();
 	createIndexBuffer();
@@ -143,6 +144,34 @@ void App::createTextureImage()
 	 TextureImage = imageData.image;
 	 TextureImageView = imageData.imageView;
 	 TextureSampler = imageData.imageSampler;
+}
+
+void App::createDepthTextureImage()
+{
+	vk::Extent3D imageExtent = { vulkanContext->swapchainExtent.width,vulkanContext->swapchainExtent.height,1 };
+
+	ImageData imageData = bufferManger->CreateImage(imageExtent, vk::Format::eD32SfloatS8Uint, vk::ImageUsageFlagBits::eDepthStencilAttachment);
+	imageData.imageView = bufferManger->CreateImageView(imageData.image, vk::Format::eD32SfloatS8Uint, vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
+
+	DepthImageView = imageData.imageView;
+
+	vk::CommandBuffer commandBuffer = bufferManger->CreateSingleUseCommandBuffer(commandPool);
+
+	ImageTransitionData DataToTransitionInfo;
+	DataToTransitionInfo.oldlayout = vk::ImageLayout::eUndefined;
+	DataToTransitionInfo.newlayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+	DataToTransitionInfo.AspectFlag = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
+	//////////////////////////////////////////////////////////////////////////////
+	DataToTransitionInfo.SourceAccessflag = vk::AccessFlagBits::eNone;
+	DataToTransitionInfo.DestinationAccessflag = vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+	///////////////////////////////////////////////////////////////////////////////
+	DataToTransitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
+	DataToTransitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eEarlyFragmentTests;
+
+	bufferManger->TransitionImage(commandBuffer, imageData.image, DataToTransitionInfo);
+
+	bufferManger->SubmitAndDestoyCommandBuffer(commandPool, commandBuffer, vulkanContext->graphicsQueue);
 }
 
 void App::createVertexBuffer()
@@ -340,6 +369,20 @@ void App::CreateGraphicsPipeline()
 	vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 	pipelineRenderingCreateInfo.colorAttachmentCount = 1;
 	pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext->swapchainformat;
+	pipelineRenderingCreateInfo.depthAttachmentFormat = vk::Format::eD32SfloatS8Uint;
+
+	vk::PipelineDepthStencilStateCreateInfo depthStencilState;
+	depthStencilState.depthTestEnable = VK_TRUE;
+	depthStencilState.depthWriteEnable = VK_TRUE;
+	depthStencilState.depthCompareOp = vk::CompareOp::eLess;
+	depthStencilState.stencilTestEnable = VK_TRUE;
+	depthStencilState.front.compareOp = vk::CompareOp::eAlways; // Always pass stencil test
+	depthStencilState.front.failOp = vk::StencilOp::eKeep; // Keep the stencil value on fail
+	depthStencilState.front.depthFailOp = vk::StencilOp::eIncrementAndClamp; // Increment on depth fail
+	depthStencilState.front.passOp = vk::StencilOp::eKeep; // Keep the stencil value on pass
+	
+	// Stencil operations for back-facing polygons
+	depthStencilState.back = depthStencilState.front; // Use the same operations for back faces
 
 	vk::GraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.pNext = &pipelineRenderingCreateInfo; // Add this line
@@ -350,7 +393,7 @@ void App::CreateGraphicsPipeline()
 	pipelineInfo.pViewportState = &viewportState;
 	pipelineInfo.pRasterizationState = &rasterizerinfo;
 	pipelineInfo.pMultisampleState = &multisampling;
-	pipelineInfo.pDepthStencilState = nullptr;
+	pipelineInfo.pDepthStencilState = &depthStencilState;
 	pipelineInfo.pColorBlendState = &colorBlend;
 	pipelineInfo.pDynamicState = &DynamicState;
 	pipelineInfo.layout = pipelineLayout;
@@ -612,6 +655,12 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	colorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
 	colorAttachmentInfo.clearValue = clearColor;
 
+	vk::RenderingAttachmentInfo depthStencilAttachment;
+	depthStencilAttachment.imageView = DepthImageView;
+	depthStencilAttachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+	depthStencilAttachment.loadOp = vk::AttachmentLoadOp::eClear; // Clear the depth-stencil buffer
+	depthStencilAttachment.storeOp = vk::AttachmentStoreOp::eStore; // Store the depth-stencil buffer
+	depthStencilAttachment.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0); 
 
 	vk::RenderingInfoKHR renderingInfo{};
 	renderingInfo.renderArea.offset = imageoffset;
@@ -619,6 +668,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	renderingInfo.layerCount = 1;
 	renderingInfo.colorAttachmentCount = 1;
 	renderingInfo.pColorAttachments = &colorAttachmentInfo;
+	renderingInfo.pDepthAttachment = &depthStencilAttachment;
 
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
 
@@ -689,7 +739,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 void App::destroy_swapchain()
 {
 
-
 	for (size_t i = 0; i < vulkanContext->swapchainImageViews.size(); i++)
 	{
 		vulkanContext->LogicalDevice.destroyImageView(vulkanContext->swapchainImageViews[i], nullptr);
@@ -728,8 +777,11 @@ void App::recreateSwapChain() {
 
 
 	destroy_swapchain();
+	vulkanContext->LogicalDevice.destroyImageView(DepthImageView, nullptr);
 
 	vulkanContext->create_swapchain();
+	createDepthTextureImage();
+
 }
 
 void App::DestroySyncObjects()

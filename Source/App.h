@@ -22,7 +22,8 @@ struct UniformBufferObject {
 };
 
 struct Vertex {
-	glm::vec2 position;
+
+	glm::vec3 position;
 	glm::vec3 color;
 	glm::vec2 texCoord;
 
@@ -43,7 +44,7 @@ struct Vertex {
 
 		attributeDescriptions[0].binding  = 0;
 		attributeDescriptions[0].location = 0;
-		attributeDescriptions[0].format = vk::Format::eR32G32Sfloat;
+		attributeDescriptions[0].format = vk::Format::eR32G32B32Sfloat;
 		attributeDescriptions[0].offset = offsetof(Vertex, position);
 
 		attributeDescriptions[1].binding = 0;
@@ -70,6 +71,7 @@ public:
 
 	void Initialisation();
 	void createTextureImage();
+	void createDepthTextureImage();
 	void createDescriptorSetLayout();
 	void recreateSwapChain();
 	void createVertexBuffer();
@@ -143,16 +145,21 @@ public:
 	 uint32_t currentFrame = 0;
 
 	 const std::vector<Vertex> vertices = {
+   {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+	{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+	{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+	{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
 
-	   {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-	   {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-	   {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-	   {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
+	{{-0.5f, -0.5f, -0.2f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+	{{0.5f, -0.5f, -0.2f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+	{{0.5f, 0.5f, -0.2f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+	{{-0.5f, 0.5f, -0.2f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
 	 
 	 };
 
 	 const std::vector<uint16_t> indices = {
-		0, 1, 2, 2, 3, 0
+		0, 1, 2, 2, 3, 0,
+		4, 5, 6, 6, 7, 4
 	 };
 
 
@@ -168,6 +175,8 @@ public:
 	 vk::Image TextureImage;
 	 vk::ImageView TextureImageView;
 	 vk::Sampler TextureSampler;
+
+	 vk::ImageView DepthImageView;
 
 };
 
