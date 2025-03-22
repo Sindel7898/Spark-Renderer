@@ -11,6 +11,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <chrono>
+#include "BufferManager.h"
+#include "VulkanContext.h"
+
 
 struct UniformBufferObject {
 	alignas(16) glm::mat4 model;
@@ -67,13 +70,8 @@ public:
 
 	void Initialisation();
 	void createTextureImage();
-	void createTextureImageView();
-	void createTextureImageSampler();
 	void createDescriptorSetLayout();
-	void InitMemAllocator();
-
 	void recreateSwapChain();
-	void create_swapchain();
 	void createVertexBuffer();
 	void createIndexBuffer();
 
@@ -104,10 +102,6 @@ public:
 
 	void SwapchainResizeCallback(GLFWwindow* window, int width, int height);
 
-	// Vulkan Init Tasks
-	void InitVulkan();
-	void SelectGPU_CreateDevice();
-	void createSurface();
 	void CreateGraphicsPipeline();
 
 	void createCommandBuffer();
@@ -124,8 +118,9 @@ public:
 	bool framebufferResized = false;
  private:
 
-	 Window* window = nullptr;
-
+	 std::unique_ptr<Window> window = nullptr;
+	 std::unique_ptr<VulkanContext> vulkanContext = nullptr;
+	 std::unique_ptr<BufferManager> bufferManger = nullptr;
 
 #ifdef NDEBUG
 	 const bool enableValidationLayers = false;
@@ -133,30 +128,11 @@ public:
 	 const bool enableValidationLayers = true;
 #endif
 
-     vk::Device                 LogicalDevice   = nullptr;
-	 vk::PhysicalDevice         PhysicalDevice  = nullptr;
-	 vk::Instance               VulkanInstance  = nullptr;
-	 vk::SurfaceKHR             surface         = nullptr;
-	 vk::SwapchainKHR           swapChain       = nullptr;
-	 vk::DebugUtilsMessengerEXT Debug_Messenger = nullptr;
-	 vk::RenderPass             renderPass      = nullptr;
 	 vk::PipelineLayout         pipelineLayout  = nullptr;
-	 vk::Pipeline              graphicsPipeline = nullptr;
-	 vk::CommandPool           commandPool      = nullptr;
-
-	 vk::Format                 swapchainformat;
-
-	 vk::Extent2D swapchainExtent      = { 0, 0 };
-
-	 std::vector<VkImage>     swapchainImages     = {};
-	 std::vector<VkImageView> swapchainImageViews = {};
+	 vk::Pipeline               graphicsPipeline = nullptr;
+	 vk::CommandPool            commandPool      = nullptr;
 
 	 vkb::Instance VKB_Instance;
-
-	 vk::Queue graphicsQueue;
-	 uint32_t  graphicsQueueFamilyIndex;
-
-	 vk::Queue presentQueue;
 
 	 std::vector< vk::Semaphore> imageAvailableSemaphores;
 	 std::vector< vk::Semaphore> renderFinishedSemaphores;
@@ -185,7 +161,8 @@ public:
 	 std::vector<vk::DescriptorSet> DescriptorSets;
 	 vk::Buffer VertexBuffer;
 	 vk::Buffer IndexBuffer;
-	 std::vector<VkBuffer> uniformBuffers;
+
+	 std::vector<BufferData> uniformBuffers;
 	 std::vector<void*> uniformBuffersMappedMem;
 
 	 vk::Image TextureImage;

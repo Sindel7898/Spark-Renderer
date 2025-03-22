@@ -5,525 +5,35 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-VmaAllocator Allocator;
 VmaAllocation VertexBufferAllocation;
 VmaAllocation IndexBufferAllocation;
-std::vector<VmaAllocation> uniformBufferAllocations;
+//std::vector<VmaAllocation> uniformBufferAllocations;
 
 void App::Initialisation()
 {
-	window = new Window(800, 800, "Vulkan Window");
+	window = std::make_unique<Window>(800, 800, "Vulkan Window");
+	vulkanContext = std::make_unique<VulkanContext>(*window);
+	bufferManger = std::make_unique<BufferManager>(vulkanContext->LogicalDevice, vulkanContext->PhysicalDevice, vulkanContext->VulkanInstance);
 
 	//glfwSetFramebufferSizeCallback(window->GetWindow(),);
 	glfwSetWindowUserPointer(window->GetWindow(), this);
-
-	InitVulkan();
-	createSurface();
-	SelectGPU_CreateDevice();
-	InitMemAllocator();
-	create_swapchain();
+	/////////////////////////
 	createDescriptorSetLayout();
+	createDescriptorPool();
+	createSyncObjects();
+	//////////////////////////
 	CreateGraphicsPipeline();
 	createCommandPool();
-	createTextureImage();
-	createTextureImageView();
-	createTextureImageSampler();
 	createCommandBuffer();
+
+	/////////////////////////////////
+	createTextureImage();
 	createVertexBuffer();
 	createIndexBuffer();
 	createUniformBuffer();
-	createDescriptorPool();
 	createDescriptorSets();
-	createSyncObjects();
+	/////////////////////////////////
 
-}
-
-void App::createTextureImage()
-{
-	int texWidth, textHeight, textchannels;
-
-	stbi_uc* pixels = stbi_load("../Textures/Dog.jpg",&texWidth,&textHeight,&textchannels, STBI_rgb_alpha);
-
-	vk::DeviceSize imagesize = texWidth * textHeight * 4;
-
-	if (!pixels) {
-		throw std::runtime_error("failed to load texture image!");
-	}
-
-	VkBuffer cstagingBuffer;
-	VmaAllocation stagingBufferAllocation;
-
-	vk::BufferCreateInfo buffercreateinfo = {};
-	buffercreateinfo.size = imagesize;
-	buffercreateinfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
-
-	VkBufferCreateInfo cbuffercreateinfo = static_cast<VkBufferCreateInfo> (buffercreateinfo);
-
-	VmaAllocationCreateInfo vmaAllocationcreateinfo = {};
-	vmaAllocationcreateinfo.usage = VMA_MEMORY_USAGE_AUTO;
-	vmaAllocationcreateinfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
-		VMA_ALLOCATION_CREATE_MAPPED_BIT; 
-
-	vmaCreateBuffer(Allocator, &cbuffercreateinfo, &vmaAllocationcreateinfo, &cstagingBuffer, &stagingBufferAllocation,nullptr);
-	
-	vk::Buffer stagingBuffer = static_cast<vk::Buffer>(cstagingBuffer);
-
-	void* data;
-	vmaMapMemory(Allocator, stagingBufferAllocation, &data);
-	memcpy(data, pixels, static_cast<size_t>(imagesize));
-	vmaUnmapMemory(Allocator, stagingBufferAllocation);
-
-	stbi_image_free(pixels);
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	VmaAllocation TextureImageBufferAllocation;
-	vk::Extent3D imageExtent = { static_cast<uint32_t>(texWidth),static_cast<uint32_t>(textHeight),1 };
-	vk::ImageCreateInfo imagecreateinfo;
-	imagecreateinfo.imageType = vk::ImageType::e2D;
-	imagecreateinfo.extent = imageExtent;
-	imagecreateinfo.mipLevels = 1;
-	imagecreateinfo.arrayLayers = 1;
-	imagecreateinfo.format = vk::Format::eR8G8B8A8Srgb;
-	imagecreateinfo.tiling = vk::ImageTiling::eOptimal;
-	imagecreateinfo.initialLayout = vk::ImageLayout::eUndefined;
-	imagecreateinfo.usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
-	imagecreateinfo.samples = vk::SampleCountFlagBits::e1;
-
-	VkImageCreateInfo cimagecreateinfo = static_cast<VkImageCreateInfo> (imagecreateinfo);
-	VkImage cTextureImage;
-
-	VmaAllocationCreateInfo imageAllocInfo = {};
-	imageAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
-	vmaAllocationcreateinfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
-
-
-	vmaCreateImage(Allocator, &cimagecreateinfo, &imageAllocInfo, &cTextureImage, &TextureImageBufferAllocation, nullptr);
-
-	TextureImage = static_cast<vk::Image> (cTextureImage);
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	vk::CommandBuffer CommandBuffer; 
-
-	vk::CommandBufferAllocateInfo CommandBufferAllocateInfo;
-	CommandBufferAllocateInfo.commandPool = commandPool;
-	CommandBufferAllocateInfo.level = vk::CommandBufferLevel::ePrimary;
-	CommandBufferAllocateInfo.commandBufferCount = 1;
-
-	CommandBuffer = LogicalDevice.allocateCommandBuffers(CommandBufferAllocateInfo)[0];
-	
-	vk::CommandBufferBeginInfo CommandBufferBeginInfo;
-	CommandBufferBeginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-
-	CommandBuffer.begin(CommandBufferBeginInfo);
-	/////////////////////////////////////////////////////////////////////////////////////
-	vk::ImageMemoryBarrier acquireBarrier{};
-	acquireBarrier.oldLayout = vk::ImageLayout::eUndefined;
-	acquireBarrier.newLayout = vk::ImageLayout::eTransferDstOptimal;
-	acquireBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	acquireBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	acquireBarrier.image = TextureImage;
-	acquireBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-	acquireBarrier.subresourceRange.baseMipLevel = 0;
-	acquireBarrier.subresourceRange.levelCount = 1;
-	acquireBarrier.subresourceRange.baseArrayLayer = 0;
-	acquireBarrier.subresourceRange.layerCount = 1;
-
-	acquireBarrier.srcAccessMask = vk::AccessFlagBits::eNone;
-	acquireBarrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
-	
-	// Bind the transitioned image to the pipeline using a pipeline barrier
-	CommandBuffer.pipelineBarrier(
-		vk::PipelineStageFlagBits::eTopOfPipe,
-		vk::PipelineStageFlagBits::eTransfer,
-		vk::DependencyFlags(),
-		0, nullptr,
-		0, nullptr,
-		1, &acquireBarrier
-	);
-
-	vk::BufferImageCopy copyRegion = {};
-	copyRegion.bufferOffset = 0;
-	copyRegion.bufferRowLength = 0;
-	copyRegion.bufferImageHeight = 0;
-	copyRegion.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-	copyRegion.imageSubresource.mipLevel = 0;
-	copyRegion.imageSubresource.baseArrayLayer = 0;
-	copyRegion.imageSubresource.layerCount = 1;
-	copyRegion.imageOffset = vk::Offset3D{ 0, 0, 0 };
-	copyRegion.imageExtent = imageExtent;
-
-	CommandBuffer.copyBufferToImage(stagingBuffer,TextureImage,vk::ImageLayout::eTransferDstOptimal,1, &copyRegion);
-
-	vk::ImageMemoryBarrier shaderReadBarrier{};
-	shaderReadBarrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
-	shaderReadBarrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-	shaderReadBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	shaderReadBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	shaderReadBarrier.image = TextureImage;
-	shaderReadBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-	shaderReadBarrier.subresourceRange.baseMipLevel = 0;
-	shaderReadBarrier.subresourceRange.levelCount = 1;
-	shaderReadBarrier.subresourceRange.baseArrayLayer = 0;
-	shaderReadBarrier.subresourceRange.layerCount = 1;
-
-	shaderReadBarrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-	shaderReadBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-
-	CommandBuffer.pipelineBarrier(
-		vk::PipelineStageFlagBits::eTransfer,
-		vk::PipelineStageFlagBits::eFragmentShader,
-		vk::DependencyFlags(),
-		0, nullptr,
-		0, nullptr,
-		1, &shaderReadBarrier
-	);
-
-	CommandBuffer.end();
-
-	vk::SubmitInfo submitInfo = {};
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &CommandBuffer;
-
-	graphicsQueue.submit(1, &submitInfo, nullptr);
-	graphicsQueue.waitIdle();
-
-	LogicalDevice.freeCommandBuffers(commandPool, 1, &CommandBuffer);
-
-	// Clean up staging resources
-	vmaDestroyBuffer(Allocator, stagingBuffer, stagingBufferAllocation);
-
-}
-
-void App::createTextureImageView()
-{
-	vk::ImageViewCreateInfo imageviewinf0{};
-	imageviewinf0.image = TextureImage;
-	imageviewinf0.viewType = vk::ImageViewType::e2D;
-	imageviewinf0.format = vk::Format::eR8G8B8A8Srgb;
-	imageviewinf0.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-	imageviewinf0.subresourceRange.baseMipLevel = 0;
-	imageviewinf0.subresourceRange.levelCount = 1;
-	imageviewinf0.subresourceRange.baseArrayLayer = 0;
-	imageviewinf0.subresourceRange.layerCount = 1;
-
-	LogicalDevice.createImageView(&imageviewinf0, nullptr, &TextureImageView);
-}
-
-void App::createTextureImageSampler()
-{
-	vk::SamplerCreateInfo SamplerInfo{};
-	SamplerInfo.magFilter = vk::Filter::eLinear;
-	SamplerInfo.minFilter = vk::Filter::eLinear;
-	SamplerInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
-	SamplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
-	SamplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
-	SamplerInfo.anisotropyEnable = vk::True;
-	SamplerInfo.maxAnisotropy = PhysicalDevice.getProperties().limits.maxSamplerAnisotropy;
-	SamplerInfo.borderColor = vk::BorderColor::eIntOpaqueBlack;
-	SamplerInfo.unnormalizedCoordinates = vk::False;
-	SamplerInfo.compareEnable = vk::False;
-	SamplerInfo.compareOp = vk::CompareOp::eAlways;
-	SamplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;
-	SamplerInfo.mipLodBias = 0.0f;
-	SamplerInfo.minLod = 0.0f;
-	SamplerInfo.maxLod = 0.0f;
-
-	LogicalDevice.createSampler(&SamplerInfo, nullptr, &TextureSampler);
-
-}
-
-
-void App::InitVulkan()
-{
-	vkb::InstanceBuilder builder;
-
-	// Create a Vulkan instance with basic debug features
-	auto inst_ret = builder.set_app_name(" Vulkan Application")
-		.request_validation_layers(enableValidationLayers)
-		.use_default_debug_messenger()
-		.require_api_version(1, 3, 0)
-		.build();
-
-	if (!inst_ret)
-	{
-		throw std::runtime_error("Failed to create Vulkan instance: ");
-	}
-
-	VKB_Instance = inst_ret.value();
-
-	// Store the Vulkan instance and debug messenger
-	VulkanInstance = VKB_Instance.instance;
-	Debug_Messenger = VKB_Instance.debug_messenger;
-}
-
-
-void App::createSurface()
-{
-
-	if (glfwCreateWindowSurface(VulkanInstance, window->GetWindow(), nullptr, reinterpret_cast<VkSurfaceKHR*>(&surface)) != VK_SUCCESS)
-	{
-		throw std::runtime_error("Failed to create window surface!");
-	}
-
-}
-
-void App::SelectGPU_CreateDevice() {
-
-	//Select Required Vulkan featuers 
-	vk::PhysicalDeviceVulkan13Features features_1_3{};
-	features_1_3.sType = vk::StructureType::ePhysicalDeviceVulkan13Features;
-	features_1_3.dynamicRendering = VK_TRUE;
-	features_1_3.synchronization2 = VK_TRUE;
-	
-	vk::PhysicalDeviceVulkan12Features features_1_2{};
-	features_1_2.sType = vk::StructureType::ePhysicalDeviceVulkan12Features;
-	features_1_2.bufferDeviceAddress = VK_TRUE;
-	features_1_2.descriptorIndexing = VK_TRUE;
-
-	vk::PhysicalDeviceFeatures deviceFeatures{};
-	deviceFeatures.samplerAnisotropy = VK_TRUE;
-
-
-	vkb::PhysicalDeviceSelector selector{ VKB_Instance };
-
-	vkb::PhysicalDevice physicalDevice = selector
-		.set_minimum_version(1, 3)
-		.set_required_features_13(features_1_3)
-		.set_required_features_12(features_1_2)
-		.set_required_features(deviceFeatures) 
-		.set_surface(surface)
-		.select()
-		.value();
-	
-
-	if (!physicalDevice)
-	{
-		throw std::runtime_error("Failed to select a suitable physical device!");
-	}
-
-	//From the selecte device create a logical device
-	vkb::DeviceBuilder deviceBuilder{ physicalDevice };
-	vkb::Device   VKB_Device = deviceBuilder.build().value();
-	LogicalDevice = VKB_Device.device;
-
-
-	if (LogicalDevice == VK_NULL_HANDLE)
-	{
-		throw std::runtime_error("Failed to create logical device!");
-	}
-
-	//Print out name of GPU being used
-	PhysicalDevice = physicalDevice.physical_device;
-	std::cout << "GPU: " << std::string_view(PhysicalDevice.getProperties().deviceName) << std::endl;
-
-
-	if (!PhysicalDevice.getFeatures().samplerAnisotropy) {
-		throw std::runtime_error("Anisotropic filtering is not supported on this device!");
-	}
-
-	//Information about queues
-	graphicsQueue = VKB_Device.get_queue(vkb::QueueType::graphics).value();
-	presentQueue = VKB_Device.get_queue(vkb::QueueType::present).value();
-	graphicsQueueFamilyIndex = VKB_Device.get_queue_index(vkb::QueueType::graphics).value();
-}
-
-void App::InitMemAllocator()
-{
-	VmaAllocatorCreateInfo allocatorInfo = {};
-	allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3; // Or your Vulkan version
-	allocatorInfo.physicalDevice = static_cast<VkPhysicalDevice>(PhysicalDevice);
-	allocatorInfo.device = static_cast<VkDevice>(LogicalDevice);
-	allocatorInfo.instance = static_cast<VkInstance>(VulkanInstance);
-
-	vmaCreateAllocator(&allocatorInfo, &Allocator);
-}
-
-void App::create_swapchain()
-{
-
-	vkb::SwapchainBuilder swapChainBuilder(PhysicalDevice, LogicalDevice, surface);
-	swapchainformat = vk::Format::eB8G8R8A8Srgb;
-	                    
-
-	vk::SurfaceFormatKHR format;
-        format.format = swapchainformat;
-	    format.colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
-	
-		int Width  = 0;
-		int Height = 0;
-
-		glfwGetFramebufferSize(window->GetWindow(), &Width, &Height);
-
-
-	vkb::Swapchain vkbswapChain = swapChainBuilder
-		.set_desired_format(format)
-		.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
-		.set_desired_extent(Width, Height)
-		.add_image_usage_flags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
-		.build()
-		.value();
-
-
-	
-	swapchainExtent = vkbswapChain.extent;
-	swapChain = vkbswapChain.swapchain;
-	swapchainImages = vkbswapChain.get_images().value();
-	swapchainImageViews = vkbswapChain.get_image_views().value();
-
-}
-
-void App::createVertexBuffer()
-{
-   ///Creates slow cpu accessed buffer to transfer it to fast gpu buffer
-	VmaAllocationCreateInfo AllocationInfo = {};
-	AllocationInfo.usage = VMA_MEMORY_USAGE_AUTO;
-	AllocationInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
-	                       VMA_ALLOCATION_CREATE_MAPPED_BIT; // Make it CPU-visible but sllow
-
-	//////////////////////////////////////////////////////////////////////////
-	VmaAllocation StagingBufferAllocation;
-	vk::Buffer StagingBuffer;
-
-	vk::BufferCreateInfo StagingBufferCreateInfo;
-	StagingBufferCreateInfo.size = sizeof(vertices[0]) * vertices.size();
-	StagingBufferCreateInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
-	StagingBufferCreateInfo.sharingMode = vk::SharingMode::eExclusive;
-
-	VkBufferCreateInfo cStagingBufferInfo = static_cast<VkBufferCreateInfo>(StagingBufferCreateInfo);
-	VkBuffer cstagingbuffer;
-
-	if (vmaCreateBuffer(Allocator, &cStagingBufferInfo, &AllocationInfo, &cstagingbuffer, &StagingBufferAllocation, nullptr) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to create buffer!");
-	}
-
-	StagingBuffer = static_cast<vk::Buffer>(cstagingbuffer);
-
-	void* data;
-	//Maps the GPU buffer's memory into CPU-accessible address space.
-	vmaMapMemory(Allocator, StagingBufferAllocation, &data);
-	//Copies data from the CPU (vertices) into the mapped GPU buffer memory.
-	memcpy(data, vertices.data(), StagingBufferCreateInfo.size); 
-	//Unmaps the GPU buffer's memory, making it no longer accessible by the CPU
-	vmaUnmapMemory(Allocator, StagingBufferAllocation);
-	/////////////////////////////////////////////////////////////////////////////////////////////
-
-    ///Create GPU OPTIMISED VertexBuffer
-	vk::BufferCreateInfo VertexBufferInfo;
-	VertexBufferInfo.size = sizeof(vertices[0]) * vertices.size();
-	VertexBufferInfo.usage = vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer;
-	VertexBufferInfo.sharingMode = vk::SharingMode::eExclusive;
-
-	VmaAllocationCreateInfo vertexAllocInfo = {};
-	vertexAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
-	vertexAllocInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT; // GPU-optimal memory
-
-	VkBufferCreateInfo cVertexBufferInfo = static_cast<VkBufferCreateInfo>(VertexBufferInfo);
-	VkBuffer cVertexbuffer;
-
-	if (vmaCreateBuffer(Allocator, &cVertexBufferInfo, &vertexAllocInfo, &cVertexbuffer, &VertexBufferAllocation, nullptr) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to create buffer!");
-	}
-
-	VertexBuffer = static_cast<vk::Buffer>(cVertexbuffer);
-	
-	//Copy Data from the stagineBuffer to the VertexBuffer
-	CopyBuffer(StagingBuffer, VertexBuffer, VertexBufferInfo.size);
-	//Clear DestryStagingBuffer
-	vmaDestroyBuffer(Allocator, static_cast<VkBuffer>(StagingBuffer), StagingBufferAllocation);
-}
-
-void App::createIndexBuffer()
-{
-	///Creates slow cpu accessed buffer to transfer it to fast gpu buffer
-	VmaAllocationCreateInfo AllocationInfo = {};
-	AllocationInfo.usage = VMA_MEMORY_USAGE_AUTO;
-	AllocationInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
-		VMA_ALLOCATION_CREATE_MAPPED_BIT; // Make it CPU-visible but sllow
-
-	//////////////////////////////////////////////////////////////////////////
-	VmaAllocation StagingBufferAllocation;
-	vk::Buffer StagingBuffer;
-
-	vk::BufferCreateInfo StagingBufferCreateInfo;
-	StagingBufferCreateInfo.size = sizeof(indices[0]) * indices.size();
-	StagingBufferCreateInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
-	StagingBufferCreateInfo.sharingMode = vk::SharingMode::eExclusive;
-
-	VkBufferCreateInfo cStagingBufferInfo = static_cast<VkBufferCreateInfo>(StagingBufferCreateInfo);
-	VkBuffer cstagingbuffer;
-
-	if (vmaCreateBuffer(Allocator, &cStagingBufferInfo, &AllocationInfo, &cstagingbuffer, &StagingBufferAllocation, nullptr) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to create buffer!");
-	}
-
-	StagingBuffer = static_cast<vk::Buffer>(cstagingbuffer);
-
-	void* data;
-	vmaMapMemory(Allocator, StagingBufferAllocation, &data);
-	memcpy(data, indices.data(), StagingBufferCreateInfo.size);
-	vmaUnmapMemory(Allocator, StagingBufferAllocation);
-	/////////////////////////////////////////////////////////////////////////////////////////////
-
-	///Create GPU OPTIMISED VertexBuffer
-	vk::BufferCreateInfo IndexBufferInfo;
-	IndexBufferInfo.size = sizeof(indices[0]) * indices.size();
-	IndexBufferInfo.usage = vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer;
-	IndexBufferInfo.sharingMode = vk::SharingMode::eExclusive;
-
-	VmaAllocationCreateInfo IndexAllocInfo = {};
-	IndexAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
-	IndexAllocInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT; // GPU-optimal memory
-
-	VkBufferCreateInfo cIndexBufferInfo = static_cast<VkBufferCreateInfo>(IndexBufferInfo);
-	VkBuffer cIndexbuffer;
-
-	if (vmaCreateBuffer(Allocator, &cIndexBufferInfo, &IndexAllocInfo, &cIndexbuffer, &IndexBufferAllocation, nullptr) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to create buffer!");
-	}
-
-	IndexBuffer = static_cast<vk::Buffer>(cIndexbuffer);
-
-	//Copy Data from the stagineBuffer to the VertexBuffer
-	CopyBuffer(StagingBuffer, IndexBuffer, IndexBufferInfo.size);
-	//Clear DestryStagingBuffer
-	vmaDestroyBuffer(Allocator, static_cast<VkBuffer>(StagingBuffer), StagingBufferAllocation);
-}
-
-void App::createUniformBuffer()
-{
-	uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-	uniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
-	uniformBufferAllocations.resize(MAX_FRAMES_IN_FLIGHT);
-
-	VmaAllocationCreateInfo AllocationInfo = {};
-	AllocationInfo.usage = VMA_MEMORY_USAGE_AUTO;
-	AllocationInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
-		VMA_ALLOCATION_CREATE_MAPPED_BIT; 
-
-	vk::BufferCreateInfo UniformBufferCreateInfo;
-	UniformBufferCreateInfo.size = sizeof(UniformBufferObject);
-	UniformBufferCreateInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
-	UniformBufferCreateInfo.sharingMode = vk::SharingMode::eExclusive;
-
-
-	for (size_t i = 0; i < uniformBuffers.size(); i++)
-	{
-		VkBufferCreateInfo cUniformBufferCreateInfo = static_cast<VkBufferCreateInfo>(UniformBufferCreateInfo);
-		VkBuffer cUniformBuffer;
-
-		VmaAllocation vkAllocation;
-
-
-		if (vmaCreateBuffer(Allocator, &cUniformBufferCreateInfo, &AllocationInfo, &cUniformBuffer, &vkAllocation, nullptr) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to create buffer!");
-		}
-
-		uniformBufferAllocations[i] = vkAllocation;
-
-		uniformBuffers[i] = static_cast<vk::Buffer>(cUniformBuffer);
-
-		vmaMapMemory(Allocator, uniformBufferAllocations[i], &uniformBuffersMappedMem[i]);
-	}
 }
 
 void App::createDescriptorSetLayout()
@@ -547,9 +57,9 @@ void App::createDescriptorSetLayout()
 	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 	layoutInfo.pBindings = bindings.data();
-	 
 
-	if (LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &DescriptorSetLayout) != vk::Result::eSuccess)
+
+	if (vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &DescriptorSetLayout) != vk::Result::eSuccess)
 	{
 		throw std::runtime_error("Failed to create descriptorset layout!");
 
@@ -573,7 +83,7 @@ void App::createDescriptorPool()
 	poolInfo.pPoolSizes = poolSizes.data();
 	poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
-	DescriptorPool = LogicalDevice.createDescriptorPool(poolInfo, nullptr);
+	DescriptorPool = vulkanContext->LogicalDevice.createDescriptorPool(poolInfo, nullptr);
 
 }
 
@@ -588,15 +98,15 @@ void App::createDescriptorSets()
 
 	DescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
 
-	LogicalDevice.allocateDescriptorSets(&allocinfo, DescriptorSets.data());
+	vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, DescriptorSets.data());
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
 		vk::DescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = uniformBuffers[i];
+		bufferInfo.buffer = uniformBuffers[i].buffer;
 		bufferInfo.offset = 0;
 		bufferInfo.range = sizeof(UniformBufferObject);
-	
+
 		vk::DescriptorImageInfo imageInfo{};
 		imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		imageInfo.imageView = TextureImageView;
@@ -620,7 +130,52 @@ void App::createDescriptorSets()
 
 		std::array<vk::WriteDescriptorSet, 2> descriptorWrites{ UniformdescriptorWrite ,SamplerdescriptorWrite };
 
-		LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+	}
+}
+
+
+
+void App::createTextureImage()
+{
+
+     ImageData imageData = bufferManger->CreateTextureImage("../Textures/Dog.jpg", commandPool, vulkanContext->graphicsQueue);
+	 TextureImage = imageData.image;
+	 TextureImageView = imageData.imageView;
+	 TextureSampler = imageData.imageSampler;
+}
+
+void App::createVertexBuffer()
+{
+	VkDeviceSize VertexBufferSize = sizeof(vertices[0]) * vertices.size();
+	BufferData bufferData =  bufferManger->CreateGPUOptimisedBuffer(vertices.data(), VertexBufferSize,vk::BufferUsageFlagBits::eVertexBuffer ,commandPool, vulkanContext->graphicsQueue);
+	VertexBuffer = bufferData.buffer;
+   
+}
+
+void App::createIndexBuffer()
+{
+
+	VkDeviceSize indexBufferSize = sizeof(indices[0]) * indices.size();
+	BufferData bufferData = bufferManger->CreateGPUOptimisedBuffer(indices.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
+	IndexBuffer = bufferData.buffer;
+
+}
+
+void App::createUniformBuffer()
+{
+	uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+	uniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
+
+	VkDeviceSize UniformBufferSize = sizeof(UniformBufferObject);
+
+	for (size_t i = 0; i < uniformBuffers.size(); i++)
+	{
+
+		BufferData bufferdata  = bufferManger->CreateBuffer(UniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
+		uniformBuffers[i] = bufferdata;
+
+		uniformBuffersMappedMem[i] = bufferManger->MapMemory(bufferdata);
 	}
 }
 
@@ -632,7 +187,7 @@ void App::CopyBuffer(vk::Buffer Buffer1, vk::Buffer Buffer2, VkDeviceSize size) 
 	allocateinfo.commandBufferCount = 1;
 	allocateinfo.level = vk::CommandBufferLevel::ePrimary;
 
-	vk::CommandBuffer commandBuffer = LogicalDevice.allocateCommandBuffers(allocateinfo)[0];
+	vk::CommandBuffer commandBuffer = vulkanContext->LogicalDevice.allocateCommandBuffers(allocateinfo)[0];
 
 	vk::CommandBufferBeginInfo CBBegininfo{};
 	CBBegininfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
@@ -652,10 +207,10 @@ void App::CopyBuffer(vk::Buffer Buffer1, vk::Buffer Buffer2, VkDeviceSize size) 
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
 
-	graphicsQueue.submit(1, &submitInfo, nullptr);
-	graphicsQueue.waitIdle(); // Wait for the task to be done 
+	vulkanContext->graphicsQueue.submit(1, &submitInfo, nullptr);
+	vulkanContext->graphicsQueue.waitIdle(); // Wait for the task to be done 
 
-	LogicalDevice.freeCommandBuffers(commandPool, 1, &commandBuffer);
+	vulkanContext->LogicalDevice.freeCommandBuffers(commandPool, 1, &commandBuffer);
 }
 
 
@@ -700,8 +255,8 @@ void App::CreateGraphicsPipeline()
 	vk::Viewport viewport{};
 	viewport.setX(0.0f);
 	viewport.setY(0.0f);
-	viewport.setHeight((float)swapchainExtent.height);
-	viewport.setWidth ((float)swapchainExtent.width );
+	viewport.setHeight((float)vulkanContext->swapchainExtent.height);
+	viewport.setWidth ((float)vulkanContext->swapchainExtent.width );
 	viewport.setMinDepth(0.0f);
 	viewport.setMaxDepth(1.0f);
 
@@ -709,7 +264,7 @@ void App::CreateGraphicsPipeline()
 
 	vk::Rect2D scissor{};
 	scissor.setOffset(scissorOffset);
-	scissor.setExtent(swapchainExtent);
+	scissor.setExtent(vulkanContext->swapchainExtent);
 
 
 	// set states that can be dynamic without having to recreate the whole pipeline
@@ -780,11 +335,11 @@ void App::CreateGraphicsPipeline()
 	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
  
-	pipelineLayout = LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+	pipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 
 	vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 	pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-	pipelineRenderingCreateInfo.pColorAttachmentFormats = &swapchainformat;
+	pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext->swapchainformat;
 
 	vk::GraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.pNext = &pipelineRenderingCreateInfo; // Add this line
@@ -803,15 +358,15 @@ void App::CreateGraphicsPipeline()
 	pipelineInfo.subpass = 0;
 
 
-	vk::Result result = LogicalDevice.createGraphicsPipelines(nullptr, 1, &pipelineInfo, nullptr, &graphicsPipeline);
+	vk::Result result = vulkanContext->LogicalDevice.createGraphicsPipelines(nullptr, 1, &pipelineInfo, nullptr, &graphicsPipeline);
 
 	if (result != vk::Result::eSuccess)
 	   {
 			throw std::runtime_error("failed to create graphics pipeline!");
 		}
 
-	LogicalDevice.destroyShaderModule(VertShaderModule);
-	LogicalDevice.destroyShaderModule(FragShaderModule);
+	vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
+	vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
 }
 
 vk::ShaderModule App::createShaderModule(const std::vector<char>& code)
@@ -822,7 +377,7 @@ vk::ShaderModule App::createShaderModule(const std::vector<char>& code)
 
 	vk::ShaderModule Shader;
 
-	if (LogicalDevice.createShaderModule(&createInfo, nullptr, &Shader) != vk::Result::eSuccess)
+	if (vulkanContext->LogicalDevice.createShaderModule(&createInfo, nullptr, &Shader) != vk::Result::eSuccess)
 	{
 		throw std::runtime_error("failed to create shader module!");
 	}
@@ -837,9 +392,9 @@ void App::createCommandPool()
 
 	vk::CommandPoolCreateInfo poolInfo{};
 	poolInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
-	poolInfo.queueFamilyIndex = graphicsQueueFamilyIndex;
+	poolInfo.queueFamilyIndex = vulkanContext->graphicsQueueFamilyIndex;
 
-	commandPool = LogicalDevice.createCommandPool(poolInfo);
+	commandPool = vulkanContext->LogicalDevice.createCommandPool(poolInfo);
 
 	if (!commandPool)
 	{
@@ -859,7 +414,7 @@ void App::createCommandBuffer()
 	allocateInfo.level = vk::CommandBufferLevel::ePrimary;
 	allocateInfo.commandBufferCount = (uint32_t)commandBuffers.size();
 
-	commandBuffers = LogicalDevice.allocateCommandBuffers(allocateInfo);
+	commandBuffers = vulkanContext->LogicalDevice.allocateCommandBuffers(allocateInfo);
 
 	if (commandBuffers.empty())
 	{
@@ -886,16 +441,16 @@ void App::createSyncObjects() {
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		if (LogicalDevice.createSemaphore(&semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != vk::Result::eSuccess) {
+		if (vulkanContext->LogicalDevice.createSemaphore(&semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != vk::Result::eSuccess) {
 			throw std::runtime_error("failed to create image available semaphore!");
 		}
 
 
-		if (LogicalDevice.createSemaphore(&semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != vk::Result::eSuccess) {
+		if (vulkanContext->LogicalDevice.createSemaphore(&semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != vk::Result::eSuccess) {
 			throw std::runtime_error("failed to create render finished semaphore!");
 		}
 
-		if (LogicalDevice.createFence(&fenceInfo, nullptr, &inFlightFences[i]) != vk::Result::eSuccess) {
+		if (vulkanContext->LogicalDevice.createFence(&fenceInfo, nullptr, &inFlightFences[i]) != vk::Result::eSuccess) {
 			throw std::runtime_error("failed to create fence!");
 		}
 
@@ -913,12 +468,12 @@ void App::Run()
 	}
 
 	//waits for the device to finnish all its processes before shutting down
-	LogicalDevice.waitIdle();
+	vulkanContext->LogicalDevice.waitIdle();
 }
 
 void App::Draw()
 {
-	if (LogicalDevice.waitForFences(1, &inFlightFences[currentFrame], vk::True, UINT64_MAX) != vk::Result::eSuccess)
+	if (vulkanContext->LogicalDevice.waitForFences(1, &inFlightFences[currentFrame], vk::True, UINT64_MAX) != vk::Result::eSuccess)
 	{
 		throw std::runtime_error("failed to wait for fence");
 
@@ -927,8 +482,8 @@ void App::Draw()
 	uint32_t imageIndex;
 
 	try {
-		vk::Result result = LogicalDevice.acquireNextImageKHR(
-			swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], nullptr, &imageIndex
+		vk::Result result = vulkanContext->LogicalDevice.acquireNextImageKHR(
+			vulkanContext->swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], nullptr, &imageIndex
 		);
 
 	}
@@ -939,7 +494,7 @@ void App::Draw()
 
 
 
-	LogicalDevice.resetFences(1, &inFlightFences[currentFrame]);
+	vulkanContext->LogicalDevice.resetFences(1, &inFlightFences[currentFrame]);
 
 	commandBuffers[currentFrame].reset();
 	recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
@@ -966,13 +521,13 @@ void App::Draw()
 
 
 	// The inFlightFence will be signaled when the GPU is done with the command buffer.
-		if (graphicsQueue.submit(1, &submitInfo, inFlightFences[currentFrame]) != vk::Result::eSuccess)
+		if (vulkanContext->graphicsQueue.submit(1, &submitInfo, inFlightFences[currentFrame]) != vk::Result::eSuccess)
 	{
 		throw std::runtime_error("failed to submit info");
 
 	}
 
-	vk::SwapchainKHR swapChains[] = { swapChain };
+	vk::SwapchainKHR swapChains[] = { vulkanContext->swapChain };
 	vk::PresentInfoKHR presentInfo{};
 	presentInfo.waitSemaphoreCount = 1;
 	presentInfo.pWaitSemaphores = signalSemaphores;
@@ -983,7 +538,7 @@ void App::Draw()
 	
 	//wait on renderFinishedSemaphore before this is ran
    try {
-	   vk::Result result = presentQueue.presentKHR(presentInfo);
+	   vk::Result result = vulkanContext->presentQueue.presentKHR(presentInfo);
    }
    catch (const std::exception& e) {
 	   std::cerr << "Exception: " << e.what() << std::endl;
@@ -1005,7 +560,7 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 	UniformBufferObject ubo{};
 	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.proj = glm::perspective(glm::radians(45.0f), swapchainExtent.width / (float)swapchainExtent.height, 0.1f, 10.0f);
+	ubo.proj = glm::perspective(glm::radians(45.0f), vulkanContext->swapchainExtent.width / (float)vulkanContext->swapchainExtent.height, 0.1f, 10.0f);
 	ubo.proj[1][1] *= -1;
 
 	memcpy(uniformBuffersMappedMem[currentImage], &ubo, sizeof(ubo));
@@ -1027,7 +582,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	acquireBarrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
 	acquireBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	acquireBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	acquireBarrier.image = swapchainImages[imageIndex];
+	acquireBarrier.image = vulkanContext->swapchainImages[imageIndex];
 	acquireBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
 	acquireBarrier.subresourceRange.baseMipLevel = 0;
 	acquireBarrier.subresourceRange.levelCount = 1;
@@ -1051,7 +606,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	VkOffset2D imageoffset = { 0, 0 };
 
 	vk::RenderingAttachmentInfoKHR colorAttachmentInfo{};
-	colorAttachmentInfo.imageView = swapchainImageViews[imageIndex];
+	colorAttachmentInfo.imageView = vulkanContext->swapchainImageViews[imageIndex];
 	colorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 	colorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
 	colorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
@@ -1060,7 +615,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	vk::RenderingInfoKHR renderingInfo{};
 	renderingInfo.renderArea.offset = imageoffset;
-	renderingInfo.renderArea.extent = swapchainExtent;
+	renderingInfo.renderArea.extent = vulkanContext->swapchainExtent;
 	renderingInfo.layerCount = 1;
 	renderingInfo.colorAttachmentCount = 1;
 	renderingInfo.pColorAttachments = &colorAttachmentInfo;
@@ -1073,15 +628,15 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	vk::Viewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(swapchainExtent.width);
-	viewport.height = static_cast<float>(swapchainExtent.height);
+	viewport.width = static_cast<float>(vulkanContext->swapchainExtent.width);
+	viewport.height = static_cast<float>(vulkanContext->swapchainExtent.height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 	commandBuffer.setViewport(0, 1, &viewport);
 
 	vk::Rect2D scissor{};
 	scissor.offset = imageoffset;
-	scissor.extent = swapchainExtent;
+	scissor.extent = vulkanContext->swapchainExtent;
 	commandBuffer.setScissor(0, 1, &scissor);
 
 
@@ -1106,7 +661,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	barrier.newLayout = vk::ImageLayout::ePresentSrcKHR;
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.image = swapchainImages[imageIndex];
+	barrier.image = vulkanContext->swapchainImages[imageIndex];
 	barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
 	barrier.subresourceRange.baseMipLevel = 0;
 	barrier.subresourceRange.levelCount = 1;
@@ -1135,14 +690,14 @@ void App::destroy_swapchain()
 {
 
 
-	for (size_t i = 0; i < swapchainImageViews.size(); i++)
+	for (size_t i = 0; i < vulkanContext->swapchainImageViews.size(); i++)
 	{
-		LogicalDevice.destroyImageView(swapchainImageViews[i], nullptr);
+		vulkanContext->LogicalDevice.destroyImageView(vulkanContext->swapchainImageViews[i], nullptr);
 	}
 
-	LogicalDevice.destroySwapchainKHR(swapChain, nullptr);
+	vulkanContext->LogicalDevice.destroySwapchainKHR(vulkanContext->swapChain, nullptr);
 
-	swapchainImageViews.clear();
+	vulkanContext->swapchainImageViews.clear();
 
 }
 
@@ -1169,37 +724,37 @@ void App::recreateSwapChain() {
 		glfwWaitEvents();
 	}
 
-	LogicalDevice.waitIdle();
+	vulkanContext->LogicalDevice.waitIdle();
 
 
 	destroy_swapchain();
 
-	create_swapchain();
+	vulkanContext->create_swapchain();
 }
 
 void App::DestroySyncObjects()
 {
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		LogicalDevice.destroySemaphore(imageAvailableSemaphores[i]);
-		LogicalDevice.destroySemaphore(renderFinishedSemaphores[i]);
-		LogicalDevice.destroyFence(inFlightFences[i]);
+		vulkanContext->LogicalDevice.destroySemaphore(imageAvailableSemaphores[i]);
+		vulkanContext->LogicalDevice.destroySemaphore(renderFinishedSemaphores[i]);
+		vulkanContext->LogicalDevice.destroyFence(inFlightFences[i]);
 	}
 }
 
 void App::DestroyBuffers()
 {
 
-	vmaDestroyBuffer(Allocator, static_cast<VkBuffer>(VertexBuffer), VertexBufferAllocation);
-	vmaDestroyBuffer(Allocator, static_cast<VkBuffer>(IndexBuffer), IndexBufferAllocation);
+	vmaDestroyBuffer(bufferManger->allocator, static_cast<VkBuffer>(VertexBuffer), VertexBufferAllocation);
+	vmaDestroyBuffer(bufferManger->allocator, static_cast<VkBuffer>(IndexBuffer), IndexBufferAllocation);
 
 	for (size_t i = 0; i < uniformBuffers.size(); i++)
 	{
-		vmaUnmapMemory(Allocator, uniformBufferAllocations[i]);
-		vmaDestroyBuffer(Allocator, static_cast<VkBuffer>(uniformBuffers[i]), uniformBufferAllocations[i]);
+		vmaUnmapMemory(bufferManger->allocator, uniformBuffers[i].allocation);
+		vmaDestroyBuffer(bufferManger->allocator, static_cast<VkBuffer>(uniformBuffers[i].buffer), uniformBuffers[i].allocation);
 	}
 
-	vmaDestroyAllocator(Allocator);
+	vmaDestroyAllocator(bufferManger->allocator);
 
 
 }
@@ -1209,18 +764,16 @@ void App::CleanUp()
 {
 	destroy_swapchain(); 
 	DestroyBuffers();
-	LogicalDevice.destroyCommandPool(commandPool);
-	VulkanInstance.destroySurfaceKHR(surface);
-	LogicalDevice.destroyDescriptorSetLayout(DescriptorSetLayout);
-	LogicalDevice.destroyPipeline(graphicsPipeline);
-	LogicalDevice.destroyDescriptorPool(DescriptorPool);
-	LogicalDevice.destroyPipelineLayout(pipelineLayout);
-	LogicalDevice.destroyRenderPass(renderPass);
+	vulkanContext->LogicalDevice.destroyCommandPool(commandPool);
+	vulkanContext->VulkanInstance.destroySurfaceKHR(vulkanContext->surface);
+	vulkanContext->LogicalDevice.destroyDescriptorSetLayout(DescriptorSetLayout);
+	vulkanContext->LogicalDevice.destroyPipeline(graphicsPipeline);
+	vulkanContext->LogicalDevice.destroyDescriptorPool(DescriptorPool);
+	vulkanContext->LogicalDevice.destroyPipelineLayout(pipelineLayout);
 	DestroySyncObjects();
-	LogicalDevice.destroy();
-	vkb::destroy_debug_utils_messenger(VulkanInstance, Debug_Messenger);
-	VulkanInstance.destroy();
-	delete window; 
+	vulkanContext->LogicalDevice.destroy();
+	vkb::destroy_debug_utils_messenger(vulkanContext->VulkanInstance, vulkanContext->Debug_Messenger);
+	vulkanContext->VulkanInstance.destroy();
 }
 
 void App::SwapchainResizeCallback(GLFWwindow* window, int width, int height)
