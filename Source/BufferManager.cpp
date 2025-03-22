@@ -6,11 +6,17 @@
 //#define VMA_DEBUG_INITIALIZE_ALLOCATIONS 1
 #define STB_IMAGE_IMPLEMENTATION
 
-VmaAllocator allocator;
+BufferManager::BufferManager(vk::Device& LogicalDevice, vk::PhysicalDevice& PhysicalDevice,vk::Instance& VulkanInstance) : logicalDevice(LogicalDevice), physicalDevice(PhysicalDevice), vulkanInstance(VulkanInstance){
 
+	VmaAllocatorCreateInfo allocatorInfo = {};
+	allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_0; // Use the appropriate Vulkan API version
+	allocatorInfo.physicalDevice = physicalDevice;
+	allocatorInfo.device = logicalDevice;
+	allocatorInfo.instance = vulkanInstance;
 
-BufferManager::BufferManager(vk::Device LogicalDevice, vk::PhysicalDevice PhysicalDevice) : logicalDevice(LogicalDevice), physicalDevice(PhysicalDevice) {
-
+	if (vmaCreateAllocator(&allocatorInfo, &allocator) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create VMA allocator!");
+	}
 
 }
 
@@ -73,6 +79,8 @@ void BufferManager::CreateGPUOptimisedBuffer(void* Data, VkDeviceSize BufferSize
 
 ImageData BufferManager::CreateTextureImage(const char* FilePath, vk::CommandPool commandpool, vk::Queue Queue)
 {
+	ImageData imageData;
+
 	int texWidth, textHeight, textchannels;
 
 	stbi_uc* pixels = stbi_load(FilePath, &texWidth, &textHeight, &textchannels, STBI_rgb_alpha);
@@ -102,32 +110,15 @@ ImageData BufferManager::CreateTextureImage(const char* FilePath, vk::CommandPoo
 	Buffer.usage = vk::BufferUsageFlagBits::eTransferSrc;
 
 	CopyDataToBuffer(pixels, Buffer);
+
+	stbi_image_free(pixels);
+
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	vk::Extent3D imageExtent = { static_cast<uint32_t>(texWidth),static_cast<uint32_t>(textHeight),1 };
 
-	vk::ImageCreateInfo imagecreateinfo;
-	imagecreateinfo.imageType = vk::ImageType::e2D;
-	imagecreateinfo.extent = imageExtent;
-	imagecreateinfo.mipLevels = 1;
-	imagecreateinfo.arrayLayers = 1;
-	imagecreateinfo.format = vk::Format::eR8G8B8A8Srgb;
-	imagecreateinfo.tiling = vk::ImageTiling::eOptimal;
-	imagecreateinfo.initialLayout = vk::ImageLayout::eUndefined;
-	imagecreateinfo.usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
-	imagecreateinfo.samples = vk::SampleCountFlagBits::e1;
+	vk::Image TextureImage = CreateImage(imageData,imageExtent, vk::Format::eR8G8B8A8Srgb, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
 
-	VkImageCreateInfo cimagecreateinfo = static_cast<VkImageCreateInfo> (imagecreateinfo);
-	VkImage cTextureImage;
-
-	VmaAllocationCreateInfo imageAllocInfo = {};
-	imageAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
-	imageAllocInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
-
-	VmaAllocation imageAllocation;
-
-	vmaCreateImage(allocator, &cimagecreateinfo, &imageAllocInfo, &cTextureImage, &imageAllocation, nullptr);
-
-	vk::Image TextureImage = static_cast<vk::Image> (cTextureImage);
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	vk::CommandBuffer CommandBuffer = CreateSingleUseCommandBuffer(commandpool);
 
@@ -170,14 +161,39 @@ ImageData BufferManager::CreateTextureImage(const char* FilePath, vk::CommandPoo
 
 	DestroyBuffer(Buffer);
 
-
-	ImageData imageData;
 	imageData.image = TextureImage;
-	imageData.allocation = imageAllocation;
 	imageData.imageView = CreateImageView(TextureImage);
 	imageData.imageSampler = CreateImageSampler();
 
 	return imageData;
+}
+
+vk::Image BufferManager::CreateImage(ImageData imageData, vk::Extent3D imageExtent, vk::Format imageFormat, vk::ImageUsageFlags UsageFlag) {
+
+	vk::ImageCreateInfo imagecreateinfo;
+	imagecreateinfo.imageType = vk::ImageType::e2D;
+	imagecreateinfo.extent = imageExtent;
+	imagecreateinfo.mipLevels = 1;
+	imagecreateinfo.arrayLayers = 1;
+	imagecreateinfo.format = imageFormat;
+	imagecreateinfo.tiling = vk::ImageTiling::eOptimal;
+	imagecreateinfo.initialLayout = vk::ImageLayout::eUndefined;
+	imagecreateinfo.usage = UsageFlag;
+	imagecreateinfo.samples = vk::SampleCountFlagBits::e1; 
+	imagecreateinfo.sharingMode = vk::SharingMode::eExclusive; 
+
+	VkImageCreateInfo cimagecreateinfo = static_cast<VkImageCreateInfo> (imagecreateinfo);
+
+	VmaAllocationCreateInfo imageAllocInfo = {};
+	imageAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+
+	VkImage cTextureImage;
+
+	if (vmaCreateImage(allocator, &cimagecreateinfo, &imageAllocInfo, &cTextureImage, &imageData.allocation, nullptr) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create depth image!");
+	}
+
+	return  static_cast<vk::Image>(cTextureImage);
 }
 
 vk::ImageView BufferManager::CreateImageView(vk::Image ImageToConvert) {
@@ -217,7 +233,7 @@ vk::Sampler BufferManager::CreateImageSampler() {
 	return logicalDevice.createSampler(SamplerInfo);
 }
 
-void BufferManager::TransitionImage(vk::CommandBuffer CommandBuffer, vk::Image image, ImageTransitionData imagetransinotdata) {
+void BufferManager::TransitionImage(vk::CommandBuffer CommandBuffer, vk::Image image, ImageTransitionData& imagetransinotdata) {
 	
 
 	vk::ImageMemoryBarrier acquireBarrier{};
@@ -264,7 +280,7 @@ vk::CommandBuffer BufferManager::CreateSingleUseCommandBuffer(vk::CommandPool co
 	return CommandBuffer;
 }
 
-vk::CommandBuffer BufferManager::SubmitAndDestoyCommandBuffer(vk::CommandPool commandpool,vk::CommandBuffer CommandBuffer, vk::Queue Queue) {
+void BufferManager::SubmitAndDestoyCommandBuffer(vk::CommandPool commandpool,vk::CommandBuffer CommandBuffer, vk::Queue Queue) {
 
 	CommandBuffer.end();
 	vk::SubmitInfo submitInfo = {};
@@ -275,8 +291,6 @@ vk::CommandBuffer BufferManager::SubmitAndDestoyCommandBuffer(vk::CommandPool co
 	Queue.waitIdle();
 
 	logicalDevice.freeCommandBuffers(commandpool, 1, &CommandBuffer);
-
-	return CommandBuffer;
 }
 
 void BufferManager::CopyDataToBuffer(const void* data,  BufferData Buffer) {
@@ -287,19 +301,7 @@ void BufferManager::CopyDataToBuffer(const void* data,  BufferData Buffer) {
 
 void BufferManager::CopyBufferToAnotherBuffer(vk::CommandPool commandpool , BufferData Buffer1, BufferData Buffer2, vk::Queue Queue) {
 
-
-	vk::CommandBufferAllocateInfo allocateinfo{};
-	allocateinfo.commandPool = commandpool;
-	allocateinfo.commandBufferCount = 1;
-	allocateinfo.level = vk::CommandBufferLevel::ePrimary;
-
-
-	vk::CommandBuffer commandBuffer = logicalDevice.allocateCommandBuffers(allocateinfo)[0];
-
-	vk::CommandBufferBeginInfo CBBegininfo{};
-	CBBegininfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-
-	commandBuffer.begin(CBBegininfo);
+	vk::CommandBuffer commandBuffer = CreateSingleUseCommandBuffer(commandpool);
 
 	vk::BufferCopy copyregion{};
 	copyregion.srcOffset = 0;
@@ -308,16 +310,7 @@ void BufferManager::CopyBufferToAnotherBuffer(vk::CommandPool commandpool , Buff
 
 	commandBuffer.copyBuffer(Buffer1.buffer, Buffer2.buffer, copyregion);
 
-	commandBuffer.end();
-
-	vk::SubmitInfo submitInfo{};
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer;
-
-	Queue.submit(1, &submitInfo, nullptr);
-	Queue.waitIdle(); // Wait for the task to be done 
-
-	logicalDevice.freeCommandBuffers(commandpool, 1, &commandBuffer);
+	SubmitAndDestoyCommandBuffer(commandpool, commandBuffer, Queue);
 }
 
 void* BufferManager::MapMemory(const BufferData& buffer) {
@@ -336,4 +329,6 @@ void BufferManager::DestroyBuffer(const BufferData& buffer) {
 
 BufferManager::~BufferManager()
 {
+	vmaDestroyAllocator(allocator);
+
 }

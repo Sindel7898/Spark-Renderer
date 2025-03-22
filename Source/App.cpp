@@ -25,7 +25,8 @@ void App::Initialisation()
 	createCommandPool();
 	RecordDepth();
 	createTextureImage();
-	createTextureImageSampler();
+
+
 	createCommandBuffer();
 	createVertexBuffer();
 	createIndexBuffer();
@@ -39,29 +40,6 @@ void App::Initialisation()
 void App::createTextureImage()
 {
 	ImageData TextureData = BufferManger->CreateTextureImage("../Textures/Dog.jpg", commandPool, graphicsQueue);
-
-}
-
-void App::createTextureImageSampler()
-{
-	vk::SamplerCreateInfo SamplerInfo{};
-	SamplerInfo.magFilter = vk::Filter::eLinear;
-	SamplerInfo.minFilter = vk::Filter::eLinear;
-	SamplerInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
-	SamplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
-	SamplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
-	SamplerInfo.anisotropyEnable = vk::True;
-	SamplerInfo.maxAnisotropy = PhysicalDevice.getProperties().limits.maxSamplerAnisotropy;
-	SamplerInfo.borderColor = vk::BorderColor::eIntOpaqueBlack;
-	SamplerInfo.unnormalizedCoordinates = vk::False;
-	SamplerInfo.compareEnable = vk::False;
-	SamplerInfo.compareOp = vk::CompareOp::eAlways;
-	SamplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;
-	SamplerInfo.mipLodBias = 0.0f;
-	SamplerInfo.minLod = 0.0f;
-	SamplerInfo.maxLod = 0.0f;
-	P
-	LogicalDevice.createSampler(&SamplerInfo, nullptr, &TextureSampler);
 
 }
 
@@ -324,7 +302,6 @@ void App::createVertexBuffer()
 
 	vk::BufferCreateInfo StagingBufferCreateInfo;
 	StagingBufferCreateInfo.size = sizeof(meshloader.GetVertices()[0]) * meshloader.GetVertices().size();
-
 	StagingBufferCreateInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
 	StagingBufferCreateInfo.sharingMode = vk::SharingMode::eExclusive;
 
@@ -344,8 +321,11 @@ void App::createVertexBuffer()
 	memcpy(data, meshloader.GetVertices().data(), StagingBufferCreateInfo.size);
 	//Unmaps the GPU buffer's memory, making it no longer accessible by the CPU
 	vmaUnmapMemory(Allocator, StagingBufferAllocation);
-	/////////////////////////////////////////////////////////////////////////////////////////////
 
+
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////////
     ///Create GPU OPTIMISED VertexBuffer
 	vk::BufferCreateInfo VertexBufferInfo;
 	VertexBufferInfo.size = sizeof(meshloader.GetVertices()[0]) * meshloader.GetVertices().size();

@@ -16,7 +16,6 @@ struct ImageData {
     vk::Image image;
     vk::ImageView imageView;
     vk::Sampler imageSampler;
-
     VmaAllocation allocation;
 };
 
@@ -28,7 +27,6 @@ struct ImageTransitionData {
     vk::AccessFlagBits DestinationAccessflag;
     vk::PipelineStageFlagBits SourceOnThePipeline;
     vk::PipelineStageFlagBits DestinationOnThePipeline;
-
     vk::ImageAspectFlagBits AspectFlag = vk::ImageAspectFlagBits::eColor;
 };
 
@@ -36,26 +34,27 @@ class BufferManager
 {
 public:
 
-    BufferManager(vk::Device LogicalDevice, vk::PhysicalDevice PhysicalDevice);
-
-    void CreateBuffer(BufferData bufferData, VmaMemoryUsage memoryUsage, VmaAllocationCreateFlags flags);
+    BufferManager(vk::Device& LogicalDevice, vk::PhysicalDevice& PhysicalDevice, vk::Instance& VulkanInstance);
 
     ImageData CreateTextureImage(const char* FilePath, vk::CommandPool commandpool, vk::Queue Queue);
+    vk::Image CreateImage(ImageData imageData, vk::Extent3D imageExtent, vk::Format imageFormat, vk::ImageUsageFlags UsageFlag);
     vk::ImageView  CreateImageView(vk::Image ImageToConvert);
     vk::Sampler CreateImageSampler();
-    void TransitionImage(vk::CommandBuffer CommandBuffer, vk::Image image, ImageTransitionData imagetransinotdata);
+
+    void TransitionImage(vk::CommandBuffer CommandBuffer, vk::Image image, ImageTransitionData& imagetransinotdata);
 
     vk::CommandBuffer CreateSingleUseCommandBuffer(vk::CommandPool commandpool);
+    void SubmitAndDestoyCommandBuffer(vk::CommandPool commandpool, vk::CommandBuffer CommandBuffer, vk::Queue Queue);
 
-    vk::CommandBuffer SubmitAndDestoyCommandBuffer(vk::CommandPool commandpool, vk::CommandBuffer CommandBuffer, vk::Queue Queue);
 
 
+
+    void CreateGPUOptimisedBuffer(void* Data, VkDeviceSize BufferSize, VkBufferUsageFlagBits BufferUse, vk::CommandPool commandpool, vk::Queue queue);
 
     void DestroyBuffer(const BufferData& buffer);
 
     void CopyDataToBuffer(const void* data, BufferData Buffer);
-
-    void CopyBuffer(vk::CommandPool commandpool, BufferData Buffer1, BufferData Buffer2, vk::Queue Queue);
+    void CopyBufferToAnotherBuffer(vk::CommandPool commandpool, BufferData Buffer1, BufferData Buffer2, vk::Queue Queue);
 
     void* MapMemory(const BufferData& buffer);
     void UnmapMemory(const BufferData& buffer);
@@ -63,9 +62,10 @@ public:
     ~BufferManager();
   
 private:
-   
-    vk::Device logicalDevice;
-    vk::PhysicalDevice physicalDevice;
+    VmaAllocator allocator;
 
+    vk::Device& logicalDevice;
+    vk::PhysicalDevice& physicalDevice;
+    vk::Instance& vulkanInstance;
 };
 

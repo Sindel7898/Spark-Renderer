@@ -101,7 +101,7 @@ public:
 #else 
 	 const bool enableValidationLayers = true;
 #endif
-
+	 
      vk::Device                 LogicalDevice   = nullptr;
 	 vk::PhysicalDevice         PhysicalDevice  = nullptr;
 	 vk::Instance               VulkanInstance  = nullptr;
