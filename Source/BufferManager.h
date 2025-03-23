@@ -56,6 +56,8 @@ public:
 
     void DestroyBuffer(const BufferData& buffer);
 
+    void DestroyImage(const ImageData& buffer);
+
     void CopyDataToBuffer(const void* data, BufferData Buffer);
     void CopyBufferToAnotherBuffer(vk::CommandPool commandpool, BufferData Buffer1, BufferData Buffer2, vk::Queue Queue);
 

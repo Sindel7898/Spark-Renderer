@@ -172,11 +172,18 @@ public:
 	 std::vector<BufferData> uniformBuffers;
 	 std::vector<void*> uniformBuffersMappedMem;
 
+	
+	 ImageData MeshTextureData;
 	 vk::Image TextureImage;
 	 vk::ImageView TextureImageView;
 	 vk::Sampler TextureSampler;
-
+     ////////////////////////////
+	 ImageData DepthTextureData;
 	 vk::ImageView DepthImageView;
+
+
+	 BufferData VertexBufferData;
+	 BufferData IndexBufferData;
 
 };
 

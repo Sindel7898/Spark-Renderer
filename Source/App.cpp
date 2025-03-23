@@ -5,8 +5,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-VmaAllocation VertexBufferAllocation;
-VmaAllocation IndexBufferAllocation;
 //std::vector<VmaAllocation> uniformBufferAllocations;
 
 void App::Initialisation()
@@ -139,21 +137,20 @@ void App::createDescriptorSets()
 
 void App::createTextureImage()
 {
-
-     ImageData imageData = bufferManger->CreateTextureImage("../Textures/Dog.jpg", commandPool, vulkanContext->graphicsQueue);
-	 TextureImage = imageData.image;
-	 TextureImageView = imageData.imageView;
-	 TextureSampler = imageData.imageSampler;
+	 MeshTextureData = bufferManger->CreateTextureImage("../Textures/Dog.jpg", commandPool, vulkanContext->graphicsQueue);
+	 TextureImage = MeshTextureData.image;
+	 TextureImageView = MeshTextureData.imageView;
+	 TextureSampler = MeshTextureData.imageSampler;
 }
 
 void App::createDepthTextureImage()
 {
 	vk::Extent3D imageExtent = { vulkanContext->swapchainExtent.width,vulkanContext->swapchainExtent.height,1 };
 
-	ImageData imageData = bufferManger->CreateImage(imageExtent, vk::Format::eD32SfloatS8Uint, vk::ImageUsageFlagBits::eDepthStencilAttachment);
-	imageData.imageView = bufferManger->CreateImageView(imageData.image, vk::Format::eD32SfloatS8Uint, vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
+	DepthTextureData = bufferManger->CreateImage(imageExtent, vk::Format::eD32SfloatS8Uint, vk::ImageUsageFlagBits::eDepthStencilAttachment);
+	DepthTextureData.imageView = bufferManger->CreateImageView(DepthTextureData.image, vk::Format::eD32SfloatS8Uint, vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
 
-	DepthImageView = imageData.imageView;
+	DepthImageView = DepthTextureData.imageView;
 
 	vk::CommandBuffer commandBuffer = bufferManger->CreateSingleUseCommandBuffer(commandPool);
 
@@ -169,7 +166,7 @@ void App::createDepthTextureImage()
 	DataToTransitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
 	DataToTransitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eEarlyFragmentTests;
 
-	bufferManger->TransitionImage(commandBuffer, imageData.image, DataToTransitionInfo);
+	bufferManger->TransitionImage(commandBuffer, DepthTextureData.image, DataToTransitionInfo);
 
 	bufferManger->SubmitAndDestoyCommandBuffer(commandPool, commandBuffer, vulkanContext->graphicsQueue);
 }
@@ -177,8 +174,8 @@ void App::createDepthTextureImage()
 void App::createVertexBuffer()
 {
 	VkDeviceSize VertexBufferSize = sizeof(vertices[0]) * vertices.size();
-	BufferData bufferData =  bufferManger->CreateGPUOptimisedBuffer(vertices.data(), VertexBufferSize,vk::BufferUsageFlagBits::eVertexBuffer ,commandPool, vulkanContext->graphicsQueue);
-	VertexBuffer = bufferData.buffer;
+	VertexBufferData =  bufferManger->CreateGPUOptimisedBuffer(vertices.data(), VertexBufferSize,vk::BufferUsageFlagBits::eVertexBuffer ,commandPool, vulkanContext->graphicsQueue);
+	VertexBuffer = VertexBufferData.buffer;
    
 }
 
@@ -186,8 +183,8 @@ void App::createIndexBuffer()
 {
 
 	VkDeviceSize indexBufferSize = sizeof(indices[0]) * indices.size();
-	BufferData bufferData = bufferManger->CreateGPUOptimisedBuffer(indices.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
-	IndexBuffer = bufferData.buffer;
+	IndexBufferData = bufferManger->CreateGPUOptimisedBuffer(indices.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
+	IndexBuffer = IndexBufferData.buffer;
 
 }
 
@@ -797,8 +794,17 @@ void App::DestroySyncObjects()
 void App::DestroyBuffers()
 {
 
-	vmaDestroyBuffer(bufferManger->allocator, static_cast<VkBuffer>(VertexBuffer), VertexBufferAllocation);
-	vmaDestroyBuffer(bufferManger->allocator, static_cast<VkBuffer>(IndexBuffer), IndexBufferAllocation);
+	//vmaDestroyBuffer(bufferManger->allocator, static_cast<VkBuffer>(VertexBuffer), VertexBufferAllocation);
+	//vmaDestroyBuffer(bufferManger->allocator, static_cast<VkBuffer>(IndexBuffer), IndexBufferAllocation);
+
+	vulkanContext->LogicalDevice.destroyImageView(TextureImageView);
+	vulkanContext->LogicalDevice.destroyImageView(DepthImageView);
+	vulkanContext->LogicalDevice.destroySampler(TextureSampler);
+
+	bufferManger->DestroyImage(MeshTextureData);
+	bufferManger->DestroyImage(DepthTextureData);
+	bufferManger->DestroyBuffer(VertexBufferData);
+	bufferManger->DestroyBuffer(IndexBufferData);
 
 	for (size_t i = 0; i < uniformBuffers.size(); i++)
 	{
@@ -807,8 +813,6 @@ void App::DestroyBuffers()
 	}
 
 	vmaDestroyAllocator(bufferManger->allocator);
-
-
 }
 
 

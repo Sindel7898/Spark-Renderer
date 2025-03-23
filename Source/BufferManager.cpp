@@ -103,6 +103,7 @@ BufferData BufferManager::CreateGPUOptimisedBuffer(const void* Data, VkDeviceSiz
 	FinalBufferData.allocation = VertexBufferAllocation;
 
 	CopyBufferToAnotherBuffer(commandpool, StagingBufferData, FinalBufferData, queue);
+	
 	DestroyBuffer(StagingBufferData);
 
 	return FinalBufferData;
@@ -134,13 +135,13 @@ ImageData BufferManager::CreateTextureImage(const char* FilePath, vk::CommandPoo
 		throw std::runtime_error("Failed to create buffer!");
 	}
 
-	BufferData Buffer;
-	Buffer.buffer = vk::Buffer(cStagingBuffer);
-	Buffer.size = imagesize;
-	Buffer.allocation = StagingBufferAllocation;
-	Buffer.usage = vk::BufferUsageFlagBits::eTransferSrc;
+	BufferData StagineBuffer;
+	StagineBuffer.buffer = vk::Buffer(cStagingBuffer);
+	StagineBuffer.size = imagesize;
+	StagineBuffer.allocation = StagingBufferAllocation;
+	StagineBuffer.usage = vk::BufferUsageFlagBits::eTransferSrc;
 
-	CopyDataToBuffer(pixels, Buffer);
+	CopyDataToBuffer(pixels, StagineBuffer);
 
 	stbi_image_free(pixels);
 
@@ -175,7 +176,7 @@ ImageData BufferManager::CreateTextureImage(const char* FilePath, vk::CommandPoo
 	copyRegion.imageOffset = vk::Offset3D{ 0, 0, 0 };
 	copyRegion.imageExtent = imageExtent;
 
-	CommandBuffer.copyBufferToImage(Buffer.buffer, TextureImageData.image, vk::ImageLayout::eTransferDstOptimal, 1, &copyRegion);
+	CommandBuffer.copyBufferToImage(StagineBuffer.buffer, TextureImageData.image, vk::ImageLayout::eTransferDstOptimal, 1, &copyRegion);
 
 	ImageTransitionData TransitionImageToShaderData;
 	TransitionImageToShaderData.oldlayout = vk::ImageLayout::eTransferDstOptimal;
@@ -190,7 +191,7 @@ ImageData BufferManager::CreateTextureImage(const char* FilePath, vk::CommandPoo
 
 	SubmitAndDestoyCommandBuffer(commandpool, CommandBuffer, Queue);
 
-	DestroyBuffer(Buffer);
+	DestroyBuffer(StagineBuffer);
 
 	TextureImageData.imageView = CreateImageView(TextureImageData.image, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor);
 	TextureImageData.imageSampler = CreateImageSampler();
@@ -362,13 +363,18 @@ void BufferManager::UnmapMemory(const BufferData& buffer) {
 }
 
 void BufferManager::DestroyBuffer(const BufferData& buffer) {
+
 	vmaDestroyBuffer(allocator, static_cast<VkBuffer>(buffer.buffer), buffer.allocation);
+}
+
+void BufferManager::DestroyImage(const ImageData& imagedata) {
+
+	vmaDestroyImage(allocator, imagedata.image, imagedata.allocation);
 }
 
 BufferManager::~BufferManager()
 {
-	vmaDestroyAllocator(allocator);
-
+	//vmaDestroyAllocator(allocator);
 }
 
 void BufferManager::DeleteAllocation(VmaAllocation allocation)
