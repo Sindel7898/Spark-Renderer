@@ -13,52 +13,13 @@
 #include <chrono>
 #include "BufferManager.h"
 #include "VulkanContext.h"
+#include"MeshLoader.h"
 
 
 struct UniformBufferObject {
 	alignas(16) glm::mat4 model;
 	alignas(16) glm::mat4 view;
 	alignas(16) glm::mat4 proj;
-};
-
-struct Vertex {
-
-	glm::vec3 position;
-	glm::vec3 color;
-	glm::vec2 texCoord;
-
-
-	static vk::VertexInputBindingDescription GetBindingDescription() {
-		vk::VertexInputBindingDescription  bindingdescription{};
-		
-		bindingdescription.binding = 0;
-		bindingdescription.stride = sizeof(Vertex);
-		bindingdescription.inputRate = vk::VertexInputRate::eVertex;
-
-		return bindingdescription;
-	}
-
-	static std::array< vk::VertexInputAttributeDescription, 3> GetAttributeDescription() {
-
-		std::array<vk::VertexInputAttributeDescription, 3> attributeDescriptions{};
-
-		attributeDescriptions[0].binding  = 0;
-		attributeDescriptions[0].location = 0;
-		attributeDescriptions[0].format = vk::Format::eR32G32B32Sfloat;
-		attributeDescriptions[0].offset = offsetof(Vertex, position);
-
-		attributeDescriptions[1].binding = 0;
-		attributeDescriptions[1].location = 1;
-		attributeDescriptions[1].format = vk::Format::eR32G32B32Sfloat;
-		attributeDescriptions[1].offset = offsetof(Vertex, color);
-
-		attributeDescriptions[2].binding = 0;
-		attributeDescriptions[2].location = 2;
-		attributeDescriptions[2].format = vk::Format::eR32G32Sfloat;
-		attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
-
-		return attributeDescriptions;
-	}
 };
 
 class App
@@ -82,8 +43,6 @@ public:
 	void createDescriptorPool();
 
 	void createDescriptorSets();
-
-	void CopyBuffer(vk::Buffer Buffer1, vk::Buffer Buffer2, VkDeviceSize size);
 
 	void createCommandPool();
 
@@ -123,6 +82,8 @@ public:
 	 std::unique_ptr<Window> window = nullptr;
 	 std::unique_ptr<VulkanContext> vulkanContext = nullptr;
 	 std::unique_ptr<BufferManager> bufferManger = nullptr;
+	 std::unique_ptr<MeshLoader> meshloader = nullptr;
+
 
 #ifdef NDEBUG
 	 const bool enableValidationLayers = false;
@@ -144,23 +105,23 @@ public:
 	 const int MAX_FRAMES_IN_FLIGHT = 2;
 	 uint32_t currentFrame = 0;
 
-	 const std::vector<Vertex> vertices = {
-   {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-	{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-	{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-	{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+	// const std::vector<Vertex> vertices = {
+ //  {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+	//{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+	//{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+	//{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
 
-	{{-0.5f, -0.5f, -0.2f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-	{{0.5f, -0.5f, -0.2f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-	{{0.5f, 0.5f, -0.2f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-	{{-0.5f, 0.5f, -0.2f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-	 
-	 };
+	//{{-0.5f, -0.5f, -0.2f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+	//{{0.5f, -0.5f, -0.2f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+	//{{0.5f, 0.5f, -0.2f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+	//{{-0.5f, 0.5f, -0.2f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
+	// 
+	// };
 
-	 const std::vector<uint16_t> indices = {
+	/* const std::vector<uint16_t> indices = {
 		0, 1, 2, 2, 3, 0,
 		4, 5, 6, 6, 7, 4
-	 };
+	 };*/
 
 
 	 vk::DescriptorSetLayout DescriptorSetLayout;

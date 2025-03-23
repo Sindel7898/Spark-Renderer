@@ -5,13 +5,12 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-//std::vector<VmaAllocation> uniformBufferAllocations;
-
 void App::Initialisation()
 {
 	window = std::make_unique<Window>(800, 800, "Vulkan Window");
 	vulkanContext = std::make_unique<VulkanContext>(*window);
 	bufferManger = std::make_unique<BufferManager>(vulkanContext->LogicalDevice, vulkanContext->PhysicalDevice, vulkanContext->VulkanInstance);
+	meshloader = std::make_unique<MeshLoader>();
 
 	//glfwSetFramebufferSizeCallback(window->GetWindow(),);
 	glfwSetWindowUserPointer(window->GetWindow(), this);
@@ -30,25 +29,25 @@ void App::Initialisation()
 	createVertexBuffer();
 	createIndexBuffer();
 	createUniformBuffer();
+	/////////////////////
 	createDescriptorSets();
 	/////////////////////////////////
 
 }
 
+/* Create Descriptor Setlayout used to describe shader bindings*/
 void App::createDescriptorSetLayout()
 {
 	vk::DescriptorSetLayoutBinding UniformBufferBinding{};
 	UniformBufferBinding.binding = 0;
-	UniformBufferBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
 	UniformBufferBinding.descriptorCount = 1;
+	UniformBufferBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
 	UniformBufferBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
-	UniformBufferBinding.pImmutableSamplers = nullptr; // Optional
-
+	
 	vk::DescriptorSetLayoutBinding samplerLayoutBinding{};
 	samplerLayoutBinding.binding = 1;
 	samplerLayoutBinding.descriptorCount = 1;
 	samplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	samplerLayoutBinding.pImmutableSamplers = nullptr;
 	samplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 	std::array<vk::DescriptorSetLayoutBinding, 2> bindings = { UniformBufferBinding, samplerLayoutBinding };
@@ -133,11 +132,9 @@ void App::createDescriptorSets()
 	}
 }
 
-
-
 void App::createTextureImage()
 {
-	 MeshTextureData = bufferManger->CreateTextureImage("../Textures/Dog.jpg", commandPool, vulkanContext->graphicsQueue);
+	 MeshTextureData = bufferManger->CreateTextureImage("../Textures/Tex_2.jpg", commandPool, vulkanContext->graphicsQueue);
 	 TextureImage = MeshTextureData.image;
 	 TextureImageView = MeshTextureData.imageView;
 	 TextureSampler = MeshTextureData.imageSampler;
@@ -173,8 +170,9 @@ void App::createDepthTextureImage()
 
 void App::createVertexBuffer()
 {
-	VkDeviceSize VertexBufferSize = sizeof(vertices[0]) * vertices.size();
-	VertexBufferData =  bufferManger->CreateGPUOptimisedBuffer(vertices.data(), VertexBufferSize,vk::BufferUsageFlagBits::eVertexBuffer ,commandPool, vulkanContext->graphicsQueue);
+	meshloader->LoadModel("../Textures/model.obj");
+	VkDeviceSize VertexBufferSize = sizeof(meshloader->GetVertices()[0]) * meshloader->GetVertices().size();
+	VertexBufferData =  bufferManger->CreateGPUOptimisedBuffer(meshloader->GetVertices().data(), VertexBufferSize,vk::BufferUsageFlagBits::eVertexBuffer ,commandPool, vulkanContext->graphicsQueue);
 	VertexBuffer = VertexBufferData.buffer;
    
 }
@@ -182,8 +180,8 @@ void App::createVertexBuffer()
 void App::createIndexBuffer()
 {
 
-	VkDeviceSize indexBufferSize = sizeof(indices[0]) * indices.size();
-	IndexBufferData = bufferManger->CreateGPUOptimisedBuffer(indices.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
+	VkDeviceSize indexBufferSize = sizeof(meshloader->GetIndices()[0]) * meshloader->GetIndices().size();
+	IndexBufferData = bufferManger->CreateGPUOptimisedBuffer(meshloader->GetIndices().data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
 	IndexBuffer = IndexBufferData.buffer;
 
 }
@@ -204,41 +202,6 @@ void App::createUniformBuffer()
 		uniformBuffersMappedMem[i] = bufferManger->MapMemory(bufferdata);
 	}
 }
-
-void App::CopyBuffer(vk::Buffer Buffer1, vk::Buffer Buffer2, VkDeviceSize size) {
-
-	
-	vk::CommandBufferAllocateInfo allocateinfo{};
-	allocateinfo.commandPool = commandPool;
-	allocateinfo.commandBufferCount = 1;
-	allocateinfo.level = vk::CommandBufferLevel::ePrimary;
-
-	vk::CommandBuffer commandBuffer = vulkanContext->LogicalDevice.allocateCommandBuffers(allocateinfo)[0];
-
-	vk::CommandBufferBeginInfo CBBegininfo{};
-	CBBegininfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-
-	commandBuffer.begin(CBBegininfo);
-
-	vk::BufferCopy copyregion{};
-	copyregion.srcOffset = 0;
-	copyregion.dstOffset = 0;
-	copyregion.size = size;
-
-	commandBuffer.copyBuffer(Buffer1, Buffer2, copyregion);
-	
-	commandBuffer.end();
-
-	vk::SubmitInfo submitInfo{};
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer;
-
-	vulkanContext->graphicsQueue.submit(1, &submitInfo, nullptr);
-	vulkanContext->graphicsQueue.waitIdle(); // Wait for the task to be done 
-
-	vulkanContext->LogicalDevice.freeCommandBuffers(commandPool, 1, &commandBuffer);
-}
-
 
 
 void App::CreateGraphicsPipeline() 
@@ -261,14 +224,14 @@ void App::CreateGraphicsPipeline()
 	FragmentShaderStageInfo.pName = "main";
 	
 	vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo ,FragmentShaderStageInfo };
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-	auto BindDesctiptions = Vertex::GetBindingDescription();
-	auto attributeDescriptions = Vertex::GetAttributeDescription();
+	auto BindDesctiptions = ModelVertex::GetBindingDescription();
+	auto attributeDescriptions = ModelVertex::GetAttributeDescription();
 
 	vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
 	vertexInputInfo.setVertexBindingDescriptionCount(1);
-	vertexInputInfo.setVertexAttributeDescriptionCount(3);
+	vertexInputInfo.setVertexAttributeDescriptionCount(2);
 	vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
 	vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -276,7 +239,7 @@ void App::CreateGraphicsPipeline()
 	vk::PipelineInputAssemblyStateCreateInfo inputAssembleInfo{};
 	inputAssembleInfo.topology = vk::PrimitiveTopology::eTriangleList;
 	inputAssembleInfo.primitiveRestartEnable = vk::False;
-
+	
 	//Create ViewPort and scissor
 	vk::Viewport viewport{};
 	viewport.setX(0.0f);
@@ -598,8 +561,9 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 	UniformBufferObject ubo{};
-	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	//ubo.model= glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0));
+	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	ubo.proj = glm::perspective(glm::radians(45.0f), vulkanContext->swapchainExtent.width / (float)vulkanContext->swapchainExtent.height, 0.1f, 10.0f);
 	ubo.proj[1][1] *= -1;
 
@@ -616,31 +580,16 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	commandBuffer.begin(begininfo);
 
-	////Transition image from undifined to ac olorattachment so it can be modified
-	vk::ImageMemoryBarrier acquireBarrier{};
-	acquireBarrier.oldLayout = vk::ImageLayout::eUndefined;
-	acquireBarrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
-	acquireBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	acquireBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	acquireBarrier.image = vulkanContext->swapchainImages[imageIndex];
-	acquireBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-	acquireBarrier.subresourceRange.baseMipLevel = 0;
-	acquireBarrier.subresourceRange.levelCount = 1;
-	acquireBarrier.subresourceRange.baseArrayLayer = 0;
-	acquireBarrier.subresourceRange.layerCount = 1;
+	ImageTransitionData TransitionSwapchainToWriteData;
+	TransitionSwapchainToWriteData.oldlayout = vk::ImageLayout::eUndefined;
+	TransitionSwapchainToWriteData.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
+	TransitionSwapchainToWriteData.SourceAccessflag = vk::AccessFlagBits::eNone;
+	TransitionSwapchainToWriteData.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
+	TransitionSwapchainToWriteData.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
+	TransitionSwapchainToWriteData.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	TransitionSwapchainToWriteData.AspectFlag = vk::ImageAspectFlagBits::eColor;
 
-	acquireBarrier.srcAccessMask = vk::AccessFlagBits::eNone;
-	acquireBarrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-
-	// Bind the transitioned image to the pipeline using a pipeline barrier
-	commandBuffer.pipelineBarrier(
-		vk::PipelineStageFlagBits::eTopOfPipe,
-		vk::PipelineStageFlagBits::eColorAttachmentOutput,
-		vk::DependencyFlags(),
-		0, nullptr,
-		0, nullptr,
-		1, &acquireBarrier
-	);
+	bufferManger->TransitionImage(commandBuffer, vulkanContext->swapchainImages[imageIndex], TransitionSwapchainToWriteData);
 
 	//////////////////////////////////////////////////////////////////////
 	VkOffset2D imageoffset = { 0, 0 };
@@ -667,10 +616,9 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	renderingInfo.pColorAttachments = &colorAttachmentInfo;
 	renderingInfo.pDepthAttachment = &depthStencilAttachment;
 
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
-
 	commandBuffer.beginRendering(renderingInfo);
-
 
 	vk::Viewport viewport{};
 	viewport.x = 0.0f;
@@ -692,44 +640,24 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	commandBuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets); 
 	commandBuffer.bindIndexBuffer(IndexBuffer, 0, vk::IndexType::eUint16);
-
 	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &DescriptorSets[currentFrame], 0, nullptr);
 
 
-	commandBuffer.drawIndexed(indices.size(), 1, 0, 0, 0);
+	commandBuffer.drawIndexed(meshloader->GetIndices().size(), 1, 0, 0, 0);
 	commandBuffer.endRendering();
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	ImageTransitionData TransitionSwapchainToPresentData;
+	TransitionSwapchainToPresentData.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
+	TransitionSwapchainToPresentData.newlayout = vk::ImageLayout::ePresentSrcKHR;
+	TransitionSwapchainToPresentData.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
+	TransitionSwapchainToPresentData.DestinationAccessflag = vk::AccessFlagBits::eMemoryRead;
+	TransitionSwapchainToPresentData.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	TransitionSwapchainToPresentData.DestinationOnThePipeline = vk::PipelineStageFlagBits::eBottomOfPipe;
+	TransitionSwapchainToPresentData.AspectFlag = vk::ImageAspectFlagBits::eColor;
 
-
-	// Create an image memory barrier to transition the image layout
-	// from a color attachment optimal layout to a present source layout,
-	// so it can be presented to the screen.
-	vk::ImageMemoryBarrier barrier{};
-	barrier.oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
-	barrier.newLayout = vk::ImageLayout::ePresentSrcKHR;
-	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	barrier.image = vulkanContext->swapchainImages[imageIndex];
-	barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-	barrier.subresourceRange.baseMipLevel = 0;
-	barrier.subresourceRange.levelCount = 1;
-	barrier.subresourceRange.baseArrayLayer = 0;
-	barrier.subresourceRange.layerCount = 1;
-	barrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-	barrier.dstAccessMask = vk::AccessFlagBits::eMemoryRead;
-
-	// Bind the transitioned image to the pipeline using a pipeline barrier
-	commandBuffer.pipelineBarrier(
-		vk::PipelineStageFlagBits::eColorAttachmentOutput,
-		vk::PipelineStageFlagBits::eBottomOfPipe,
-		vk::DependencyFlags(),
-		0, nullptr,
-		0, nullptr,
-		1, &barrier
-	);
-
+	bufferManger->TransitionImage(commandBuffer, vulkanContext->swapchainImages[imageIndex], TransitionSwapchainToPresentData);
 
 	commandBuffer.end();
-
 }
 
 
@@ -793,10 +721,6 @@ void App::DestroySyncObjects()
 
 void App::DestroyBuffers()
 {
-
-	//vmaDestroyBuffer(bufferManger->allocator, static_cast<VkBuffer>(VertexBuffer), VertexBufferAllocation);
-	//vmaDestroyBuffer(bufferManger->allocator, static_cast<VkBuffer>(IndexBuffer), IndexBufferAllocation);
-
 	vulkanContext->LogicalDevice.destroyImageView(TextureImageView);
 	vulkanContext->LogicalDevice.destroyImageView(DepthImageView);
 	vulkanContext->LogicalDevice.destroySampler(TextureSampler);
