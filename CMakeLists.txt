@@ -7,6 +7,18 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Include common macros file (check if path is correct)
 include(${CMAKE_SOURCE_DIR}/CommonMacros.txt)
 
+# ImGui source files (since there's no CMakeLists.txt in imgui directory)
+set(IMGUI_SRC
+    Bootstrapping/src/imgui/imgui.cpp
+    Bootstrapping/src/imgui/imgui_draw.cpp
+    Bootstrapping/src/imgui/imgui_tables.cpp
+    Bootstrapping/src/imgui/imgui_widgets.cpp
+    Bootstrapping/src/imgui/backends/imgui_impl_glfw.h
+    Bootstrapping/src/imgui/backends/imgui_impl_glfw.cpp
+    Bootstrapping/src/imgui/backends/imgui_impl_vulkan.h
+    Bootstrapping/src/imgui/backends/imgui_impl_vulkan.cpp
+)
+
 # Add the libs subdirectory
 add_subdirectory(Bootstrapping/src/glfw)
 add_subdirectory(Bootstrapping/src/glm)
@@ -21,13 +33,14 @@ file(GLOB SOURCES "Source/*.cpp")
 find_package(Vulkan REQUIRED)
 
 # Create the executable
-add_executable(VulkanRenderer ${SOURCES})
+add_executable(VulkanRenderer ${SOURCES} ${IMGUI_SRC})
 
-# Include the src directory for headers
-target_include_directories(VulkanRenderer PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
-# Include Vulkan Memory Allocator headers if not already handled by subdirectory
-target_include_directories(VulkanRenderer PRIVATE Bootstrapping/src/VulkanMemoryAllocator)
+target_include_directories(VulkanRenderer PRIVATE 
+    ${CMAKE_SOURCE_DIR}/src
+    Bootstrapping/src/VulkanMemoryAllocator
+    Bootstrapping/src/imgui
+)
 
 # Link libraries
 target_link_libraries(VulkanRenderer PRIVATE glfw glm vk-bootstrap VulkanMemoryAllocator assimp Vulkan::Vulkan)

@@ -11,6 +11,7 @@ void App::Initialisation()
 	vulkanContext = std::make_unique<VulkanContext>(*window);
 	bufferManger = std::make_unique<BufferManager>(vulkanContext->LogicalDevice, vulkanContext->PhysicalDevice, vulkanContext->VulkanInstance);
 	meshloader = std::make_unique<MeshLoader>();
+	camera = std::make_unique<Camera>(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, window->GetWindow());
 
 	//glfwSetFramebufferSizeCallback(window->GetWindow(),);
 	glfwSetWindowUserPointer(window->GetWindow(), this);
@@ -466,6 +467,7 @@ void App::Run()
 	{
 		glfwPollEvents();
 		StartFrame();
+		camera->Update(deltaTime);
 		Draw();
 		std::cout << "FPS: " << fps << std::endl;
 	}
@@ -494,7 +496,6 @@ void App::Draw()
 		recreateSwapChain();
 		std::cerr << "Exception: " << e.what() << std::endl;
 	}
-
 
 
 	vulkanContext->LogicalDevice.resetFences(1, &inFlightFences[currentFrame]);
@@ -561,10 +562,9 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 	UniformBufferObject ubo{};
-    ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	//ubo.model= glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0));
-	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	ubo.proj = glm::perspective(glm::radians(45.0f), vulkanContext->swapchainExtent.width / (float)vulkanContext->swapchainExtent.height, 0.1f, 10.0f);
+	ubo.model = glm::scale(glm::mat4(1.0f), glm::vec3(10, 10, 10)) * glm::rotate(glm::mat4(1.0f), time *= 0.01*   glm::radians(360.0f), glm::vec3(0.0f,1.0f, 0.0f));
+	ubo.view = camera->GetViewMatrix();
+	ubo.proj = camera->GetProjectionMatrix();
 	ubo.proj[1][1] *= -1;
 
 	memcpy(uniformBuffersMappedMem[currentImage], &ubo, sizeof(ubo));
@@ -675,7 +675,11 @@ void App::destroy_swapchain()
 
 }
 
-
+void App::destroy_DepthImage()
+{
+	vulkanContext->LogicalDevice.destroyImageView(DepthImageView, nullptr);
+	bufferManger->DestroyImage(DepthTextureData);
+}
 
 void  App::StartFrame() {
 
@@ -702,11 +706,13 @@ void App::recreateSwapChain() {
 
 
 	destroy_swapchain();
-	vulkanContext->LogicalDevice.destroyImageView(DepthImageView, nullptr);
+	destroy_DepthImage();
 
 	vulkanContext->create_swapchain();
 	createDepthTextureImage();
 
+	camera->SetSwapChainHeight(vulkanContext->swapchainExtent.height);
+	camera->SetSwapChainWidth(vulkanContext->swapchainExtent.width);
 }
 
 void App::DestroySyncObjects()
@@ -754,6 +760,8 @@ void App::CleanUp()
 	vulkanContext->LogicalDevice.destroy();
 	vkb::destroy_debug_utils_messenger(vulkanContext->VulkanInstance, vulkanContext->Debug_Messenger);
 	vulkanContext->VulkanInstance.destroy();
+
+	
 }
 
 void App::SwapchainResizeCallback(GLFWwindow* window, int width, int height)

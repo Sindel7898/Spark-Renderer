@@ -14,6 +14,7 @@
 #include "BufferManager.h"
 #include "VulkanContext.h"
 #include"MeshLoader.h"
+#include "Camera.h"
 
 
 struct UniformBufferObject {
@@ -74,7 +75,7 @@ public:
 	vk::ShaderModule createShaderModule(const std::vector<char>& code);
 
 	void destroy_swapchain();
-
+	void destroy_DepthImage();
 
 	bool framebufferResized = false;
  private:
@@ -83,6 +84,7 @@ public:
 	 std::unique_ptr<VulkanContext> vulkanContext = nullptr;
 	 std::unique_ptr<BufferManager> bufferManger = nullptr;
 	 std::unique_ptr<MeshLoader> meshloader = nullptr;
+	 std::unique_ptr<Camera> camera = nullptr;
 
 
 #ifdef NDEBUG
@@ -104,24 +106,6 @@ public:
 
 	 const int MAX_FRAMES_IN_FLIGHT = 2;
 	 uint32_t currentFrame = 0;
-
-	// const std::vector<Vertex> vertices = {
- //  {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-	//{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-	//{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-	//{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-
-	//{{-0.5f, -0.5f, -0.2f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-	//{{0.5f, -0.5f, -0.2f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-	//{{0.5f, 0.5f, -0.2f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-	//{{-0.5f, 0.5f, -0.2f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-	// 
-	// };
-
-	/* const std::vector<uint16_t> indices = {
-		0, 1, 2, 2, 3, 0,
-		4, 5, 6, 6, 7, 4
-	 };*/
 
 
 	 vk::DescriptorSetLayout DescriptorSetLayout;

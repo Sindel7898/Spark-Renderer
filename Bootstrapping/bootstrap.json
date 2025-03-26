@@ -1,22 +1,22 @@
 [
-    {
-      "name": "glfw",
-      "source": {
-        "type": "git",
-        "url": "https://github.com/glfw/glfw.git",
-        "revision": "3.4"
-      }
-    },
-  
-    {
-      "name": "glm",
-      "source": {
-        "type": "git",
-        "url": "https://github.com/g-truc/glm.git",
-        "revision": "1.01"
-  
-      }
-    },
+  {
+    "name": "glfw",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/glfw/glfw.git",
+      "revision": "3.4"
+    }
+  },
+
+  {
+    "name": "glm",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/g-truc/glm.git",
+      "revision": "1.01"
+
+    }
+  },
 
   {
     "name": "vk-bootstrap",
@@ -51,6 +51,15 @@
       "url": "https://github.com/assimp/assimp.git"
 
     }
+  },
+  {
+    "name": "imgui",
+    "source": {
+      "type": "git",
+      "url": "https://github.com/ocornut/imgui.git",
+      "revision": "develop"
+    }
   }
-  ]
+
+]
   
