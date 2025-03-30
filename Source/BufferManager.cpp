@@ -199,6 +199,208 @@ ImageData BufferManager::CreateTextureImage(const char* FilePath, vk::CommandPoo
 	return TextureImageData;
 }
 
+ImageData BufferManager::CreateCubeMap(std::array<const char*, 6> filePaths, vk::CommandPool commandpool, vk::Queue Queue)
+{
+	struct FaceData {
+		stbi_uc* pixels;
+		int width;
+		int height;
+	};
+
+	std::vector<FaceData> faces;
+	vk::DeviceSize totalSize = 0;
+
+	int faceWidth = 0, faceHeight = 0;
+
+	for (int i = 0; i < filePaths.size(); i++) {
+
+		int texWidth, texHeight, texChannels;
+
+		stbi_uc* pixels = stbi_load(filePaths[i], &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+		faceWidth = texWidth;
+		faceHeight = texHeight;
+
+		vk::DeviceSize faceSize = texWidth * texHeight * 4;
+		
+		totalSize += faceSize;
+
+		faces.push_back({ pixels, texWidth, texHeight });
+	}
+
+	vk::BufferCreateInfo stagingBufferInfo = {};
+	stagingBufferInfo.size = totalSize;
+	stagingBufferInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
+	stagingBufferInfo.sharingMode = vk::SharingMode::eExclusive;
+
+	VmaAllocationCreateInfo stagingAllocInfo = {};
+	stagingAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+	stagingAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
+		VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+	VkBuffer cStagingBuffer;
+	VmaAllocation stagingAllocation;
+	if (vmaCreateBuffer(allocator, reinterpret_cast<VkBufferCreateInfo*>(&stagingBufferInfo), &stagingAllocInfo,&cStagingBuffer,&stagingAllocation,nullptr) != VK_SUCCESS) {
+		
+		for (auto& face : faces) {
+			stbi_image_free(face.pixels);
+		}
+
+		throw std::runtime_error("Failed to create staging buffer for cube map!");
+	}
+
+	void* mappedData;
+	vmaMapMemory(allocator, stagingAllocation, &mappedData);
+	vk::DeviceSize offset = 0;
+
+	for (auto& face : faces) {
+		
+		vk::DeviceSize faceSize = face.width * face.height * 4;
+
+		memcpy(static_cast<char*>(mappedData) + offset, face.pixels, faceSize);
+
+		stbi_image_free(face.pixels);
+		offset += faceSize;
+	}
+
+	vmaUnmapMemory(allocator, stagingAllocation);
+
+
+	// Create the cube map image (6 array layers)
+	vk::Extent3D imageExtent = { static_cast<uint32_t>(faceWidth),
+								static_cast<uint32_t>(faceHeight),
+								1 };
+
+	vk::ImageCreateInfo imageInfo = {};
+	imageInfo.imageType = vk::ImageType::e2D;
+	imageInfo.extent = imageExtent;
+	imageInfo.mipLevels = 1;
+	imageInfo.arrayLayers = 6;
+	imageInfo.format = vk::Format::eR8G8B8A8Srgb;
+	imageInfo.tiling = vk::ImageTiling::eOptimal;
+	imageInfo.initialLayout = vk::ImageLayout::eUndefined;
+	imageInfo.usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+	imageInfo.sharingMode = vk::SharingMode::eExclusive;
+	imageInfo.samples = vk::SampleCountFlagBits::e1;
+	imageInfo.flags = vk::ImageCreateFlagBits::eCubeCompatible; 
+
+
+	VmaAllocationCreateInfo imageAllocInfo = {};
+	imageAllocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+	VkImage cCubeImage;
+	VmaAllocation cubeAllocation;
+	if (vmaCreateImage(allocator,reinterpret_cast<VkImageCreateInfo*>(&imageInfo),&imageAllocInfo,&cCubeImage,&cubeAllocation,nullptr) != VK_SUCCESS) {
+		vmaDestroyBuffer(allocator, cStagingBuffer, stagingAllocation);
+		throw std::runtime_error("Failed to create cube map image!");
+	}
+
+	ImageData cubeImageData;
+	cubeImageData.image = vk::Image(cCubeImage);
+	cubeImageData.allocation = cubeAllocation;
+
+	// Transfer data from staging buffer to cube map image
+	vk::CommandBuffer cmdBuffer = CreateSingleUseCommandBuffer(commandpool);
+
+	vk::ImageMemoryBarrier acquireBarrier{};
+	acquireBarrier.oldLayout = vk::ImageLayout::eUndefined;
+	acquireBarrier.newLayout = vk::ImageLayout::eTransferDstOptimal;
+	acquireBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	acquireBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	acquireBarrier.image = cubeImageData.image;
+	acquireBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+	acquireBarrier.subresourceRange.baseMipLevel = 0;
+	acquireBarrier.subresourceRange.levelCount = 1;
+	acquireBarrier.subresourceRange.layerCount = 6;
+	acquireBarrier.subresourceRange.baseArrayLayer = 0;
+	acquireBarrier.srcAccessMask = vk::AccessFlagBits::eNone;
+	acquireBarrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
+
+	cmdBuffer.pipelineBarrier(
+		vk::PipelineStageFlagBits::eTopOfPipe,
+		vk::PipelineStageFlagBits::eTransfer,
+		vk::DependencyFlags(),
+		0, nullptr,
+		0, nullptr,
+		1, &acquireBarrier
+	);
+
+	// Copy each face from the staging buffer
+	std::vector<vk::BufferImageCopy> copyRegions;
+	offset = 0;
+
+	for (uint32_t face = 0; face < 6; face++) {
+		vk::BufferImageCopy copyRegion = {};
+		copyRegion.bufferOffset = offset;
+		copyRegion.bufferRowLength = 0;
+		copyRegion.bufferImageHeight = 0;
+		copyRegion.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+		copyRegion.imageSubresource.mipLevel = 0;
+		copyRegion.imageSubresource.baseArrayLayer = face;
+		copyRegion.imageSubresource.layerCount = 1;
+		copyRegion.imageOffset = vk::Offset3D{ 0, 0, 0 };
+		copyRegion.imageExtent = imageExtent;
+
+		copyRegions.push_back(copyRegion);
+		offset += faceWidth * faceHeight * 4;
+	}
+
+	cmdBuffer.copyBufferToImage(
+		vk::Buffer(cStagingBuffer),
+		cubeImageData.image,
+		vk::ImageLayout::eTransferDstOptimal,
+		static_cast<uint32_t>(copyRegions.size()),
+		copyRegions.data()
+	);
+
+	// Transition to shader read layout
+	vk::ImageMemoryBarrier releaseBarrier{};
+	releaseBarrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
+	releaseBarrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+	releaseBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	releaseBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	releaseBarrier.image = cubeImageData.image;
+	releaseBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+	releaseBarrier.subresourceRange.baseMipLevel = 0;
+	releaseBarrier.subresourceRange.levelCount = 1;
+	releaseBarrier.subresourceRange.layerCount = 6;
+	releaseBarrier.subresourceRange.baseArrayLayer = 0;
+	releaseBarrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+	releaseBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+
+	cmdBuffer.pipelineBarrier(
+		vk::PipelineStageFlagBits::eTransfer,
+		vk::PipelineStageFlagBits::eFragmentShader,
+		vk::DependencyFlags(),
+		0, nullptr,
+		0, nullptr,
+		1, &releaseBarrier
+	);
+
+	SubmitAndDestoyCommandBuffer(commandpool, cmdBuffer, Queue);
+
+	// Clean up staging resources
+	vmaDestroyBuffer(allocator, cStagingBuffer, stagingAllocation);
+
+	// Create cube map view
+	vk::ImageViewCreateInfo viewInfo = {};
+	viewInfo.image = cubeImageData.image;
+	viewInfo.viewType = vk::ImageViewType::eCube; // This makes it a cube map!
+	viewInfo.format = vk::Format::eR8G8B8A8Srgb;
+	viewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+	viewInfo.subresourceRange.baseMipLevel = 0;
+	viewInfo.subresourceRange.levelCount = 1;
+	viewInfo.subresourceRange.baseArrayLayer = 0;
+	viewInfo.subresourceRange.layerCount = 6; // All six faces
+
+
+
+	cubeImageData.imageView = logicalDevice.createImageView(viewInfo);
+	cubeImageData.imageSampler = CreateImageSampler();
+
+	return cubeImageData;
+}
+
 ImageData BufferManager::CreateImage( vk::Extent3D imageExtent, vk::Format imageFormat, vk::ImageUsageFlags UsageFlag) {
 
 	vk::ImageCreateInfo imagecreateinfo;
@@ -235,10 +437,10 @@ ImageData BufferManager::CreateImage( vk::Extent3D imageExtent, vk::Format image
 	return  imageData;
 }
 
-vk::ImageView BufferManager::CreateImageView(vk::Image ImageToConvert, vk::Format ImageFormat = vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlags ImageAspectBits = vk::ImageAspectFlagBits::eColor) {
+vk::ImageView BufferManager::CreateImageView(vk::Image Image, vk::Format ImageFormat = vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlags ImageAspectBits = vk::ImageAspectFlagBits::eColor) {
 
 	vk::ImageViewCreateInfo imageviewinfo{};
-	imageviewinfo.image = ImageToConvert;
+	imageviewinfo.image = Image;
 	imageviewinfo.viewType = vk::ImageViewType::e2D;
 	imageviewinfo.format = ImageFormat;
 	imageviewinfo.subresourceRange.aspectMask = ImageAspectBits;

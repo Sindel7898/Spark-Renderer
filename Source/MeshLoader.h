@@ -42,6 +42,32 @@ struct ModelVertex {
 	}
 };
 
+struct SkyBoxVertex {
+
+	glm::vec3 vert;
+
+	static vk::VertexInputBindingDescription GetBindingDescription() {
+		vk::VertexInputBindingDescription  bindingdescription{};
+
+		bindingdescription.binding = 0;
+		bindingdescription.stride = sizeof(SkyBoxVertex);
+		bindingdescription.inputRate = vk::VertexInputRate::eVertex;
+
+		return bindingdescription;
+	}
+
+	static std::array< vk::VertexInputAttributeDescription, 1> GetAttributeDescription() {
+
+		std::array<vk::VertexInputAttributeDescription, 1> attributeDescriptions{};
+
+		attributeDescriptions[0].binding = 0;
+		attributeDescriptions[0].location = 0;
+		attributeDescriptions[0].format = vk::Format::eR32G32B32Sfloat;
+		attributeDescriptions[0].offset = offsetof(SkyBoxVertex, vert);
+
+		return attributeDescriptions;
+	}
+};
 
 class MeshLoader
 {

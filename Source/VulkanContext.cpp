@@ -134,3 +134,24 @@ void VulkanContext::create_swapchain()
 	swapchainImages = vkbswapChain.get_images().value();
 	swapchainImageViews = vkbswapChain.get_image_views().value();
 }
+
+vk::Format VulkanContext::FindCompatableDepthFormat()
+{
+	const std::vector<vk::Format> candidates = {
+	   vk::Format::eD32SfloatS8Uint,  
+	   vk::Format::eD24UnormS8Uint,   
+	   vk::Format::eD32Sfloat,        
+	   vk::Format::eD16Unorm,         
+	   vk::Format::eD16UnormS8Uint   
+	};
+
+	for (const auto& format : candidates)
+	{
+		vk::FormatProperties props = PhysicalDevice.getFormatProperties(format);
+
+		if (props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment)
+		{
+			return format;
+		}
+	}
+}

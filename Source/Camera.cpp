@@ -5,12 +5,13 @@ Camera::Camera(float SwapChainHeight, float SwapChainWidth, GLFWwindow* Window) 
     worldUp(0.0f, 1.0f, 0.0f),
     pitch(0.0f),
     yaw(-90.0f),
-    movementSpeed(0.8f),
+    movementSpeed(15.0f),
     mouseSensitivity(0.1f),
     fov(90.0f),
     nearClip(0.0001f),
     farClip(200.0f),
     firstMouse(true),
+    mouseCaptured(false),
     window(Window),
     swapChainHeight(SwapChainHeight),
     swapChainWidth(SwapChainWidth)
@@ -109,6 +110,7 @@ void Camera::UpdateCameraVectors() {
 }
 
 void Camera::UpdateViewMatrix() {
+
     viewMatrix = glm::lookAt(position, position + forward, up);
 }
 

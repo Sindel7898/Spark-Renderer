@@ -21,6 +21,8 @@ void App::Initialisation()
 	createSyncObjects();
 	//////////////////////////
 	CreateGraphicsPipeline();
+	CreateSkyboxGraphicsPipeline();
+
 	//////////////////////////
 	createCommandPool();
 	createCommandBuffer();
@@ -33,8 +35,8 @@ void App::Initialisation()
 	/////////////////////
 	createDescriptorSets();
 	/////////////////////////////////
-
 }
+
 
 /* Create Descriptor Setlayout used to describe shader bindings*/
 void App::createDescriptorSetLayout()
@@ -51,7 +53,13 @@ void App::createDescriptorSetLayout()
 	samplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	samplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-	std::array<vk::DescriptorSetLayoutBinding, 2> bindings = { UniformBufferBinding, samplerLayoutBinding };
+	vk::DescriptorSetLayoutBinding SkyboxsamplerLayoutBinding{};
+	SkyboxsamplerLayoutBinding.binding = 2;
+	SkyboxsamplerLayoutBinding.descriptorCount = 1;
+	SkyboxsamplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	SkyboxsamplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+	std::array<vk::DescriptorSetLayoutBinding,3> bindings = { UniformBufferBinding, samplerLayoutBinding,SkyboxsamplerLayoutBinding };
 
 	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -73,14 +81,15 @@ void App::createDescriptorPool()
 
 	vk::DescriptorPoolSize Samplerpoolsize;
 	Samplerpoolsize.type = vk::DescriptorType::eSampler;
-	Samplerpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	Samplerpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 2;
 
 	std::array<	vk::DescriptorPoolSize, 2> poolSizes{ Uniformpoolsize ,Samplerpoolsize };
 
 	vk::DescriptorPoolCreateInfo poolInfo{};
-	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());;
+	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
+	poolInfo.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
 	poolInfo.pPoolSizes = poolSizes.data();
-	poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 2;
 
 	DescriptorPool = vulkanContext->LogicalDevice.createDescriptorPool(poolInfo, nullptr);
 
@@ -111,6 +120,11 @@ void App::createDescriptorSets()
 		imageInfo.imageView = TextureImageView;
 		imageInfo.sampler = TextureSampler;
 
+		vk::DescriptorImageInfo CubemapimageInfo{};
+		CubemapimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		CubemapimageInfo.imageView = CubeMapTextureImageView;
+		CubemapimageInfo.sampler = CubeMapTextureSampler;
+
 		vk::WriteDescriptorSet UniformdescriptorWrite{};
 		UniformdescriptorWrite.dstSet = DescriptorSets[i];
 		UniformdescriptorWrite.dstBinding = 0;
@@ -127,7 +141,16 @@ void App::createDescriptorSets()
 		SamplerdescriptorWrite.descriptorCount = 1;
 		SamplerdescriptorWrite.pImageInfo = &imageInfo;
 
-		std::array<vk::WriteDescriptorSet, 2> descriptorWrites{ UniformdescriptorWrite ,SamplerdescriptorWrite };
+		vk::WriteDescriptorSet CubemapSamplerdescriptorWrite{};
+		CubemapSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+		CubemapSamplerdescriptorWrite.dstBinding = 2;
+		CubemapSamplerdescriptorWrite.dstArrayElement = 0;
+		CubemapSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		CubemapSamplerdescriptorWrite.descriptorCount = 1;
+		CubemapSamplerdescriptorWrite.pImageInfo = &CubemapimageInfo;
+
+
+		std::array<vk::WriteDescriptorSet, 3> descriptorWrites{ UniformdescriptorWrite ,SamplerdescriptorWrite,CubemapSamplerdescriptorWrite };
 
 		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	}
@@ -135,18 +158,33 @@ void App::createDescriptorSets()
 
 void App::createTextureImage()
 {
-	 MeshTextureData = bufferManger->CreateTextureImage("../Textures/Tex_2.jpg", commandPool, vulkanContext->graphicsQueue);
+	 MeshTextureData = bufferManger->CreateTextureImage("../Textures/Helmet/RGBDefault_albedo.jpeg", commandPool, vulkanContext->graphicsQueue);
 	 TextureImage = MeshTextureData.image;
 	 TextureImageView = MeshTextureData.imageView;
 	 TextureSampler = MeshTextureData.imageSampler;
+
+	 std::array<const char*, 6> filePaths{
+		 "../Textures/skybox/right.jpg",  // +X (Right)
+		 "../Textures/skybox/left.jpg",  // -X (Left)
+		 "../Textures/skybox/top.jpg",  // +Y (Top)
+		 "../Textures/skybox/bottom.jpg",  // -Y (Bottom)
+		 "../Textures/skybox/front.jpg",  // +Z (Front)
+		 "../Textures/skybox/back.jpg"   // -Z (Back)
+	 };
+
+	 CubeMapImageData = bufferManger->CreateCubeMap(filePaths, commandPool, vulkanContext->graphicsQueue);
+	 CubeMapTextureImage = CubeMapImageData.image;
+	 CubeMapTextureImageView = CubeMapImageData.imageView;
+	 CubeMapTextureSampler = CubeMapImageData.imageSampler;
+
 }
 
 void App::createDepthTextureImage()
 {
 	vk::Extent3D imageExtent = { vulkanContext->swapchainExtent.width,vulkanContext->swapchainExtent.height,1 };
 
-	DepthTextureData = bufferManger->CreateImage(imageExtent, vk::Format::eD32SfloatS8Uint, vk::ImageUsageFlagBits::eDepthStencilAttachment);
-	DepthTextureData.imageView = bufferManger->CreateImageView(DepthTextureData.image, vk::Format::eD32SfloatS8Uint, vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
+	DepthTextureData = bufferManger->CreateImage(imageExtent, vulkanContext->FindCompatableDepthFormat(), vk::ImageUsageFlagBits::eDepthStencilAttachment);
+	DepthTextureData.imageView = bufferManger->CreateImageView(DepthTextureData.image, vulkanContext->FindCompatableDepthFormat(), vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
 
 	DepthImageView = DepthTextureData.imageView;
 
@@ -171,10 +209,14 @@ void App::createDepthTextureImage()
 
 void App::createVertexBuffer()
 {
-	meshloader->LoadModel("../Textures/model.obj");
+	meshloader->LoadModel("../Textures/Helmet/model.obj");
 	VkDeviceSize VertexBufferSize = sizeof(meshloader->GetVertices()[0]) * meshloader->GetVertices().size();
-	VertexBufferData =  bufferManger->CreateGPUOptimisedBuffer(meshloader->GetVertices().data(), VertexBufferSize,vk::BufferUsageFlagBits::eVertexBuffer ,commandPool, vulkanContext->graphicsQueue);
+	VertexBufferData =  bufferManger->CreateGPUOptimisedBuffer(meshloader->GetVertices().data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
 	VertexBuffer = VertexBufferData.buffer;
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	VkDeviceSize SkyBoxBuffersize = sizeof(vertices[0]) * vertices.size();
+	SkyBoxVertexBufferData = bufferManger->CreateGPUOptimisedBuffer(vertices.data(), SkyBoxBuffersize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
+	SkyBoxBuffer = SkyBoxVertexBufferData.buffer;
    
 }
 
@@ -281,7 +323,7 @@ void App::CreateGraphicsPipeline()
 	rasterizerinfo.rasterizerDiscardEnable = vk::False;
 	rasterizerinfo.polygonMode = vk::PolygonMode::eFill;
     rasterizerinfo.lineWidth = 1.0f;
-	rasterizerinfo.cullMode = vk::CullModeFlagBits::eBack;
+	rasterizerinfo.cullMode = vk::CullModeFlagBits::eNone;
 	rasterizerinfo.frontFace = vk::FrontFace::eCounterClockwise;
 	rasterizerinfo.depthBiasEnable = vk::False;
 	rasterizerinfo.depthBiasConstantFactor = 0.0f;
@@ -330,20 +372,22 @@ void App::CreateGraphicsPipeline()
 	vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 	pipelineRenderingCreateInfo.colorAttachmentCount = 1;
 	pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext->swapchainformat;
-	pipelineRenderingCreateInfo.depthAttachmentFormat = vk::Format::eD32SfloatS8Uint;
+	pipelineRenderingCreateInfo.depthAttachmentFormat = vulkanContext->FindCompatableDepthFormat();
 
 	vk::PipelineDepthStencilStateCreateInfo depthStencilState;
 	depthStencilState.depthTestEnable = VK_TRUE;
 	depthStencilState.depthWriteEnable = VK_TRUE;
 	depthStencilState.depthCompareOp = vk::CompareOp::eLess;
-	depthStencilState.stencilTestEnable = VK_TRUE;
-	depthStencilState.front.compareOp = vk::CompareOp::eAlways; // Always pass stencil test
-	depthStencilState.front.failOp = vk::StencilOp::eKeep; // Keep the stencil value on fail
-	depthStencilState.front.depthFailOp = vk::StencilOp::eIncrementAndClamp; // Increment on depth fail
-	depthStencilState.front.passOp = vk::StencilOp::eKeep; // Keep the stencil value on pass
-	
+	depthStencilState.minDepthBounds = 0.0f;
+	depthStencilState.maxDepthBounds = 1.0f;
+	depthStencilState.stencilTestEnable = VK_FALSE;
+
+	//depthStencilState.front.compareOp = vk::CompareOp::eAlways;
+	//depthStencilState.front.failOp = vk::StencilOp::eKeep; 
+	//depthStencilState.front.depthFailOp = vk::StencilOp::eIncrementAndClamp; 
+	//depthStencilState.front.passOp = vk::StencilOp::eKeep; // Keep the stencil value on pass
 	// Stencil operations for back-facing polygons
-	depthStencilState.back = depthStencilState.front; // Use the same operations for back faces
+	//depthStencilState.back = depthStencilState.front; // Use the same operations for back faces
 
 	vk::GraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.pNext = &pipelineRenderingCreateInfo; // Add this line
@@ -373,6 +417,169 @@ void App::CreateGraphicsPipeline()
 	vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
 }
 
+void App::CreateSkyboxGraphicsPipeline()
+{
+	//Read Vertex & Fragment shader  and create modules
+	auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/SkyBox_Shader.vert.spv");
+	auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/SkyBox_Shader.frag.spv");
+
+	VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
+	VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
+
+	vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
+	VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
+	VertShaderStageInfo.module = VertShaderModule;
+	VertShaderStageInfo.pName = "main";
+
+	vk::PipelineShaderStageCreateInfo FragmentShaderStageInfo{};
+	FragmentShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
+	FragmentShaderStageInfo.module = FragShaderModule;
+	FragmentShaderStageInfo.pName = "main";
+
+	vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo ,FragmentShaderStageInfo };
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	auto BindDesctiptions = SkyBoxVertex::GetBindingDescription();
+	auto attributeDescriptions = SkyBoxVertex::GetAttributeDescription();
+
+	vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
+	vertexInputInfo.setVertexBindingDescriptionCount(1);
+	vertexInputInfo.setVertexAttributeDescriptionCount(1);
+	vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
+	vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	vk::PipelineInputAssemblyStateCreateInfo inputAssembleInfo{};
+	inputAssembleInfo.topology = vk::PrimitiveTopology::eTriangleList;
+	inputAssembleInfo.primitiveRestartEnable = vk::False;
+
+	//Create ViewPort and scissor
+	vk::Viewport viewport{};
+	viewport.setX(0.0f);
+	viewport.setY(0.0f);
+	viewport.setHeight((float)vulkanContext->swapchainExtent.height);
+	viewport.setWidth((float)vulkanContext->swapchainExtent.width);
+	viewport.setMinDepth(0.0f);
+	viewport.setMaxDepth(1.0f);
+
+	vk::Offset2D scissorOffset = { 0,0 };
+
+	vk::Rect2D scissor{};
+	scissor.setOffset(scissorOffset);
+	scissor.setExtent(vulkanContext->swapchainExtent);
+
+
+	// set states that can be dynamic without having to recreate the whole pipeline
+	std::vector<vk::DynamicState> DynamicStates = {
+		vk::DynamicState::eViewport,
+		vk::DynamicState::eScissor,
+	};
+
+	vk::PipelineDynamicStateCreateInfo DynamicState{};
+	DynamicState.dynamicStateCount = static_cast<uint32_t>(DynamicStates.size());
+	DynamicState.pDynamicStates = DynamicStates.data();
+	/////////////////////////////////////////////////////////////////////////////
+
+	vk::PipelineViewportStateCreateInfo viewportState{};
+	viewportState.setViewportCount(1);
+	viewportState.setScissorCount(1);
+	viewportState.setViewports(viewport);
+	viewportState.setScissors(scissor);
+	////////////////////////////////////////////////////////////////////////////////
+
+	// Rasteriser information
+	vk::PipelineRasterizationStateCreateInfo rasterizerinfo{};
+	rasterizerinfo.depthClampEnable = vk::False;
+	rasterizerinfo.rasterizerDiscardEnable = vk::False;
+	rasterizerinfo.polygonMode = vk::PolygonMode::eFill;
+	rasterizerinfo.lineWidth = 1.0f;
+	rasterizerinfo.cullMode = vk::CullModeFlagBits::eNone;
+	rasterizerinfo.frontFace = vk::FrontFace::eClockwise;
+	rasterizerinfo.depthBiasEnable = vk::False;
+	rasterizerinfo.depthBiasConstantFactor = 0.0f;
+	rasterizerinfo.depthBiasClamp = 0.0f;
+	rasterizerinfo.depthBiasSlopeFactor = 0.0f;
+
+	//Multi Sampling/
+	vk::PipelineMultisampleStateCreateInfo multisampling{};
+	multisampling.sampleShadingEnable = vk::False;
+	multisampling.rasterizationSamples = vk::SampleCountFlagBits::e1;
+	multisampling.minSampleShading = 1.0f;
+	multisampling.pSampleMask = nullptr;
+	multisampling.alphaToCoverageEnable = vk::False;
+	multisampling.alphaToOneEnable = vk::False;
+
+	///////////// Color blending *COME BACK TO THIS////////////////////
+	vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
+	colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR |
+		vk::ColorComponentFlagBits::eG |
+		vk::ColorComponentFlagBits::eB |
+		vk::ColorComponentFlagBits::eA;
+	colorBlendAttachment.blendEnable = vk::True;
+
+	colorBlendAttachment.setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha);
+	colorBlendAttachment.setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
+	colorBlendAttachment.setColorBlendOp(vk::BlendOp::eAdd);
+	colorBlendAttachment.setSrcAlphaBlendFactor(vk::BlendFactor::eOne);
+	colorBlendAttachment.setDstAlphaBlendFactor(vk::BlendFactor::eZero);
+	colorBlendAttachment.setAlphaBlendOp(vk::BlendOp::eAdd);
+
+	vk::PipelineColorBlendStateCreateInfo colorBlend{};
+	colorBlend.setLogicOpEnable(vk::False);
+	colorBlend.logicOp = vk::LogicOp::eCopy;
+	colorBlend.setAttachmentCount(1);
+	colorBlend.setPAttachments(&colorBlendAttachment);
+	//////////////////////////////////////////////////////////////////////
+
+	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+	pipelineLayoutInfo.setLayoutCount = 1; // Optional
+	pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout; // Optional
+	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
+	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
+
+	pipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+
+	vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
+	pipelineRenderingCreateInfo.colorAttachmentCount = 1;
+	pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext->swapchainformat;
+	pipelineRenderingCreateInfo.depthAttachmentFormat = vulkanContext->FindCompatableDepthFormat();
+
+	vk::PipelineDepthStencilStateCreateInfo depthStencilState;
+	depthStencilState.depthTestEnable = vk::False;
+	depthStencilState.depthWriteEnable = vk::False;
+	depthStencilState.depthCompareOp = vk::CompareOp::eLess;
+	depthStencilState.minDepthBounds = 0.0f;
+	depthStencilState.maxDepthBounds = 1.0f;
+	depthStencilState.stencilTestEnable = VK_FALSE;
+
+	vk::GraphicsPipelineCreateInfo pipelineInfo{};
+	pipelineInfo.pNext = &pipelineRenderingCreateInfo; 
+	pipelineInfo.stageCount = 2;
+	pipelineInfo.pStages = ShaderStages;
+	pipelineInfo.pVertexInputState = &vertexInputInfo;
+	pipelineInfo.pInputAssemblyState = &inputAssembleInfo;
+	pipelineInfo.pViewportState = &viewportState;
+	pipelineInfo.pRasterizationState = &rasterizerinfo;
+	pipelineInfo.pMultisampleState = &multisampling;
+	pipelineInfo.pDepthStencilState = &depthStencilState;
+	pipelineInfo.pColorBlendState = &colorBlend;
+	pipelineInfo.pDynamicState = &DynamicState;
+	pipelineInfo.layout = pipelineLayout;
+	pipelineInfo.renderPass = VK_NULL_HANDLE;
+	pipelineInfo.subpass = 0;
+
+
+	vk::Result result = vulkanContext->LogicalDevice.createGraphicsPipelines(nullptr, 1, &pipelineInfo, nullptr, &SkyBoxgraphicsPipeline);
+
+	if (result != vk::Result::eSuccess)
+	{
+		throw std::runtime_error("failed to create graphics pipeline!");
+	}
+
+	vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
+	vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
+}
+
 vk::ShaderModule App::createShaderModule(const std::vector<char>& code)
 {
 	vk::ShaderModuleCreateInfo createInfo{};
@@ -393,7 +600,6 @@ vk::ShaderModule App::createShaderModule(const std::vector<char>& code)
 
 void App::createCommandPool()
 { 
-
 	vk::CommandPoolCreateInfo poolInfo{};
 	poolInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
 	poolInfo.queueFamilyIndex = vulkanContext->graphicsQueueFamilyIndex;
@@ -497,13 +703,11 @@ void App::Draw()
 		std::cerr << "Exception: " << e.what() << std::endl;
 	}
 
+	updateUniformBuffer(currentFrame);
+	recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
 	vulkanContext->LogicalDevice.resetFences(1, &inFlightFences[currentFrame]);
-
-	commandBuffers[currentFrame].reset();
-	recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
-	updateUniformBuffer(currentFrame);
-
+	
 	 // Step 5: Set up synchronization for rendering
      // The GPU will wait for the imageAvailableSemaphore to be signaled before starting rendering.
     // It will wait at the eColorAttachmentOutput stage, which is where color attachment writes occur
@@ -577,6 +781,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	vk::CommandBufferBeginInfo begininfo{};
 	begininfo.pInheritanceInfo = nullptr;
+	begininfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 
 	commandBuffer.begin(begininfo);
 
@@ -605,7 +810,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	depthStencilAttachment.imageView = DepthImageView;
 	depthStencilAttachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 	depthStencilAttachment.loadOp = vk::AttachmentLoadOp::eClear; // Clear the depth-stencil buffer
-	depthStencilAttachment.storeOp = vk::AttachmentStoreOp::eStore; // Store the depth-stencil buffer
+	depthStencilAttachment.storeOp = vk::AttachmentStoreOp::eDontCare; 
 	depthStencilAttachment.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0); 
 
 	vk::RenderingInfoKHR renderingInfo{};
@@ -616,10 +821,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	renderingInfo.pColorAttachments = &colorAttachmentInfo;
 	renderingInfo.pDepthAttachment = &depthStencilAttachment;
 
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
-	commandBuffer.beginRendering(renderingInfo);
-
 	vk::Viewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
@@ -627,25 +828,41 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	viewport.height = static_cast<float>(vulkanContext->swapchainExtent.height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
-	commandBuffer.setViewport(0, 1, &viewport);
+
 
 	vk::Rect2D scissor{};
 	scissor.offset = imageoffset;
 	scissor.extent = vulkanContext->swapchainExtent;
+	vk::DeviceSize offsets[] = { 0 };
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
+	commandBuffer.beginRendering(renderingInfo);
+	commandBuffer.setViewport(0, 1, &viewport);
 	commandBuffer.setScissor(0, 1, &scissor);
 
+	vk::Buffer SkyboxVertexBuffers[] = { SkyBoxBuffer };
+
+	commandBuffer.bindVertexBuffers(0, 1, SkyboxVertexBuffers, offsets);
+	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &DescriptorSets[currentFrame], 0, nullptr);
+	commandBuffer.draw(static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+	//commandBuffer.endRendering();
+
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
+	//commandBuffer.beginRendering(renderingInfo);
+	//commandBuffer.setViewport(0, 1, &viewport);
+    //commandBuffer.setScissor(0, 1, &scissor);
 
 	vk::Buffer VertexBuffers[] = { VertexBuffer };
-	vk::DeviceSize offsets[] = { 0 };
 
 	commandBuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets); 
 	commandBuffer.bindIndexBuffer(IndexBuffer, 0, vk::IndexType::eUint16);
 	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &DescriptorSets[currentFrame], 0, nullptr);
-
-
 	commandBuffer.drawIndexed(meshloader->GetIndices().size(), 1, 0, 0, 0);
 	commandBuffer.endRendering();
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	ImageTransitionData TransitionSwapchainToPresentData;
 	TransitionSwapchainToPresentData.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
 	TransitionSwapchainToPresentData.newlayout = vk::ImageLayout::ePresentSrcKHR;

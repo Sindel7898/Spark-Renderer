@@ -16,6 +16,7 @@ public:
 	void SelectGPU_CreateDevice();
 	void createSurface();
 	void create_swapchain();
+	vk::Format FindCompatableDepthFormat();
 
 #ifdef NDEBUG
 	const bool enableValidationLayers = false;

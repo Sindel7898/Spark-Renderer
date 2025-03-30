@@ -32,6 +32,7 @@ public:
 	float fps = 0.0f;
 
 	void Initialisation();
+
 	void createTextureImage();
 	void createDepthTextureImage();
 	void createDescriptorSetLayout();
@@ -65,6 +66,7 @@ public:
 	void SwapchainResizeCallback(GLFWwindow* window, int width, int height);
 
 	void CreateGraphicsPipeline();
+	void CreateSkyboxGraphicsPipeline();
 
 	void createCommandBuffer();
 
@@ -78,57 +80,90 @@ public:
 	void destroy_DepthImage();
 
 	bool framebufferResized = false;
- private:
+private:
 
-	 std::unique_ptr<Window> window = nullptr;
-	 std::unique_ptr<VulkanContext> vulkanContext = nullptr;
-	 std::unique_ptr<BufferManager> bufferManger = nullptr;
-	 std::unique_ptr<MeshLoader> meshloader = nullptr;
-	 std::unique_ptr<Camera> camera = nullptr;
+	std::unique_ptr<Window> window = nullptr;
+	std::unique_ptr<VulkanContext> vulkanContext = nullptr;
+	std::unique_ptr<BufferManager> bufferManger = nullptr;
+	std::unique_ptr<MeshLoader> meshloader = nullptr;
+	std::unique_ptr<Camera> camera = nullptr;
 
 
 #ifdef NDEBUG
-	 const bool enableValidationLayers = false;
+	const bool enableValidationLayers = false;
 #else 
-	 const bool enableValidationLayers = true;
+	const bool enableValidationLayers = true;
 #endif
 
-	 vk::PipelineLayout         pipelineLayout  = nullptr;
-	 vk::Pipeline               graphicsPipeline = nullptr;
-	 vk::CommandPool            commandPool      = nullptr;
+	vk::PipelineLayout         pipelineLayout = nullptr;
+	vk::Pipeline               graphicsPipeline = nullptr;
+	vk::Pipeline               SkyBoxgraphicsPipeline = nullptr;
 
-	 vkb::Instance VKB_Instance;
+	vk::CommandPool            commandPool = nullptr;
 
-	 std::vector< vk::Semaphore> imageAvailableSemaphores;
-	 std::vector< vk::Semaphore> renderFinishedSemaphores;
-	 std::vector< vk::Fence> inFlightFences;
-	 std::vector< vk::CommandBuffer> commandBuffers;
+	vkb::Instance VKB_Instance;
 
-	 const int MAX_FRAMES_IN_FLIGHT = 2;
-	 uint32_t currentFrame = 0;
+	std::vector< vk::Semaphore> imageAvailableSemaphores;
+	std::vector< vk::Semaphore> renderFinishedSemaphores;
+	std::vector< vk::Fence> inFlightFences;
+	std::vector< vk::CommandBuffer> commandBuffers;
 
-
-	 vk::DescriptorSetLayout DescriptorSetLayout;
-	 vk::DescriptorPool DescriptorPool;
-	 std::vector<vk::DescriptorSet> DescriptorSets;
-	 vk::Buffer VertexBuffer;
-	 vk::Buffer IndexBuffer;
-
-	 std::vector<BufferData> uniformBuffers;
-	 std::vector<void*> uniformBuffersMappedMem;
-
-	
-	 ImageData MeshTextureData;
-	 vk::Image TextureImage;
-	 vk::ImageView TextureImageView;
-	 vk::Sampler TextureSampler;
-     ////////////////////////////
-	 ImageData DepthTextureData;
-	 vk::ImageView DepthImageView;
+	const int MAX_FRAMES_IN_FLIGHT = 2;
+	uint32_t currentFrame = 0;
 
 
-	 BufferData VertexBufferData;
-	 BufferData IndexBufferData;
+	vk::DescriptorSetLayout DescriptorSetLayout;
+	vk::DescriptorPool DescriptorPool;
+	std::vector<vk::DescriptorSet> DescriptorSets;
+	vk::Buffer VertexBuffer;
+	vk::Buffer SkyBoxBuffer;
+
+	vk::Buffer IndexBuffer;
+
+	std::vector<BufferData> uniformBuffers;
+	std::vector<void*> uniformBuffersMappedMem;
+
+
+	ImageData MeshTextureData;
+	vk::Image TextureImage;
+	vk::ImageView TextureImageView;
+	vk::Sampler TextureSampler;
+
+	//////////////////////////////
+	ImageData CubeMapImageData;
+	vk::Image CubeMapTextureImage;
+	vk::ImageView CubeMapTextureImageView;
+	vk::Sampler CubeMapTextureSampler;
+	////////////////////////////
+	ImageData DepthTextureData;
+	vk::ImageView DepthImageView;
+
+
+	BufferData VertexBufferData;
+	BufferData SkyBoxVertexBufferData;
+
+	BufferData IndexBufferData;
+
+	const std::vector<SkyBoxVertex> vertices = {
+
+		{{-1.0f,  1.0f, -1.0f}}, {{-1.0f, -1.0f, -1.0f}}, {{ 1.0f, -1.0f, -1.0f}},
+		{{ 1.0f, -1.0f, -1.0f}}, {{ 1.0f,  1.0f, -1.0f}}, {{-1.0f,  1.0f, -1.0f}},
+							  	 					   	  						
+		{{-1.0f, -1.0f,  1.0f}}, {{-1.0f, -1.0f, -1.0f}}, {{-1.0f,  1.0f, -1.0f}},
+		{{-1.0f,  1.0f, -1.0f}}, {{-1.0f,  1.0f,  1.0f}}, {{-1.0f, -1.0f,  1.0f}},
+							  	 					   	  						
+		{{ 1.0f, -1.0f, -1.0f}}, {{ 1.0f, -1.0f,  1.0f}}, {{ 1.0f,  1.0f,  1.0f}},
+		{{ 1.0f,  1.0f,  1.0f}}, {{ 1.0f,  1.0f, -1.0f}}, {{ 1.0f, -1.0f, -1.0f}},
+							  	 					   	  						
+		{{-1.0f, -1.0f,  1.0f}}, {{-1.0f,  1.0f,  1.0f}}, {{ 1.0f,  1.0f,  1.0f}},
+		{{ 1.0f,  1.0f,  1.0f}}, {{ 1.0f, -1.0f,  1.0f}}, {{-1.0f, -1.0f,  1.0f}},
+							  	 					   	  						
+		{{-1.0f,  1.0f, -1.0f}}, {{ 1.0f,  1.0f, -1.0f}}, {{ 1.0f,  1.0f,  1.0f}},
+		{{ 1.0f,  1.0f,  1.0f}}, {{-1.0f,  1.0f,  1.0f}}, {{-1.0f,  1.0f, -1.0f}},
+							  	 					   	  						
+		{{-1.0f, -1.0f, -1.0f}}, {{-1.0f, -1.0f,  1.0f}}, {{ 1.0f, -1.0f, -1.0f}},
+		{{ 1.0f, -1.0f, -1.0f}}, {{-1.0f, -1.0f,  1.0f}}, {{ 1.0f, -1.0f,  1.0f}}
+	};
+
 
 };
-
