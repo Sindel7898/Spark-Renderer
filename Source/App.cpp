@@ -8,37 +8,44 @@
 void App::Initialisation()
 {
 	window = std::make_unique<Window>(800, 800, "Vulkan Window");
-	vulkanContext = std::make_unique<VulkanContext>(*window);
-	bufferManger = std::make_unique<BufferManager>(vulkanContext->LogicalDevice, vulkanContext->PhysicalDevice, vulkanContext->VulkanInstance);
-	meshloader = std::make_unique<MeshLoader>();
-	camera = std::make_unique<Camera>(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, window->GetWindow());
-
+	vulkanContext = std::make_shared<VulkanContext>(*window);
+	bufferManger = std::make_shared<BufferManager>(vulkanContext->LogicalDevice, vulkanContext->PhysicalDevice, vulkanContext->VulkanInstance);
+	camera = std::make_shared<Camera>(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, window->GetWindow());
 	//glfwSetFramebufferSizeCallback(window->GetWindow(),);
 	glfwSetWindowUserPointer(window->GetWindow(), this);
-	/////////////////////////
-	createDescriptorSetLayout();
-	createDescriptorPool();
-	createSyncObjects();
-	//////////////////////////
-	CreateGraphicsPipeline();
-	CreateSkyboxGraphicsPipeline();
 
+	createSyncObjects();	
 	//////////////////////////
 	createCommandPool();
+
+	model = std::unique_ptr<Model, ModelDeleter>(new Model ("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(),bufferManger.get()));
+	model->LoadTextures("../Textures/Helmet/RGBDefault_albedo.jpeg");
+	
+	model2 = std::unique_ptr<Model, ModelDeleter>(new Model("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
+	model2->LoadTextures("../Textures/Helmet/RGBDefault_albedo.jpeg");
+
+	std::array<const char*, 6> filePaths{
+		"../Textures/skybox/right.jpg",  // +X (Right)
+		"../Textures/skybox/left.jpg",  // -X (Left)
+		"../Textures/skybox/top.jpg",  // +Y (Top)
+		"../Textures/skybox/bottom.jpg",  // -Y (Bottom)
+		"../Textures/skybox/front.jpg",  // +Z (Front)
+		"../Textures/skybox/back.jpg"   // -Z (Back)
+	};
+
+	skyBox = std::unique_ptr<SkyBox, SkyBoxDeleter>(new SkyBox(filePaths, vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
+
+	createDescriptorPool();
+
 	createCommandBuffer();
+	CreateGraphicsPipeline();
+	CreateSkyboxGraphicsPipeline();
 	/////////////////////////////////
-	createDepthTextureImage();
-	createTextureImage();
-	createVertexBuffer();
-	createIndexBuffer();
-	createUniformBuffer();
-	/////////////////////
-	createDescriptorSets();
-	/////////////////////////////////
+	createDepthTextureImage();	
 }
 
 
-/* Create Descriptor Setlayout used to describe shader bindings*/
+// Create Descriptor Setlayout used to describe shader bindings*/
 void App::createDescriptorSetLayout()
 {
 	vk::DescriptorSetLayoutBinding UniformBufferBinding{};
@@ -69,7 +76,6 @@ void App::createDescriptorSetLayout()
 	if (vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &DescriptorSetLayout) != vk::Result::eSuccess)
 	{
 		throw std::runtime_error("Failed to create descriptorset layout!");
-
 	}
 }
 
@@ -81,7 +87,7 @@ void App::createDescriptorPool()
 
 	vk::DescriptorPoolSize Samplerpoolsize;
 	Samplerpoolsize.type = vk::DescriptorType::eSampler;
-	Samplerpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 2;
+	Samplerpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
 	std::array<	vk::DescriptorPoolSize, 2> poolSizes{ Uniformpoolsize ,Samplerpoolsize };
 
@@ -89,93 +95,14 @@ void App::createDescriptorPool()
 	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 	poolInfo.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
 	poolInfo.pPoolSizes = poolSizes.data();
-	poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 2;
+	poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 500;
 
 	DescriptorPool = vulkanContext->LogicalDevice.createDescriptorPool(poolInfo, nullptr);
+	
+	model->createDescriptorSets(DescriptorPool);
+	model2->createDescriptorSets(DescriptorPool);
+	skyBox->createDescriptorSets(DescriptorPool);
 
-}
-
-void App::createDescriptorSets()
-{
-	std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, DescriptorSetLayout);
-
-	vk::DescriptorSetAllocateInfo allocinfo;
-	allocinfo.descriptorPool = DescriptorPool;
-	allocinfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-	allocinfo.pSetLayouts = layouts.data();
-
-	DescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-
-	vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, DescriptorSets.data());
-
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-
-		vk::DescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = uniformBuffers[i].buffer;
-		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(UniformBufferObject);
-
-		vk::DescriptorImageInfo imageInfo{};
-		imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		imageInfo.imageView = TextureImageView;
-		imageInfo.sampler = TextureSampler;
-
-		vk::DescriptorImageInfo CubemapimageInfo{};
-		CubemapimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		CubemapimageInfo.imageView = CubeMapTextureImageView;
-		CubemapimageInfo.sampler = CubeMapTextureSampler;
-
-		vk::WriteDescriptorSet UniformdescriptorWrite{};
-		UniformdescriptorWrite.dstSet = DescriptorSets[i];
-		UniformdescriptorWrite.dstBinding = 0;
-		UniformdescriptorWrite.dstArrayElement = 0;
-		UniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-		UniformdescriptorWrite.descriptorCount = 1;
-		UniformdescriptorWrite.pBufferInfo = &bufferInfo;
-
-		vk::WriteDescriptorSet SamplerdescriptorWrite{};
-		SamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		SamplerdescriptorWrite.dstBinding = 1;
-		SamplerdescriptorWrite.dstArrayElement = 0;
-		SamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		SamplerdescriptorWrite.descriptorCount = 1;
-		SamplerdescriptorWrite.pImageInfo = &imageInfo;
-
-		vk::WriteDescriptorSet CubemapSamplerdescriptorWrite{};
-		CubemapSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		CubemapSamplerdescriptorWrite.dstBinding = 2;
-		CubemapSamplerdescriptorWrite.dstArrayElement = 0;
-		CubemapSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		CubemapSamplerdescriptorWrite.descriptorCount = 1;
-		CubemapSamplerdescriptorWrite.pImageInfo = &CubemapimageInfo;
-
-
-		std::array<vk::WriteDescriptorSet, 3> descriptorWrites{ UniformdescriptorWrite ,SamplerdescriptorWrite,CubemapSamplerdescriptorWrite };
-
-		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
-	}
-}
-
-void App::createTextureImage()
-{
-	 MeshTextureData = bufferManger->CreateTextureImage("../Textures/Helmet/RGBDefault_albedo.jpeg", commandPool, vulkanContext->graphicsQueue);
-	 TextureImage = MeshTextureData.image;
-	 TextureImageView = MeshTextureData.imageView;
-	 TextureSampler = MeshTextureData.imageSampler;
-
-	 std::array<const char*, 6> filePaths{
-		 "../Textures/skybox/right.jpg",  // +X (Right)
-		 "../Textures/skybox/left.jpg",  // -X (Left)
-		 "../Textures/skybox/top.jpg",  // +Y (Top)
-		 "../Textures/skybox/bottom.jpg",  // -Y (Bottom)
-		 "../Textures/skybox/front.jpg",  // +Z (Front)
-		 "../Textures/skybox/back.jpg"   // -Z (Back)
-	 };
-
-	 CubeMapImageData = bufferManger->CreateCubeMap(filePaths, commandPool, vulkanContext->graphicsQueue);
-	 CubeMapTextureImage = CubeMapImageData.image;
-	 CubeMapTextureImageView = CubeMapImageData.imageView;
-	 CubeMapTextureSampler = CubeMapImageData.imageSampler;
 
 }
 
@@ -206,46 +133,6 @@ void App::createDepthTextureImage()
 
 	bufferManger->SubmitAndDestoyCommandBuffer(commandPool, commandBuffer, vulkanContext->graphicsQueue);
 }
-
-void App::createVertexBuffer()
-{
-	meshloader->LoadModel("../Textures/Helmet/model.obj");
-	VkDeviceSize VertexBufferSize = sizeof(meshloader->GetVertices()[0]) * meshloader->GetVertices().size();
-	VertexBufferData =  bufferManger->CreateGPUOptimisedBuffer(meshloader->GetVertices().data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
-	VertexBuffer = VertexBufferData.buffer;
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	VkDeviceSize SkyBoxBuffersize = sizeof(vertices[0]) * vertices.size();
-	SkyBoxVertexBufferData = bufferManger->CreateGPUOptimisedBuffer(vertices.data(), SkyBoxBuffersize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
-	SkyBoxBuffer = SkyBoxVertexBufferData.buffer;
-   
-}
-
-void App::createIndexBuffer()
-{
-
-	VkDeviceSize indexBufferSize = sizeof(meshloader->GetIndices()[0]) * meshloader->GetIndices().size();
-	IndexBufferData = bufferManger->CreateGPUOptimisedBuffer(meshloader->GetIndices().data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
-	IndexBuffer = IndexBufferData.buffer;
-
-}
-
-void App::createUniformBuffer()
-{
-	uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-	uniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
-
-	VkDeviceSize UniformBufferSize = sizeof(UniformBufferObject);
-
-	for (size_t i = 0; i < uniformBuffers.size(); i++)
-	{
-
-		BufferData bufferdata  = bufferManger->CreateBuffer(UniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
-		uniformBuffers[i] = bufferdata;
-
-		uniformBuffersMappedMem[i] = bufferManger->MapMemory(bufferdata);
-	}
-}
-
 
 void App::CreateGraphicsPipeline() 
 {
@@ -360,10 +247,11 @@ void App::CreateGraphicsPipeline()
 	colorBlend.setAttachmentCount(1);
 	colorBlend.setPAttachments(&colorBlendAttachment);
 	//////////////////////////////////////////////////////////////////////
+	std::array<vk::DescriptorSetLayout, 2> setLayouts = { model->descriptorSetLayout, model2->descriptorSetLayout };
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-	pipelineLayoutInfo.setLayoutCount = 1; // Optional
-	pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout; // Optional
+	pipelineLayoutInfo.setLayoutCount = 2; // Optional
+	pipelineLayoutInfo.setSetLayouts(setLayouts); // Optional
 	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
  
@@ -533,7 +421,7 @@ void App::CreateSkyboxGraphicsPipeline()
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.setLayoutCount = 1; // Optional
-	pipelineLayoutInfo.pSetLayouts = &DescriptorSetLayout; // Optional
+	pipelineLayoutInfo.pSetLayouts = &skyBox->descriptorSetLayout; // Optional
 	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
@@ -611,6 +499,7 @@ void App::createCommandPool()
 		throw std::runtime_error("failed to create command pool!");
 
 	}
+
 }
 
 
@@ -693,9 +582,7 @@ void App::Draw()
 	uint32_t imageIndex;
 
 	try {
-		vk::Result result = vulkanContext->LogicalDevice.acquireNextImageKHR(
-			vulkanContext->swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], nullptr, &imageIndex
-		);
+		vk::Result result = vulkanContext->LogicalDevice.acquireNextImageKHR(vulkanContext->swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], nullptr, &imageIndex);
 
 	}
 	catch (const std::exception& e) {
@@ -755,23 +642,18 @@ void App::Draw()
 	   framebufferResized = false;
 
    }
+   std::cerr << "imageIndex " << imageIndex <<  std::endl;
+   std::cerr << "currentFrame " << currentFrame<< std::endl;
 
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 void App::updateUniformBuffer(uint32_t currentImage) {
 
-	static auto startTime = std::chrono::high_resolution_clock::now();
-	auto currentTime = std::chrono::high_resolution_clock::now();
-	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+	model->UpdateUniformBuffer(currentImage,5.0f);
+	model2->UpdateUniformBuffer(currentImage,0.0f);
+	skyBox->UpdateUniformBuffer(currentImage);
 
-	UniformBufferObject ubo{};
-	ubo.model = glm::scale(glm::mat4(1.0f), glm::vec3(10, 10, 10)) * glm::rotate(glm::mat4(1.0f), time *= 0.01*   glm::radians(360.0f), glm::vec3(0.0f,1.0f, 0.0f));
-	ubo.view = camera->GetViewMatrix();
-	ubo.proj = camera->GetProjectionMatrix();
-	ubo.proj[1][1] *= -1;
-
-	memcpy(uniformBuffersMappedMem[currentImage], &ubo, sizeof(ubo));
 }
 
 void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) {
@@ -841,25 +723,13 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	commandBuffer.setViewport(0, 1, &viewport);
 	commandBuffer.setScissor(0, 1, &scissor);
 
-	vk::Buffer SkyboxVertexBuffers[] = { SkyBoxBuffer };
-
-	commandBuffer.bindVertexBuffers(0, 1, SkyboxVertexBuffers, offsets);
-	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &DescriptorSets[currentFrame], 0, nullptr);
-	commandBuffer.draw(static_cast<uint32_t>(vertices.size()), 1, 0, 0);
-	//commandBuffer.endRendering();
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	skyBox->Draw(commandBuffer, pipelineLayout, currentFrame);
+    
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
-	//commandBuffer.beginRendering(renderingInfo);
-	//commandBuffer.setViewport(0, 1, &viewport);
-    //commandBuffer.setScissor(0, 1, &scissor);
 
-	vk::Buffer VertexBuffers[] = { VertexBuffer };
+	model->Draw(commandBuffer, pipelineLayout, currentFrame);
+	model2->Draw(commandBuffer, pipelineLayout, currentFrame);
 
-	commandBuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets); 
-	commandBuffer.bindIndexBuffer(IndexBuffer, 0, vk::IndexType::eUint16);
-	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &DescriptorSets[currentFrame], 0, nullptr);
-	commandBuffer.drawIndexed(meshloader->GetIndices().size(), 1, 0, 0, 0);
 	commandBuffer.endRendering();
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -944,11 +814,8 @@ void App::DestroySyncObjects()
 
 void App::DestroyBuffers()
 {
-	vulkanContext->LogicalDevice.destroyImageView(TextureImageView);
 	vulkanContext->LogicalDevice.destroyImageView(DepthImageView);
-	vulkanContext->LogicalDevice.destroySampler(TextureSampler);
 
-	bufferManger->DestroyImage(MeshTextureData);
 	bufferManger->DestroyImage(DepthTextureData);
 	bufferManger->DestroyBuffer(VertexBufferData);
 	bufferManger->DestroyBuffer(IndexBufferData);

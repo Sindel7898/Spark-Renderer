@@ -73,7 +73,7 @@ class MeshLoader
 {
 public:
 
-	MeshLoader();
+	MeshLoader ();
 	void LoadModel(const std::string& pFile);
 
 	std::vector<ModelVertex>& GetVertices();

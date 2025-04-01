@@ -10,12 +10,14 @@
 #include <chrono>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <chrono>
 #include "BufferManager.h"
 #include "VulkanContext.h"
 #include"MeshLoader.h"
 #include "Camera.h"
+#include "Model.h"
+#include "SkyBox.h"
 
+class Model; 
 
 struct UniformBufferObject {
 	alignas(16) glm::mat4 model;
@@ -83,10 +85,14 @@ public:
 private:
 
 	std::unique_ptr<Window> window = nullptr;
-	std::unique_ptr<VulkanContext> vulkanContext = nullptr;
-	std::unique_ptr<BufferManager> bufferManger = nullptr;
+	std::shared_ptr<VulkanContext> vulkanContext = nullptr;
+	std::shared_ptr<BufferManager> bufferManger = nullptr;
 	std::unique_ptr<MeshLoader> meshloader = nullptr;
-	std::unique_ptr<Camera> camera = nullptr;
+	std::shared_ptr<Camera> camera = nullptr;
+	std::unique_ptr<Model, ModelDeleter> model = nullptr;
+	std::unique_ptr<Model, ModelDeleter> model2 = nullptr;
+
+	std::unique_ptr<SkyBox, SkyBoxDeleter> skyBox = nullptr;
 
 
 #ifdef NDEBUG
@@ -108,7 +114,6 @@ private:
 	std::vector< vk::Fence> inFlightFences;
 	std::vector< vk::CommandBuffer> commandBuffers;
 
-	const int MAX_FRAMES_IN_FLIGHT = 2;
 	uint32_t currentFrame = 0;
 
 
@@ -124,10 +129,6 @@ private:
 	std::vector<void*> uniformBuffersMappedMem;
 
 
-	ImageData MeshTextureData;
-	vk::Image TextureImage;
-	vk::ImageView TextureImageView;
-	vk::Sampler TextureSampler;
 
 	//////////////////////////////
 	ImageData CubeMapImageData;
@@ -144,26 +145,6 @@ private:
 
 	BufferData IndexBufferData;
 
-	const std::vector<SkyBoxVertex> vertices = {
 
-		{{-1.0f,  1.0f, -1.0f}}, {{-1.0f, -1.0f, -1.0f}}, {{ 1.0f, -1.0f, -1.0f}},
-		{{ 1.0f, -1.0f, -1.0f}}, {{ 1.0f,  1.0f, -1.0f}}, {{-1.0f,  1.0f, -1.0f}},
-							  	 					   	  						
-		{{-1.0f, -1.0f,  1.0f}}, {{-1.0f, -1.0f, -1.0f}}, {{-1.0f,  1.0f, -1.0f}},
-		{{-1.0f,  1.0f, -1.0f}}, {{-1.0f,  1.0f,  1.0f}}, {{-1.0f, -1.0f,  1.0f}},
-							  	 					   	  						
-		{{ 1.0f, -1.0f, -1.0f}}, {{ 1.0f, -1.0f,  1.0f}}, {{ 1.0f,  1.0f,  1.0f}},
-		{{ 1.0f,  1.0f,  1.0f}}, {{ 1.0f,  1.0f, -1.0f}}, {{ 1.0f, -1.0f, -1.0f}},
-							  	 					   	  						
-		{{-1.0f, -1.0f,  1.0f}}, {{-1.0f,  1.0f,  1.0f}}, {{ 1.0f,  1.0f,  1.0f}},
-		{{ 1.0f,  1.0f,  1.0f}}, {{ 1.0f, -1.0f,  1.0f}}, {{-1.0f, -1.0f,  1.0f}},
-							  	 					   	  						
-		{{-1.0f,  1.0f, -1.0f}}, {{ 1.0f,  1.0f, -1.0f}}, {{ 1.0f,  1.0f,  1.0f}},
-		{{ 1.0f,  1.0f,  1.0f}}, {{-1.0f,  1.0f,  1.0f}}, {{-1.0f,  1.0f, -1.0f}},
-							  	 					   	  						
-		{{-1.0f, -1.0f, -1.0f}}, {{-1.0f, -1.0f,  1.0f}}, {{ 1.0f, -1.0f, -1.0f}},
-		{{ 1.0f, -1.0f, -1.0f}}, {{-1.0f, -1.0f,  1.0f}}, {{ 1.0f, -1.0f,  1.0f}}
-	};
-
-
+	
 };

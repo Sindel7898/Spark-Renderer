@@ -45,9 +45,10 @@ void VulkanContext::SelectGPU_CreateDevice()
 	features_1_2.bufferDeviceAddress = VK_TRUE;
 	features_1_2.descriptorIndexing = VK_TRUE;
 
+	vk::PhysicalDeviceDescriptorIndexingFeatures indexingFeatures;
+
 	vk::PhysicalDeviceFeatures deviceFeatures{};
 	deviceFeatures.samplerAnisotropy = VK_TRUE;
-
 
 	vkb::PhysicalDeviceSelector selector{ VKB_Instance };
 
