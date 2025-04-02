@@ -1,6 +1,6 @@
 #include "Camera.h"
 
-Camera::Camera(float SwapChainHeight, float SwapChainWidth, GLFWwindow* Window) :
+Camera::Camera(uint32_t SwapChainHeight, uint32_t SwapChainWidth, GLFWwindow* Window) :
     position(0.0f, 0.0f, 5.0f),
     worldUp(0.0f, 1.0f, 0.0f),
     pitch(0.0f),

@@ -4,6 +4,12 @@
 #include <vk_mem_alloc.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include "Window.h"
+#include "Camera.h"
+#include "MeshLoader.h"
+#include "BufferManager.h"
+#include "VulkanContext.h"
+#include "FramesPerSecondCounter.h"
 
 void App::Initialisation()
 {
@@ -23,6 +29,24 @@ void App::Initialisation()
 	
 	model2 = std::unique_ptr<Model, ModelDeleter>(new Model("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
 	model2->LoadTextures("../Textures/Helmet/RGBDefault_albedo.jpeg");
+
+	model3 = std::unique_ptr<Model, ModelDeleter>(new Model("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
+	model3->LoadTextures("../Textures/Helmet/RGBDefault_albedo.jpeg");
+
+	model4 = std::unique_ptr<Model, ModelDeleter>(new Model("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
+	model4->LoadTextures("../Textures/Helmet/RGBDefault_albedo.jpeg");
+
+	model5 = std::unique_ptr<Model, ModelDeleter>(new Model("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
+	model5->LoadTextures("../Textures/Helmet/RGBDefault_albedo.jpeg");
+
+	model6 = std::unique_ptr<Model, ModelDeleter>(new Model("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
+	model6->LoadTextures("../Textures/Helmet/RGBDefault_albedo.jpeg");
+
+	model7 = std::unique_ptr<Model, ModelDeleter>(new Model("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
+	model7->LoadTextures("../Textures/Helmet/RGBDefault_albedo.jpeg");
+
+	model8 = std::unique_ptr<Model, ModelDeleter>(new Model("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
+	model8->LoadTextures("../Textures/Helmet/RGBDefault_albedo.jpeg");
 
 	std::array<const char*, 6> filePaths{
 		"../Textures/skybox/right.jpg",  // +X (Right)
@@ -101,6 +125,12 @@ void App::createDescriptorPool()
 	
 	model->createDescriptorSets(DescriptorPool);
 	model2->createDescriptorSets(DescriptorPool);
+	model3->createDescriptorSets(DescriptorPool);
+	model4->createDescriptorSets(DescriptorPool);
+	model5->createDescriptorSets(DescriptorPool);
+	model6->createDescriptorSets(DescriptorPool);
+	model7->createDescriptorSets(DescriptorPool);
+	model8->createDescriptorSets(DescriptorPool);
 	skyBox->createDescriptorSets(DescriptorPool);
 
 
@@ -169,7 +199,7 @@ void App::CreateGraphicsPipeline()
 	vk::PipelineInputAssemblyStateCreateInfo inputAssembleInfo{};
 	inputAssembleInfo.topology = vk::PrimitiveTopology::eTriangleList;
 	inputAssembleInfo.primitiveRestartEnable = vk::False;
-	
+
 	//Create ViewPort and scissor
 	vk::Viewport viewport{};
 	viewport.setX(0.0f);
@@ -247,10 +277,11 @@ void App::CreateGraphicsPipeline()
 	colorBlend.setAttachmentCount(1);
 	colorBlend.setPAttachments(&colorBlendAttachment);
 	//////////////////////////////////////////////////////////////////////
-	std::array<vk::DescriptorSetLayout, 2> setLayouts = { model->descriptorSetLayout, model2->descriptorSetLayout };
+	std::array<vk::DescriptorSetLayout, 8> setLayouts = { model->descriptorSetLayout, model2->descriptorSetLayout,model3->descriptorSetLayout,model4->descriptorSetLayout,
+														  model5->descriptorSetLayout, model6->descriptorSetLayout,model7->descriptorSetLayout,model8->descriptorSetLayout };
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-	pipelineLayoutInfo.setLayoutCount = 2; // Optional
+	pipelineLayoutInfo.setLayoutCount = 8; // Optional
 	pipelineLayoutInfo.setSetLayouts(setLayouts); // Optional
 	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
@@ -658,8 +689,14 @@ void App::Draw()
 
 void App::updateUniformBuffer(uint32_t currentImage) {
 
-	model->UpdateUniformBuffer(currentImage,5.0f);
-	model2->UpdateUniformBuffer(currentImage,0.0f);
+	model->UpdateUniformBuffer(currentImage,  0.0f);
+	model2->UpdateUniformBuffer(currentImage, 6.0f);
+	model3->UpdateUniformBuffer(currentImage, 9.0f);
+	model4->UpdateUniformBuffer(currentImage, 12.0f);
+	model5->UpdateUniformBuffer(currentImage, 15.0f);
+	model6->UpdateUniformBuffer(currentImage, 18.0f);
+	model7->UpdateUniformBuffer(currentImage, 21.0f);
+	model8->UpdateUniformBuffer(currentImage, 24.0f);
 	skyBox->UpdateUniformBuffer(currentImage);
 
 }
@@ -737,7 +774,12 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	model->Draw(commandBuffer, pipelineLayout, currentFrame);
 	model2->Draw(commandBuffer, pipelineLayout, currentFrame);
-
+	model3->Draw(commandBuffer, pipelineLayout, currentFrame);
+	model4->Draw(commandBuffer, pipelineLayout, currentFrame);
+	model5->Draw(commandBuffer, pipelineLayout, currentFrame);
+	model6->Draw(commandBuffer, pipelineLayout, currentFrame);
+	model7->Draw(commandBuffer, pipelineLayout, currentFrame);
+	model8->Draw(commandBuffer, pipelineLayout, currentFrame);
 	commandBuffer.endRendering();
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

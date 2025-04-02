@@ -8,7 +8,7 @@
 class Camera {
 public:
     
-    Camera(float SwapChainHeight, float SwapChainWidth, GLFWwindow* window);
+    Camera(uint32_t SwapChainHeight, uint32_t SwapChainWidth, GLFWwindow* window);
 
     // Initialize camera with specific parameters
     void Initialize(float fov = 90.0f, float nearClip = 0.1f, float farClip = 200.0f);

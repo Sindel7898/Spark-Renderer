@@ -2,7 +2,6 @@
 #define VK_USE_PLATFORM_WIN32_KHR
 #define GLM_FORCE_RADIANS
 
-#include "Window.h"
 #include "ShaderHelper.h"
 #include "VkBootstrap.h"
 #include <stdexcept>
@@ -10,15 +9,15 @@
 #include <chrono>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "BufferManager.h"
-#include "VulkanContext.h"
-#include"MeshLoader.h"
-#include "Camera.h"
 #include "Model.h"
 #include "SkyBox.h"
-#include "FramesPerSecondCounter.h"
 
-class Model; 
+class Window;
+class Camera;
+class MeshLoader;
+class BufferManager;
+class VulkanContext;
+class FramesPerSecondCounter;
 
 struct UniformBufferObject {
 	alignas(16) glm::mat4 model;
@@ -87,6 +86,12 @@ private:
 	std::shared_ptr<Camera> camera = nullptr;
 	std::unique_ptr<Model, ModelDeleter> model = nullptr;
 	std::unique_ptr<Model, ModelDeleter> model2 = nullptr;
+	std::unique_ptr<Model, ModelDeleter> model3 = nullptr;
+	std::unique_ptr<Model, ModelDeleter> model4 = nullptr;
+	std::unique_ptr<Model, ModelDeleter> model5 = nullptr;
+	std::unique_ptr<Model, ModelDeleter> model6= nullptr;
+	std::unique_ptr<Model, ModelDeleter> model7 = nullptr;
+	std::unique_ptr<Model, ModelDeleter> model8 = nullptr;
 
 	std::unique_ptr<SkyBox, SkyBoxDeleter> skyBox = nullptr;
 
@@ -123,8 +128,6 @@ private:
 
 	std::vector<BufferData> uniformBuffers;
 	std::vector<void*> uniformBuffersMappedMem;
-
-
 
 	//////////////////////////////
 	ImageData CubeMapImageData;
