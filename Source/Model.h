@@ -14,6 +14,12 @@ struct UniformBufferObject1 {
     alignas(16) glm::mat4 proj;
 };
 
+struct InstanceData {
+    BufferData uniformBuffer;
+    void* mappedMemory;
+    vk::DescriptorSet descriptorSet;
+    uint32_t instanceID; // Unique identifier
+};
 
 class Model
 {
@@ -52,6 +58,8 @@ private:
 
 
     std::vector<void*> uniformBuffersMappedMem;
+    std::vector<InstanceData> instances;
+
 };
 
 struct ModelDeleter {

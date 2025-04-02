@@ -558,17 +558,27 @@ void App::createSyncObjects() {
 
 void App::Run()
 {
+	FramesPerSecondCounter fpsCounter(0.1f);
+
 	while (!window->shouldClose())
 	{
 		glfwPollEvents();
-		StartFrame();
+		CalculateFps(fpsCounter);
 		camera->Update(deltaTime);
 		Draw();
-		std::cout << "FPS: " << fps << std::endl;
 	}
 
 	//waits for the device to finnish all its processes before shutting down
 	vulkanContext->LogicalDevice.waitIdle();
+}
+
+
+void App::CalculateFps(FramesPerSecondCounter& fpsCounter)
+{
+		const double newTimeStamp = glfwGetTime();
+		deltaTime = static_cast<float>(newTimeStamp - LasttimeStamp);
+		LasttimeStamp = newTimeStamp;
+		fpsCounter.tick(deltaTime);
 }
 
 void App::Draw()
@@ -642,8 +652,6 @@ void App::Draw()
 	   framebufferResized = false;
 
    }
-   std::cerr << "imageIndex " << imageIndex <<  std::endl;
-   std::cerr << "currentFrame " << currentFrame<< std::endl;
 
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
@@ -766,17 +774,6 @@ void App::destroy_DepthImage()
 {
 	vulkanContext->LogicalDevice.destroyImageView(DepthImageView, nullptr);
 	bufferManger->DestroyImage(DepthTextureData);
-}
-
-void  App::StartFrame() {
-
-	auto now = std::chrono::high_resolution_clock::now();
-	deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(now - lastFrameTime).count();
-	lastFrameTime = now;
-
-	if (deltaTime > 0.0f) {
-		fps = 1.0f / deltaTime;
-	}
 }
 
 void App::recreateSwapChain() {

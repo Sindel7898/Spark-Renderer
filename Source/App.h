@@ -16,6 +16,7 @@
 #include "Camera.h"
 #include "Model.h"
 #include "SkyBox.h"
+#include "FramesPerSecondCounter.h"
 
 class Model; 
 
@@ -31,28 +32,23 @@ public:
 
 	std::chrono::time_point<std::chrono::high_resolution_clock> lastFrameTime;
 	float deltaTime = 0.0f;
-	float fps = 0.0f;
+	double LasttimeStamp = 0.0f;
 
 	void Initialisation();
 
-	void createTextureImage();
 	void createDepthTextureImage();
 	void createDescriptorSetLayout();
 	void recreateSwapChain();
-	void createVertexBuffer();
-	void createIndexBuffer();
 
-	void createUniformBuffer();
 
 	void createDescriptorPool();
 
-	void createDescriptorSets();
 
 	void createCommandPool();
 
 	void Run();
+	void CalculateFps(FramesPerSecondCounter& fpsCounter);
 	void Draw();
-	void StartFrame();
 
 	void createSyncObjects();
 
