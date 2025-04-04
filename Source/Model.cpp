@@ -54,6 +54,7 @@ void Model::CreateUniformBuffer()
 
 void Model::createDescriptorSetLayout()
 {
+	//Difines type that is sending and where to 
 	vk::DescriptorSetLayoutBinding UniformBufferBinding{};
 	UniformBufferBinding.binding = 0;
 	UniformBufferBinding.descriptorCount = 1;
@@ -81,6 +82,7 @@ void Model::createDescriptorSetLayout()
 
 void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 {
+	// create sets from the pool based on the layout
 	std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
 
 	vk::DescriptorSetAllocateInfo allocinfo;
@@ -92,6 +94,8 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 
 	vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, DescriptorSets.data());
 
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	//specifies what exactly to send
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
 		vk::DescriptorBufferInfo bufferInfo{};

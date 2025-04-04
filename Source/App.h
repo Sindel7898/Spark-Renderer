@@ -118,32 +118,9 @@ private:
 	uint32_t currentFrame = 0;
 
 
-	vk::DescriptorSetLayout DescriptorSetLayout;
+	//vk::DescriptorSetLayout DescriptorSetLayout;
 	vk::DescriptorPool DescriptorPool;
-	std::vector<vk::DescriptorSet> DescriptorSets;
-	vk::Buffer VertexBuffer;
-	vk::Buffer SkyBoxBuffer;
-
-	vk::Buffer IndexBuffer;
-
-	std::vector<BufferData> uniformBuffers;
-	std::vector<void*> uniformBuffersMappedMem;
-
-	//////////////////////////////
-	ImageData CubeMapImageData;
-	vk::Image CubeMapTextureImage;
-	vk::ImageView CubeMapTextureImageView;
-	vk::Sampler CubeMapTextureSampler;
 	////////////////////////////
 	ImageData DepthTextureData;
-	vk::ImageView DepthImageView;
-
-
-	BufferData VertexBufferData;
-	BufferData SkyBoxVertexBufferData;
-
-	BufferData IndexBufferData;
-
-
-	
+	vk::ImageView DepthImageView;	
 };

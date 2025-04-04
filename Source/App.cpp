@@ -10,6 +10,7 @@
 #include "BufferManager.h"
 #include "VulkanContext.h"
 #include "FramesPerSecondCounter.h"
+#include <crtdbg.h>
 
 void App::Initialisation()
 {
@@ -69,39 +70,39 @@ void App::Initialisation()
 }
 
 
-// Create Descriptor Setlayout used to describe shader bindings*/
-void App::createDescriptorSetLayout()
-{
-	vk::DescriptorSetLayoutBinding UniformBufferBinding{};
-	UniformBufferBinding.binding = 0;
-	UniformBufferBinding.descriptorCount = 1;
-	UniformBufferBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
-	UniformBufferBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
-	
-	vk::DescriptorSetLayoutBinding samplerLayoutBinding{};
-	samplerLayoutBinding.binding = 1;
-	samplerLayoutBinding.descriptorCount = 1;
-	samplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	samplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
-
-	vk::DescriptorSetLayoutBinding SkyboxsamplerLayoutBinding{};
-	SkyboxsamplerLayoutBinding.binding = 2;
-	SkyboxsamplerLayoutBinding.descriptorCount = 1;
-	SkyboxsamplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	SkyboxsamplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
-
-	std::array<vk::DescriptorSetLayoutBinding,3> bindings = { UniformBufferBinding, samplerLayoutBinding,SkyboxsamplerLayoutBinding };
-
-	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
-	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-	layoutInfo.pBindings = bindings.data();
-
-
-	if (vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &DescriptorSetLayout) != vk::Result::eSuccess)
-	{
-		throw std::runtime_error("Failed to create descriptorset layout!");
-	}
-}
+//// Create Descriptor Setlayout used to describe shader bindings*/
+//void App::createDescriptorSetLayout()
+//{
+//	vk::DescriptorSetLayoutBinding UniformBufferBinding{};
+//	UniformBufferBinding.binding = 0;
+//	UniformBufferBinding.descriptorCount = 1;
+//	UniformBufferBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
+//	UniformBufferBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
+//	
+//	vk::DescriptorSetLayoutBinding samplerLayoutBinding{};
+//	samplerLayoutBinding.binding = 1;
+//	samplerLayoutBinding.descriptorCount = 1;
+//	samplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+//	samplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+//
+//	vk::DescriptorSetLayoutBinding SkyboxsamplerLayoutBinding{};
+//	SkyboxsamplerLayoutBinding.binding = 2;
+//	SkyboxsamplerLayoutBinding.descriptorCount = 1;
+//	SkyboxsamplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+//	SkyboxsamplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+//
+//	std::array<vk::DescriptorSetLayoutBinding,3> bindings = { UniformBufferBinding, samplerLayoutBinding,SkyboxsamplerLayoutBinding };
+//
+//	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
+//	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+//	layoutInfo.pBindings = bindings.data();
+//
+//
+//	if (vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &DescriptorSetLayout) != vk::Result::eSuccess)
+//	{
+//		throw std::runtime_error("Failed to create descriptorset layout!");
+//	}
+//}
 
 void App::createDescriptorPool()
 {
@@ -123,7 +124,7 @@ void App::createDescriptorPool()
 
 	DescriptorPool = vulkanContext->LogicalDevice.createDescriptorPool(poolInfo, nullptr);
 	
-	model->createDescriptorSets(DescriptorPool);
+	model ->createDescriptorSets(DescriptorPool);
 	model2->createDescriptorSets(DescriptorPool);
 	model3->createDescriptorSets(DescriptorPool);
 	model4->createDescriptorSets(DescriptorPool);
@@ -854,16 +855,7 @@ void App::DestroySyncObjects()
 void App::DestroyBuffers()
 {
 	vulkanContext->LogicalDevice.destroyImageView(DepthImageView);
-
 	bufferManger->DestroyImage(DepthTextureData);
-	bufferManger->DestroyBuffer(VertexBufferData);
-	bufferManger->DestroyBuffer(IndexBufferData);
-
-	for (size_t i = 0; i < uniformBuffers.size(); i++)
-	{
-		vmaUnmapMemory(bufferManger->allocator, uniformBuffers[i].allocation);
-		vmaDestroyBuffer(bufferManger->allocator, static_cast<VkBuffer>(uniformBuffers[i].buffer), uniformBuffers[i].allocation);
-	}
 
 	vmaDestroyAllocator(bufferManger->allocator);
 }
@@ -875,7 +867,7 @@ void App::CleanUp()
 	DestroyBuffers();
 	vulkanContext->LogicalDevice.destroyCommandPool(commandPool);
 	vulkanContext->VulkanInstance.destroySurfaceKHR(vulkanContext->surface);
-	vulkanContext->LogicalDevice.destroyDescriptorSetLayout(DescriptorSetLayout);
+	//vulkanContext->LogicalDevice.destroyDescriptorSetLayout(DescriptorSetLayout);
 	vulkanContext->LogicalDevice.destroyPipeline(graphicsPipeline);
 	vulkanContext->LogicalDevice.destroyDescriptorPool(DescriptorPool);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(pipelineLayout);
@@ -884,7 +876,7 @@ void App::CleanUp()
 	vkb::destroy_debug_utils_messenger(vulkanContext->VulkanInstance, vulkanContext->Debug_Messenger);
 	vulkanContext->VulkanInstance.destroy();
 
-	
+	_CrtDumpMemoryLeaks();
 }
 
 void App::SwapchainResizeCallback(GLFWwindow* window, int width, int height)
