@@ -3,10 +3,9 @@
 #include <memory>
 #include <string>
 #include "BufferManager.h"
-#include "MeshLoader.h"
 #include "VulkanContext.h"
 #include "Camera.h"
-
+#include "AssetManager.h"
 
 struct UniformBufferObject1 {
     alignas(16) glm::mat4 model;
@@ -27,7 +26,7 @@ public:
 
     Model(const std::string& filepath, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* camera, BufferManager* buffermanger);
 
-    void LoadTextures(const char* FilePath);
+    void LoadTextures(const std::string& filepath);
     void CreateVertexAndIndexBuffer();
     void CreateUniformBuffer();
     void UpdateUniformBuffer(uint32_t currentImage, float Location);
@@ -53,13 +52,16 @@ public:
 
 private:
 
-    std::unique_ptr<MeshLoader>    meshLoader = nullptr;
+   // std::unique_ptr<MeshLoader>    meshLoader = nullptr;
     std::shared_ptr<Camera>        camera = nullptr;
 
 
     std::vector<void*> uniformBuffersMappedMem;
     std::vector<InstanceData> instances;
+    const std::string filePath;
 
+
+    StoredModelData storedModelData;
 };
 
 struct ModelDeleter {

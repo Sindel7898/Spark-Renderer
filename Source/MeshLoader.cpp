@@ -94,10 +94,10 @@ void MeshLoader::ProcessMesh(aiMesh* mesh, const aiScene* scene)
     }
 }
 
-std::vector<ModelVertex>& MeshLoader::GetVertices() {
+const std::vector<ModelVertex>& MeshLoader::GetVertices() {
     return vertices;
 }
 
-std::vector<uint16_t>& MeshLoader::GetIndices() {
+const std::vector<uint16_t>& MeshLoader::GetIndices() {
     return indices;
 }

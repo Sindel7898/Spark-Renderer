@@ -109,12 +109,9 @@ BufferData BufferManager::CreateGPUOptimisedBuffer(const void* Data, VkDeviceSiz
 	return FinalBufferData;
 }
 
-ImageData BufferManager::CreateTextureImage(const char* FilePath, vk::CommandPool commandpool, vk::Queue Queue)
+ImageData BufferManager::CreateTextureImage(stbi_uc* pixeldata, int texWidth, int textHeight,vk::CommandPool commandpool, vk::Queue Queue)
 {
-	int texWidth, textHeight, textchannels;
-
-	stbi_uc* pixels = stbi_load(FilePath, &texWidth, &textHeight, &textchannels, STBI_rgb_alpha);
-	vk::DeviceSize imagesize = texWidth * textHeight * 4;
+	vk::DeviceSize imagesize =  texWidth* textHeight * 4;
 
 	vk::BufferCreateInfo StagingBufferCreateInfo = {};
 	StagingBufferCreateInfo.size = imagesize;
@@ -141,9 +138,9 @@ ImageData BufferManager::CreateTextureImage(const char* FilePath, vk::CommandPoo
 	StagineBuffer.allocation = StagingBufferAllocation;
 	StagineBuffer.usage = vk::BufferUsageFlagBits::eTransferSrc;
 
-	CopyDataToBuffer(pixels, StagineBuffer);
+	CopyDataToBuffer(pixeldata, StagineBuffer);
 
-	stbi_image_free(pixels);
+	//stbi_image_free(pixeldata);
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	vk::Extent3D imageExtent = { static_cast<uint32_t>(texWidth),static_cast<uint32_t>(textHeight),1 };

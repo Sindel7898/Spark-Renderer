@@ -1,31 +1,37 @@
 #include "Model.h"
 #include <stdexcept>
-#include <memory>
 #include <chrono>
 
 Model::Model(const std::string& filepath, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* camera, BufferManager* buffermanger)
-	      : vulkanContext(vulkancontext), commandPool(commandpool), camera(camera), bufferManger(buffermanger)
+	      : vulkanContext(vulkancontext), commandPool(commandpool), camera(camera), bufferManger(buffermanger), filePath(filepath)
 {
-	meshLoader = std::make_unique<MeshLoader>();
-	meshLoader->LoadModel(filepath);
-
+	/*meshLoader = std::make_unique<MeshLoader>();
+	meshLoader->LoadModel(filepath);*/
+	AssetManager::GetInstance().LoadModel(filepath);
 	CreateVertexAndIndexBuffer();
 	CreateUniformBuffer();
 	createDescriptorSetLayout();
 }
 
-void Model::LoadTextures(const char* FilePath )
+void Model::LoadTextures(const std::string& filepath)
 {
-	MeshTextureData = bufferManger->CreateTextureImage(FilePath, commandPool, vulkanContext->graphicsQueue);
+
+	AssetManager::GetInstance().LoadTexture(filepath);
+	StoredImageData imageadata =  AssetManager::GetInstance().GetStoredImageData(filepath);
+
+	MeshTextureData = bufferManger->CreateTextureImage(imageadata.imageData, imageadata.imageWidth, imageadata.imageHeight, commandPool, vulkanContext->graphicsQueue);
 }
 
 void Model::CreateVertexAndIndexBuffer()
 {
-	VkDeviceSize VertexBufferSize = sizeof(meshLoader->GetVertices()[0]) * meshLoader->GetVertices().size();
-	VertexBufferData = bufferManger->CreateGPUOptimisedBuffer(meshLoader->GetVertices().data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
 
-	VkDeviceSize indexBufferSize = sizeof(meshLoader->GetIndices()[0]) * meshLoader->GetIndices().size();
-	IndexBufferData = bufferManger->CreateGPUOptimisedBuffer(meshLoader->GetIndices().data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
+	storedModelData = AssetManager::GetInstance().GetStoredModelData(filePath);
+
+	VkDeviceSize VertexBufferSize = sizeof(storedModelData.VertexData[0]) * storedModelData.VertexData.size();
+	VertexBufferData = bufferManger->CreateGPUOptimisedBuffer(storedModelData.VertexData.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
+
+	VkDeviceSize indexBufferSize = sizeof(storedModelData.IndexData[0]) * storedModelData.IndexData.size();
+	IndexBufferData = bufferManger->CreateGPUOptimisedBuffer(storedModelData.IndexData.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
 
 }
 
@@ -143,7 +149,7 @@ void Model::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinela
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
 	commandbuffer.bindIndexBuffer(IndexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(static_cast<uint32_t>(meshLoader->GetIndices().size()), 1, 0, 0, 0);
+	commandbuffer.drawIndexed(static_cast<uint32_t>(storedModelData.IndexData.size()), 1, 0, 0, 0);
 }
 
 

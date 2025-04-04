@@ -9,20 +9,20 @@ struct BufferData {
     vk::Buffer buffer{};
     vk::DeviceSize size{};
     vk::BufferUsageFlags usage{};
-    VmaAllocation allocation;
+    VmaAllocation allocation{};
 };
 
 struct ImageData {
-    vk::Image image;
-    vk::ImageView imageView;
-    vk::Sampler imageSampler;
-    VmaAllocation allocation;
+    vk::Image image{};
+    vk::ImageView imageView{};
+    vk::Sampler imageSampler{};
+    VmaAllocation allocation{};
 };
 
 
 struct ImageTransitionData {
-    vk::ImageLayout oldlayout;
-    vk::ImageLayout newlayout;
+    vk::ImageLayout oldlayout{};
+    vk::ImageLayout newlayout{};
     vk::AccessFlags SourceAccessflag = vk::AccessFlagBits::eNone;
     vk::AccessFlags DestinationAccessflag = vk::AccessFlagBits::eNone;
     vk::PipelineStageFlags SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
@@ -39,7 +39,6 @@ public:
     BufferData CreateBuffer(VkDeviceSize BufferSize, vk::BufferUsageFlagBits BufferUse, vk::CommandPool commandpool, vk::Queue queue);
 
 
-    ImageData CreateTextureImage(const char* FilePath, vk::CommandPool commandpool, vk::Queue Queue);
     ImageData CreateCubeMap(std::array<const char*,6> FilePaths, vk::CommandPool commandpool, vk::Queue Queue);
 
     ImageData CreateImage(vk::Extent3D imageExtent, vk::Format imageFormat, vk::ImageUsageFlags UsageFlag);
@@ -55,6 +54,9 @@ public:
 
 
     BufferData CreateGPUOptimisedBuffer(const void* Data, VkDeviceSize BufferSize, vk::BufferUsageFlagBits BufferUse, vk::CommandPool commandpool, vk::Queue queue);
+
+    ImageData CreateTextureImage(stbi_uc* pixeldata, int texWidth, int textHeight, vk::CommandPool commandpool, vk::Queue Queue);
+
 
     void DestroyBuffer(const BufferData& buffer);
 

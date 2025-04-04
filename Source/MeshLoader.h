@@ -73,16 +73,17 @@ class MeshLoader
 {
 public:
 
-	MeshLoader ();
+	MeshLoader();
 	void LoadModel(const std::string& pFile);
 
-	std::vector<ModelVertex>& GetVertices();
-	std::vector<uint16_t>& GetIndices();
+	const std::vector<ModelVertex>& GetVertices();
+	const std::vector<uint16_t>& GetIndices();
 
 private:
 	Assimp::Importer importer;
 	void ProcessNode(aiNode* node, const aiScene* scene);
 	void ProcessMesh(aiMesh* mesh, const aiScene* scene);
+
 
 	std::vector<ModelVertex> vertices;
 	std::vector<uint16_t> indices;
