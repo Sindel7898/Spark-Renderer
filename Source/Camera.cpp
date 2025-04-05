@@ -1,4 +1,5 @@
 #include "Camera.h"
+#include <GLFW/glfw3.h>
 
 Camera::Camera(uint32_t SwapChainHeight, uint32_t SwapChainWidth, GLFWwindow* Window) :
     position(0.0f, 0.0f, 5.0f),

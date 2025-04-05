@@ -1,4 +1,7 @@
 #include "AssetManager.h"
+#include "MeshLoader.h"
+
+
 #define STB_IMAGE_IMPLEMENTATION
 
 AssetManager::AssetManager() {
@@ -69,4 +72,19 @@ const StoredModelData& AssetManager::GetStoredModelData(const std::string FilePa
 }
 
 
+AssetManager::~AssetManager() {
 
+	for (auto& MapData : LoadedTextureData)
+	{
+		if (MapData.second.imageData) {
+			stbi_image_free(MapData.second.imageData);
+			MapData.second.imageData = nullptr;
+		}
+	}
+
+	for (auto& MapData : LoadedModelData)
+	{
+		MapData.second.IndexData.clear();
+		MapData.second.VertexData.clear();
+	}
+}

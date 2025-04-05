@@ -35,6 +35,7 @@ class BufferManager
 public:
 
     BufferManager(vk::Device& LogicalDevice, vk::PhysicalDevice& PhysicalDevice, vk::Instance& VulkanInstance);
+    ~BufferManager();
 
     BufferData CreateBuffer(VkDeviceSize BufferSize, vk::BufferUsageFlagBits BufferUse, vk::CommandPool commandpool, vk::Queue queue);
 
@@ -67,11 +68,8 @@ public:
 
     void* MapMemory(const BufferData& buffer);
     void UnmapMemory(const BufferData& buffer);
-
-    ~BufferManager();
   
     VmaAllocator allocator;
-
 
     void DeleteAllocation(VmaAllocation allocation);
 

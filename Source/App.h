@@ -32,11 +32,11 @@ public:
 	std::chrono::time_point<std::chrono::high_resolution_clock> lastFrameTime;
 	float deltaTime = 0.0f;
 	double LasttimeStamp = 0.0f;
-
-	void Initialisation();
+	
+	App();
+	~App();
 
 	void createDepthTextureImage();
-	void createDescriptorSetLayout();
 	void recreateSwapChain();
 
 
@@ -56,9 +56,6 @@ public:
 	void DestroySyncObjects();
 
 	void DestroyBuffers();
-
-
-	void CleanUp();
 
 	void SwapchainResizeCallback(GLFWwindow* window, int width, int height);
 
@@ -103,12 +100,13 @@ private:
 #endif
 
 	vk::PipelineLayout         pipelineLayout = nullptr;
+	vk::PipelineLayout         SkyBoxpipelineLayout = nullptr;
+
 	vk::Pipeline               graphicsPipeline = nullptr;
 	vk::Pipeline               SkyBoxgraphicsPipeline = nullptr;
 
 	vk::CommandPool            commandPool = nullptr;
 
-	vkb::Instance VKB_Instance;
 
 	std::vector< vk::Semaphore> imageAvailableSemaphores;
 	std::vector< vk::Semaphore> renderFinishedSemaphores;

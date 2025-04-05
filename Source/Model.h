@@ -25,7 +25,7 @@ class Model
 public:
 
     Model(const std::string& filepath, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* camera, BufferManager* buffermanger);
-
+    ~Model();
     void LoadTextures(const std::string& filepath);
     void CreateVertexAndIndexBuffer();
     void CreateUniformBuffer();
@@ -35,6 +35,7 @@ public:
     void createDescriptorSets(vk::DescriptorPool descriptorpool);
 
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex);
+    void Clean();
 
 
     vk::CommandPool            commandPool;
@@ -67,17 +68,12 @@ private:
 struct ModelDeleter {
 
     void operator()(Model* model) const {
+        if (!model) return;
 
         if (model) {
 
-            model->bufferManger->DestroyImage(model->MeshTextureData);
-            model->bufferManger->DestroyBuffer(model->VertexBufferData);
-            model->bufferManger->DestroyBuffer(model->IndexBufferData);
-
-            model->vulkanContext->LogicalDevice.destroyImageView(model->MeshTextureData.imageView);
-            model->vulkanContext->LogicalDevice.destroySampler(model->MeshTextureData.imageSampler);
-
-            delete model;
+            model->Clean();
+          //  delete model;
         }
     }
 };

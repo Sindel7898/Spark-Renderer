@@ -156,4 +156,37 @@ void Model::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinela
 	commandbuffer.drawIndexed(static_cast<uint32_t>(storedModelData.IndexData.size()), 1, 0, 0, 0);
 }
 
+void Model::Clean()
+{
+	if (vulkanContext)
+	{
+		vk::Device device = vulkanContext->LogicalDevice;
+
+		if (descriptorSetLayout)
+		{
+			device.destroyDescriptorSetLayout(descriptorSetLayout);
+		}
+	}
+
+	if (bufferManger)
+	{
+		bufferManger->DestroyImage(MeshTextureData);
+		bufferManger->DestroyBuffer(VertexBufferData);
+		bufferManger->DestroyBuffer(IndexBufferData);
+
+		for (auto& uniformBuffer : uniformBuffers)
+		{
+			bufferManger->UnmapMemory(uniformBuffer);
+			bufferManger->DestroyBuffer(uniformBuffer);
+		}
+
+		uniformBuffers.clear();
+	}
+}
+
+Model::~Model()
+{
+	Clean();
+}
+
 

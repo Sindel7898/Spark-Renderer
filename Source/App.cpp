@@ -1,3 +1,4 @@
+#define _CRTDBG_MAP_ALLOC
 #include "App.h"
 #include <optional>
 #define VMA_IMPLEMENTATION
@@ -12,9 +13,12 @@
 #include "FramesPerSecondCounter.h"
 #include <crtdbg.h>
 
-void App::Initialisation()
+#define DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
+
+ App::App()
 {
-	window = std::make_unique<Window>(800, 800, "Vulkan Window");
+	 window = std::make_unique<Window>(800, 800, "Vulkan Window");
+
 	vulkanContext = std::make_shared<VulkanContext>(*window);
 	bufferManger = std::make_shared<BufferManager>(vulkanContext->LogicalDevice, vulkanContext->PhysicalDevice, vulkanContext->VulkanInstance);
 	camera = std::make_shared<Camera>(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, window->GetWindow());
@@ -69,40 +73,6 @@ void App::Initialisation()
 	createDepthTextureImage();	
 }
 
-
-//// Create Descriptor Setlayout used to describe shader bindings*/
-//void App::createDescriptorSetLayout()
-//{
-//	vk::DescriptorSetLayoutBinding UniformBufferBinding{};
-//	UniformBufferBinding.binding = 0;
-//	UniformBufferBinding.descriptorCount = 1;
-//	UniformBufferBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
-//	UniformBufferBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
-//	
-//	vk::DescriptorSetLayoutBinding samplerLayoutBinding{};
-//	samplerLayoutBinding.binding = 1;
-//	samplerLayoutBinding.descriptorCount = 1;
-//	samplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-//	samplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
-//
-//	vk::DescriptorSetLayoutBinding SkyboxsamplerLayoutBinding{};
-//	SkyboxsamplerLayoutBinding.binding = 2;
-//	SkyboxsamplerLayoutBinding.descriptorCount = 1;
-//	SkyboxsamplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-//	SkyboxsamplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
-//
-//	std::array<vk::DescriptorSetLayoutBinding,3> bindings = { UniformBufferBinding, samplerLayoutBinding,SkyboxsamplerLayoutBinding };
-//
-//	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
-//	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-//	layoutInfo.pBindings = bindings.data();
-//
-//
-//	if (vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &DescriptorSetLayout) != vk::Result::eSuccess)
-//	{
-//		throw std::runtime_error("Failed to create descriptorset layout!");
-//	}
-//}
 
 void App::createDescriptorPool()
 {
@@ -457,7 +427,7 @@ void App::CreateSkyboxGraphicsPipeline()
 	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
-	pipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+	SkyBoxpipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 
 	vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 	pipelineRenderingCreateInfo.colorAttachmentCount = 1;
@@ -484,7 +454,7 @@ void App::CreateSkyboxGraphicsPipeline()
 	pipelineInfo.pDepthStencilState = &depthStencilState;
 	pipelineInfo.pColorBlendState = &colorBlend;
 	pipelineInfo.pDynamicState = &DynamicState;
-	pipelineInfo.layout = pipelineLayout;
+	pipelineInfo.layout = SkyBoxpipelineLayout;
 	pipelineInfo.renderPass = VK_NULL_HANDLE;
 	pipelineInfo.subpass = 0;
 
@@ -769,11 +739,11 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	commandBuffer.setViewport(0, 1, &viewport);
 	commandBuffer.setScissor(0, 1, &scissor);
 
-	skyBox->Draw(commandBuffer, pipelineLayout, currentFrame);
+	skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
     
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
 
-	model->Draw(commandBuffer, pipelineLayout, currentFrame);
+	 model->Draw(commandBuffer, pipelineLayout, currentFrame);
 	model2->Draw(commandBuffer, pipelineLayout, currentFrame);
 	model3->Draw(commandBuffer, pipelineLayout, currentFrame);
 	model4->Draw(commandBuffer, pipelineLayout, currentFrame);
@@ -854,29 +824,50 @@ void App::DestroySyncObjects()
 
 void App::DestroyBuffers()
 {
-	vulkanContext->LogicalDevice.destroyImageView(DepthImageView);
-	bufferManger->DestroyImage(DepthTextureData);
+	model.reset();
+	model2.reset();
+	model3.reset();
+	model4.reset();
+	model5.reset();
+	model6.reset();
+	model7.reset();
+	model8.reset();
+	skyBox.reset();
+	//vulkanContext->LogicalDevice.destroyImageView(DepthImageView);
 
+	bufferManger->DestroyImage(DepthTextureData);
 	vmaDestroyAllocator(bufferManger->allocator);
 }
 
 
-void App::CleanUp()
+ App::~App()
 {
 	destroy_swapchain(); 
 	DestroyBuffers();
+
+	if (!commandBuffers.empty()) {
+		vulkanContext->LogicalDevice.freeCommandBuffers(commandPool, commandBuffers);
+		commandBuffers.clear();
+	}
+
 	vulkanContext->LogicalDevice.destroyCommandPool(commandPool);
 	vulkanContext->VulkanInstance.destroySurfaceKHR(vulkanContext->surface);
-	//vulkanContext->LogicalDevice.destroyDescriptorSetLayout(DescriptorSetLayout);
 	vulkanContext->LogicalDevice.destroyPipeline(graphicsPipeline);
+	vulkanContext->LogicalDevice.destroyPipeline(SkyBoxgraphicsPipeline);
+
 	vulkanContext->LogicalDevice.destroyDescriptorPool(DescriptorPool);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(pipelineLayout);
+	vulkanContext->LogicalDevice.destroyPipelineLayout(SkyBoxpipelineLayout);
+
 	DestroySyncObjects();
 	vulkanContext->LogicalDevice.destroy();
 	vkb::destroy_debug_utils_messenger(vulkanContext->VulkanInstance, vulkanContext->Debug_Messenger);
 	vulkanContext->VulkanInstance.destroy();
 
-	_CrtDumpMemoryLeaks();
+#ifndef NDEBUG
+	_CrtDumpMemoryLeaks();  // Windows-only dev mode memory tracking
+#endif
+
 }
 
 void App::SwapchainResizeCallback(GLFWwindow* window, int width, int height)

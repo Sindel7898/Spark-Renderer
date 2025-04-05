@@ -568,7 +568,20 @@ void BufferManager::DestroyBuffer(const BufferData& buffer) {
 
 void BufferManager::DestroyImage(const ImageData& imagedata) {
 
-	vmaDestroyImage(allocator, imagedata.image, imagedata.allocation);
+	if (imagedata.imageView != VK_NULL_HANDLE)
+	{
+		logicalDevice.destroyImageView(imagedata.imageView);
+	}
+
+	if (imagedata.imageSampler != VK_NULL_HANDLE)
+	{
+		logicalDevice.destroySampler(imagedata.imageSampler);
+	}
+
+	if (imagedata.image != VK_NULL_HANDLE && imagedata.allocation != VK_NULL_HANDLE)
+	{
+		vmaDestroyImage(allocator, imagedata.image, imagedata.allocation);
+	}
 }
 
 BufferManager::~BufferManager()

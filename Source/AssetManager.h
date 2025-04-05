@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
-#include "MeshLoader.h"
 #include "stb_image.h"
+#include "MeshLoader.h"
 
 struct StoredImageData
 {
@@ -44,6 +44,8 @@ public:
 
 private:
     AssetManager();
+    ~AssetManager();
+
     std::shared_ptr<MeshLoader> meshloader;
     std::map<std::string, StoredModelData> LoadedModelData;
     std::map<std::string, StoredImageData> LoadedTextureData;

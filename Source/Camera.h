@@ -1,17 +1,17 @@
 #pragma once
 #include <iostream>
-#include <GLFW/glfw3.h>
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+struct GLFWwindow;
 class Camera {
 public:
     
     Camera(uint32_t SwapChainHeight, uint32_t SwapChainWidth, GLFWwindow* window);
 
     // Initialize camera with specific parameters
-    void Initialize(float fov = 90.0f, float nearClip = 0.1f, float farClip = 200.0f);
+    void Initialize(float fov = 90.0f, float nearClip = 0.1f, float farClip = 500.0f);
 
     // Update camera matrices (to be called every frame)
     void Update(float deltaTime);

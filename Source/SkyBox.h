@@ -77,13 +77,18 @@ struct SkyBoxDeleter {
 
         if (skybox) {
 
+            skybox->vulkanContext->LogicalDevice.destroyDescriptorSetLayout(skybox->descriptorSetLayout);
+
             skybox->bufferManger->DestroyImage(skybox->MeshTextureData);
             skybox->bufferManger->DestroyBuffer(skybox->VertexBufferData);
+            
+            for (auto& uniformBuffer : skybox->uniformBuffers) {
 
-            skybox->vulkanContext->LogicalDevice.destroyImageView(skybox->MeshTextureData.imageView);
-            skybox->vulkanContext->LogicalDevice.destroySampler(skybox->MeshTextureData.imageSampler);
+                skybox->bufferManger->UnmapMemory(uniformBuffer);
+                skybox->bufferManger->DestroyBuffer(uniformBuffer);
+            }
 
-            delete skybox;
+            //delete skybox;
         }
     }
 };
