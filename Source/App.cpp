@@ -12,12 +12,15 @@
 #include "VulkanContext.h"
 #include "FramesPerSecondCounter.h"
 #include <crtdbg.h>
+#include "imgui.h"
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
 
 #define DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
 
  App::App()
 {
-	 window = std::make_unique<Window>(800, 800, "Vulkan Window");
+	window = std::make_unique<Window>(800, 800, "Vulkan Window");
 
 	vulkanContext = std::make_shared<VulkanContext>(*window);
 	bufferManger = std::make_shared<BufferManager>(vulkanContext->LogicalDevice, vulkanContext->PhysicalDevice, vulkanContext->VulkanInstance);
@@ -29,29 +32,13 @@
 	//////////////////////////
 	createCommandPool();
 
-	model = std::unique_ptr<Model, ModelDeleter>(new Model ("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(),bufferManger.get()));
-	model->LoadTextures("../Textures/Helmet/RGBDefault_albedo.jpeg");
-	
-	model2 = std::unique_ptr<Model, ModelDeleter>(new Model("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
-	model2->LoadTextures("../Textures/Helmet/RGBDefault_albedo.jpeg");
+	Models.reserve(3);
 
-	model3 = std::unique_ptr<Model, ModelDeleter>(new Model("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
-	model3->LoadTextures("../Textures/Helmet/RGBDefault_albedo.jpeg");
-
-	model4 = std::unique_ptr<Model, ModelDeleter>(new Model("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
-	model4->LoadTextures("../Textures/Helmet/RGBDefault_albedo.jpeg");
-
-	model5 = std::unique_ptr<Model, ModelDeleter>(new Model("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
-	model5->LoadTextures("../Textures/Helmet/RGBDefault_albedo.jpeg");
-
-	model6 = std::unique_ptr<Model, ModelDeleter>(new Model("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
-	model6->LoadTextures("../Textures/Helmet/RGBDefault_albedo.jpeg");
-
-	model7 = std::unique_ptr<Model, ModelDeleter>(new Model("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
-	model7->LoadTextures("../Textures/Helmet/RGBDefault_albedo.jpeg");
-
-	model8 = std::unique_ptr<Model, ModelDeleter>(new Model("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
-	model8->LoadTextures("../Textures/Helmet/RGBDefault_albedo.jpeg");
+	for (int i = 0; i < 3; i++) {
+		auto model = std::unique_ptr<Model, ModelDeleter>(new Model("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
+		     model->LoadTextures("../Textures/Helmet/RGBDefault_albedo.jpeg");
+			 Models.push_back(std::move(model));
+	}
 
 	std::array<const char*, 6> filePaths{
 		"../Textures/skybox/right.jpg",  // +X (Right)
@@ -71,6 +58,8 @@
 	CreateSkyboxGraphicsPipeline();
 	/////////////////////////////////
 	createDepthTextureImage();	
+
+	InitImgui();
 }
 
 
@@ -78,11 +67,11 @@ void App::createDescriptorPool()
 {
 	vk::DescriptorPoolSize Uniformpoolsize;
 	Uniformpoolsize.type = vk::DescriptorType::eUniformBuffer;
-	Uniformpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	Uniformpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) *  1000;
 
 	vk::DescriptorPoolSize Samplerpoolsize;
-	Samplerpoolsize.type = vk::DescriptorType::eSampler;
-	Samplerpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	Samplerpoolsize.type = vk::DescriptorType::eCombinedImageSampler;
+	Samplerpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 1000;
 
 	std::array<	vk::DescriptorPoolSize, 2> poolSizes{ Uniformpoolsize ,Samplerpoolsize };
 
@@ -90,20 +79,17 @@ void App::createDescriptorPool()
 	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 	poolInfo.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
 	poolInfo.pPoolSizes = poolSizes.data();
-	poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 500;
+	poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 1000;
 
 	DescriptorPool = vulkanContext->LogicalDevice.createDescriptorPool(poolInfo, nullptr);
-	
-	model ->createDescriptorSets(DescriptorPool);
-	model2->createDescriptorSets(DescriptorPool);
-	model3->createDescriptorSets(DescriptorPool);
-	model4->createDescriptorSets(DescriptorPool);
-	model5->createDescriptorSets(DescriptorPool);
-	model6->createDescriptorSets(DescriptorPool);
-	model7->createDescriptorSets(DescriptorPool);
-	model8->createDescriptorSets(DescriptorPool);
-	skyBox->createDescriptorSets(DescriptorPool);
 
+
+	for(auto& model : Models)
+	{
+		model->createDescriptorSets(DescriptorPool);
+	}
+
+	skyBox->createDescriptorSets(DescriptorPool);
 
 }
 
@@ -248,12 +234,10 @@ void App::CreateGraphicsPipeline()
 	colorBlend.setAttachmentCount(1);
 	colorBlend.setPAttachments(&colorBlendAttachment);
 	//////////////////////////////////////////////////////////////////////
-	std::array<vk::DescriptorSetLayout, 8> setLayouts = { model->descriptorSetLayout, model2->descriptorSetLayout,model3->descriptorSetLayout,model4->descriptorSetLayout,
-														  model5->descriptorSetLayout, model6->descriptorSetLayout,model7->descriptorSetLayout,model8->descriptorSetLayout };
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-	pipelineLayoutInfo.setLayoutCount = 8; // Optional
-	pipelineLayoutInfo.setSetLayouts(setLayouts); // Optional
+	pipelineLayoutInfo.setLayoutCount = 1; 
+	pipelineLayoutInfo.setSetLayouts(Models[1]->descriptorSetLayout); 
 	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
  
@@ -558,6 +542,62 @@ void App::createSyncObjects() {
 	}
 }
 
+void App::InitImgui()
+{
+	std::vector<vk::DescriptorPoolSize> pool_sizes =
+	{
+		{vk::DescriptorType::eCombinedImageSampler, 1000}
+	};
+
+
+	vk::DescriptorPoolCreateInfo pool_info;
+	pool_info.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
+	pool_info.maxSets = 1000;
+	pool_info.poolSizeCount = static_cast<uint32_t>(pool_sizes.size());
+	pool_info.pPoolSizes = pool_sizes.data();
+
+	ImGuiDescriptorPool = vulkanContext->LogicalDevice.createDescriptorPool(pool_info);
+
+	// Initialize ImGui
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;      // Enable Docking
+
+	// Setup style
+	ImGui::StyleColorsDark();
+
+	// Initialize ImGui for GLFW
+	ImGui_ImplGlfw_InitForVulkan(window->GetWindow(), true);
+
+	vk::PipelineRenderingCreateInfoKHR pipeline_rendering_create_info;
+	pipeline_rendering_create_info.colorAttachmentCount = 1;
+	pipeline_rendering_create_info.pColorAttachmentFormats = &vulkanContext->swapchainformat;
+	pipeline_rendering_create_info.depthAttachmentFormat = vk::Format::eUndefined;
+	pipeline_rendering_create_info.stencilAttachmentFormat = vk::Format::eUndefined;
+
+
+	// Initialize ImGui for Vulkan
+	ImGui_ImplVulkan_InitInfo init_info = {};
+	init_info.Instance = vulkanContext->VulkanInstance;
+	init_info.PhysicalDevice = vulkanContext->PhysicalDevice;
+	init_info.Device = vulkanContext->LogicalDevice;
+	init_info.QueueFamily = vulkanContext->graphicsQueueFamilyIndex;
+	init_info.Queue = vulkanContext->graphicsQueue;
+	init_info.DescriptorPool = ImGuiDescriptorPool;
+	init_info.MinImageCount = MAX_FRAMES_IN_FLIGHT;
+	init_info.ImageCount = vulkanContext->swapchainImages.size();
+	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+	init_info.UseDynamicRendering = true;
+	init_info.PipelineRenderingCreateInfo = pipeline_rendering_create_info;
+
+	ImGui_ImplVulkan_Init(&init_info);
+	ImGui_ImplVulkan_CreateFontsTexture();
+
+
+}
+
 void App::Run()
 {
 	FramesPerSecondCounter fpsCounter(0.1f);
@@ -567,11 +607,64 @@ void App::Run()
 		glfwPollEvents();
 		CalculateFps(fpsCounter);
 		camera->Update(deltaTime);
+
+		// Start the ImGui frame
+		ImGui_ImplVulkan_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+		ShowImGuiDemoWindow();
+
 		Draw();
+
+		ImGui::EndFrame();
 	}
 
 	//waits for the device to finnish all its processes before shutting down
 	vulkanContext->LogicalDevice.waitIdle();
+}
+void App::ShowImGuiDemoWindow()
+{
+	static bool show_demo_window = true;
+	static bool show_another_window = false;
+	static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+	// 1. Show the big demo window
+	if (show_demo_window)
+		ImGui::ShowDemoWindow(&show_demo_window);
+
+	// 2. Show a simple window
+	{
+		static float f = 0.0f;
+		static int counter = 0;
+
+		ImGui::Begin("Hello, world!");
+		ImGui::Text("This is some useful text.");
+		ImGui::Checkbox("Demo Window", &show_demo_window);
+		ImGui::Checkbox("Another Window", &show_another_window);
+
+		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
+		ImGui::ColorEdit3("clear color", (float*)&clear_color);
+
+		if (ImGui::Button("Button"))
+			counter++;
+		ImGui::SameLine();
+		ImGui::Text("counter = %d", counter);
+
+		ImGuiIO& io = ImGui::GetIO();
+		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+		ImGui::End();
+	}
+
+	// 3. Show another simple window
+	if (show_another_window)
+	{
+		ImGui::Begin("Another Window", &show_another_window);
+		ImGui::Text("Hello from another window!");
+		if (ImGui::Button("Close Me"))
+			show_another_window = false;
+		ImGui::End();
+	}
 }
 
 
@@ -660,14 +753,24 @@ void App::Draw()
 
 void App::updateUniformBuffer(uint32_t currentImage) {
 
-	model->UpdateUniformBuffer(currentImage,  0.0f);
-	model2->UpdateUniformBuffer(currentImage, 6.0f);
-	model3->UpdateUniformBuffer(currentImage, 9.0f);
-	model4->UpdateUniformBuffer(currentImage, 12.0f);
-	model5->UpdateUniformBuffer(currentImage, 15.0f);
-	model6->UpdateUniformBuffer(currentImage, 18.0f);
-	model7->UpdateUniformBuffer(currentImage, 21.0f);
-	model8->UpdateUniformBuffer(currentImage, 24.0f);
+	const float SPACING = 2.0f;
+	int modelIndex = 0;
+
+	for (int z = 0; z < 20; ++z) {
+			for (int x = 0; x < 20; ++x) {
+
+				if (modelIndex == Models.size())
+				{
+					break;
+				}
+
+				float offsetX = (x) * SPACING;
+				float offsetZ = (z) * SPACING;
+
+				Models[modelIndex++]->UpdateUniformBuffer(currentImage,offsetX,0,offsetZ);
+			}
+	}
+
 	skyBox->UpdateUniformBuffer(currentImage);
 
 }
@@ -707,7 +810,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	vk::RenderingAttachmentInfo depthStencilAttachment;
 	depthStencilAttachment.imageView = DepthImageView;
 	depthStencilAttachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-	depthStencilAttachment.loadOp = vk::AttachmentLoadOp::eClear; // Clear the depth-stencil buffer
+	depthStencilAttachment.loadOp = vk::AttachmentLoadOp::eClear; 
 	depthStencilAttachment.storeOp = vk::AttachmentStoreOp::eDontCare; 
 	depthStencilAttachment.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0); 
 
@@ -743,16 +846,33 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
     
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
 
-	 model->Draw(commandBuffer, pipelineLayout, currentFrame);
-	model2->Draw(commandBuffer, pipelineLayout, currentFrame);
-	model3->Draw(commandBuffer, pipelineLayout, currentFrame);
-	model4->Draw(commandBuffer, pipelineLayout, currentFrame);
-	model5->Draw(commandBuffer, pipelineLayout, currentFrame);
-	model6->Draw(commandBuffer, pipelineLayout, currentFrame);
-	model7->Draw(commandBuffer, pipelineLayout, currentFrame);
-	model8->Draw(commandBuffer, pipelineLayout, currentFrame);
+	for (auto& model : Models)
+	{
+		model->Draw(commandBuffer, pipelineLayout, currentFrame);
+	}
+
 	commandBuffer.endRendering();
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	ImGui::Render();
+
+    //// Begin rendering for ImGui
+    vk::RenderingAttachmentInfoKHR imguiColorAttachment{};
+    imguiColorAttachment.imageView = vulkanContext->swapchainImageViews[imageIndex];
+    imguiColorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+    imguiColorAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
+    imguiColorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+    imguiColorAttachment.clearValue.color = vk::ClearColorValue();
+
+    vk::RenderingInfoKHR imguiRenderingInfo{};
+    imguiRenderingInfo.renderArea.offset = vk::Offset2D{ 0, 0 };
+    imguiRenderingInfo.renderArea.extent = vulkanContext->swapchainExtent;
+    imguiRenderingInfo.layerCount = 1;
+    imguiRenderingInfo.colorAttachmentCount = 1;
+    imguiRenderingInfo.pColorAttachments = &imguiColorAttachment;
+
+    commandBuffer.beginRendering(imguiRenderingInfo);
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+    commandBuffer.endRendering();
 
 	ImageTransitionData TransitionSwapchainToPresentData;
 	TransitionSwapchainToPresentData.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
@@ -785,9 +905,10 @@ void App::destroy_swapchain()
 
 void App::destroy_DepthImage()
 {
-	vulkanContext->LogicalDevice.destroyImageView(DepthImageView, nullptr);
+	//vulkanContext->LogicalDevice.destroyImageView(DepthImageView, nullptr);
 	bufferManger->DestroyImage(DepthTextureData);
 }
+
 
 void App::recreateSwapChain() {
 
@@ -800,7 +921,6 @@ void App::recreateSwapChain() {
 	}
 
 	vulkanContext->LogicalDevice.waitIdle();
-
 
 	destroy_swapchain();
 	destroy_DepthImage();
@@ -824,14 +944,11 @@ void App::DestroySyncObjects()
 
 void App::DestroyBuffers()
 {
-	model.reset();
-	model2.reset();
-	model3.reset();
-	model4.reset();
-	model5.reset();
-	model6.reset();
-	model7.reset();
-	model8.reset();
+	for (auto& model : Models)
+	{
+		model.reset();
+	}
+
 	skyBox.reset();
 	//vulkanContext->LogicalDevice.destroyImageView(DepthImageView);
 

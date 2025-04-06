@@ -46,11 +46,13 @@ public:
 	void createCommandPool();
 
 	void Run();
+	void ShowImGuiDemoWindow();
 	void CalculateFps(FramesPerSecondCounter& fpsCounter);
 	void Draw();
 
 	void createSyncObjects();
 
+	void InitImgui();
 
 
 	void DestroySyncObjects();
@@ -81,14 +83,7 @@ private:
 	std::shared_ptr<BufferManager> bufferManger = nullptr;
 	std::unique_ptr<MeshLoader> meshloader = nullptr;
 	std::shared_ptr<Camera> camera = nullptr;
-	std::unique_ptr<Model, ModelDeleter> model = nullptr;
-	std::unique_ptr<Model, ModelDeleter> model2 = nullptr;
-	std::unique_ptr<Model, ModelDeleter> model3 = nullptr;
-	std::unique_ptr<Model, ModelDeleter> model4 = nullptr;
-	std::unique_ptr<Model, ModelDeleter> model5 = nullptr;
-	std::unique_ptr<Model, ModelDeleter> model6= nullptr;
-	std::unique_ptr<Model, ModelDeleter> model7 = nullptr;
-	std::unique_ptr<Model, ModelDeleter> model8 = nullptr;
+	std::vector<std::unique_ptr<Model, ModelDeleter>>Models;
 
 	std::unique_ptr<SkyBox, SkyBoxDeleter> skyBox = nullptr;
 
@@ -106,7 +101,7 @@ private:
 	vk::Pipeline               SkyBoxgraphicsPipeline = nullptr;
 
 	vk::CommandPool            commandPool = nullptr;
-
+	vk::DescriptorPool            ImGuiDescriptorPool = nullptr;
 
 	std::vector< vk::Semaphore> imageAvailableSemaphores;
 	std::vector< vk::Semaphore> renderFinishedSemaphores;
@@ -121,4 +116,5 @@ private:
 	////////////////////////////
 	ImageData DepthTextureData;
 	vk::ImageView DepthImageView;	
+
 };

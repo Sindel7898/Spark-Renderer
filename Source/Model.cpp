@@ -131,14 +131,14 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 }
 
 
-void Model::UpdateUniformBuffer(uint32_t currentImage, float Location)
+void Model::UpdateUniformBuffer(uint32_t currentImage, int XLocation, int YLocation, int ZLocation)
 {
 	static auto startTime = std::chrono::high_resolution_clock::now();
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 	UniformBufferObject1 ubo{};
-	ubo.model = glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)) * glm::translate(glm::mat4(1.0f), glm::vec3(Location, 0.0f, 0.0f));
+	ubo.model = glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)) * glm::translate(glm::mat4(1.0f), glm::vec3(XLocation, YLocation, ZLocation));
 	ubo.view = camera->GetViewMatrix();
 	ubo.proj = camera->GetProjectionMatrix();
 	ubo.proj[1][1] *= -1;

@@ -29,7 +29,7 @@ public:
     void LoadTextures(const std::string& filepath);
     void CreateVertexAndIndexBuffer();
     void CreateUniformBuffer();
-    void UpdateUniformBuffer(uint32_t currentImage, float Location);
+    void UpdateUniformBuffer(uint32_t currentImage, int XLocation, int YLocation, int ZLocation);
     void createDescriptorSetLayout();
 
     void createDescriptorSets(vk::DescriptorPool descriptorpool);

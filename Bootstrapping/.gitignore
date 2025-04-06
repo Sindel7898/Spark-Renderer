@@ -1,8 +1,0 @@
-build
-src
-archives
-snapshots
-.*.json
-.idea
-orig
-xcuserdata

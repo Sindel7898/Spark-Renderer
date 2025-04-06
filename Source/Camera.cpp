@@ -32,7 +32,7 @@ void Camera::Initialize(float Fov, float NearClip, float FarClip) {
 
 void Camera::Update(float deltaTime) {
 
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS && !mouseCaptured) {
+    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS && !mouseCaptured) {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         mouseCaptured = true;
         firstMouse = true; 
