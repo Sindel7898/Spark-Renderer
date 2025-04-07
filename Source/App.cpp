@@ -575,11 +575,10 @@ void App::InitImgui()
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;      // Enable Docking
-	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;    // Enable Multi-Viewport 
     ///////////////////////////////////////////////////////
 	//Imgui Style Setup
 	ImGui::StyleColorsDark();
-	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	if (io.ConfigFlags)
 	{
 		ImGuiStyle& style = ImGui::GetStyle();
 		style.WindowRounding = 10.0f;
@@ -747,6 +746,7 @@ void App::ShowImGuiDemoWindow()
 		ImGui::End();
 	}
 
+	ImGui::SetNextWindowSize(ImVec2(400, 300)); 
 	ImGui::Begin("Main Viewport", nullptr, ImGuiWindowFlags_NoBackground);
 	ImGui::Text("Main ViewPort");
 	ImguiViewPortRenderTextureSizeDecider();
@@ -767,6 +767,10 @@ void App::ImguiViewPortRenderTextureSizeDecider()
 
 	if (viewportSize.x != lastSize.x || viewportSize.y != lastSize.y)
 	{
+		if (viewportSize.x <= 5 || viewportSize.y <= 5)
+		{
+			viewportSize = ImVec2(5.0f, 5.0f);
+		}
 		vulkanContext->LogicalDevice.waitIdle();
 		ImGui_ImplVulkan_RemoveTexture(RenderTextureId);
 		bufferManger->DestroyImage(ImguiViewPortRenderTextureData);

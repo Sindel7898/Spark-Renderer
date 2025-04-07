@@ -422,7 +422,7 @@ ImageData BufferManager::CreateImage( vk::Extent3D imageExtent, vk::Format image
 	VmaAllocation ImageAllocation;
 
 	if (vmaCreateImage(allocator, &cimagecreateinfo, &imageAllocInfo, &cTextureImage, &ImageAllocation, nullptr) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to create depth image!");
+		throw std::runtime_error("Failed to create image!");
 	}
 
 	ImageData imageData;

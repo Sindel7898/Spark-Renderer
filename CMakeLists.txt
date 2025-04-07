@@ -42,8 +42,8 @@ add_executable(VulkanRenderer ${SOURCES} ${IMGUI_SRC} ${IMGUI_BACKEND_SRC})
 
 target_include_directories(VulkanRenderer PRIVATE 
     ${CMAKE_SOURCE_DIR}/src
-    Bootstrapping/src/VulkanMemoryAllocator
-    Bootstrapping/src/imgui
+    External/src/VulkanMemoryAllocator
+    External/src/imgui
      ${IMGUI_DIR}
     ${IMGUI_DIR}/backends
     ${Vulkan_INCLUDE_DIRS}
