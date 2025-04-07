@@ -12,15 +12,13 @@
 #include "VulkanContext.h"
 #include "FramesPerSecondCounter.h"
 #include <crtdbg.h>
-#include "imgui.h"
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_vulkan.h>
+
 
 #define DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
 
  App::App()
 {
-	window = std::make_unique<Window>(800, 800, "Vulkan Window");
+	window = std::make_unique<Window>(1920, 1080, "Vulkan Window");
 
 	vulkanContext = std::make_shared<VulkanContext>(*window);
 	bufferManger = std::make_shared<BufferManager>(vulkanContext->LogicalDevice, vulkanContext->PhysicalDevice, vulkanContext->VulkanInstance);
@@ -57,9 +55,11 @@
 	CreateGraphicsPipeline();
 	CreateSkyboxGraphicsPipeline();
 	/////////////////////////////////
-	createDepthTextureImage();	
 
 	InitImgui();
+	CreateImguiViewPortRenderTexture();
+	createDepthTextureImage();
+
 }
 
 
@@ -93,11 +93,36 @@ void App::createDescriptorPool()
 
 }
 
+void App::CreateImguiViewPortRenderTexture()
+{
+	RenderTextureExtent = vk::Extent3D(500, 500, 1);
+	ImguiViewPortRenderTextureData = bufferManger->CreateImage(RenderTextureExtent,vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	ImguiViewPortRenderTextureData.imageView = bufferManger->CreateImageView(ImguiViewPortRenderTextureData.image, vulkanContext->swapchainformat,vk::ImageAspectFlagBits::eColor);
+	ImguiViewPortRenderTextureImageView = ImguiViewPortRenderTextureData.imageView;
+	ImguiViewPortRenderTextureData.imageSampler = bufferManger->CreateImageSampler();
+
+	RenderTextureId = ImGui_ImplVulkan_AddTexture(ImguiViewPortRenderTextureData.imageSampler,
+		ImguiViewPortRenderTextureData.imageView,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+}
+
+void App::ReCreateImguiViewPortRenderTexture(uint32_t X, uint32_t Y)
+{
+	RenderTextureExtent = vk::Extent3D(X, Y, 1);
+	ImguiViewPortRenderTextureData = bufferManger->CreateImage(RenderTextureExtent, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	ImguiViewPortRenderTextureData.imageView = bufferManger->CreateImageView(ImguiViewPortRenderTextureData.image, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	ImguiViewPortRenderTextureImageView = ImguiViewPortRenderTextureData.imageView;
+	ImguiViewPortRenderTextureData.imageSampler = bufferManger->CreateImageSampler();
+
+	RenderTextureId = ImGui_ImplVulkan_AddTexture(ImguiViewPortRenderTextureData.imageSampler,
+		ImguiViewPortRenderTextureData.imageView,
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+}
+
+
 void App::createDepthTextureImage()
 {
-	vk::Extent3D imageExtent = { vulkanContext->swapchainExtent.width,vulkanContext->swapchainExtent.height,1 };
-
-	DepthTextureData = bufferManger->CreateImage(imageExtent, vulkanContext->FindCompatableDepthFormat(), vk::ImageUsageFlagBits::eDepthStencilAttachment);
+	DepthTextureData = bufferManger->CreateImage(RenderTextureExtent, vulkanContext->FindCompatableDepthFormat(), vk::ImageUsageFlagBits::eDepthStencilAttachment);
 	DepthTextureData.imageView = bufferManger->CreateImageView(DepthTextureData.image, vulkanContext->FindCompatableDepthFormat(), vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
 
 	DepthImageView = DepthTextureData.imageView;
@@ -544,11 +569,39 @@ void App::createSyncObjects() {
 
 void App::InitImgui()
 {
+	//Imgui Initialisation
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;      // Enable Docking
+	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;    // Enable Multi-Viewport 
+    ///////////////////////////////////////////////////////
+	//Imgui Style Setup
+	ImGui::StyleColorsDark();
+	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		ImGuiStyle& style = ImGui::GetStyle();
+		style.WindowRounding = 10.0f;
+		style.Colors[ImGuiCol_WindowBg] = ImVec4(0, 0, 0, 100);
+	}
+    /////////////////////////////////////////////////////
+	
+	// Create descriptor pool for ImGui
 	std::vector<vk::DescriptorPoolSize> pool_sizes =
 	{
-		{vk::DescriptorType::eCombinedImageSampler, 1000}
+        { vk::DescriptorType::eSampler, 1000 },
+	    { vk::DescriptorType::eCombinedImageSampler, 1000 },
+	    { vk::DescriptorType::eSampledImage, 1000 },
+	    { vk::DescriptorType::eStorageImage, 1000 },
+	    { vk::DescriptorType::eUniformTexelBuffer, 1000 },
+	    { vk::DescriptorType::eStorageTexelBuffer, 1000 },
+	    { vk::DescriptorType::eUniformBuffer, 1000 },
+	    { vk::DescriptorType::eStorageBuffer, 1000 },
+	    { vk::DescriptorType::eUniformBufferDynamic, 1000 },
+	    { vk::DescriptorType::eStorageBufferDynamic, 1000 },
+	    { vk::DescriptorType::eInputAttachment, 1000 }
 	};
-
 
 	vk::DescriptorPoolCreateInfo pool_info;
 	pool_info.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
@@ -558,27 +611,15 @@ void App::InitImgui()
 
 	ImGuiDescriptorPool = vulkanContext->LogicalDevice.createDescriptorPool(pool_info);
 
-	// Initialize ImGui
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;      // Enable Docking
-
-	// Setup style
-	ImGui::StyleColorsDark();
-
-	// Initialize ImGui for GLFW
-	ImGui_ImplGlfw_InitForVulkan(window->GetWindow(), true);
-
+	// Initialize ImGui for Vulkan
 	vk::PipelineRenderingCreateInfoKHR pipeline_rendering_create_info;
 	pipeline_rendering_create_info.colorAttachmentCount = 1;
 	pipeline_rendering_create_info.pColorAttachmentFormats = &vulkanContext->swapchainformat;
 	pipeline_rendering_create_info.depthAttachmentFormat = vk::Format::eUndefined;
 	pipeline_rendering_create_info.stencilAttachmentFormat = vk::Format::eUndefined;
 
+	ImGui_ImplGlfw_InitForVulkan(window->GetWindow(), true);
 
-	// Initialize ImGui for Vulkan
 	ImGui_ImplVulkan_InitInfo init_info = {};
 	init_info.Instance = vulkanContext->VulkanInstance;
 	init_info.PhysicalDevice = vulkanContext->PhysicalDevice;
@@ -594,7 +635,6 @@ void App::InitImgui()
 
 	ImGui_ImplVulkan_Init(&init_info);
 	ImGui_ImplVulkan_CreateFontsTexture();
-
 
 }
 
@@ -613,50 +653,91 @@ void App::Run()
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
+		SetupDockingEnvironment();
 		ShowImGuiDemoWindow();
 
 		Draw();
 
-		ImGui::EndFrame();
+		ImGui::Render();
+		if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		{
+			ImGui::UpdatePlatformWindows();
+			ImGui::RenderPlatformWindowsDefault();
+		}
 	}
 
 	//waits for the device to finnish all its processes before shutting down
 	vulkanContext->LogicalDevice.waitIdle();
 }
+
+void App::SetupDockingEnvironment()
+{
+	// Get the main viewport
+	ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+	// Set up the main dockspace window
+	ImGui::SetNextWindowPos(viewport->Pos);
+	ImGui::SetNextWindowSize(viewport->Size);
+	ImGui::SetNextWindowViewport(viewport->ID);
+
+	// Set up the window flags
+	ImGuiWindowFlags window_flags =
+		ImGuiWindowFlags_NoDocking |
+		ImGuiWindowFlags_NoTitleBar |
+		ImGuiWindowFlags_NoCollapse |
+		ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoBringToFrontOnFocus |
+		ImGuiWindowFlags_NoNavFocus |
+		ImGuiWindowFlags_NoBackground;
+
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(-0.5f, -0.5f));
+	ImGui::Begin("DockSpace", nullptr, window_flags);
+	ImGui::PopStyleVar();
+
+	// Submit the DockSpace
+	ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+	ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
+
+	// Set up the initial layout (only once)
+	static bool first_time = true;
+	if (first_time)
+	{
+		first_time = false;
+
+		// Clear out any existing layout
+		ImGui::DockBuilderRemoveNode(dockspace_id);
+		ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+		ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->Size);
+
+		// Split the dockspace
+	    dock_main_id = dockspace_id;
+		ImGuiID dock_left_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.2f, nullptr, &dock_main_id);
+
+		// Dock windows
+		ImGui::DockBuilderDockWindow("Hello, world!", dock_left_id);
+		ImGui::DockBuilderDockWindow("Another Window", dock_left_id);
+		ImGui::DockBuilderDockWindow("Main Viewport", dock_main_id);
+
+		ImGui::DockBuilderFinish(dockspace_id);
+	}
+
+	ImGui::End();
+}
+
 void App::ShowImGuiDemoWindow()
 {
-	static bool show_demo_window = true;
-	static bool show_another_window = false;
-	static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+	static bool show_another_window = true;
 
-	// 1. Show the big demo window
-	if (show_demo_window)
-		ImGui::ShowDemoWindow(&show_demo_window);
-
-	// 2. Show a simple window
 	{
-		static float f = 0.0f;
-		static int counter = 0;
-
 		ImGui::Begin("Hello, world!");
-		ImGui::Text("This is some useful text.");
-		ImGui::Checkbox("Demo Window", &show_demo_window);
-		ImGui::Checkbox("Another Window", &show_another_window);
-
-		ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-		ImGui::ColorEdit3("clear color", (float*)&clear_color);
-
-		if (ImGui::Button("Button"))
-			counter++;
-		ImGui::SameLine();
-		ImGui::Text("counter = %d", counter);
 
 		ImGuiIO& io = ImGui::GetIO();
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 		ImGui::End();
 	}
 
-	// 3. Show another simple window
 	if (show_another_window)
 	{
 		ImGui::Begin("Another Window", &show_another_window);
@@ -665,9 +746,38 @@ void App::ShowImGuiDemoWindow()
 			show_another_window = false;
 		ImGui::End();
 	}
+
+	ImGui::Begin("Main Viewport", nullptr, ImGuiWindowFlags_NoBackground);
+	ImGui::Text("Main ViewPort");
+	ImguiViewPortRenderTextureSizeDecider();
+	ImGui::End();
 }
 
+void App::ImguiViewPortRenderTextureSizeDecider()
+{
+	ImVec2 viewportSize;
 
+	if (ImGui::GetMainViewport())
+	{
+		viewportSize = ImGui::GetContentRegionAvail();
+		std::cout << "Viewport size: (" << viewportSize.x << ", " << viewportSize.y << ")" << std::endl;
+	}
+
+	static ImVec2 lastSize = ImVec2(0.0f, 0.0f);
+
+	if (viewportSize.x != lastSize.x || viewportSize.y != lastSize.y)
+	{
+		vulkanContext->LogicalDevice.waitIdle();
+		ImGui_ImplVulkan_RemoveTexture(RenderTextureId);
+		bufferManger->DestroyImage(ImguiViewPortRenderTextureData);
+		ReCreateImguiViewPortRenderTexture(static_cast<uint32_t>(viewportSize.x), static_cast<uint32_t>(viewportSize.y));
+		destroy_DepthImage();
+		createDepthTextureImage();
+		lastSize = viewportSize;
+	}
+
+	ImGui::Image((ImTextureID)RenderTextureId, viewportSize);
+}
 void App::CalculateFps(FramesPerSecondCounter& fpsCounter)
 {
 		const double newTimeStamp = glfwGetTime();
@@ -783,25 +893,24 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	vk::CommandBufferBeginInfo begininfo{};
 	begininfo.pInheritanceInfo = nullptr;
 	begininfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-
+	//////////////////////////////////////////////////////////////////////////
 	commandBuffer.begin(begininfo);
 
-	ImageTransitionData TransitionSwapchainToWriteData;
-	TransitionSwapchainToWriteData.oldlayout = vk::ImageLayout::eUndefined;
-	TransitionSwapchainToWriteData.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
-	TransitionSwapchainToWriteData.SourceAccessflag = vk::AccessFlagBits::eNone;
-	TransitionSwapchainToWriteData.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-	TransitionSwapchainToWriteData.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
-	TransitionSwapchainToWriteData.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-	TransitionSwapchainToWriteData.AspectFlag = vk::ImageAspectFlagBits::eColor;
+	ImageTransitionData DataToTransitionInfo{};
+	DataToTransitionInfo.oldlayout = vk::ImageLayout::eUndefined;
+	DataToTransitionInfo.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
+	DataToTransitionInfo.AspectFlag = vk::ImageAspectFlagBits::eColor;
+	DataToTransitionInfo.SourceAccessflag = vk::AccessFlagBits::eNone;
+	DataToTransitionInfo.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
+	DataToTransitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
+	DataToTransitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 
-	bufferManger->TransitionImage(commandBuffer, vulkanContext->swapchainImages[imageIndex], TransitionSwapchainToWriteData);
+	bufferManger->TransitionImage(commandBuffer, ImguiViewPortRenderTextureData.image, DataToTransitionInfo);
 
-	//////////////////////////////////////////////////////////////////////
 	VkOffset2D imageoffset = { 0, 0 };
 
 	vk::RenderingAttachmentInfoKHR colorAttachmentInfo{};
-	colorAttachmentInfo.imageView = vulkanContext->swapchainImageViews[imageIndex];
+	colorAttachmentInfo.imageView = ImguiViewPortRenderTextureImageView;
 	colorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 	colorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
 	colorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
@@ -816,7 +925,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	vk::RenderingInfoKHR renderingInfo{};
 	renderingInfo.renderArea.offset = imageoffset;
-	renderingInfo.renderArea.extent = vulkanContext->swapchainExtent;
+	renderingInfo.renderArea.extent.height = RenderTextureExtent.height;
+	renderingInfo.renderArea.extent.width = RenderTextureExtent.width;
 	renderingInfo.layerCount = 1;
 	renderingInfo.colorAttachmentCount = 1;
 	renderingInfo.pColorAttachments = &colorAttachmentInfo;
@@ -825,18 +935,18 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	vk::Viewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(vulkanContext->swapchainExtent.width);
-	viewport.height = static_cast<float>(vulkanContext->swapchainExtent.height);
+	viewport.width = static_cast<float>(RenderTextureExtent.width);
+	viewport.height = static_cast<float>(RenderTextureExtent.height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
-
 	vk::Rect2D scissor{};
 	scissor.offset = imageoffset;
-	scissor.extent = vulkanContext->swapchainExtent;
+	scissor.extent.width = RenderTextureExtent.width;
+	scissor.extent.height = RenderTextureExtent.height;
+
 	vk::DeviceSize offsets[] = { 0 };
 
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
 	commandBuffer.beginRendering(renderingInfo);
 	commandBuffer.setViewport(0, 1, &viewport);
@@ -852,14 +962,37 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	}
 
 	commandBuffer.endRendering();
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////
+	ImageTransitionData TransitiontoShaderSample{};
+	TransitiontoShaderSample.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
+	TransitiontoShaderSample.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+	TransitiontoShaderSample.AspectFlag = vk::ImageAspectFlagBits::eColor;
+	TransitiontoShaderSample.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
+	TransitiontoShaderSample.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	TransitiontoShaderSample.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
+	TransitiontoShaderSample.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
+
+	bufferManger->TransitionImage(commandBuffer, ImguiViewPortRenderTextureData.image, TransitiontoShaderSample);
+
+
+	ImageTransitionData TransitionSwapchainToWriteData;
+	TransitionSwapchainToWriteData.oldlayout = vk::ImageLayout::eUndefined;
+	TransitionSwapchainToWriteData.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
+	TransitionSwapchainToWriteData.SourceAccessflag = vk::AccessFlagBits::eNone;
+	TransitionSwapchainToWriteData.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
+	TransitionSwapchainToWriteData.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
+	TransitionSwapchainToWriteData.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	TransitionSwapchainToWriteData.AspectFlag = vk::ImageAspectFlagBits::eColor;
+
+	bufferManger->TransitionImage(commandBuffer, vulkanContext->swapchainImages[imageIndex], TransitionSwapchainToWriteData);
+
 	ImGui::Render();
 
     //// Begin rendering for ImGui
     vk::RenderingAttachmentInfoKHR imguiColorAttachment{};
     imguiColorAttachment.imageView = vulkanContext->swapchainImageViews[imageIndex];
     imguiColorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-    imguiColorAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
+    imguiColorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
     imguiColorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
     imguiColorAttachment.clearValue.color = vk::ClearColorValue();
 
@@ -871,9 +1004,26 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
     imguiRenderingInfo.pColorAttachments = &imguiColorAttachment;
 
     commandBuffer.beginRendering(imguiRenderingInfo);
+
+	vk::Viewport ImguiViewPort{};
+	ImguiViewPort.x = 0.0f;
+	ImguiViewPort.y = 0.0f;
+	ImguiViewPort.width = static_cast<float>(vulkanContext->swapchainExtent.width);
+	ImguiViewPort.height = static_cast<float>(vulkanContext->swapchainExtent.height);
+	ImguiViewPort.minDepth = 0.0f;
+	ImguiViewPort.maxDepth = 1.0f;
+
+
+	vk::Rect2D ImguiScissor{};
+	scissor.offset = imageoffset;
+	scissor.extent = vulkanContext->swapchainExtent;
+
+	commandBuffer.setViewport(0, 1, &ImguiViewPort);
+	commandBuffer.setScissor(0, 1, &ImguiScissor);
+
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
     commandBuffer.endRendering();
-
+	
 	ImageTransitionData TransitionSwapchainToPresentData;
 	TransitionSwapchainToPresentData.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
 	TransitionSwapchainToPresentData.newlayout = vk::ImageLayout::ePresentSrcKHR;
@@ -886,6 +1036,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	bufferManger->TransitionImage(commandBuffer, vulkanContext->swapchainImages[imageIndex], TransitionSwapchainToPresentData);
 
 	commandBuffer.end();
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 
 
@@ -905,13 +1056,12 @@ void App::destroy_swapchain()
 
 void App::destroy_DepthImage()
 {
-	//vulkanContext->LogicalDevice.destroyImageView(DepthImageView, nullptr);
 	bufferManger->DestroyImage(DepthTextureData);
 }
 
 
 void App::recreateSwapChain() {
-
+	
 	int width = 0, height = 0;
 	glfwGetFramebufferSize(window->GetWindow(), &width, &height);
 
@@ -923,10 +1073,14 @@ void App::recreateSwapChain() {
 	vulkanContext->LogicalDevice.waitIdle();
 
 	destroy_swapchain();
-	destroy_DepthImage();
 
 	vulkanContext->create_swapchain();
-	createDepthTextureImage();
+
+	ImGuiIO& io = ImGui::GetIO();
+	io.DisplaySize = ImVec2(
+		static_cast<float>(vulkanContext->swapchainExtent.width),
+		static_cast<float>(vulkanContext->swapchainExtent.height)
+	);
 
 	camera->SetSwapChainHeight(vulkanContext->swapchainExtent.height);
 	camera->SetSwapChainWidth(vulkanContext->swapchainExtent.width);
@@ -950,7 +1104,6 @@ void App::DestroyBuffers()
 	}
 
 	skyBox.reset();
-	//vulkanContext->LogicalDevice.destroyImageView(DepthImageView);
 
 	bufferManger->DestroyImage(DepthTextureData);
 	vmaDestroyAllocator(bufferManger->allocator);
@@ -959,6 +1112,9 @@ void App::DestroyBuffers()
 
  App::~App()
 {
+	 ImGui::DestroyContext();
+	 ImGui::Shutdown();
+
 	destroy_swapchain(); 
 	DestroyBuffers();
 

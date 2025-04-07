@@ -11,6 +11,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "Model.h"
 #include "SkyBox.h"
+#include "imgui.h"
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
+#include <imgui_internal.h>
 
 class Window;
 class Camera;
@@ -36,6 +40,10 @@ public:
 	App();
 	~App();
 
+	void CreateImguiViewPortRenderTexture();
+	void ReCreateImguiViewPortRenderTexture(uint32_t X, uint32_t Y);
+	void ImguiViewPortRenderTextureSizeDecider();
+
 	void createDepthTextureImage();
 	void recreateSwapChain();
 
@@ -46,6 +54,7 @@ public:
 	void createCommandPool();
 
 	void Run();
+	void SetupDockingEnvironment();
 	void ShowImGuiDemoWindow();
 	void CalculateFps(FramesPerSecondCounter& fpsCounter);
 	void Draw();
@@ -115,6 +124,12 @@ private:
 	vk::DescriptorPool DescriptorPool;
 	////////////////////////////
 	ImageData DepthTextureData;
-	vk::ImageView DepthImageView;	
+	ImageData ImguiViewPortRenderTextureData;
 
+	vk::ImageView DepthImageView;	
+	vk::ImageView ImguiViewPortRenderTextureImageView;
+	VkDescriptorSet RenderTextureId;
+
+	vk::Extent3D RenderTextureExtent = (300,300,1);
+	ImGuiID dock_main_id;
 };

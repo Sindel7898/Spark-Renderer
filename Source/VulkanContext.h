@@ -42,7 +42,7 @@ public:
 	vk::SwapchainKHR           swapChain = nullptr;
 	std::vector<VkImage>       swapchainImages = {};
 	std::vector<VkImageView>   swapchainImageViews = {};
-
+	std::vector<vk::SurfaceFormatKHR> SurfaceFormat;
 
 	Window window; 
 
