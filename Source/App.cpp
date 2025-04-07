@@ -708,10 +708,13 @@ void App::SetupDockingEnvironment()
 		// Split the dockspace
 	    dock_main_id = dockspace_id;
 		ImGuiID dock_left_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.2f, nullptr, &dock_main_id);
+		ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.2f, nullptr, &dock_main_id);
+		ImGuiID dock_Bottom_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.2f, nullptr, &dock_main_id);
 
 		// Dock windows
+		ImGui::DockBuilderDockWindow("Bottom Window", dock_Bottom_id);
 		ImGui::DockBuilderDockWindow("Hello, world!", dock_left_id);
-		ImGui::DockBuilderDockWindow("Another Window", dock_left_id);
+		ImGui::DockBuilderDockWindow("Another Window", dock_right_id);
 		ImGui::DockBuilderDockWindow("Main Viewport", dock_main_id);
 
 		ImGui::DockBuilderFinish(dockspace_id);
@@ -740,6 +743,12 @@ void App::ShowImGuiDemoWindow()
 			show_another_window = false;
 		ImGui::End();
 	}
+
+	ImGui::Begin("Bottom Window", &show_another_window);
+	ImGui::Text("Hello from Bottom window!");
+	ImGui::End();
+
+
 
 	ImGui::SetNextWindowSize(ImVec2(400, 300)); 
 	ImGui::Begin("Main Viewport", nullptr, ImGuiWindowFlags_NoBackground);
