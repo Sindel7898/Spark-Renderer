@@ -126,8 +126,6 @@ private:
 	ImageData DepthTextureData;
 	ImageData ImguiViewPortRenderTextureData;
 
-	vk::ImageView DepthImageView;	
-	vk::ImageView ImguiViewPortRenderTextureImageView;
 	VkDescriptorSet RenderTextureId;
 
 	vk::Extent3D RenderTextureExtent = (300,300,1);

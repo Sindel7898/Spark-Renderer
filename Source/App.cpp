@@ -98,7 +98,6 @@ void App::CreateImguiViewPortRenderTexture()
 	RenderTextureExtent = vk::Extent3D(500, 500, 1);
 	ImguiViewPortRenderTextureData = bufferManger->CreateImage(RenderTextureExtent,vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	ImguiViewPortRenderTextureData.imageView = bufferManger->CreateImageView(ImguiViewPortRenderTextureData.image, vulkanContext->swapchainformat,vk::ImageAspectFlagBits::eColor);
-	ImguiViewPortRenderTextureImageView = ImguiViewPortRenderTextureData.imageView;
 	ImguiViewPortRenderTextureData.imageSampler = bufferManger->CreateImageSampler();
 
 	RenderTextureId = ImGui_ImplVulkan_AddTexture(ImguiViewPortRenderTextureData.imageSampler,
@@ -111,7 +110,6 @@ void App::ReCreateImguiViewPortRenderTexture(uint32_t X, uint32_t Y)
 	RenderTextureExtent = vk::Extent3D(X, Y, 1);
 	ImguiViewPortRenderTextureData = bufferManger->CreateImage(RenderTextureExtent, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	ImguiViewPortRenderTextureData.imageView = bufferManger->CreateImageView(ImguiViewPortRenderTextureData.image, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
-	ImguiViewPortRenderTextureImageView = ImguiViewPortRenderTextureData.imageView;
 	ImguiViewPortRenderTextureData.imageSampler = bufferManger->CreateImageSampler();
 
 	RenderTextureId = ImGui_ImplVulkan_AddTexture(ImguiViewPortRenderTextureData.imageSampler,
@@ -124,8 +122,6 @@ void App::createDepthTextureImage()
 {
 	DepthTextureData = bufferManger->CreateImage(RenderTextureExtent, vulkanContext->FindCompatableDepthFormat(), vk::ImageUsageFlagBits::eDepthStencilAttachment);
 	DepthTextureData.imageView = bufferManger->CreateImageView(DepthTextureData.image, vulkanContext->FindCompatableDepthFormat(), vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
-
-	DepthImageView = DepthTextureData.imageView;
 
 	vk::CommandBuffer commandBuffer = bufferManger->CreateSingleUseCommandBuffer(commandPool);
 
@@ -609,7 +605,6 @@ void App::InitImgui()
 	pool_info.pPoolSizes = pool_sizes.data();
 
 	ImGuiDescriptorPool = vulkanContext->LogicalDevice.createDescriptorPool(pool_info);
-
 	// Initialize ImGui for Vulkan
 	vk::PipelineRenderingCreateInfoKHR pipeline_rendering_create_info;
 	pipeline_rendering_create_info.colorAttachmentCount = 1;
@@ -771,6 +766,7 @@ void App::ImguiViewPortRenderTextureSizeDecider()
 		{
 			viewportSize = ImVec2(5.0f, 5.0f);
 		}
+
 		vulkanContext->LogicalDevice.waitIdle();
 		ImGui_ImplVulkan_RemoveTexture(RenderTextureId);
 		bufferManger->DestroyImage(ImguiViewPortRenderTextureData);
@@ -914,14 +910,14 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	VkOffset2D imageoffset = { 0, 0 };
 
 	vk::RenderingAttachmentInfoKHR colorAttachmentInfo{};
-	colorAttachmentInfo.imageView = ImguiViewPortRenderTextureImageView;
+	colorAttachmentInfo.imageView = ImguiViewPortRenderTextureData.imageView;
 	colorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 	colorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
 	colorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
 	colorAttachmentInfo.clearValue = clearColor;
 
 	vk::RenderingAttachmentInfo depthStencilAttachment;
-	depthStencilAttachment.imageView = DepthImageView;
+	depthStencilAttachment.imageView = DepthTextureData.imageView;
 	depthStencilAttachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 	depthStencilAttachment.loadOp = vk::AttachmentLoadOp::eClear; 
 	depthStencilAttachment.storeOp = vk::AttachmentStoreOp::eDontCare; 
@@ -1116,8 +1112,11 @@ void App::DestroyBuffers()
 
  App::~App()
 {
-	 ImGui::DestroyContext();
-	 ImGui::Shutdown();
+	 ImGui_ImplVulkan_Shutdown();   
+	 ImGui_ImplGlfw_Shutdown();    
+	 ImGui::DestroyContext();      
+
+	 bufferManger->DestroyImage(ImguiViewPortRenderTextureData);
 
 	destroy_swapchain(); 
 	DestroyBuffers();
@@ -1126,7 +1125,7 @@ void App::DestroyBuffers()
 		vulkanContext->LogicalDevice.freeCommandBuffers(commandPool, commandBuffers);
 		commandBuffers.clear();
 	}
-
+	vulkanContext->LogicalDevice.destroyDescriptorPool(ImGuiDescriptorPool);
 	vulkanContext->LogicalDevice.destroyCommandPool(commandPool);
 	vulkanContext->VulkanInstance.destroySurfaceKHR(vulkanContext->surface);
 	vulkanContext->LogicalDevice.destroyPipeline(graphicsPipeline);
