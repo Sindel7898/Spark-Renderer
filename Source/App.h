@@ -11,10 +11,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "Model.h"
 #include "SkyBox.h"
-#include "imgui.h"
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_vulkan.h>
-#include <imgui_internal.h>
+
 
 class Window;
 class Camera;
@@ -22,6 +19,7 @@ class MeshLoader;
 class BufferManager;
 class VulkanContext;
 class FramesPerSecondCounter;
+class UserInterface;
 
 struct UniformBufferObject {
 	alignas(16) glm::mat4 model;
@@ -40,9 +38,7 @@ public:
 	App();
 	~App();
 
-	void CreateImguiViewPortRenderTexture();
-	void ReCreateImguiViewPortRenderTexture(uint32_t X, uint32_t Y);
-	void ImguiViewPortRenderTextureSizeDecider();
+	
 
 	void createDepthTextureImage();
 	void recreateSwapChain();
@@ -54,14 +50,12 @@ public:
 	void createCommandPool();
 
 	void Run();
-	void SetupDockingEnvironment();
-	void ShowImGuiDemoWindow();
+
 	void CalculateFps(FramesPerSecondCounter& fpsCounter);
 	void Draw();
 
 	void createSyncObjects();
 
-	void InitImgui();
 
 
 	void DestroySyncObjects();
@@ -92,6 +86,8 @@ private:
 	std::shared_ptr<BufferManager> bufferManger = nullptr;
 	std::unique_ptr<MeshLoader> meshloader = nullptr;
 	std::shared_ptr<Camera> camera = nullptr;
+	std::shared_ptr<UserInterface> userinterface = nullptr;
+
 	std::vector<std::unique_ptr<Model, ModelDeleter>>Models;
 
 	std::unique_ptr<SkyBox, SkyBoxDeleter> skyBox = nullptr;
@@ -110,7 +106,6 @@ private:
 	vk::Pipeline               SkyBoxgraphicsPipeline = nullptr;
 
 	vk::CommandPool            commandPool = nullptr;
-	vk::DescriptorPool            ImGuiDescriptorPool = nullptr;
 
 	std::vector< vk::Semaphore> imageAvailableSemaphores;
 	std::vector< vk::Semaphore> renderFinishedSemaphores;
@@ -124,10 +119,9 @@ private:
 	vk::DescriptorPool DescriptorPool;
 	////////////////////////////
 	ImageData DepthTextureData;
-	ImageData ImguiViewPortRenderTextureData;
 
 	VkDescriptorSet RenderTextureId;
+	ImageData* ViewPortImageData; 
 
-	vk::Extent3D RenderTextureExtent = (300,300,1);
-	ImGuiID dock_main_id;
+	bool bRecreateDepth = false; 
 };
