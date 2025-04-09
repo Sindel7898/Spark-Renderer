@@ -29,7 +29,8 @@ public:
     void LoadTextures(const std::string& filepath);
     void CreateVertexAndIndexBuffer();
     void CreateUniformBuffer();
-    void UpdateUniformBuffer(uint32_t currentImage, int XLocation, int YLocation, int ZLocation);
+    void UpdateUniformBuffer(uint32_t currentImage);
+    glm::mat4 GetModelMatrix();
     void createDescriptorSetLayout();
 
     void createDescriptorSets(vk::DescriptorPool descriptorpool);
@@ -50,6 +51,13 @@ public:
 
     std::unique_ptr<BufferManager> bufferManger = nullptr;
     std::shared_ptr<VulkanContext> vulkanContext = nullptr;
+    
+
+    glm::vec3 position = glm::vec3(0.0f);
+    glm::vec3 rotation = glm::vec3(0.0f);
+    glm::vec3 scale    = glm::vec3(1.0f);
+
+    UniformBufferObject1 ModelData;
 
 private:
 

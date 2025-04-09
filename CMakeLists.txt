@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(${CMAKE_SOURCE_DIR}/CommonMacros.txt)
 
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/External/imgui)
+set(ImGuizmo_DIR ${CMAKE_SOURCE_DIR}/External/ImGuizmo)
 
 # ImGui source files (since there's no CMakeLists.txt in imgui directory)
 set(IMGUI_SRC
@@ -16,6 +17,14 @@ set(IMGUI_SRC
     ${IMGUI_DIR}/imgui_tables.cpp
     ${IMGUI_DIR}/imgui_widgets.cpp
     ${IMGUI_DIR}/imgui_demo.cpp  # Optional, for demo code
+)
+
+set(ImGuizmo_SRC
+    ${ImGuizmo_DIR}/GraphEditor.cpp
+    ${ImGuizmo_DIR}/ImCurveEdit.cpp
+    ${ImGuizmo_DIR}/ImGradient.cpp
+    ${ImGuizmo_DIR}/ImGuizmo.cpp
+    ${ImGuizmo_DIR}/ImSequencer.cpp  
 )
 
 set(IMGUI_BACKEND_SRC
@@ -37,15 +46,16 @@ file(GLOB SOURCES "Source/*.cpp")
 find_package(Vulkan REQUIRED)
 
 # Create the executable
-add_executable(VulkanRenderer ${SOURCES} ${IMGUI_SRC} ${IMGUI_BACKEND_SRC})
-
+add_executable(VulkanRenderer ${SOURCES} ${IMGUI_SRC} ${IMGUI_BACKEND_SRC} ${ImGuizmo_SRC})
 
 target_include_directories(VulkanRenderer PRIVATE 
     ${CMAKE_SOURCE_DIR}/src
     External/src/VulkanMemoryAllocator
     External/src/imgui
-     ${IMGUI_DIR}
+    ${IMGUI_DIR}
     ${IMGUI_DIR}/backends
+    External/ImGuizmo
+    ${ImGuizmo_DIR}
     ${Vulkan_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/External/glfw/include
 )

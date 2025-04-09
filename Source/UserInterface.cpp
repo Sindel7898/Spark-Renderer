@@ -1,7 +1,11 @@
 #include "UserInterface.h"
 #include <stdexcept>
-#include "vulkanContext.h"
 #include "Window.h"
+#include "Camera.h"
+#include "Model.h"
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 UserInterface::UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef, BufferManager* Buffermanager)
 {
@@ -10,6 +14,7 @@ UserInterface::UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef,
 	buffermanager = Buffermanager;
 	InitImgui();
 }
+
 
 void UserInterface::InitImgui()
 {
@@ -85,6 +90,7 @@ void UserInterface::SetupDockingEnvironment()
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
+	ImGuizmo::BeginFrame();
 
 	// Get the main viewport
 	ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -218,11 +224,9 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex)
 
 
 //call every Frame
-void UserInterface::DrawUi(bool& bRecreateDepth)
+void UserInterface::DrawUi(bool& bRecreateDepth,Camera* camera, Model* selectedModel)
 {
 	SetupDockingEnvironment();
-
-	static bool show_another_window = true;
 
 	{
 		ImGui::Begin("Hello, world!");
@@ -232,16 +236,14 @@ void UserInterface::DrawUi(bool& bRecreateDepth)
 		ImGui::End();
 	}
 
-	if (show_another_window)
 	{
-		ImGui::Begin("Another Window", &show_another_window);
+		ImGui::Begin("Another Window");
 		ImGui::Text("Hello from another window!");
-		if (ImGui::Button("Close Me"))
-			show_another_window = false;
+
 		ImGui::End();
 	}
 
-	ImGui::Begin("Bottom Window", &show_another_window);
+	ImGui::Begin("Bottom Window");
 	ImGui::Text("Hello from Bottom window!");
 	ImGui::End();
 
@@ -250,8 +252,58 @@ void UserInterface::DrawUi(bool& bRecreateDepth)
 	ImGui::Begin("Main Viewport", nullptr, ImGuiWindowFlags_NoBackground);
 	ImGui::Text("Main ViewPort");
 	ImguiViewPortRenderTextureSizeDecider(bRecreateDepth);
+
+	ImGuizmo::SetOrthographic(false);
+	ImGuizmo::SetDrawlist();
+	
+	float windowWidth  = (float)ImGui::GetWindowWidth();
+	float windowHeight = (float)ImGui::GetWindowHeight();
+	std::cout << "Viewport size: (" << windowWidth << ", " << windowHeight << ")" << std::endl;
+
+	ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, windowWidth, windowHeight);
+	
+	///Camera Info
+    
+	if (camera && selectedModel)
+	{
+		glm::mat4 cameraprojection    = camera->GetProjectionMatrix();
+		glm::mat4 cameraview          = camera->GetViewMatrix();
+		glm::mat4 modellocation       = selectedModel->GetModelMatrix();
+
+		if (ImGui::IsKeyPressed(ImGuiKey_T)){
+			currentGizmoOperation = ImGuizmo::TRANSLATE;
+		}
+		if (ImGui::IsKeyPressed(ImGuiKey_R)) {
+			currentGizmoOperation = ImGuizmo::ROTATE;
+		}
+		if (ImGui::IsKeyPressed(ImGuiKey_S)) {
+			currentGizmoOperation = ImGuizmo::SCALE;
+		}
+
+		ImGuizmo::Manipulate(glm::value_ptr(cameraview), glm::value_ptr(cameraprojection), currentGizmoOperation, ImGuizmo::LOCAL, glm::value_ptr(modellocation));
+
+		if (ImGuizmo::IsUsing())
+		{
+			//selectedModel->ModelData.model = modellocation;
+
+			glm::vec3 scale;
+			glm::quat rotation;
+			glm::vec3 translation;
+			glm::vec3 skew;
+			glm::vec4 perspective;
+			glm::decompose(modellocation, scale, rotation, translation, skew, perspective);
+
+			selectedModel->position = translation;
+			selectedModel->rotation += glm::eulerAngles(rotation);
+			selectedModel->scale = scale;
+		}
+
+	}
+
 	ImGui::End();
 }
+
+
 
 void UserInterface::ImguiViewPortRenderTextureSizeDecider(bool& bRecreateDepth)
 {
@@ -260,7 +312,6 @@ void UserInterface::ImguiViewPortRenderTextureSizeDecider(bool& bRecreateDepth)
 	if (ImGui::GetMainViewport())
 	{
 		viewportSize = ImGui::GetContentRegionAvail();
-		std::cout << "Viewport size: (" << viewportSize.x << ", " << viewportSize.y << ")" << std::endl;
 	}
 
 	static ImVec2 lastSize = ImVec2(0.0f, 0.0f);
@@ -277,8 +328,6 @@ void UserInterface::ImguiViewPortRenderTextureSizeDecider(bool& bRecreateDepth)
 		buffermanager->DestroyImage(ImguiViewPortRenderTextureData);
 		CreateViewPortRenderTexture(static_cast<uint32_t>(viewportSize.x), static_cast<uint32_t>(viewportSize.y));
 		bRecreateDepth = true;
-		//destroy_DepthImage();
-		//createDepthTextureImage();
 		lastSize = viewportSize;
 	}
 

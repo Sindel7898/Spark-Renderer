@@ -11,7 +11,6 @@
 #include "BufferManager.h"
 #include "VulkanContext.h"
 #include "FramesPerSecondCounter.h"
-#include "UserInterface.h"
 
 #include <crtdbg.h>
 
@@ -25,8 +24,7 @@
 	vulkanContext = std::make_shared<VulkanContext>(*window);
 	bufferManger = std::make_shared<BufferManager>(vulkanContext->LogicalDevice, vulkanContext->PhysicalDevice, vulkanContext->VulkanInstance);
 	camera = std::make_shared<Camera>(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, window->GetWindow());
-	userinterface = std::make_shared<UserInterface>(vulkanContext.get(), window.get(), bufferManger.get());
-
+	userinterface = std::shared_ptr<UserInterface>(new UserInterface(vulkanContext.get(), window.get(), bufferManger.get()),UserInterfaceDeleter{});
 	//glfwSetFramebufferSizeCallback(window->GetWindow(),);
 	glfwSetWindowUserPointer(window->GetWindow(), this);
 
@@ -547,7 +545,7 @@ void App::Run()
 		CalculateFps(fpsCounter);
 		camera->Update(deltaTime);
 
-		userinterface->DrawUi(bRecreateDepth);
+		userinterface->DrawUi(bRecreateDepth,camera.get(),Models[0].get());
 		if (bRecreateDepth)
 		{
 			destroy_DepthImage();
@@ -646,22 +644,9 @@ void App::Draw()
 
 void App::updateUniformBuffer(uint32_t currentImage) {
 
-	const float SPACING = 2.0f;
-	int modelIndex = 0;
-
-	for (int z = 0; z < 20; ++z) {
-			for (int x = 0; x < 20; ++x) {
-
-				if (modelIndex == Models.size())
-				{
-					break;
-				}
-
-				float offsetX = (x) * SPACING;
-				float offsetZ = (z) * SPACING;
-
-				Models[modelIndex++]->UpdateUniformBuffer(currentImage,offsetX,0,offsetZ);
-			}
+	for (auto& model : Models)
+	{
+		model->UpdateUniformBuffer(currentImage);
 	}
 
 	skyBox->UpdateUniformBuffer(currentImage);
@@ -829,13 +814,14 @@ void App::DestroyBuffers()
 	skyBox.reset();
 
 	bufferManger->DestroyImage(DepthTextureData);
+
 	vmaDestroyAllocator(bufferManger->allocator);
 }
 
 
  App::~App()
 {
-
+	userinterface.reset();
 	destroy_swapchain(); 
 	DestroyBuffers();
 

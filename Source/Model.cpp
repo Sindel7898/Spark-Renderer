@@ -131,19 +131,29 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 }
 
 
-void Model::UpdateUniformBuffer(uint32_t currentImage, int XLocation, int YLocation, int ZLocation)
+void Model::UpdateUniformBuffer(uint32_t currentImage)
 {
 	static auto startTime = std::chrono::high_resolution_clock::now();
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-	UniformBufferObject1 ubo{};
-	ubo.model = glm::scale(glm::mat4(1.0f), glm::vec3(10.0f, 10.0f, 10.0f)) * glm::translate(glm::mat4(1.0f), glm::vec3(XLocation, YLocation, ZLocation));
-	ubo.view = camera->GetViewMatrix();
-	ubo.proj = camera->GetProjectionMatrix();
-	ubo.proj[1][1] *= -1;
+	ModelData.model = glm::mat4(1.0f);
+	ModelData.model = glm::translate(ModelData.model, position);
+	ModelData.model = glm::rotate(ModelData.model, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+	ModelData.model = glm::rotate(ModelData.model, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+	ModelData.model = glm::rotate(ModelData.model, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+	ModelData.model = glm::scale (ModelData.model, scale);
 
-	memcpy(uniformBuffersMappedMem[currentImage], &ubo, sizeof(ubo));
+	ModelData.view = camera->GetViewMatrix();
+	ModelData.proj = camera->GetProjectionMatrix();
+	ModelData.proj[1][1] *= -1;
+
+	memcpy(uniformBuffersMappedMem[currentImage], &ModelData, sizeof(ModelData));
+}
+
+glm::mat4 Model::GetModelMatrix()
+{
+	return ModelData.model;
 }
 
 void Model::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)

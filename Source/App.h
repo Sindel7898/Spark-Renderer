@@ -11,6 +11,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "Model.h"
 #include "SkyBox.h"
+#include "UserInterface.h"
 
 
 class Window;
@@ -19,7 +20,6 @@ class MeshLoader;
 class BufferManager;
 class VulkanContext;
 class FramesPerSecondCounter;
-class UserInterface;
 
 struct UniformBufferObject {
 	alignas(16) glm::mat4 model;
@@ -114,8 +114,6 @@ private:
 
 	uint32_t currentFrame = 0;
 
-
-	//vk::DescriptorSetLayout DescriptorSetLayout;
 	vk::DescriptorPool DescriptorPool;
 	////////////////////////////
 	ImageData DepthTextureData;
@@ -124,4 +122,6 @@ private:
 	ImageData* ViewPortImageData; 
 
 	bool bRecreateDepth = false; 
+
+	bool binitiallayout = true;
 };
