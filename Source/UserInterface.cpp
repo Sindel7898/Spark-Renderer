@@ -238,15 +238,6 @@ void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std
 		ImGui::End();
 	}
 
-	{
-		ImGui::Begin("Another Window");
-		ImGui::Text("Model Data");
-		ImGui::SliderFloat3("Position", (float*)&Models[0]->position, 0.0f,100.0f);
-		ImGui::SliderFloat3("Rotation", (float*)&Models[0]->rotation, 0.0f, 100.0f);
-		ImGui::SliderFloat3("Scale",    (float*)&Models[0]->scale   , 0.0f, 100.0f);
-		ImGui::End();
-	}
-
 	// Main viewport with gizmos
 	ImGui::SetNextWindowSize(ImVec2(400, 300));
 	ImGui::Begin("Main Viewport", nullptr, ImGuiWindowFlags_NoBackground);
@@ -262,13 +253,13 @@ void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std
 	ImGuizmo::SetRect(viewportPos.x, viewportPos.y, windowWidth, windowHeight);
 
 	// Handle gizmo mode changes
-	if (ImGui::IsKeyPressed(ImGuiKey_T)) {
+	if (ImGui::IsKeyPressed(ImGuiKey_1)) {
 		currentGizmoOperation = ImGuizmo::TRANSLATE;
 	}
-	if (ImGui::IsKeyPressed(ImGuiKey_R)) {
+	if (ImGui::IsKeyPressed(ImGuiKey_2)) {
 		currentGizmoOperation = ImGuizmo::ROTATE;
 	}
-	if (ImGui::IsKeyPressed(ImGuiKey_S)) {
+	if (ImGui::IsKeyPressed(ImGuiKey_3)) {
 		currentGizmoOperation = ImGuizmo::SCALE;
 	}
 
@@ -277,7 +268,6 @@ void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std
 		glm::mat4 cameraprojection = camera->GetProjectionMatrix();
 		glm::mat4 cameraview = camera->GetViewMatrix();
 
-		static int selectedModelIndex = 0;
 
 		// Viewport click detection
 		if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0) && !ImGuizmo::IsOver())
@@ -288,7 +278,7 @@ void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std
 			mousePos.y -= viewportPos.y;
 
 
-			for (int i = 0; i < Models.size(); ++i)
+			for (int i = 0; i < Models.size(); i++)
 			{
 				auto& model = Models[i];
 
@@ -331,8 +321,23 @@ void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std
 			}
 		}
 	}
-
 	ImGui::End();
+
+
+	
+     ImGui::Begin("Details Panel");
+     ImGui::Text("Model Data");
+	 ImGui::Spacing();
+	 ImGui::Spacing();
+     ImGui::SliderFloat3("Position", (float*)&Models[selectedModelIndex]->position, 0.0f, 100.0f);
+	 ImGui::Spacing();
+     ImGui::SliderFloat3("Rotation", (float*)&Models[selectedModelIndex]->rotation, 0.0f, 100.0f);
+	 ImGui::Spacing();
+     ImGui::SliderFloat3("Scale",    (float*)&Models[selectedModelIndex]->scale, 0.0f, 100.0f);
+	 ImGui::Spacing();
+
+     ImGui::End();
+
 }
 
 void UserInterface::ImguiViewPortRenderTextureSizeDecider(bool& bRecreateDepth)

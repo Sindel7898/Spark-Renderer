@@ -39,6 +39,7 @@ private:
     Window* window = nullptr;
     vk::Extent3D RenderTextureExtent = (0, 0, 0);
 
+    int selectedModelIndex = 0;
 
 
     bool useSnap = false;

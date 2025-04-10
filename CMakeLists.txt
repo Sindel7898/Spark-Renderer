@@ -32,12 +32,15 @@ set(IMGUI_BACKEND_SRC
     ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
 )
 
+set(TRACY_SOURCES ${CMAKE_SOURCE_DIR}/External/tracy/public/TracyClient.cpp)
+
 # Add the libs subdirectory
 add_subdirectory(External/glfw)
 add_subdirectory(External/glm)
 add_subdirectory(External/vk-bootstrap)
 add_subdirectory(External/VulkanMemoryAllocator)
 add_subdirectory(External/assimp)
+add_subdirectory(External/tracy)
 
 # Find all source files
 file(GLOB SOURCES "Source/*.cpp")
@@ -46,7 +49,11 @@ file(GLOB SOURCES "Source/*.cpp")
 find_package(Vulkan REQUIRED)
 
 # Create the executable
-add_executable(VulkanRenderer ${SOURCES} ${IMGUI_SRC} ${IMGUI_BACKEND_SRC} ${ImGuizmo_SRC})
+add_executable(VulkanRenderer ${SOURCES}
+                              ${TRACY_SOURCES} 
+                              ${IMGUI_SRC} 
+                              ${IMGUI_BACKEND_SRC} 
+                              ${ImGuizmo_SRC})
 
 target_include_directories(VulkanRenderer PRIVATE 
     ${CMAKE_SOURCE_DIR}/src
@@ -58,13 +65,15 @@ target_include_directories(VulkanRenderer PRIVATE
     ${ImGuizmo_DIR}
     ${Vulkan_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/External/glfw/include
+    ${CMAKE_SOURCE_DIR}/External/tracy/public/tracy
 )
+target_compile_definitions(VulkanRenderer PRIVATE TRACY_ENABLE)
 
 target_link_libraries(VulkanRenderer PRIVATE 
     glfw 
     glm 
     vk-bootstrap 
     VulkanMemoryAllocator 
-    assimp 
+    assimp
     Vulkan::Vulkan
 )

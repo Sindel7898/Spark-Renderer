@@ -11,9 +11,9 @@
 #include "BufferManager.h"
 #include "VulkanContext.h"
 #include "FramesPerSecondCounter.h"
-
 #include <crtdbg.h>
-
+//#define WIN32_LEAN_AND_MEAN
+//#include "Tracy.hpp"
 
 #define DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
 
@@ -541,10 +541,12 @@ void App::Run()
 
 	while (!window->shouldClose())
 	{
+		//FrameMarkNamed("main"); 
 		glfwPollEvents();
 		CalculateFps(fpsCounter);
 		camera->Update(deltaTime);
 
+		//ZoneScopedN("UI");
 		userinterface->DrawUi(bRecreateDepth,camera.get(),Models);
 		if (bRecreateDepth)
 		{
@@ -569,6 +571,7 @@ void App::CalculateFps(FramesPerSecondCounter& fpsCounter)
 
 void App::Draw()
 {
+	//ZoneScopedN("render");
 	if (vulkanContext->LogicalDevice.waitForFences(1, &inFlightFences[currentFrame], vk::True, UINT64_MAX) != vk::Result::eSuccess)
 	{
 		throw std::runtime_error("failed to wait for fence");
