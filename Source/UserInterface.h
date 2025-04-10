@@ -21,7 +21,7 @@ public:
     UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef, BufferManager* Buffermanager);
 
     void RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex);
-    void DrawUi(bool& bRecreateDepth, Camera* camera, Model* selectedModel);
+    void DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std::shared_ptr<Model>>& Models);
     ImageData* CreateViewPortRenderTexture(uint32_t X, uint32_t Y);
     vk::Extent3D GetRenderTextureExtent();
     void ImguiViewPortRenderTextureSizeDecider(bool& bRecreateDepth);
@@ -31,7 +31,6 @@ public:
     VkDescriptorSet RenderTextureId;
     VulkanContext* vulkancontext = nullptr;
     vk::DescriptorPool  ImGuiDescriptorPool = nullptr;
-
 
 private:
     void InitImgui();
@@ -44,8 +43,9 @@ private:
 
     bool useSnap = false;
     float snap[3] = { 1.f, 1.f, 1.f };
-    ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::TRANSLATE;
-    ImGuizmo::MODE currentGizmoMode = ImGuizmo::WORLD;
+    
+     ImGuizmo::OPERATION currentGizmoOperation;
+     ImGuizmo::MODE currentGizmoMode;
 };
 
 struct UserInterfaceDeleter {

@@ -87,8 +87,7 @@ private:
 	std::unique_ptr<MeshLoader> meshloader = nullptr;
 	std::shared_ptr<Camera> camera = nullptr;
 	std::shared_ptr<UserInterface> userinterface = nullptr;
-
-	std::vector<std::unique_ptr<Model, ModelDeleter>>Models;
+	std::vector<std::shared_ptr<Model>> Models;
 
 	std::unique_ptr<SkyBox, SkyBoxDeleter> skyBox = nullptr;
 

@@ -35,7 +35,7 @@
 	Models.reserve(3);
 
 	for (int i = 0; i < 3; i++) {
-		auto model = std::unique_ptr<Model, ModelDeleter>(new Model("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
+		auto model = std::shared_ptr<Model>(new Model("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
 		     model->LoadTextures("../Textures/Helmet/RGBDefault_albedo.jpeg");
 			 Models.push_back(std::move(model));
 	}
@@ -545,7 +545,7 @@ void App::Run()
 		CalculateFps(fpsCounter);
 		camera->Update(deltaTime);
 
-		userinterface->DrawUi(bRecreateDepth,camera.get(),Models[0].get());
+		userinterface->DrawUi(bRecreateDepth,camera.get(),Models);
 		if (bRecreateDepth)
 		{
 			destroy_DepthImage();

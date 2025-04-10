@@ -12,6 +12,8 @@ UserInterface::UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef,
 	vulkancontext = vulkancontextRef;
 	window = WindowRef;
 	buffermanager = Buffermanager;
+	currentGizmoOperation = ImGuizmo::TRANSLATE;
+	currentGizmoMode = ImGuizmo::WORLD;
 	InitImgui();
 }
 
@@ -224,13 +226,13 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex)
 
 
 //call every Frame
-void UserInterface::DrawUi(bool& bRecreateDepth,Camera* camera, Model* selectedModel)
+void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std::shared_ptr<Model>>& Models)
 {
 	SetupDockingEnvironment();
 
+	// Your other UI windows...
 	{
 		ImGui::Begin("Hello, world!");
-
 		ImGuiIO& io = ImGui::GetIO();
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 		ImGui::End();
@@ -238,16 +240,14 @@ void UserInterface::DrawUi(bool& bRecreateDepth,Camera* camera, Model* selectedM
 
 	{
 		ImGui::Begin("Another Window");
-		ImGui::Text("Hello from another window!");
-
+		ImGui::Text("Model Data");
+		ImGui::SliderFloat3("Position", (float*)&Models[0]->position, 0.0f,100.0f);
+		ImGui::SliderFloat3("Rotation", (float*)&Models[0]->rotation, 0.0f, 100.0f);
+		ImGui::SliderFloat3("Scale",    (float*)&Models[0]->scale   , 0.0f, 100.0f);
 		ImGui::End();
 	}
 
-	ImGui::Begin("Bottom Window");
-	ImGui::Text("Hello from Bottom window!");
-	ImGui::End();
-
-
+	// Main viewport with gizmos
 	ImGui::SetNextWindowSize(ImVec2(400, 300));
 	ImGui::Begin("Main Viewport", nullptr, ImGuiWindowFlags_NoBackground);
 	ImGui::Text("Main ViewPort");
@@ -255,55 +255,85 @@ void UserInterface::DrawUi(bool& bRecreateDepth,Camera* camera, Model* selectedM
 
 	ImGuizmo::SetOrthographic(false);
 	ImGuizmo::SetDrawlist();
-	
-	float windowWidth  = (float)ImGui::GetWindowWidth();
+
+	float windowWidth = (float)ImGui::GetWindowWidth();
 	float windowHeight = (float)ImGui::GetWindowHeight();
-	std::cout << "Viewport size: (" << windowWidth << ", " << windowHeight << ")" << std::endl;
+	ImVec2 viewportPos = ImGui::GetWindowPos();
+	ImGuizmo::SetRect(viewportPos.x, viewportPos.y, windowWidth, windowHeight);
 
-	ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, windowWidth, windowHeight);
-	
-	///Camera Info
-    
-	if (camera && selectedModel)
+	// Handle gizmo mode changes
+	if (ImGui::IsKeyPressed(ImGuiKey_T)) {
+		currentGizmoOperation = ImGuizmo::TRANSLATE;
+	}
+	if (ImGui::IsKeyPressed(ImGuiKey_R)) {
+		currentGizmoOperation = ImGuizmo::ROTATE;
+	}
+	if (ImGui::IsKeyPressed(ImGuiKey_S)) {
+		currentGizmoOperation = ImGuizmo::SCALE;
+	}
+
+	if (camera && !Models.empty())
 	{
-		glm::mat4 cameraprojection    = camera->GetProjectionMatrix();
-		glm::mat4 cameraview          = camera->GetViewMatrix();
-		glm::mat4 modellocation       = selectedModel->GetModelMatrix();
+		glm::mat4 cameraprojection = camera->GetProjectionMatrix();
+		glm::mat4 cameraview = camera->GetViewMatrix();
 
-		if (ImGui::IsKeyPressed(ImGuiKey_T)){
-			currentGizmoOperation = ImGuizmo::TRANSLATE;
-		}
-		if (ImGui::IsKeyPressed(ImGuiKey_R)) {
-			currentGizmoOperation = ImGuizmo::ROTATE;
-		}
-		if (ImGui::IsKeyPressed(ImGuiKey_S)) {
-			currentGizmoOperation = ImGuizmo::SCALE;
-		}
+		static int selectedModelIndex = 0;
 
-		ImGuizmo::Manipulate(glm::value_ptr(cameraview), glm::value_ptr(cameraprojection), currentGizmoOperation, ImGuizmo::LOCAL, glm::value_ptr(modellocation));
-
-		if (ImGuizmo::IsUsing())
+		// Viewport click detection
+		if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0) && !ImGuizmo::IsOver())
 		{
-			//selectedModel->ModelData.model = modellocation;
+			// Get mouse position in viewport coordinates
+			ImVec2 mousePos = ImGui::GetMousePos();
+			mousePos.x -= viewportPos.x;
+			mousePos.y -= viewportPos.y;
 
-			glm::vec3 scale;
-			glm::quat rotation;
-			glm::vec3 translation;
-			glm::vec3 skew;
-			glm::vec4 perspective;
-			glm::decompose(modellocation, scale, rotation, translation, skew, perspective);
 
-			selectedModel->position = translation;
-			selectedModel->rotation += glm::eulerAngles(rotation);
-			selectedModel->scale = scale;
+			for (int i = 0; i < Models.size(); ++i)
+			{
+				auto& model = Models[i];
+
+				glm::vec4 clipSpacePos = cameraprojection * cameraview * glm::vec4(model->position, 1.0f);
+				glm::vec3 ndcSpacePos = glm::vec3(clipSpacePos) / clipSpacePos.w;
+				
+				glm::vec2 screenSpacePos;
+				screenSpacePos.x = (ndcSpacePos.x + 1.0f) * 0.5f * windowWidth;
+				screenSpacePos.y = (1.0f - ndcSpacePos.y) * 0.5f * windowHeight;
+
+				float distance = glm::distance(glm::vec2(mousePos.x, mousePos.y), screenSpacePos);
+
+				if (distance < 100.0f)
+				{
+					selectedModelIndex = i;
+				}
+			}
 		}
 
+		if (selectedModelIndex >= 0 && selectedModelIndex < Models.size())
+		{
+			auto& model = Models[selectedModelIndex];
+			glm::mat4 modellocation = model->GetModelMatrix();
+
+			ImGuizmo::Manipulate(glm::value_ptr(cameraview),glm::value_ptr(cameraprojection),
+				                 currentGizmoOperation,ImGuizmo::LOCAL,glm::value_ptr(modellocation));
+
+			if (ImGuizmo::IsUsing())
+			{
+				glm::vec3 scale;
+				glm::quat rotation;
+				glm::vec3 translation;
+				glm::vec3 skew;
+				glm::vec4 perspective;
+				glm::decompose(modellocation, scale, rotation, translation, skew, perspective);
+
+				model->position = translation;
+				model->rotation = glm::eulerAngles(rotation);
+				model->scale = scale;
+			}
+		}
 	}
 
 	ImGui::End();
 }
-
-
 
 void UserInterface::ImguiViewPortRenderTextureSizeDecider(bool& bRecreateDepth)
 {
