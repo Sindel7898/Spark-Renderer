@@ -16,7 +16,7 @@ set(IMGUI_SRC
     ${IMGUI_DIR}/imgui_draw.cpp
     ${IMGUI_DIR}/imgui_tables.cpp
     ${IMGUI_DIR}/imgui_widgets.cpp
-    ${IMGUI_DIR}/imgui_demo.cpp  # Optional, for demo code
+    ${IMGUI_DIR}/imgui_demo.cpp 
 )
 
 set(ImGuizmo_SRC
@@ -39,7 +39,6 @@ add_subdirectory(External/glfw)
 add_subdirectory(External/glm)
 add_subdirectory(External/vk-bootstrap)
 add_subdirectory(External/VulkanMemoryAllocator)
-add_subdirectory(External/assimp)
 add_subdirectory(External/tracy)
 
 # Find all source files
@@ -74,6 +73,5 @@ target_link_libraries(VulkanRenderer PRIVATE
     glm 
     vk-bootstrap 
     VulkanMemoryAllocator 
-    assimp
     Vulkan::Vulkan
 )

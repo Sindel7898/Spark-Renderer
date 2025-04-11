@@ -32,7 +32,7 @@ void main() {
     vec3 lightDir = normalize(lub.LightLocation - fragPosition);
 
     // Diffuse lighting (Lambertian)
-    float diff = max(dot(worldNormal, lightDir), 0.0);
+    float diff = max(dot(normal, lightDir), 0.0);
     vec3 diffuse = diff * lub.BaseColor.rgb;
 
     // Ambient lighting

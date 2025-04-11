@@ -1,9 +1,6 @@
 #include "AssetManager.h"
 #include "MeshLoader.h"
 
-
-#define STB_IMAGE_IMPLEMENTATION
-
 AssetManager::AssetManager() {
 	meshloader = std::make_shared<MeshLoader>();
 }

@@ -1,11 +1,15 @@
 #pragma once
-
-#include "assimp\Importer.hpp"      
-#include "assimp\scene.h"          
-#include "assimp\postprocess.h"     
+   
 #include "VertexInputLayouts.h"          
 #include <vector>
+#include <string>             
 
+
+namespace tinygltf {
+	class Model;
+	class TinyGLTF;
+	class Primitive;
+}
 
 class MeshLoader
 {
@@ -14,15 +18,16 @@ public:
 	MeshLoader();
 	void LoadModel(const std::string& pFile);
 
+	void ProcessMesh(const tinygltf::Primitive& primitive, tinygltf::Model& model);
+
 	const std::vector<ModelVertex>& GetVertices();
 	const std::vector<uint16_t>& GetIndices();
 
 private:
-	Assimp::Importer importer;
-	void ProcessNode(aiNode* node, const aiScene* scene);
-	void ProcessMesh(aiMesh* mesh, const aiScene* scene);
-
-
 	std::vector<ModelVertex> vertices;
 	std::vector<uint16_t> indices;
+
+
+	std::string err;
+	std::string warn;
 };

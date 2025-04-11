@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
-#include "stb_image.h"
 #include "MeshLoader.h"
+#include "stb_image.h"
 
 struct StoredImageData
 {

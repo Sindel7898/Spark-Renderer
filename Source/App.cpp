@@ -3,8 +3,6 @@
 #include <optional>
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
 #include "Window.h"
 #include "Camera.h"
 #include "MeshLoader.h"
@@ -37,10 +35,10 @@
 	Models.reserve(3);
 
 	for (int i = 0; i < 3; i++) {
-		auto model = std::shared_ptr<Model>(new Model("../Textures/Helmet/model.obj", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
+		auto model = std::shared_ptr<Model>(new Model("../Textures/Helmet/DamagedHelmet.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
 		std::array<std::string, 2> filePaths{
-		    "../Textures/Helmet/RGBDefault_albedo.jpeg",
-			"../Textures/Helmet/Default_normal.jpeg",
+		    "../Textures/Helmet/Default_albedo.jpg",
+			"../Textures/Helmet/Default_normal.jpg",
 		};
 
 		model->LoadTextures(filePaths);
