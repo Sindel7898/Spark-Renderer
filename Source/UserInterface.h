@@ -9,11 +9,15 @@
 #include <imgui_internal.h>
 #include "vulkanContext.h"
 #include "ImGuizmo.h"
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 class Window;
 class BufferManager;
 class Camera;
 class Model;
+class Light;
 
 class UserInterface
 {
@@ -21,7 +25,11 @@ public:
     UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef, BufferManager* Buffermanager);
 
     void RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex);
-    void DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std::shared_ptr<Model>>& Models);
+    void DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std::shared_ptr<Model>>& Models, std::vector<std::shared_ptr<Light>>& Lights);
+    float CalculateDistanceInScreenSpace(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position);
+   // std::vector<glm::vec3> ShowGuizmoToLocation(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position);
+  
+    
     ImageData* CreateViewPortRenderTexture(uint32_t X, uint32_t Y);
     vk::Extent3D GetRenderTextureExtent();
     void ImguiViewPortRenderTextureSizeDecider(bool& bRecreateDepth);
@@ -32,6 +40,7 @@ public:
     VulkanContext* vulkancontext = nullptr;
     vk::DescriptorPool  ImGuiDescriptorPool = nullptr;
 
+
 private:
     void InitImgui();
     void SetupDockingEnvironment();
@@ -39,7 +48,8 @@ private:
     Window* window = nullptr;
     vk::Extent3D RenderTextureExtent = (0, 0, 0);
 
-    int selectedModelIndex = 0;
+    int selectedModelIndex = -1;
+    int selectedLightIndex = -1;
 
 
     bool useSnap = false;

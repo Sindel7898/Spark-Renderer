@@ -6,11 +6,18 @@
 #include "VulkanContext.h"
 #include "Camera.h"
 #include "AssetManager.h"
+#include "Light.h"
 
-struct UniformBufferObject1 {
+struct VertexUniformBufferObject1 {
     alignas(16) glm::mat4 model;
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
+};
+
+struct FragmentUniformBufferObject1 {
+    alignas(16) glm::vec3  LightLocation;
+    alignas(16) glm::vec4  BaseColor;
+    alignas(16) float      AmbientStrength;
 };
 
 struct InstanceData {
@@ -26,10 +33,10 @@ public:
 
     Model(const std::string& filepath, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* camera, BufferManager* buffermanger);
     ~Model();
-    void LoadTextures(const std::string& filepath);
+    void LoadTextures(const std::array<std::string, 2>& filepath);
     void CreateVertexAndIndexBuffer();
     void CreateUniformBuffer();
-    void UpdateUniformBuffer(uint32_t currentImage);
+    void UpdateUniformBuffer(uint32_t currentImage, Light* light);
     glm::mat4 GetModelMatrix();
     void createDescriptorSetLayout();
 
@@ -44,10 +51,13 @@ public:
     
     std::vector<vk::DescriptorSet> DescriptorSets;
 
-    std::vector<BufferData> uniformBuffers;
+    std::vector<BufferData> VertexuniformBuffers;
+    std::vector<BufferData> FragmentuniformBuffers;
+
     BufferData VertexBufferData;
     BufferData IndexBufferData;
-    ImageData MeshTextureData;
+    ImageData AlbedoTextureData;
+    ImageData NormalTextureData;
 
     std::unique_ptr<BufferManager> bufferManger = nullptr;
     std::shared_ptr<VulkanContext> vulkanContext = nullptr;
@@ -55,9 +65,10 @@ public:
 
     glm::vec3 position = glm::vec3(0.0f);
     glm::vec3 rotation = glm::vec3(0.0f);
-    glm::vec3 scale    = glm::vec3(1.0f);
+    glm::vec3 scale    = glm::vec3(2.0f);
 
-    UniformBufferObject1 ModelData;
+    VertexUniformBufferObject1 ModelData;
+    FragmentUniformBufferObject1 LightData;
 
 private:
 
@@ -65,7 +76,9 @@ private:
     std::shared_ptr<Camera>        camera = nullptr;
 
 
-    std::vector<void*> uniformBuffersMappedMem;
+    std::vector<void*> VertexUniformBuffersMappedMem;
+    std::vector<void*> FragmentUniformBuffersMappedMem;
+
     std::vector<InstanceData> instances;
     const std::string filePath;
 

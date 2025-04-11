@@ -3,9 +3,7 @@
 #include "Window.h"
 #include "Camera.h"
 #include "Model.h"
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
+#include "Light.h"
 
 UserInterface::UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef, BufferManager* Buffermanager)
 {
@@ -140,9 +138,9 @@ void UserInterface::SetupDockingEnvironment()
 		ImGuiID dock_Bottom_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.2f, nullptr, &dock_main_id);
 
 		// Dock windows
-		ImGui::DockBuilderDockWindow("Bottom Window", dock_Bottom_id);
+		ImGui::DockBuilderDockWindow("Stats Window", dock_Bottom_id);
 		ImGui::DockBuilderDockWindow("Hello, world!", dock_left_id);
-		ImGui::DockBuilderDockWindow("Another Window", dock_right_id);
+		ImGui::DockBuilderDockWindow("Details Panel", dock_right_id);
 		ImGui::DockBuilderDockWindow("Main Viewport", dock_main_id);
 
 		ImGui::DockBuilderFinish(dockspace_id);
@@ -226,7 +224,7 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex)
 
 
 //call every Frame
-void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std::shared_ptr<Model>>& Models)
+void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std::shared_ptr<Model>>& Models, std::vector<std::shared_ptr<Light>>& Lights)
 {
 	SetupDockingEnvironment();
 
@@ -247,10 +245,6 @@ void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std
 	ImGuizmo::SetOrthographic(false);
 	ImGuizmo::SetDrawlist();
 
-	float windowWidth = (float)ImGui::GetWindowWidth();
-	float windowHeight = (float)ImGui::GetWindowHeight();
-	ImVec2 viewportPos = ImGui::GetWindowPos();
-	ImGuizmo::SetRect(viewportPos.x, viewportPos.y, windowWidth, windowHeight);
 
 	// Handle gizmo mode changes
 	if (ImGui::IsKeyPressed(ImGuiKey_1)) {
@@ -269,42 +263,50 @@ void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std
 		glm::mat4 cameraview = camera->GetViewMatrix();
 
 
-		// Viewport click detection
 		if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0) && !ImGuizmo::IsOver())
 		{
-			// Get mouse position in viewport coordinates
-			ImVec2 mousePos = ImGui::GetMousePos();
-			mousePos.x -= viewportPos.x;
-			mousePos.y -= viewportPos.y;
-
-
 			for (int i = 0; i < Models.size(); i++)
 			{
-				auto& model = Models[i];
+				glm::vec3 ModelPosition = Models[i]->position;
 
-				glm::vec4 clipSpacePos = cameraprojection * cameraview * glm::vec4(model->position, 1.0f);
-				glm::vec3 ndcSpacePos = glm::vec3(clipSpacePos) / clipSpacePos.w;
+				float distance = CalculateDistanceInScreenSpace(cameraprojection, cameraview, ModelPosition);
 				
-				glm::vec2 screenSpacePos;
-				screenSpacePos.x = (ndcSpacePos.x + 1.0f) * 0.5f * windowWidth;
-				screenSpacePos.y = (1.0f - ndcSpacePos.y) * 0.5f * windowHeight;
-
-				float distance = glm::distance(glm::vec2(mousePos.x, mousePos.y), screenSpacePos);
-
 				if (distance < 100.0f)
 				{
 					selectedModelIndex = i;
+					break;
+				}
+				else
+				{
+					selectedModelIndex = -1;
 				}
 			}
+
+			if (selectedModelIndex <= -1)
+			{
+				for (int i = 0; i < Lights.size(); i++)
+				{
+					glm::vec3 LightPosition = Lights[i]->LightLocation;
+					float distance = CalculateDistanceInScreenSpace(cameraprojection, cameraview, LightPosition);
+
+					if (distance < 100.0f)
+					{
+						selectedLightIndex = i;
+						break; 
+					}
+				}
+			}
+
 		}
 
 		if (selectedModelIndex >= 0 && selectedModelIndex < Models.size())
 		{
 			auto& model = Models[selectedModelIndex];
+			
 			glm::mat4 modellocation = model->GetModelMatrix();
 
-			ImGuizmo::Manipulate(glm::value_ptr(cameraview),glm::value_ptr(cameraprojection),
-				                 currentGizmoOperation,ImGuizmo::LOCAL,glm::value_ptr(modellocation));
+			ImGuizmo::Manipulate(glm::value_ptr(cameraview), glm::value_ptr(cameraprojection),
+				                 currentGizmoOperation, ImGuizmo::LOCAL, glm::value_ptr(modellocation));
 
 			if (ImGuizmo::IsUsing())
 			{
@@ -320,25 +322,111 @@ void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std
 				model->scale = scale;
 			}
 		}
+		else if (selectedLightIndex >= 0 && selectedLightIndex < Lights.size())
+		{
+			auto& light = Lights[selectedLightIndex];
+
+			glm::mat4 modellocation = light->GetModelMatrix();
+
+			ImGuizmo::Manipulate(glm::value_ptr(cameraview), glm::value_ptr(cameraprojection),
+				currentGizmoOperation, ImGuizmo::LOCAL, glm::value_ptr(modellocation));
+
+			if (ImGuizmo::IsUsing())
+			{
+				glm::vec3 scale;
+				glm::quat rotation;
+				glm::vec3 translation;
+				glm::vec3 skew;
+				glm::vec4 perspective;
+				glm::decompose(modellocation, scale, rotation, translation, skew, perspective);
+
+				light->LightLocation = translation;
+				light->LightRotation = glm::eulerAngles(rotation);
+				light->LightScale = scale;
+			}
+		}
 	}
 	ImGui::End();
 
+	if (selectedModelIndex >= 0)
+	{
+		ImGui::Begin("Details Panel");
+		ImGui::Text("Model Data");
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::SliderFloat3("Position", (float*)&Models[selectedModelIndex]->position, 0.0f, 100.0f);
+		ImGui::Spacing();
+		ImGui::SliderFloat3("Rotation", (float*)&Models[selectedModelIndex]->rotation, 0.0f, 100.0f);
+		ImGui::Spacing();
+		ImGui::SliderFloat3("Scale", (float*)&Models[selectedModelIndex]->scale, 0.0f, 100.0f);
+		ImGui::Spacing();
 
-	
-     ImGui::Begin("Details Panel");
-     ImGui::Text("Model Data");
-	 ImGui::Spacing();
-	 ImGui::Spacing();
-     ImGui::SliderFloat3("Position", (float*)&Models[selectedModelIndex]->position, 0.0f, 100.0f);
-	 ImGui::Spacing();
-     ImGui::SliderFloat3("Rotation", (float*)&Models[selectedModelIndex]->rotation, 0.0f, 100.0f);
-	 ImGui::Spacing();
-     ImGui::SliderFloat3("Scale",    (float*)&Models[selectedModelIndex]->scale, 0.0f, 100.0f);
-	 ImGui::Spacing();
+		ImGui::End();
+	}
+	else if (selectedLightIndex >= 0)
+	{
+		ImGui::Begin("Details Panel");
+		ImGui::Text("Transformations");
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::SliderFloat3("Position", (float*)&Lights[selectedLightIndex]->LightLocation, 0.0f, 100.0f);
+		ImGui::Spacing();
+		ImGui::SliderFloat3("Rotation", (float*)&Lights[selectedLightIndex]->LightRotation, 0.0f, 100.0f);
+		ImGui::Spacing();
+		ImGui::SliderFloat3("Scale", (float*)&Lights[selectedLightIndex]->LightScale, 0.0f, 100.0f);
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Spacing();
+		ImGui::Text("Light Details");
+		ImGui::ColorPicker4("Light Color", (float*)&Lights[selectedLightIndex]->BaseColor);
+		ImGui::InputFloat("AmbientStrength", (float*)&Lights[selectedLightIndex]->AmbientStrength);
+		ImGui::Spacing();
+		ImGui::End();
+	}
+	else
+	{
+		ImGui::Begin("Details Panel");
 
-     ImGui::End();
+		ImGui::End();
 
+	}
+
+	ImGui::Begin("Stats Window");
+
+	ImGui::End();
 }
+
+float UserInterface::CalculateDistanceInScreenSpace(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position)
+{
+    float windowWidth = (float)ImGui::GetWindowWidth();
+	float windowHeight = (float)ImGui::GetWindowHeight();
+
+	ImVec2 viewportPos = ImGui::GetWindowPos();
+	ImGuizmo::SetRect(viewportPos.x, viewportPos.y, windowWidth, windowHeight);
+
+	ImVec2 mousePos = ImGui::GetMousePos();
+	mousePos.x -= viewportPos.x;
+	mousePos.y -= viewportPos.y;
+
+
+	glm::vec4 clipSpacePos = CameraProjection * cameraview * glm::vec4(position, 1.0f);
+	glm::vec3 ndcSpacePos = glm::vec3(clipSpacePos) / clipSpacePos.w;
+
+	glm::vec2 screenSpacePos;
+	screenSpacePos.x = (ndcSpacePos.x + 1.0f) * 0.5f * windowWidth;
+	screenSpacePos.y = (1.0f - ndcSpacePos.y) * 0.5f * windowHeight;
+
+	float distance = glm::distance(glm::vec2(mousePos.x, mousePos.y), screenSpacePos);
+
+	return distance;
+}
+
+//void UserInterface::ShowGuizmoToLocation(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position)
+//{
+//	
+//}
+
 
 void UserInterface::ImguiViewPortRenderTextureSizeDecider(bool& bRecreateDepth)
 {

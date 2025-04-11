@@ -13,13 +13,21 @@ Model::Model(const std::string& filepath, VulkanContext* vulkancontext, vk::Comm
 	createDescriptorSetLayout();
 }
 
-void Model::LoadTextures(const std::string& filepath)
+void Model::LoadTextures(const std::array<std::string, 2>& filepath)
 {
 
-	AssetManager::GetInstance().LoadTexture(filepath);
-	StoredImageData imageadata =  AssetManager::GetInstance().GetStoredImageData(filepath);
+	AssetManager::GetInstance().LoadTexture(filepath[0]);
+	StoredImageData AlbedoImageData =  AssetManager::GetInstance().GetStoredImageData(filepath[0]);
 
-	MeshTextureData = bufferManger->CreateTextureImage(imageadata.imageData, imageadata.imageWidth, imageadata.imageHeight, commandPool, vulkanContext->graphicsQueue);
+	AlbedoTextureData = bufferManger->CreateTextureImage(AlbedoImageData.imageData, AlbedoImageData.imageWidth, AlbedoImageData.imageHeight,vk::Format::eR8G8B8A8Srgb , commandPool, vulkanContext->graphicsQueue);
+
+
+	AssetManager::GetInstance().LoadTexture(filepath[1]);
+	StoredImageData NormalImageData = AssetManager::GetInstance().GetStoredImageData(filepath[1]);
+
+	NormalTextureData = bufferManger->CreateTextureImage(NormalImageData.imageData, NormalImageData.imageWidth, NormalImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
+
+
 }
 
 void Model::CreateVertexAndIndexBuffer()
@@ -37,37 +45,68 @@ void Model::CreateVertexAndIndexBuffer()
 
 void Model::CreateUniformBuffer()
 {
-	uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-	uniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
+	VertexuniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+	VertexUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
 
-	VkDeviceSize UniformBufferSize = sizeof(UniformBufferObject1);
+	VkDeviceSize VertexuniformBufferSize = sizeof(VertexUniformBufferObject1);
 
-	for (size_t i = 0; i < uniformBuffers.size(); i++)
+	for (size_t i = 0; i < VertexuniformBuffers.size(); i++)
 	{
 
-		BufferData bufferdata = bufferManger->CreateBuffer(UniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
-		uniformBuffers[i] = bufferdata;
+		BufferData bufferdata = bufferManger->CreateBuffer(VertexuniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
+		VertexuniformBuffers[i] = bufferdata;
 
-		uniformBuffersMappedMem[i] = bufferManger->MapMemory(bufferdata);
+		VertexUniformBuffersMappedMem[i] = bufferManger->MapMemory(bufferdata);
+	}
+
+	//////////////////////////////////////////////////////////////
+	FragmentuniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+	FragmentUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
+
+	VkDeviceSize FragmentuniformBufferSize = sizeof(FragmentUniformBufferObject1);
+
+	for (size_t i = 0; i < FragmentuniformBuffers.size(); i++)
+	{
+
+		BufferData bufferdata = bufferManger->CreateBuffer(FragmentuniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
+		FragmentuniformBuffers[i] = bufferdata;
+
+		FragmentUniformBuffersMappedMem[i] = bufferManger->MapMemory(bufferdata);
 	}
 }
+
+
 
 void Model::createDescriptorSetLayout()
 {
 	//Difines type that is sending and where to 
-	vk::DescriptorSetLayoutBinding UniformBufferBinding{};
-	UniformBufferBinding.binding = 0;
-	UniformBufferBinding.descriptorCount = 1;
-	UniformBufferBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
-	UniformBufferBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
+	vk::DescriptorSetLayoutBinding VertexUniformBufferBinding{};
+	VertexUniformBufferBinding.binding = 0;
+	VertexUniformBufferBinding.descriptorCount = 1;
+	VertexUniformBufferBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
+	VertexUniformBufferBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
+
+	vk::DescriptorSetLayoutBinding FragmentUniformBufferBinding{};
+	FragmentUniformBufferBinding.binding = 1;
+	FragmentUniformBufferBinding.descriptorCount = 1;
+	FragmentUniformBufferBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
+	FragmentUniformBufferBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 	vk::DescriptorSetLayoutBinding samplerLayoutBinding{};
-	samplerLayoutBinding.binding = 1;
+	samplerLayoutBinding.binding = 2;
 	samplerLayoutBinding.descriptorCount = 1;
 	samplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	samplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-	std::array<vk::DescriptorSetLayoutBinding, 2> bindings = { UniformBufferBinding, samplerLayoutBinding };
+	vk::DescriptorSetLayoutBinding NormalSamplerLayoutBinding{};
+	NormalSamplerLayoutBinding.binding = 3;
+	NormalSamplerLayoutBinding.descriptorCount = 1;
+	NormalSamplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	NormalSamplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+	std::array<vk::DescriptorSetLayoutBinding, 4> bindings = { VertexUniformBufferBinding,
+		                                                       FragmentUniformBufferBinding, 
+		                                                       samplerLayoutBinding,NormalSamplerLayoutBinding };
 
 	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -98,40 +137,72 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 	//specifies what exactly to send
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
-		vk::DescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = uniformBuffers[i].buffer;
-		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(UniformBufferObject1);
+		vk::DescriptorBufferInfo vertexbufferInfo{};
+		vertexbufferInfo.buffer = VertexuniformBuffers[i].buffer;
+		vertexbufferInfo.offset = 0;
+		vertexbufferInfo.range = sizeof(VertexUniformBufferObject1);
 
+		vk::WriteDescriptorSet VertexUniformdescriptorWrite{};
+		VertexUniformdescriptorWrite.dstSet = DescriptorSets[i];
+		VertexUniformdescriptorWrite.dstBinding = 0;
+		VertexUniformdescriptorWrite.dstArrayElement = 0;
+		VertexUniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+		VertexUniformdescriptorWrite.descriptorCount = 1;
+		VertexUniformdescriptorWrite.pBufferInfo = &vertexbufferInfo;
+		/////////////////////////////////////////////////////////////////////////////////////
+		vk::DescriptorBufferInfo FragmentbufferInfo{};
+		FragmentbufferInfo.buffer = FragmentuniformBuffers[i].buffer;
+		FragmentbufferInfo.offset = 0;
+		FragmentbufferInfo.range = sizeof(FragmentUniformBufferObject1);
+
+		vk::WriteDescriptorSet FragmentUniformdescriptorWrite{};
+		FragmentUniformdescriptorWrite.dstSet = DescriptorSets[i];
+		FragmentUniformdescriptorWrite.dstBinding = 1;
+		FragmentUniformdescriptorWrite.dstArrayElement = 0;
+		FragmentUniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+		FragmentUniformdescriptorWrite.descriptorCount = 1;
+		FragmentUniformdescriptorWrite.pBufferInfo = &FragmentbufferInfo;
+		/////////////////////////////////////////////////////////////////////////////////////
 		vk::DescriptorImageInfo imageInfo{};
 		imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		imageInfo.imageView = MeshTextureData.imageView;
-		imageInfo.sampler = MeshTextureData.imageSampler;
-
-		vk::WriteDescriptorSet UniformdescriptorWrite{};
-		UniformdescriptorWrite.dstSet = DescriptorSets[i];
-		UniformdescriptorWrite.dstBinding = 0;
-		UniformdescriptorWrite.dstArrayElement = 0;
-		UniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-		UniformdescriptorWrite.descriptorCount = 1;
-		UniformdescriptorWrite.pBufferInfo = &bufferInfo;
+		imageInfo.imageView = AlbedoTextureData.imageView;
+		imageInfo.sampler = AlbedoTextureData.imageSampler;
 
 		vk::WriteDescriptorSet SamplerdescriptorWrite{};
 		SamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		SamplerdescriptorWrite.dstBinding = 1;
+		SamplerdescriptorWrite.dstBinding = 2;
 		SamplerdescriptorWrite.dstArrayElement = 0;
 		SamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		SamplerdescriptorWrite.descriptorCount = 1;
 		SamplerdescriptorWrite.pImageInfo = &imageInfo;
+		/////////////////////////////////////////////////////////////////////////////////////
 
-		std::array<vk::WriteDescriptorSet, 2> descriptorWrites{ UniformdescriptorWrite ,SamplerdescriptorWrite };
+			/////////////////////////////////////////////////////////////////////////////////////
+		vk::DescriptorImageInfo NormalimageInfo{};
+		NormalimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		NormalimageInfo.imageView = NormalTextureData.imageView;
+		NormalimageInfo.sampler = NormalTextureData.imageSampler;
+
+		vk::WriteDescriptorSet NormalSamplerdescriptorWrite{};
+		NormalSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+		NormalSamplerdescriptorWrite.dstBinding = 3;
+		NormalSamplerdescriptorWrite.dstArrayElement = 0;
+		NormalSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		NormalSamplerdescriptorWrite.descriptorCount = 1;
+		NormalSamplerdescriptorWrite.pImageInfo = &NormalimageInfo;
+		/////////////////////////////////////////////////////////////////////////////////////
+
+
+		std::array<vk::WriteDescriptorSet, 4> descriptorWrites{ VertexUniformdescriptorWrite,
+			                                                    FragmentUniformdescriptorWrite ,
+			                                                    SamplerdescriptorWrite,NormalSamplerdescriptorWrite };
 
 		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	}
 }
 
 
-void Model::UpdateUniformBuffer(uint32_t currentImage)
+void Model::UpdateUniformBuffer(uint32_t currentImage, Light* Light)
 {
 	static auto startTime = std::chrono::high_resolution_clock::now();
 	auto currentTime = std::chrono::high_resolution_clock::now();
@@ -139,16 +210,22 @@ void Model::UpdateUniformBuffer(uint32_t currentImage)
 
 	ModelData.model = glm::mat4(1.0f);
 	ModelData.model = glm::translate(ModelData.model, position);
+	ModelData.model = glm::scale(ModelData.model, scale);
 	ModelData.model = glm::rotate(ModelData.model, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
 	ModelData.model = glm::rotate(ModelData.model, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
 	ModelData.model = glm::rotate(ModelData.model, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
-	ModelData.model = glm::scale (ModelData.model, scale);
 
 	ModelData.view = camera->GetViewMatrix();
 	ModelData.proj = camera->GetProjectionMatrix();
 	ModelData.proj[1][1] *= -1;
 
-	memcpy(uniformBuffersMappedMem[currentImage], &ModelData, sizeof(ModelData));
+	memcpy(VertexUniformBuffersMappedMem[currentImage], &ModelData, sizeof(ModelData));
+
+	LightData.LightLocation = Light->LightLocation;
+	LightData.BaseColor = Light->BaseColor;
+	LightData.AmbientStrength = Light->AmbientStrength;
+	memcpy(FragmentUniformBuffersMappedMem[currentImage], &LightData, sizeof(LightData));
+
 }
 
 glm::mat4 Model::GetModelMatrix()
@@ -180,17 +257,29 @@ void Model::Clean()
 
 	if (bufferManger)
 	{
-		bufferManger->DestroyImage(MeshTextureData);
+		bufferManger->DestroyImage(AlbedoTextureData);
+		bufferManger->DestroyImage(NormalTextureData);
 		bufferManger->DestroyBuffer(VertexBufferData);
 		bufferManger->DestroyBuffer(IndexBufferData);
 
-		for (auto& uniformBuffer : uniformBuffers)
+		for (auto& uniformBuffer : VertexuniformBuffers)
 		{
 			bufferManger->UnmapMemory(uniformBuffer);
 			bufferManger->DestroyBuffer(uniformBuffer);
 		}
 
-		uniformBuffers.clear();
+		for (auto& uniformBuffer : FragmentuniformBuffers)
+		{
+			bufferManger->UnmapMemory(uniformBuffer);
+			bufferManger->DestroyBuffer(uniformBuffer);
+		}
+
+		VertexUniformBuffersMappedMem.clear();
+		FragmentUniformBuffersMappedMem.clear();
+
+		VertexuniformBuffers.clear();
+		FragmentuniformBuffers.clear();
+
 	}
 }
 

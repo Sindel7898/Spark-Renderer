@@ -7,7 +7,7 @@ MeshLoader::MeshLoader()
 
 void MeshLoader::LoadModel(const std::string& pFile)
 {
-    const aiScene* scene = importer.ReadFile(pFile, aiProcess_Triangulate | aiProcess_FlipUVs);
+    const aiScene* scene = importer.ReadFile(pFile, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_GenNormals);
 
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
         std::cerr << "Error loading model: " << importer.GetErrorString() << std::endl;
@@ -43,18 +43,12 @@ void MeshLoader::ProcessMesh(aiMesh* mesh, const aiScene* scene)
 
         ModelVertex vertex;
 
-        vertex.vert.x = mesh->mVertices[i].x;
-        vertex.vert.y = mesh->mVertices[i].y;
-        vertex.vert.z = mesh->mVertices[i].z;
-
-
-
-        /*  if (mesh->HasNormals())
-          {
-              vertex.norm.x = mesh->mNormals[i].x;
-              vertex.norm.y = mesh->mNormals[i].y;
-              vertex.norm.z = mesh->mNormals[i].z;
-          }*/
+        if (mesh->HasPositions())
+        {
+            vertex.vert.x = mesh->mVertices[i].x;
+            vertex.vert.y = mesh->mVertices[i].y;
+            vertex.vert.z = mesh->mVertices[i].z;
+        }
 
         if (mesh->HasTextureCoords(0))
         {
@@ -66,7 +60,13 @@ void MeshLoader::ProcessMesh(aiMesh* mesh, const aiScene* scene)
             vertex.text.y = 0.0f;
         }
 
-        /*if (mesh->HasTangentsAndBitangents())
+        if (mesh->HasNormals()) {
+            vertex.normal.x = mesh->mNormals[i].x;
+            vertex.normal.y = mesh->mNormals[i].y;
+            vertex.normal.z = mesh->mNormals[i].z;
+        }
+
+        if (mesh->HasTangentsAndBitangents())
         {
             vertex.tangent.x = mesh->mTangents[i].x;
             vertex.tangent.y = mesh->mTangents[i].y;
@@ -75,8 +75,7 @@ void MeshLoader::ProcessMesh(aiMesh* mesh, const aiScene* scene)
             vertex.bitangent.x = mesh->mBitangents[i].x;
             vertex.bitangent.y = mesh->mBitangents[i].y;
             vertex.bitangent.z = mesh->mBitangents[i].z;
-        }*/
-
+        }
 
         vertices.push_back(vertex);
     }

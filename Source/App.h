@@ -20,7 +20,7 @@ class MeshLoader;
 class BufferManager;
 class VulkanContext;
 class FramesPerSecondCounter;
-
+class Light;
 struct UniformBufferObject {
 	alignas(16) glm::mat4 model;
 	alignas(16) glm::mat4 view;
@@ -65,6 +65,7 @@ public:
 	void SwapchainResizeCallback(GLFWwindow* window, int width, int height);
 
 	void CreateGraphicsPipeline();
+	void CreateLightssPipeline();
 	void CreateSkyboxGraphicsPipeline();
 
 	void createCommandBuffer();
@@ -88,6 +89,9 @@ private:
 	std::shared_ptr<Camera> camera = nullptr;
 	std::shared_ptr<UserInterface> userinterface = nullptr;
 	std::vector<std::shared_ptr<Model>> Models;
+	std::vector<std::shared_ptr<Light>> lights;
+
+	std::shared_ptr<Light> light = nullptr;
 
 	std::unique_ptr<SkyBox, SkyBoxDeleter> skyBox = nullptr;
 
@@ -100,8 +104,10 @@ private:
 
 	vk::PipelineLayout         pipelineLayout = nullptr;
 	vk::PipelineLayout         SkyBoxpipelineLayout = nullptr;
+	vk::PipelineLayout         LightpipelineLayout = nullptr;
 
 	vk::Pipeline               graphicsPipeline = nullptr;
+	vk::Pipeline               LightgraphicsPipeline = nullptr;
 	vk::Pipeline               SkyBoxgraphicsPipeline = nullptr;
 
 	vk::CommandPool            commandPool = nullptr;

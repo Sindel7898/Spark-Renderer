@@ -3,9 +3,9 @@
 #include <memory>
 #include <string>
 #include "BufferManager.h"
-#include "MeshLoader.h"
 #include "VulkanContext.h"
 #include "Camera.h"
+#include "VertexInputLayouts.h"
 
 
 struct SkyBoxUniformBufferObject {
@@ -48,7 +48,7 @@ private:
     std::vector<void*> uniformBuffersMappedMem;
 
 
-    const std::vector<SkyBoxVertex> vertices = {
+    const std::vector<VertexOnly> vertices = {
 
         {{-1.0f,  1.0f, -1.0f}}, {{-1.0f, -1.0f, -1.0f}}, {{ 1.0f, -1.0f, -1.0f}},
         {{ 1.0f, -1.0f, -1.0f}}, {{ 1.0f,  1.0f, -1.0f}}, {{-1.0f,  1.0f, -1.0f}},

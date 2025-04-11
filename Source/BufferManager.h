@@ -56,7 +56,7 @@ public:
 
     BufferData CreateGPUOptimisedBuffer(const void* Data, VkDeviceSize BufferSize, vk::BufferUsageFlagBits BufferUse, vk::CommandPool commandpool, vk::Queue queue);
 
-    ImageData CreateTextureImage(stbi_uc* pixeldata, int texWidth, int textHeight, vk::CommandPool commandpool, vk::Queue Queue);
+    ImageData CreateTextureImage(stbi_uc* pixeldata, int texWidth, int textHeight,vk::Format ImageFormat,  vk::CommandPool commandpool, vk::Queue Queue);
 
 
     void DestroyBuffer(const BufferData& buffer);

@@ -109,7 +109,7 @@ BufferData BufferManager::CreateGPUOptimisedBuffer(const void* Data, VkDeviceSiz
 	return FinalBufferData;
 }
 
-ImageData BufferManager::CreateTextureImage(stbi_uc* pixeldata, int texWidth, int textHeight,vk::CommandPool commandpool, vk::Queue Queue)
+ImageData BufferManager::CreateTextureImage(stbi_uc* pixeldata, int texWidth, int textHeight, vk::Format ImageFormat, vk::CommandPool commandpool, vk::Queue Queue)
 {
 	vk::DeviceSize imagesize =  texWidth* textHeight * 4;
 
@@ -145,7 +145,7 @@ ImageData BufferManager::CreateTextureImage(stbi_uc* pixeldata, int texWidth, in
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	vk::Extent3D imageExtent = { static_cast<uint32_t>(texWidth),static_cast<uint32_t>(textHeight),1 };
 
-	ImageData TextureImageData = CreateImage(imageExtent, vk::Format::eR8G8B8A8Srgb, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
+	ImageData TextureImageData = CreateImage(imageExtent, ImageFormat, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -190,7 +190,7 @@ ImageData BufferManager::CreateTextureImage(stbi_uc* pixeldata, int texWidth, in
 
 	DestroyBuffer(StagineBuffer);
 
-	TextureImageData.imageView = CreateImageView(TextureImageData.image, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor);
+	TextureImageData.imageView = CreateImageView(TextureImageData.image, ImageFormat, vk::ImageAspectFlagBits::eColor);
 	TextureImageData.imageSampler = CreateImageSampler();
 
 	return TextureImageData;
