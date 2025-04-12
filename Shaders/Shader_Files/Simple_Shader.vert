@@ -29,10 +29,13 @@ void main() {
     // Transform position to world space for lighting calculations
     fragPosition = vec3(ubo.model * vec4(inPosition, 1.0));     
 
-    normal       = normalize(inNormal);
-    Tangent      = normalize(inTangent);
-    BiTangent    = normalize(inBiTangent);
+    mat3 normalMatrix = transpose(inverse(mat3(ubo.model)));
+
+
+    normal = normalize(normalMatrix * inNormal);
+    Tangent = normalize(normalMatrix * inTangent);
+    BiTangent = normalize(normalMatrix * inBiTangent);
     
-    TBN = mat3(inTangent, inBiTangent, inNormal);
+    TBN = mat3(Tangent, BiTangent, normal);
     fragTexCoord = inTexCoord;
 }

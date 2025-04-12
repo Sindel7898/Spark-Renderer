@@ -15,7 +15,6 @@ Light::Light(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* 
 	LightLocation = glm::vec3(1.0f, 1.0f, 1.0f);
 	LightScale = glm::vec3(1.0f, 1.0f, 1.0f);
 	LightRotation = glm::vec3(1.0f, 1.0f, 1.0f);
-
 	BaseColor = glm::vec4(1.0f,1.0f,1.0f,1.0f);
 }
 

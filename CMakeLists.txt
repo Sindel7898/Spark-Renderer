@@ -42,7 +42,7 @@ add_subdirectory(External/VulkanMemoryAllocator)
 add_subdirectory(External/tracy)
 
 # Find all source files
-file(GLOB SOURCES "Source/*.cpp")
+file(GLOB SOURCES "Source/*.cpp" "Source/*.c")
 
 # Add Vulkan
 find_package(Vulkan REQUIRED)

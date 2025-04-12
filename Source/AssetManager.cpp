@@ -22,34 +22,22 @@ void AssetManager::LoadModel(const std::string& filePath)
 	}
 }
 
-void AssetManager::LoadTexture(const std::string& filePath)
+void AssetManager::ParseTextureData(const std::string FilePath, std::vector<StoredImageData> Textures)
 {
-	int texWidth;
-	int textHeight;
-	int textchannels;
-
 	//// If File Path is not in the Map Add it and the Data
-	if (LoadedTextureData.find(filePath.c_str()) == LoadedTextureData.end()) {
+	if (LoadedTextureData.find(FilePath.c_str()) == LoadedTextureData.end()) {
 
-		stbi_uc* pixels = stbi_load(filePath.c_str(), &texWidth, &textHeight, &textchannels, STBI_rgb_alpha);
-
-		StoredImageData infotostore{};
-		infotostore.imageData = pixels;
-		infotostore.imageWidth = texWidth;
-		infotostore.imageHeight = textHeight;
-
-		LoadedTextureData.emplace(filePath, infotostore);
+		LoadedTextureData.emplace(FilePath, Textures);
 	}
-
 }
 
-const StoredImageData& AssetManager::GetStoredImageData(const std::string FilePath)
+const std::vector<StoredImageData>& AssetManager::GetStoredImageData(const std::string MeshFilePath)
 {
-	auto FoundData = LoadedTextureData.find(FilePath);
+	auto FoundData = LoadedTextureData.find(MeshFilePath);
 
 	if (FoundData == LoadedTextureData.end()) {
 		// Either load the data or throw an exception
-		throw std::runtime_error("Texture data not found for path: " + FilePath);
+		throw std::runtime_error("Texture data not found for path: " + MeshFilePath);
 	}
 
 
@@ -73,9 +61,9 @@ AssetManager::~AssetManager() {
 
 	for (auto& MapData : LoadedTextureData)
 	{
-		if (MapData.second.imageData) {
-			stbi_image_free(MapData.second.imageData);
-			MapData.second.imageData = nullptr;
+		if (MapData.second[0].imageData) {
+			//stbi_image_free(MapData.second[0].imageData);
+			//MapData.second.imageData[0] = nullptr;
 		}
 	}
 

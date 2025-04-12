@@ -5,21 +5,6 @@
 #include <vector>
 #include <stdexcept>
 #include "MeshLoader.h"
-#include "stb_image.h"
-
-struct StoredImageData
-{
-    stbi_uc* imageData;
-    int      imageHeight;
-    int      imageWidth;
-
-};
-
-struct StoredModelData
-{
-    std::vector<ModelVertex> VertexData;
-    std::vector<uint16_t>    IndexData;
-};
 
 
 class AssetManager {
@@ -35,11 +20,11 @@ public:
       }
 
     void LoadModel(const std::string& filePath);
+    void ParseTextureData(const std::string FilePath, std::vector<StoredImageData> Textures);
     const StoredModelData& GetStoredModelData(const std::string FilePath);
 
     //////////////////////////////////////////////////////////
-    void LoadTexture(const std::string& filePath);
-    const StoredImageData& GetStoredImageData(const std::string FilePath);
+    const std::vector<StoredImageData>& GetStoredImageData(const std::string MeshFilePath);
 
 
 private:
@@ -48,5 +33,5 @@ private:
 
     std::shared_ptr<MeshLoader> meshloader;
     std::map<std::string, StoredModelData> LoadedModelData;
-    std::map<std::string, StoredImageData> LoadedTextureData;
+    std::map<std::string, std::vector<StoredImageData> > LoadedTextureData;
 };

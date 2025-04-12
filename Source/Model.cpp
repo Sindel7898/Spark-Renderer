@@ -3,27 +3,25 @@
 #include <chrono>
 
 Model::Model(const std::string& filepath, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* camera, BufferManager* buffermanger)
-	      : vulkanContext(vulkancontext), commandPool(commandpool), camera(camera), bufferManger(buffermanger), filePath(filepath)
+	      : vulkanContext(vulkancontext), commandPool(commandpool), camera(camera), bufferManger(buffermanger), FilePath(filepath)
 {
-	/*meshLoader = std::make_unique<MeshLoader>();
-	meshLoader->LoadModel(filepath);*/
-	AssetManager::GetInstance().LoadModel(filepath);
+
+	AssetManager::GetInstance().LoadModel(FilePath);
+	LoadTextures();
 	CreateVertexAndIndexBuffer();
 	CreateUniformBuffer();
 	createDescriptorSetLayout();
+
 }
 
-void Model::LoadTextures(const std::array<std::string, 2>& filepath)
+void Model::LoadTextures()
 {
-
-	AssetManager::GetInstance().LoadTexture(filepath[0]);
-	StoredImageData AlbedoImageData =  AssetManager::GetInstance().GetStoredImageData(filepath[0]);
+	std::vector<StoredImageData> ModelTextures = AssetManager::GetInstance().GetStoredImageData(FilePath);
+	StoredImageData AlbedoImageData = ModelTextures[0];
 
 	AlbedoTextureData = bufferManger->CreateTextureImage(AlbedoImageData.imageData, AlbedoImageData.imageWidth, AlbedoImageData.imageHeight,vk::Format::eR8G8B8A8Srgb , commandPool, vulkanContext->graphicsQueue);
 
-
-	AssetManager::GetInstance().LoadTexture(filepath[1]);
-	StoredImageData NormalImageData = AssetManager::GetInstance().GetStoredImageData(filepath[1]);
+	StoredImageData NormalImageData = ModelTextures[1];
 
 	NormalTextureData = bufferManger->CreateTextureImage(NormalImageData.imageData, NormalImageData.imageWidth, NormalImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
 
@@ -33,12 +31,12 @@ void Model::LoadTextures(const std::array<std::string, 2>& filepath)
 void Model::CreateVertexAndIndexBuffer()
 {
 
-	storedModelData = AssetManager::GetInstance().GetStoredModelData(filePath);
+	storedModelData = AssetManager::GetInstance().GetStoredModelData(FilePath);
 
 	VkDeviceSize VertexBufferSize = sizeof(storedModelData.VertexData[0]) * storedModelData.VertexData.size();
 	VertexBufferData = bufferManger->CreateGPUOptimisedBuffer(storedModelData.VertexData.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
 
-	VkDeviceSize indexBufferSize = sizeof(storedModelData.IndexData[0]) * storedModelData.IndexData.size();
+	VkDeviceSize indexBufferSize = sizeof(uint32_t) * storedModelData.IndexData.size();
 	IndexBufferData = bufferManger->CreateGPUOptimisedBuffer(storedModelData.IndexData.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
 
 }
@@ -210,10 +208,10 @@ void Model::UpdateUniformBuffer(uint32_t currentImage, Light* Light)
 
 	ModelData.model = glm::mat4(1.0f);
 	ModelData.model = glm::translate(ModelData.model, position);
-	ModelData.model = glm::scale(ModelData.model, scale);
 	ModelData.model = glm::rotate(ModelData.model, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
 	ModelData.model = glm::rotate(ModelData.model, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
 	ModelData.model = glm::rotate(ModelData.model, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+	ModelData.model = glm::scale(ModelData.model, scale);
 
 	ModelData.view = camera->GetViewMatrix();
 	ModelData.proj = camera->GetProjectionMatrix();
@@ -238,9 +236,9 @@ void Model::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinela
 	vk::DeviceSize offsets[] = { 0 };
 	vk::Buffer VertexBuffers[] = { VertexBufferData.buffer };
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(IndexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindIndexBuffer(IndexBufferData.buffer, 0, vk::IndexType::eUint32);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(static_cast<uint32_t>(storedModelData.IndexData.size()), 1, 0, 0, 0);
+	commandbuffer.drawIndexed(storedModelData.IndexData.size(), 1, 0, 0, 0);
 }
 
 void Model::Clean()

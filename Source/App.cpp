@@ -36,13 +36,7 @@
 
 	for (int i = 0; i < 3; i++) {
 		auto model = std::shared_ptr<Model>(new Model("../Textures/Helmet/DamagedHelmet.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
-		std::array<std::string, 2> filePaths{
-		    "../Textures/Helmet/Default_albedo.jpg",
-			"../Textures/Helmet/Default_normal.jpg",
-		};
-
-		model->LoadTextures(filePaths);
-			 Models.push_back(std::move(model));
+	    Models.push_back(std::move(model));
 	}
 
 	std::array<const char*, 6> filePaths{

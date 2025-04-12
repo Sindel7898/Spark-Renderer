@@ -33,7 +33,7 @@ public:
 
     Model(const std::string& filepath, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* camera, BufferManager* buffermanger);
     ~Model();
-    void LoadTextures(const std::array<std::string, 2>& filepath);
+    void LoadTextures();
     void CreateVertexAndIndexBuffer();
     void CreateUniformBuffer();
     void UpdateUniformBuffer(uint32_t currentImage, Light* light);
@@ -63,7 +63,7 @@ public:
     std::shared_ptr<VulkanContext> vulkanContext = nullptr;
     
 
-    glm::vec3 position = glm::vec3(0.0f);
+    glm::vec3 position = glm::vec3(1.0f);
     glm::vec3 rotation = glm::vec3(0.0f);
     glm::vec3 scale    = glm::vec3(2.0f);
 
@@ -80,7 +80,7 @@ private:
     std::vector<void*> FragmentUniformBuffersMappedMem;
 
     std::vector<InstanceData> instances;
-    const std::string filePath;
+    const std::string FilePath;
 
 
     StoredModelData storedModelData;
