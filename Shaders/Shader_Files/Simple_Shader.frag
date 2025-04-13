@@ -39,8 +39,8 @@ void main() {
     vec3 ambient = lub.AmbientStrength * lub.BaseColor.rgb;
 
     // Final color
-    //outColor = vec4((ambient + diffuse) * objectColor.rgb, objectColor.a);
-      outColor = objectColor;
-      outColor = vec4(normal,1);
+    outColor = vec4((ambient + diffuse) * objectColor.rgb, objectColor.a);
+      //outColor = objectColor;
+      //outColor = vec4(normal,1);
 
 }

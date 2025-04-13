@@ -241,7 +241,7 @@ void App::CreateGraphicsPipeline()
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.setLayoutCount = 1; 
-	pipelineLayoutInfo.setSetLayouts(Models[1]->descriptorSetLayout); 
+	pipelineLayoutInfo.setSetLayouts(Models[1]->descriptorSetLayout);
 	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
  
