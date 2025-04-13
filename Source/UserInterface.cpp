@@ -303,23 +303,27 @@ void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std
 		{
 			auto& model = Models[selectedModelIndex];
 			
-			glm::mat4 modellocation = model->GetModelMatrix();
+			glm::mat4 ModelsModelMatrix = model->GetModelMatrix();
 
 			ImGuizmo::Manipulate(glm::value_ptr(cameraview), glm::value_ptr(cameraprojection),
-				                 currentGizmoOperation, ImGuizmo::LOCAL, glm::value_ptr(modellocation));
+				                 currentGizmoOperation, ImGuizmo::LOCAL, glm::value_ptr(ModelsModelMatrix));
+
+
+			ImGui::Begin("Details Panel");
+
+			float matrixTranslation[3], matrixRotation[3], matrixScale[3];
+			ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(ModelsModelMatrix), matrixTranslation, matrixRotation, matrixScale);
+			ImGui::InputFloat3("Tr", matrixTranslation);
+			ImGui::InputFloat3("Rt", matrixRotation);
+			ImGui::InputFloat3("Sc", matrixScale);
+			ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, glm::value_ptr(ModelsModelMatrix));
+			model->SetModelMatrix(ModelsModelMatrix);
+
+			ImGui::End();
 
 			if (ImGuizmo::IsUsing())
 			{
-				glm::vec3 scale;
-				glm::quat rotation;
-				glm::vec3 translation;
-				glm::vec3 skew;
-				glm::vec4 perspective;
-				glm::decompose(modellocation, scale, rotation, translation, skew, perspective);
-
-				model->position = translation;
-				model->rotation = glm::eulerAngles(rotation);
-				model->scale = scale;
+				model->SetModelMatrix(ModelsModelMatrix);
 			}
 		}
 		else if (selectedLightIndex >= 0 && selectedLightIndex < Lights.size())
@@ -333,7 +337,7 @@ void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std
 
 			if (ImGuizmo::IsUsing())
 			{
-				glm::vec3 scale;
+				/*glm::vec3 scale;
 				glm::quat rotation;
 				glm::vec3 translation;
 				glm::vec3 skew;
@@ -342,55 +346,37 @@ void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std
 
 				light->LightLocation = translation;
 				light->LightRotation = glm::eulerAngles(rotation);
-				light->LightScale = scale;
+				light->LightScale = scale;*/
+
+				ImGui::Begin("Details Panel");
+				ImGui::Text("Transformations");
+				ImGui::Spacing();
+				ImGui::Spacing();
+				ImGui::SliderFloat3("Position", (float*)&Lights[selectedLightIndex]->LightLocation, 0.0f, 100.0f);
+				ImGui::Spacing();
+				ImGui::SliderFloat3("Rotation", (float*)&Lights[selectedLightIndex]->LightRotation, 0.0f, 100.0f);
+				ImGui::Spacing();
+				ImGui::SliderFloat3("Scale", (float*)&Lights[selectedLightIndex]->LightScale, 0.0f, 100.0f);
+				ImGui::Spacing();
+				ImGui::Spacing();
+				ImGui::Spacing();
+				ImGui::Spacing();
+				ImGui::Text("Light Details");
+				ImGui::ColorPicker4("Light Color", (float*)&Lights[selectedLightIndex]->BaseColor);
+				ImGui::InputFloat("AmbientStrength", (float*)&Lights[selectedLightIndex]->AmbientStrength);
+				ImGui::Spacing();
+				ImGui::End();
 			}
 		}
 	}
 	ImGui::End();
-
-	if (selectedModelIndex >= 0)
-	{
-		ImGui::Begin("Details Panel");
-		ImGui::Text("Model Data");
-		ImGui::Spacing();
-		ImGui::Spacing();
-		ImGui::SliderFloat3("Position", (float*)&Models[selectedModelIndex]->position, 0.0f, 100.0f);
-		ImGui::Spacing();
-		ImGui::SliderFloat3("Rotation", (float*)&Models[selectedModelIndex]->rotation, 0.0f, 100.0f);
-		ImGui::Spacing();
-		ImGui::SliderFloat3("Scale", (float*)&Models[selectedModelIndex]->scale, 0.0f, 100.0f);
-		ImGui::Spacing();
-
-		ImGui::End();
-	}
-	else if (selectedLightIndex >= 0)
-	{
-		ImGui::Begin("Details Panel");
-		ImGui::Text("Transformations");
-		ImGui::Spacing();
-		ImGui::Spacing();
-		ImGui::SliderFloat3("Position", (float*)&Lights[selectedLightIndex]->LightLocation, 0.0f, 100.0f);
-		ImGui::Spacing();
-		ImGui::SliderFloat3("Rotation", (float*)&Lights[selectedLightIndex]->LightRotation, 0.0f, 100.0f);
-		ImGui::Spacing();
-		ImGui::SliderFloat3("Scale", (float*)&Lights[selectedLightIndex]->LightScale, 0.0f, 100.0f);
-		ImGui::Spacing();
-		ImGui::Spacing();
-		ImGui::Spacing();
-		ImGui::Spacing();
-		ImGui::Text("Light Details");
-		ImGui::ColorPicker4("Light Color", (float*)&Lights[selectedLightIndex]->BaseColor);
-		ImGui::InputFloat("AmbientStrength", (float*)&Lights[selectedLightIndex]->AmbientStrength);
-		ImGui::Spacing();
-		ImGui::End();
-	}
-	else
+	/*else
 	{
 		ImGui::Begin("Details Panel");
 
 		ImGui::End();
 
-	}
+	}*/
 
 	ImGui::Begin("Stats Window");
 

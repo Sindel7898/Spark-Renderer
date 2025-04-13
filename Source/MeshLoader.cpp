@@ -28,26 +28,39 @@ void MeshLoader::LoadModel(const std::string& pFile)
 
     if (!model.textures.empty()) {
 
-        std::vector<ModelImageData> Textures;
+        std::vector<StoredImageData> Textures;
 
-        ModelImageData TextureData;
+        StoredImageData TextureData;
 
-        for (int  i = 0; i < 2; i++)
-        {
+       
+            const tinygltf::Material& material = model.materials[0];
+            int baseColorTextureindex = material.pbrMetallicRoughness.baseColorTexture.index;
 
-            const tinygltf::Texture& tex = model.textures[i];
-            const tinygltf::Image& image = model.images[tex.source];
+            const tinygltf::Texture& colortex = model.textures[baseColorTextureindex];
+            const tinygltf::Image& image = model.images[colortex.source];
            
-            size_t imageSize = image.width * image.height * 4; 
+            size_t colorimageSize = image.width * image.height * 4; 
+            TextureData.imageData = new stbi_uc[colorimageSize];
+            std::memcpy(TextureData.imageData, image.image.data(), colorimageSize);
+            TextureData.imageHeight = image.height;
+            TextureData.imageWidth = image.width;
+
+            Textures.push_back(TextureData);
+             /////////////////////////////////////////////////////////////////////
+
+            int noramlmaterialIndex = material.normalTexture.index;
+            const tinygltf::Texture& normaltex = model.textures[noramlmaterialIndex];
+            const tinygltf::Image& noramlimage = model.images[normaltex.source];
+
+            size_t imageSize = image.width * image.height * 4;
             TextureData.imageData = new stbi_uc[imageSize];
             std::memcpy(TextureData.imageData, image.image.data(), imageSize);
             TextureData.imageHeight = image.height;
             TextureData.imageWidth = image.width;
 
             Textures.push_back(TextureData);
-        }
-       
 
+            
         AssetManager::GetInstance().ParseTextureData(pFile, Textures);
     }
     else {

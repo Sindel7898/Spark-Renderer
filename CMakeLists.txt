@@ -40,6 +40,7 @@ add_subdirectory(External/glm)
 add_subdirectory(External/vk-bootstrap)
 add_subdirectory(External/VulkanMemoryAllocator)
 add_subdirectory(External/tracy)
+add_subdirectory(External/fastgltf)
 
 # Find all source files
 file(GLOB SOURCES "Source/*.cpp" "Source/*.c")
@@ -72,6 +73,7 @@ target_link_libraries(VulkanRenderer PRIVATE
     glfw 
     glm 
     vk-bootstrap 
-    VulkanMemoryAllocator 
+    VulkanMemoryAllocator
+    fastgltf 
     Vulkan::Vulkan
 )

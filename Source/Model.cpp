@@ -1,17 +1,30 @@
 #include "Model.h"
 #include <stdexcept>
 #include <chrono>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/matrix_decompose.hpp>
 
 Model::Model(const std::string& filepath, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* camera, BufferManager* buffermanger)
 	      : vulkanContext(vulkancontext), commandPool(commandpool), camera(camera), bufferManger(buffermanger), FilePath(filepath)
 {
+
+	position = glm::vec3(1.0f,1.0f,1.0f);
+	rotation = glm::vec3(90.0f,0.0f,0.0f);
+	scale =    glm::vec3(2.0f, 2.0f, 2.0f);
+
+	ModelData.model = glm::mat4(1.0f);
+	ModelData.model = glm::translate(ModelData.model, position);
+	ModelData.model = glm::rotate(ModelData.model, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+	ModelData.model = glm::rotate(ModelData.model, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+	ModelData.model = glm::rotate(ModelData.model, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+	ModelData.model = glm::scale(ModelData.model, scale);
+
 
 	AssetManager::GetInstance().LoadModel(FilePath);
 	LoadTextures();
 	CreateVertexAndIndexBuffer();
 	CreateUniformBuffer();
 	createDescriptorSetLayout();
-
 }
 
 void Model::LoadTextures()
@@ -206,13 +219,6 @@ void Model::UpdateUniformBuffer(uint32_t currentImage, Light* Light)
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-	ModelData.model = glm::mat4(1.0f);
-	ModelData.model = glm::translate(ModelData.model, position);
-	ModelData.model = glm::rotate(ModelData.model, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-	ModelData.model = glm::rotate(ModelData.model, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-	ModelData.model = glm::rotate(ModelData.model, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
-	ModelData.model = glm::scale(ModelData.model, scale);
-
 	ModelData.view = camera->GetViewMatrix();
 	ModelData.proj = camera->GetProjectionMatrix();
 	ModelData.proj[1][1] *= -1;
@@ -224,6 +230,22 @@ void Model::UpdateUniformBuffer(uint32_t currentImage, Light* Light)
 	LightData.AmbientStrength = Light->AmbientStrength;
 	memcpy(FragmentUniformBuffersMappedMem[currentImage], &LightData, sizeof(LightData));
 
+	BreakDownModelMatrix();
+}
+
+void  Model::BreakDownModelMatrix()
+{
+	
+	glm::vec3 Newscale;
+    glm::quat Newrotation;
+    glm::vec3 Newtranslation;
+    glm::vec3 Newskew;
+    glm::vec4 Newperspective;
+    glm::decompose(ModelData.model, Newscale, Newrotation, Newtranslation, Newskew, Newperspective);
+    
+    position = Newtranslation;
+	rotation = glm::degrees(glm::eulerAngles(glm::conjugate(Newrotation)));
+	scale = Newscale;
 }
 
 glm::mat4 Model::GetModelMatrix()
@@ -231,6 +253,10 @@ glm::mat4 Model::GetModelMatrix()
 	return ModelData.model;
 }
 
+void  Model::SetModelMatrix(glm::mat4 newModelMatrix)
+{
+	 ModelData.model = newModelMatrix;
+}
 void Model::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)
 {
 	vk::DeviceSize offsets[] = { 0 };

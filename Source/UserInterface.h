@@ -9,9 +9,7 @@
 #include <imgui_internal.h>
 #include "vulkanContext.h"
 #include "ImGuizmo.h"
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
 
 class Window;
 class BufferManager;

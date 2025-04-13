@@ -37,10 +37,13 @@ public:
     void CreateVertexAndIndexBuffer();
     void CreateUniformBuffer();
     void UpdateUniformBuffer(uint32_t currentImage, Light* light);
+    void BreakDownModelMatrix();
     glm::mat4 GetModelMatrix();
     void createDescriptorSetLayout();
 
     void createDescriptorSets(vk::DescriptorPool descriptorpool);
+
+    void SetModelMatrix(glm::mat4 newModelMatrix);
 
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex);
     void Clean();
@@ -63,9 +66,9 @@ public:
     std::shared_ptr<VulkanContext> vulkanContext = nullptr;
     
 
-    glm::vec3 position = glm::vec3(1.0f);
-    glm::vec3 rotation = glm::vec3(0.0f);
-    glm::vec3 scale    = glm::vec3(2.0f);
+    glm::vec3 position;
+    glm::vec3 rotation;
+    glm::vec3 scale   ;
 
     VertexUniformBufferObject1 ModelData;
     FragmentUniformBufferObject1 LightData;
