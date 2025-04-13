@@ -9,9 +9,9 @@
 #include "Drawable.h"
 
 struct LightUniformData {
-    alignas(16) glm::vec3  LightLocation;
-    alignas(16) glm::vec4  BaseColor;
-    alignas(16) float      AmbientStrength;
+    alignas(16) glm::vec3  position;
+    alignas(16) glm::vec3  color;
+    alignas(16) float      ambientStrength;
 };
 
 class Model : public Drawable
@@ -49,7 +49,7 @@ struct ModelDeleter {
 
         if (model) {
 
-            model->Clean();
+          //  model->Clean();
           //  delete model;
         }
     }

@@ -60,8 +60,8 @@
 
 	createCommandBuffer();
 	CreateGraphicsPipeline();
-	CreateLightssPipeline();
-	CreateSkyboxGraphicsPipeline();
+	//CreateLightssPipeline();
+	//CreateSkyboxGraphicsPipeline();
 	/////////////////////////////////
 	ViewPortImageData = userinterface->CreateViewPortRenderTexture(1920, 1080);
 
@@ -125,48 +125,25 @@ void App::createDepthTextureImage()
 	bufferManger->SubmitAndDestoyCommandBuffer(commandPool, commandBuffer, vulkanContext->graphicsQueue);
 }
 
-void App::CreateGraphicsPipeline() 
+void App::CreateGraphicsPipeline()
 {
-	//Read Vertex & Fragment shader  and create modules
-	auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/Simple_Shader.vert.spv");
-	auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/Simple_Shader.frag.spv");
-	
-	VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
-	VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
-
-	vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
-	VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
-	VertShaderStageInfo.module = VertShaderModule;
-	VertShaderStageInfo.pName = "main";
-
-	vk::PipelineShaderStageCreateInfo FragmentShaderStageInfo{};
-	FragmentShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
-	FragmentShaderStageInfo.module = FragShaderModule;
-	FragmentShaderStageInfo.pName = "main";
-	
-	vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo ,FragmentShaderStageInfo };
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	auto BindDesctiptions = ModelVertex::GetBindingDescription();
-	auto attributeDescriptions = ModelVertex::GetAttributeDescription();
-
-	vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
-	vertexInputInfo.setVertexBindingDescriptionCount(1);
-	vertexInputInfo.setVertexAttributeDescriptionCount(5);
-	vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
-	vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
+	vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
+	pipelineRenderingCreateInfo.colorAttachmentCount = 1;
+	pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext->swapchainformat;
+	pipelineRenderingCreateInfo.depthAttachmentFormat = vulkanContext->FindCompatableDepthFormat();
+
 
 	vk::PipelineInputAssemblyStateCreateInfo inputAssembleInfo{};
 	inputAssembleInfo.topology = vk::PrimitiveTopology::eTriangleList;
 	inputAssembleInfo.primitiveRestartEnable = vk::False;
 
-	//Create ViewPort and scissor
+	/////////////////////////////////////////////////////////////////////////////
 	vk::Viewport viewport{};
 	viewport.setX(0.0f);
 	viewport.setY(0.0f);
 	viewport.setHeight((float)vulkanContext->swapchainExtent.height);
-	viewport.setWidth ((float)vulkanContext->swapchainExtent.width );
+	viewport.setWidth((float)vulkanContext->swapchainExtent.width);
 	viewport.setMinDepth(0.0f);
 	viewport.setMaxDepth(1.0f);
 
@@ -175,18 +152,6 @@ void App::CreateGraphicsPipeline()
 	vk::Rect2D scissor{};
 	scissor.setOffset(scissorOffset);
 	scissor.setExtent(vulkanContext->swapchainExtent);
-
-
-	// set states that can be dynamic without having to recreate the whole pipeline
-	std::vector<vk::DynamicState> DynamicStates = {
-		vk::DynamicState::eViewport,
-		vk::DynamicState::eScissor,
-	};
-	
-	vk::PipelineDynamicStateCreateInfo DynamicState{};
-	DynamicState.dynamicStateCount = static_cast<uint32_t>(DynamicStates.size());
-	DynamicState.pDynamicStates = DynamicStates.data();
-	/////////////////////////////////////////////////////////////////////////////
 
 	vk::PipelineViewportStateCreateInfo viewportState{};
 	viewportState.setViewportCount(1);
@@ -200,7 +165,7 @@ void App::CreateGraphicsPipeline()
 	rasterizerinfo.depthClampEnable = vk::False;
 	rasterizerinfo.rasterizerDiscardEnable = vk::False;
 	rasterizerinfo.polygonMode = vk::PolygonMode::eFill;
-    rasterizerinfo.lineWidth = 1.0f;
+	rasterizerinfo.lineWidth = 1.0f;
 	rasterizerinfo.cullMode = vk::CullModeFlagBits::eNone;
 	rasterizerinfo.frontFace = vk::FrontFace::eCounterClockwise;
 	rasterizerinfo.depthBiasEnable = vk::False;
@@ -209,170 +174,6 @@ void App::CreateGraphicsPipeline()
 	rasterizerinfo.depthBiasSlopeFactor = 0.0f;
 
 	//Multi Sampling/
-	vk::PipelineMultisampleStateCreateInfo multisampling{}; 
-	multisampling.sampleShadingEnable = vk::False;
-	multisampling.rasterizationSamples = vk::SampleCountFlagBits::e1;
-	multisampling.minSampleShading = 1.0f;
-	multisampling.pSampleMask = nullptr;
-	multisampling.alphaToCoverageEnable = vk::False;
-	multisampling.alphaToOneEnable = vk::False;
-
-	///////////// Color blending *COME BACK TO THIS////////////////////
-	vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
-	colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR |
-		                                  vk::ColorComponentFlagBits::eG |
-	                                      vk::ColorComponentFlagBits::eB |
-	                                   	  vk::ColorComponentFlagBits::eA;
-	colorBlendAttachment.blendEnable = vk::True;
-
-	colorBlendAttachment.setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha);
-	colorBlendAttachment.setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
-	colorBlendAttachment.setColorBlendOp(vk::BlendOp::eAdd);
-	colorBlendAttachment.setSrcAlphaBlendFactor(vk::BlendFactor::eOne);
-	colorBlendAttachment.setDstAlphaBlendFactor(vk::BlendFactor::eZero);
-	colorBlendAttachment.setAlphaBlendOp(vk::BlendOp::eAdd);
-
-	vk::PipelineColorBlendStateCreateInfo colorBlend{};
-	colorBlend.setLogicOpEnable(vk::False);
-	colorBlend.logicOp = vk::LogicOp::eCopy;
-	colorBlend.setAttachmentCount(1);
-	colorBlend.setPAttachments(&colorBlendAttachment);
-	//////////////////////////////////////////////////////////////////////
-
-	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-	pipelineLayoutInfo.setLayoutCount = 1; 
-	pipelineLayoutInfo.setSetLayouts(Models[1]->descriptorSetLayout);
-	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
-	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
- 
-	pipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
-
-	vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
-	pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-	pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext->swapchainformat;
-	pipelineRenderingCreateInfo.depthAttachmentFormat = vulkanContext->FindCompatableDepthFormat();
-
-	vk::PipelineDepthStencilStateCreateInfo depthStencilState;
-	depthStencilState.depthTestEnable = VK_TRUE;
-	depthStencilState.depthWriteEnable = VK_TRUE;
-	depthStencilState.depthCompareOp = vk::CompareOp::eLess;
-	depthStencilState.minDepthBounds = 0.0f;
-	depthStencilState.maxDepthBounds = 1.0f;
-	depthStencilState.stencilTestEnable = VK_FALSE;
-
-
-	vk::GraphicsPipelineCreateInfo pipelineInfo{};
-	pipelineInfo.pNext = &pipelineRenderingCreateInfo; // Add this line
-	pipelineInfo.stageCount = 2;
-	pipelineInfo.pStages = ShaderStages;
-	pipelineInfo.pVertexInputState = &vertexInputInfo;
-	pipelineInfo.pInputAssemblyState = &inputAssembleInfo;
-	pipelineInfo.pViewportState = &viewportState;
-	pipelineInfo.pRasterizationState = &rasterizerinfo;
-	pipelineInfo.pMultisampleState = &multisampling;
-	pipelineInfo.pDepthStencilState = &depthStencilState;
-	pipelineInfo.pColorBlendState = &colorBlend;
-	pipelineInfo.pDynamicState = &DynamicState;
-	pipelineInfo.layout = pipelineLayout;
-	pipelineInfo.renderPass = VK_NULL_HANDLE;
-	pipelineInfo.subpass = 0;
-
-
-	vk::Result result = vulkanContext->LogicalDevice.createGraphicsPipelines(nullptr, 1, &pipelineInfo, nullptr, &graphicsPipeline);
-
-	if (result != vk::Result::eSuccess)
-	   {
-			throw std::runtime_error("failed to create graphics pipeline!");
-		}
-
-	vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
-	vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
-}
-
-void App::CreateLightssPipeline()
-{
-	//Read Vertex & Fragment shader  and create modules
-	auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/Light_Shader.vert.spv");
-	auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/Light_Shader.frag.spv");
-
-	VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
-	VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
-
-	vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
-	VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
-	VertShaderStageInfo.module = VertShaderModule;
-	VertShaderStageInfo.pName = "main";
-
-	vk::PipelineShaderStageCreateInfo FragmentShaderStageInfo{};
-	FragmentShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
-	FragmentShaderStageInfo.module = FragShaderModule;
-	FragmentShaderStageInfo.pName = "main";
-
-	vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo ,FragmentShaderStageInfo };
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	auto BindDesctiptions = VertexOnly::GetBindingDescription();
-	auto attributeDescriptions = VertexOnly::GetAttributeDescription();
-
-	vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
-	vertexInputInfo.setVertexBindingDescriptionCount(1);
-	vertexInputInfo.setVertexAttributeDescriptionCount(1);
-	vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
-	vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	vk::PipelineInputAssemblyStateCreateInfo inputAssembleInfo{};
-	inputAssembleInfo.topology = vk::PrimitiveTopology::eTriangleList;
-	inputAssembleInfo.primitiveRestartEnable = vk::False;
-
-	//Create ViewPort and scissor
-	vk::Viewport viewport{};
-	viewport.setX(0.0f);
-	viewport.setY(0.0f);
-	viewport.setHeight((float)vulkanContext->swapchainExtent.height);
-	viewport.setWidth((float)vulkanContext->swapchainExtent.width);
-	viewport.setMinDepth(0.0f);
-	viewport.setMaxDepth(1.0f);
-
-	vk::Offset2D scissorOffset = { 0,0 };
-
-	vk::Rect2D scissor{};
-	scissor.setOffset(scissorOffset);
-	scissor.setExtent(vulkanContext->swapchainExtent);
-
-
-	// set states that can be dynamic without having to recreate the whole pipeline
-	std::vector<vk::DynamicState> DynamicStates = {
-		vk::DynamicState::eViewport,
-		vk::DynamicState::eScissor,
-	};
-
-	vk::PipelineDynamicStateCreateInfo DynamicState{};
-	DynamicState.dynamicStateCount = static_cast<uint32_t>(DynamicStates.size());
-	DynamicState.pDynamicStates = DynamicStates.data();
-	/////////////////////////////////////////////////////////////////////////////
-
-	vk::PipelineViewportStateCreateInfo viewportState{};
-	viewportState.setViewportCount(1);
-	viewportState.setScissorCount(1);
-	viewportState.setViewports(viewport);
-	viewportState.setScissors(scissor);
-	////////////////////////////////////////////////////////////////////////////////
-
-	// Rasteriser information
-	vk::PipelineRasterizationStateCreateInfo rasterizerinfo{};
-	rasterizerinfo.depthClampEnable = vk::False;
-	rasterizerinfo.rasterizerDiscardEnable = vk::False;
-	rasterizerinfo.polygonMode = vk::PolygonMode::eFill;
-	rasterizerinfo.lineWidth = 1.0f;
-	rasterizerinfo.cullMode = vk::CullModeFlagBits::eNone;
-	rasterizerinfo.frontFace = vk::FrontFace::eClockwise;
-	rasterizerinfo.depthBiasEnable = vk::False;
-	rasterizerinfo.depthBiasConstantFactor = 0.0f;
-	rasterizerinfo.depthBiasClamp = 0.0f;
-	rasterizerinfo.depthBiasSlopeFactor = 0.0f;
-
-	//Multi Sampling/
 	vk::PipelineMultisampleStateCreateInfo multisampling{};
 	multisampling.sampleShadingEnable = vk::False;
 	multisampling.rasterizationSamples = vk::SampleCountFlagBits::e1;
@@ -403,218 +204,181 @@ void App::CreateLightssPipeline()
 	colorBlend.setPAttachments(&colorBlendAttachment);
 	//////////////////////////////////////////////////////////////////////
 
-	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-	pipelineLayoutInfo.setLayoutCount = 1;
-	pipelineLayoutInfo.setSetLayouts(lights[0]->descriptorSetLayout);
-	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
-	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
-
-	LightpipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
-
-	vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
-	pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-	pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext->swapchainformat;
-	pipelineRenderingCreateInfo.depthAttachmentFormat = vulkanContext->FindCompatableDepthFormat();
-
-	vk::PipelineDepthStencilStateCreateInfo depthStencilState;
-	depthStencilState.depthTestEnable = VK_TRUE;
-	depthStencilState.depthWriteEnable = VK_TRUE;
-	depthStencilState.depthCompareOp = vk::CompareOp::eLess;
-	depthStencilState.minDepthBounds = 0.0f;
-	depthStencilState.maxDepthBounds = 1.0f;
-	depthStencilState.stencilTestEnable = VK_FALSE;
-
-
-	vk::GraphicsPipelineCreateInfo pipelineInfo{};
-	pipelineInfo.pNext = &pipelineRenderingCreateInfo; // Add this line
-	pipelineInfo.stageCount = 2;
-	pipelineInfo.pStages = ShaderStages;
-	pipelineInfo.pVertexInputState = &vertexInputInfo;
-	pipelineInfo.pInputAssemblyState = &inputAssembleInfo;
-	pipelineInfo.pViewportState = &viewportState;
-	pipelineInfo.pRasterizationState = &rasterizerinfo;
-	pipelineInfo.pMultisampleState = &multisampling;
-	pipelineInfo.pDepthStencilState = &depthStencilState;
-	pipelineInfo.pColorBlendState = &colorBlend;
-	pipelineInfo.pDynamicState = &DynamicState;
-	pipelineInfo.layout = LightpipelineLayout;
-	pipelineInfo.renderPass = VK_NULL_HANDLE;
-	pipelineInfo.subpass = 0;
-
-
-	vk::Result result = vulkanContext->LogicalDevice.createGraphicsPipelines(nullptr, 1, &pipelineInfo, nullptr, &LightgraphicsPipeline);
-
-	if (result != vk::Result::eSuccess)
-	{
-		throw std::runtime_error("failed to create graphics pipeline!");
-	}
-
-	vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
-	vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
-}
-
-void App::CreateSkyboxGraphicsPipeline()
-{
-	//Read Vertex & Fragment shader  and create modules
-	auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/SkyBox_Shader.vert.spv");
-	auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/SkyBox_Shader.frag.spv");
-
-	VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
-	VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
-
-	vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
-	VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
-	VertShaderStageInfo.module = VertShaderModule;
-	VertShaderStageInfo.pName = "main";
-
-	vk::PipelineShaderStageCreateInfo FragmentShaderStageInfo{};
-	FragmentShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
-	FragmentShaderStageInfo.module = FragShaderModule;
-	FragmentShaderStageInfo.pName = "main";
-
-	vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo ,FragmentShaderStageInfo };
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	auto BindDesctiptions = VertexOnly::GetBindingDescription();
-	auto attributeDescriptions = VertexOnly::GetAttributeDescription();
-
-	vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
-	vertexInputInfo.setVertexBindingDescriptionCount(1);
-	vertexInputInfo.setVertexAttributeDescriptionCount(1);
-	vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
-	vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	vk::PipelineInputAssemblyStateCreateInfo inputAssembleInfo{};
-	inputAssembleInfo.topology = vk::PrimitiveTopology::eTriangleList;
-	inputAssembleInfo.primitiveRestartEnable = vk::False;
-
-	//Create ViewPort and scissor
-	vk::Viewport viewport{};
-	viewport.setX(0.0f);
-	viewport.setY(0.0f);
-	viewport.setHeight((float)vulkanContext->swapchainExtent.height);
-	viewport.setWidth((float)vulkanContext->swapchainExtent.width);
-	viewport.setMinDepth(0.0f);
-	viewport.setMaxDepth(1.0f);
-
-	vk::Offset2D scissorOffset = { 0,0 };
-
-	vk::Rect2D scissor{};
-	scissor.setOffset(scissorOffset);
-	scissor.setExtent(vulkanContext->swapchainExtent);
-
-
-	// set states that can be dynamic without having to recreate the whole pipeline
 	std::vector<vk::DynamicState> DynamicStates = {
-		vk::DynamicState::eViewport,
-		vk::DynamicState::eScissor,
+	vk::DynamicState::eViewport,
+	vk::DynamicState::eScissor,
 	};
 
 	vk::PipelineDynamicStateCreateInfo DynamicState{};
 	DynamicState.dynamicStateCount = static_cast<uint32_t>(DynamicStates.size());
 	DynamicState.pDynamicStates = DynamicStates.data();
-	/////////////////////////////////////////////////////////////////////////////
-
-	vk::PipelineViewportStateCreateInfo viewportState{};
-	viewportState.setViewportCount(1);
-	viewportState.setScissorCount(1);
-	viewportState.setViewports(viewport);
-	viewportState.setScissors(scissor);
-	////////////////////////////////////////////////////////////////////////////////
-
-	// Rasteriser information
-	vk::PipelineRasterizationStateCreateInfo rasterizerinfo{};
-	rasterizerinfo.depthClampEnable = vk::False;
-	rasterizerinfo.rasterizerDiscardEnable = vk::False;
-	rasterizerinfo.polygonMode = vk::PolygonMode::eFill;
-	rasterizerinfo.lineWidth = 1.0f;
-	rasterizerinfo.cullMode = vk::CullModeFlagBits::eNone;
-	rasterizerinfo.frontFace = vk::FrontFace::eClockwise;
-	rasterizerinfo.depthBiasEnable = vk::False;
-	rasterizerinfo.depthBiasConstantFactor = 0.0f;
-	rasterizerinfo.depthBiasClamp = 0.0f;
-	rasterizerinfo.depthBiasSlopeFactor = 0.0f;
-
-	//Multi Sampling/
-	vk::PipelineMultisampleStateCreateInfo multisampling{};
-	multisampling.sampleShadingEnable = vk::False;
-	multisampling.rasterizationSamples = vk::SampleCountFlagBits::e1;
-	multisampling.minSampleShading = 1.0f;
-	multisampling.pSampleMask = nullptr;
-	multisampling.alphaToCoverageEnable = vk::False;
-	multisampling.alphaToOneEnable = vk::False;
-
-	///////////// Color blending *COME BACK TO THIS////////////////////
-	vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
-	colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR |
-		vk::ColorComponentFlagBits::eG |
-		vk::ColorComponentFlagBits::eB |
-		vk::ColorComponentFlagBits::eA;
-	colorBlendAttachment.blendEnable = vk::True;
-
-	colorBlendAttachment.setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha);
-	colorBlendAttachment.setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
-	colorBlendAttachment.setColorBlendOp(vk::BlendOp::eAdd);
-	colorBlendAttachment.setSrcAlphaBlendFactor(vk::BlendFactor::eOne);
-	colorBlendAttachment.setDstAlphaBlendFactor(vk::BlendFactor::eZero);
-	colorBlendAttachment.setAlphaBlendOp(vk::BlendOp::eAdd);
-
-	vk::PipelineColorBlendStateCreateInfo colorBlend{};
-	colorBlend.setLogicOpEnable(vk::False);
-	colorBlend.logicOp = vk::LogicOp::eCopy;
-	colorBlend.setAttachmentCount(1);
-	colorBlend.setPAttachments(&colorBlendAttachment);
-	//////////////////////////////////////////////////////////////////////
-
-	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-	pipelineLayoutInfo.setLayoutCount = 1; // Optional
-	pipelineLayoutInfo.pSetLayouts = &skyBox->descriptorSetLayout; // Optional
-	pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
-	pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
-
-	SkyBoxpipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
-
-	vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
-	pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-	pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext->swapchainformat;
-	pipelineRenderingCreateInfo.depthAttachmentFormat = vulkanContext->FindCompatableDepthFormat();
-
-	vk::PipelineDepthStencilStateCreateInfo depthStencilState;
-	depthStencilState.depthTestEnable = vk::False;
-	depthStencilState.depthWriteEnable = vk::False;
-	depthStencilState.depthCompareOp = vk::CompareOp::eLess;
-	depthStencilState.minDepthBounds = 0.0f;
-	depthStencilState.maxDepthBounds = 1.0f;
-	depthStencilState.stencilTestEnable = VK_FALSE;
-
-	vk::GraphicsPipelineCreateInfo pipelineInfo{};
-	pipelineInfo.pNext = &pipelineRenderingCreateInfo; 
-	pipelineInfo.stageCount = 2;
-	pipelineInfo.pStages = ShaderStages;
-	pipelineInfo.pVertexInputState = &vertexInputInfo;
-	pipelineInfo.pInputAssemblyState = &inputAssembleInfo;
-	pipelineInfo.pViewportState = &viewportState;
-	pipelineInfo.pRasterizationState = &rasterizerinfo;
-	pipelineInfo.pMultisampleState = &multisampling;
-	pipelineInfo.pDepthStencilState = &depthStencilState;
-	pipelineInfo.pColorBlendState = &colorBlend;
-	pipelineInfo.pDynamicState = &DynamicState;
-	pipelineInfo.layout = SkyBoxpipelineLayout;
-	pipelineInfo.renderPass = VK_NULL_HANDLE;
-	pipelineInfo.subpass = 0;
 
 
-	vk::Result result = vulkanContext->LogicalDevice.createGraphicsPipelines(nullptr, 1, &pipelineInfo, nullptr, &SkyBoxgraphicsPipeline);
+    {
+    	auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/Simple_Shader.vert.spv");
+    	auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/Simple_Shader.frag.spv");
+    
+    	VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
+    	VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
+    
+    	vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
+    	VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
+    	VertShaderStageInfo.module = VertShaderModule;
+    	VertShaderStageInfo.pName = "main";
+    
+    	vk::PipelineShaderStageCreateInfo FragmentShaderStageInfo{};
+    	FragmentShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
+    	FragmentShaderStageInfo.module = FragShaderModule;
+    	FragmentShaderStageInfo.pName = "main";
+    
+    	vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo ,FragmentShaderStageInfo };
+    
+    	auto BindDesctiptions = ModelVertex::GetBindingDescription();
+    	auto attributeDescriptions = ModelVertex::GetAttributeDescription();
+    
+    	vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
+    	vertexInputInfo.setVertexBindingDescriptionCount(1);
+    	vertexInputInfo.setVertexAttributeDescriptionCount(5);
+    	vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
+    	vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
+    
+    	vk::PipelineDepthStencilStateCreateInfo depthStencilState;
+    	depthStencilState.depthTestEnable = VK_TRUE;
+    	depthStencilState.depthWriteEnable = VK_TRUE;
+    	depthStencilState.depthCompareOp = vk::CompareOp::eLess;
+    	depthStencilState.minDepthBounds = 0.0f;
+    	depthStencilState.maxDepthBounds = 1.0f;
+    	depthStencilState.stencilTestEnable = VK_FALSE;
+    
+    	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+    	pipelineLayoutInfo.setLayoutCount = 1;
+    	pipelineLayoutInfo.setSetLayouts(Models[1]->descriptorSetLayout);
+    	pipelineLayoutInfo.pushConstantRangeCount = 0;
+    	pipelineLayoutInfo.pPushConstantRanges = nullptr;
+    
+    	pipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+    
+    	graphicsPipeline = vulkanContext->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, vertexInputInfo, inputAssembleInfo,
+    		                                                     viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, pipelineLayout);
+    
+    	vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
+    	vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
+    }
+	
 
-	if (result != vk::Result::eSuccess)
 	{
-		throw std::runtime_error("failed to create graphics pipeline!");
+		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/Light_Shader.vert.spv");
+		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/Light_Shader.frag.spv");
+
+		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
+		VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
+
+		vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
+		VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
+		VertShaderStageInfo.module = VertShaderModule;
+		VertShaderStageInfo.pName = "main";
+
+		vk::PipelineShaderStageCreateInfo FragmentShaderStageInfo{};
+		FragmentShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
+		FragmentShaderStageInfo.module = FragShaderModule;
+		FragmentShaderStageInfo.pName = "main";
+
+		vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo ,FragmentShaderStageInfo };
+
+		auto BindDesctiptions      = VertexOnly::GetBindingDescription();
+		auto attributeDescriptions = VertexOnly::GetAttributeDescription();
+
+		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
+		vertexInputInfo.setVertexBindingDescriptionCount(1);
+		vertexInputInfo.setVertexAttributeDescriptionCount(1);
+		vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
+		vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
+
+		vk::PipelineDepthStencilStateCreateInfo depthStencilState;
+		                                        depthStencilState.depthTestEnable = VK_TRUE;
+		                                        depthStencilState.depthWriteEnable = VK_TRUE;
+		                                        depthStencilState.depthCompareOp = vk::CompareOp::eLess;
+		                                        depthStencilState.minDepthBounds = 0.0f;
+		                                        depthStencilState.maxDepthBounds = 1.0f;
+		                                        depthStencilState.stencilTestEnable = VK_FALSE;
+        
+	    vk::PushConstantRange range = {};
+	                          range.stageFlags = vk::ShaderStageFlagBits::eFragment;
+	                          range.offset = 0;
+	                          range.size = 12;
+
+	    vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+                                     pipelineLayoutInfo.setLayoutCount = 1;
+                                     pipelineLayoutInfo.setSetLayouts(lights[0]->descriptorSetLayout);
+                                     pipelineLayoutInfo.pushConstantRangeCount = 1;
+                                     pipelineLayoutInfo.pPushConstantRanges = &range;
+        
+		LightpipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+		
+		LightgraphicsPipeline = vulkanContext->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, vertexInputInfo, inputAssembleInfo,
+			                                  viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, LightpipelineLayout);
+
+		vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
+		vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
+
 	}
 
-	vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
-	vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
+	{
+		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/SkyBox_Shader.vert.spv");
+		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/SkyBox_Shader.frag.spv");
+
+		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
+		VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
+
+		vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
+		VertShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+		VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
+		VertShaderStageInfo.module = VertShaderModule;
+		VertShaderStageInfo.pName = "main";
+
+		vk::PipelineShaderStageCreateInfo FragmentShaderStageInfo{};
+		FragmentShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+		FragmentShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
+		FragmentShaderStageInfo.module = FragShaderModule;
+		FragmentShaderStageInfo.pName = "main";
+
+		vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo ,FragmentShaderStageInfo };
+
+		vk::PipelineDepthStencilStateCreateInfo depthStencilState;
+		  										depthStencilState.depthTestEnable = vk::False;
+												depthStencilState.depthWriteEnable = vk::False;
+												depthStencilState.depthCompareOp = vk::CompareOp::eLess;
+												depthStencilState.minDepthBounds = 0.0f;
+												depthStencilState.maxDepthBounds = 1.0f;
+												depthStencilState.stencilTestEnable = VK_FALSE;
+
+         auto BindDesctiptions      = VertexOnly::GetBindingDescription();
+         auto attributeDescriptions = VertexOnly::GetAttributeDescription();
+         
+         vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
+         vertexInputInfo.setVertexBindingDescriptionCount(1);
+         vertexInputInfo.setVertexAttributeDescriptionCount(1);
+         vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
+         vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
+
+
+		 vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+		 pipelineLayoutInfo.setLayoutCount = 1;
+		 pipelineLayoutInfo.setSetLayouts(skyBox->descriptorSetLayout);
+		 pipelineLayoutInfo.pushConstantRangeCount = 0;
+		 pipelineLayoutInfo.pPushConstantRanges = nullptr;
+
+		 SkyBoxpipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+
+		 SkyBoxgraphicsPipeline =  vulkanContext->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, vertexInputInfo, inputAssembleInfo,
+			                                  viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, SkyBoxpipelineLayout);
+
+		 vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
+		 vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
+
+	}
 }
+
 
 vk::ShaderModule App::createShaderModule(const std::vector<char>& code)
 {
@@ -817,7 +581,7 @@ void App::Draw()
 
 void App::updateUniformBuffer(uint32_t currentImage) {
 
-	lights[0]->UpdateUniformBuffer(currentImage);
+	lights[0]->UpdateUniformBuffer(currentImage,nullptr);
 
 	for (auto& model : Models)
 	{

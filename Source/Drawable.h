@@ -9,12 +9,20 @@
 class VulkanContext;
 class Camera;
 class Light;
-
+ 
 struct TransformMatrices {
 	alignas(16) glm::mat4 modelMatrix;
 	alignas(16) glm::mat4 viewMatrix;
 	alignas(16) glm::mat4 projectionMatrix;
 };
+
+//struct TransformMatrices_LightColor {
+//	alignas(16) glm::mat4 model;
+//	alignas(16) glm::mat4 view;
+//	alignas(16) glm::mat4 proj;
+//	alignas(16) glm::vec4 BaseColor;
+//};
+
 
 class Drawable
 {
@@ -27,13 +35,13 @@ protected:
 	
      virtual void CreateVertexAndIndexBuffer() = 0;
      virtual void CreateUniformBuffer() = 0;
-	 virtual void UpdateUniformBuffer(uint32_t currentImage, Light* lightref) = 0;
+	 virtual void UpdateUniformBuffer(uint32_t currentImage, Light* lightref);
 	 virtual void createDescriptorSetLayout() = 0;
 	 virtual void createDescriptorSets(vk::DescriptorPool descriptorpool) = 0;
 	 virtual void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) = 0;
 
 
-	  void BreakDownModelMatrix();
+	  void BreakDownAndUpdateModelMatrix();
 
 
 	 std::vector<BufferData> vertexUniformBuffers;
@@ -55,7 +63,6 @@ protected:
 
 
 	 vk::CommandPool            commandPool;
-
 	 std::vector<vk::DescriptorSet> DescriptorSets;
 
 public:

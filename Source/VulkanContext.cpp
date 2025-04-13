@@ -136,6 +136,42 @@ void VulkanContext::create_swapchain()
 	swapchainImageViews = vkbswapChain.get_image_views().value();
 }
 
+vk::Pipeline VulkanContext::createGraphicsPipeline(vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo, vk::PipelineShaderStageCreateInfo ShaderStages[], 
+	                                               vk::PipelineVertexInputStateCreateInfo vertexInputInfo,         vk::PipelineInputAssemblyStateCreateInfo inputAssembleInfo,
+	                                               vk::PipelineViewportStateCreateInfo viewportState,              vk::PipelineRasterizationStateCreateInfo rasterizerinfo,
+	                                               vk::PipelineMultisampleStateCreateInfo multisampling,           vk::PipelineDepthStencilStateCreateInfo depthStencilState,   
+	                                               vk::PipelineColorBlendStateCreateInfo colorBlend,               vk::PipelineDynamicStateCreateInfo DynamicState, 
+	                                               vk::PipelineLayout&  pipelineLayout)
+{
+
+	vk::GraphicsPipelineCreateInfo pipelineInfo{};
+	pipelineInfo.pNext = &pipelineRenderingCreateInfo; // Add this line
+	pipelineInfo.stageCount = 2;
+	pipelineInfo.pStages = ShaderStages;
+	pipelineInfo.pVertexInputState = &vertexInputInfo;
+	pipelineInfo.pInputAssemblyState = &inputAssembleInfo;
+	pipelineInfo.pViewportState = &viewportState;
+	pipelineInfo.pRasterizationState = &rasterizerinfo;
+	pipelineInfo.pMultisampleState = &multisampling;
+	pipelineInfo.pDepthStencilState = &depthStencilState;
+	pipelineInfo.pColorBlendState = &colorBlend;
+	pipelineInfo.pDynamicState = &DynamicState;
+	pipelineInfo.layout = pipelineLayout;
+	pipelineInfo.renderPass = VK_NULL_HANDLE;
+	pipelineInfo.subpass = 0;
+
+
+	vk::Pipeline graphicsPipeline;
+	vk::Result result = LogicalDevice.createGraphicsPipelines(nullptr, 1, &pipelineInfo, nullptr, &graphicsPipeline);
+
+	if (result != vk::Result::eSuccess)
+	{
+		throw std::runtime_error("failed to create graphics pipeline!");
+	}
+
+	return graphicsPipeline;
+}
+
 vk::Format VulkanContext::FindCompatableDepthFormat()
 {
 	const std::vector<vk::Format> candidates = {

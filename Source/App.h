@@ -103,8 +103,8 @@ private:
 #endif
 
 	vk::PipelineLayout         pipelineLayout = nullptr;
-	vk::PipelineLayout         SkyBoxpipelineLayout = nullptr;
 	vk::PipelineLayout         LightpipelineLayout = nullptr;
+	vk::PipelineLayout         SkyBoxpipelineLayout = nullptr;
 
 	vk::Pipeline               graphicsPipeline = nullptr;
 	vk::Pipeline               LightgraphicsPipeline = nullptr;

@@ -2,61 +2,30 @@
 
 #include <memory>
 #include <string>
-#include "BufferManager.h"
 #include "VertexInputLayouts.h"
-#include "VulkanContext.h"
+#include "Drawable.h"
 
 class Camera;
 
-struct LightVertexUniformBufferObject {
-    alignas(16) glm::mat4 model;
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
-    alignas(16) glm::vec4 BaseColor;
-};
 
-class Light
+class Light : public Drawable
 {
 public:
 
     Light(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* camera, BufferManager* buffermanger);
 
-    void CreateVertex();
-    void CreateUniformBuffer();
-    void createDescriptorSets(vk::DescriptorPool descriptorpool);
-    void UpdateUniformBuffer(uint32_t currentImage);
-    void createDescriptorSetLayout();
+    void CreateVertexAndIndexBuffer() override;
+    void CreateUniformBuffer() override;
+    void createDescriptorSets(vk::DescriptorPool descriptorpool) override;
+    void UpdateUniformBuffer(uint32_t currentImage, Light* lightref) override;
+    void createDescriptorSetLayout() override;
 
-    void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex);
+    void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
 
-    glm::mat4 GetModelMatrix();
-
-
-    vk::CommandPool            commandPool;
-    std::vector<BufferData> VertexuniformBuffers;
-
-    BufferData VertexBufferData;
-
-    std::unique_ptr<BufferManager> bufferManger = nullptr;
-    std::shared_ptr<VulkanContext> vulkanContext = nullptr;
-    vk::DescriptorSetLayout descriptorSetLayout;
-    std::vector<vk::DescriptorSet> DescriptorSets;
-
-    glm::vec3  LightLocation;
-    glm::vec3  LightScale;
-    glm::vec3  LightRotation;
-
-    glm::vec4  BaseColor;
-    float      AmbientStrength = 0.0f;
+    glm::vec3  color;
+    float      ambientStrength;
     
-    LightVertexUniformBufferObject ModelData;
 private:
-
-    std::shared_ptr<Camera>    camera = nullptr;
-
-
-    std::vector<void*> VertexUniformBuffersMappedMem;
-
 
     const std::vector<VertexOnly> vertices = {
         // Front face (Z = -1.0f)

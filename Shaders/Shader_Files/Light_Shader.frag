@@ -1,9 +1,12 @@
 #version 450
-    
-layout(location = 0) in vec4 BaseColor;
+
+layout(push_constant) uniform PushConstants {
+    vec3 LightColor;
+} pc;
+
 layout(location = 0) out vec4 outColor;
 
 void main() {
 
-    outColor = BaseColor;
+    outColor = vec4(pc.LightColor,1);
 }

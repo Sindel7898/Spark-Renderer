@@ -53,6 +53,11 @@ void Drawable::Destructor()
 	}
 }
 
+void Drawable::UpdateUniformBuffer(uint32_t currentImage, Light* lightref)
+{
+	BreakDownAndUpdateModelMatrix();
+}
+
 
 
 glm::mat4 Drawable::GetModelMatrix()
@@ -65,7 +70,7 @@ void Drawable::SetModelMatrix(glm::mat4 newModelMatrix)
     transformMatrices.modelMatrix = newModelMatrix;
 }
 
-void Drawable::BreakDownModelMatrix()
+void Drawable::BreakDownAndUpdateModelMatrix()
 {
 
     glm::vec3 Newscale;

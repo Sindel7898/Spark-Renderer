@@ -220,9 +220,7 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 
 void Model::UpdateUniformBuffer(uint32_t currentImage, Light* lightref)
 {
-	static auto startTime = std::chrono::high_resolution_clock::now();
-	auto currentTime = std::chrono::high_resolution_clock::now();
-	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+	Drawable::UpdateUniformBuffer(currentImage, lightref);
 	
 	transformMatrices.viewMatrix = camera->GetViewMatrix();
 	transformMatrices.projectionMatrix = camera->GetProjectionMatrix();
@@ -232,13 +230,12 @@ void Model::UpdateUniformBuffer(uint32_t currentImage, Light* lightref)
 
 	if (lightref)
 	{
-		lightData.LightLocation   = lightref->LightLocation;
-		lightData.BaseColor       = lightref->BaseColor;
-		lightData.AmbientStrength = lightref->AmbientStrength;
+		lightData.position        = lightref->position;
+		lightData.color           = lightref->color;
+		lightData.ambientStrength = lightref->ambientStrength;
 		memcpy(FragmentUniformBuffersMappedMem[currentImage], &lightData, sizeof(lightData));
 	}
 
-	BreakDownModelMatrix();
 }
 
 void Model::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)

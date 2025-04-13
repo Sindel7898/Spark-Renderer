@@ -3,43 +3,56 @@
 #include <memory>
 #include <chrono>
 #include "Camera.h"
+#include "VulkanContext.h"
 
-Light::Light(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* camera, BufferManager* buffermanger)
-	      : vulkanContext(vulkancontext), commandPool(commandpool), camera(camera), bufferManger(buffermanger)
+Light::Light(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* cameraref, BufferManager* buffermanger)
 {
+	vulkanContext = vulkancontext;
+	commandPool = commandpool;
+	camera = cameraref;
+	bufferManager = buffermanger;
 
 	CreateUniformBuffer();
-	CreateVertex();
+	CreateVertexAndIndexBuffer();
 	createDescriptorSetLayout();
 
-	LightLocation = glm::vec3(1.0f, 1.0f, 1.0f);
-	LightScale = glm::vec3(1.0f, 1.0f, 1.0f);
-	LightRotation = glm::vec3(1.0f, 1.0f, 1.0f);
-	BaseColor = glm::vec4(1.0f,1.0f,1.0f,1.0f);
+	position        = glm::vec3(1.0f, 1.0f, 1.0f);
+	rotation        = glm::vec3(1.0f, 1.0f, 1.0f);
+	scale           = glm::vec3(1.0f, 1.0f, 1.0f);
+	color           = glm::vec3(1.0f, 1.0f, 1.0f);
+	ambientStrength = 0.3;
+
+	transformMatrices.modelMatrix = glm::mat4(1.0f);
+	transformMatrices.modelMatrix = glm::translate(transformMatrices.modelMatrix, position);
+	transformMatrices.modelMatrix = glm::rotate   (transformMatrices.modelMatrix, glm::radians(rotation.x), glm::vec3(0.0f, 0.0f, 1.0f));
+	transformMatrices.modelMatrix = glm::rotate   (transformMatrices.modelMatrix, glm::radians(rotation.y), glm::vec3(1.0f, 0.0f, 0.0f));
+	transformMatrices.modelMatrix = glm::rotate   (transformMatrices.modelMatrix, glm::radians(rotation.z), glm::vec3(0.0f, 1.0f, 0.0f));
+	transformMatrices.modelMatrix = glm::scale    (transformMatrices.modelMatrix , scale);
 }
 
 
-void Light::CreateVertex()
+void Light::CreateVertexAndIndexBuffer()
 {
 	VkDeviceSize VertexBufferSize = sizeof(vertices.data()[0]) * vertices.size();
-	VertexBufferData = bufferManger->CreateGPUOptimisedBuffer(vertices.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
+	vertexBufferData = bufferManager->CreateGPUOptimisedBuffer(vertices.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
 }
 
 void Light::CreateUniformBuffer()
 {
-	VertexuniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+	vertexUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 	VertexUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
 
-	VkDeviceSize UniformBufferSize = sizeof(LightVertexUniformBufferObject);
+	VkDeviceSize UniformBufferSize = sizeof(TransformMatrices);
 
-	for (size_t i = 0; i < VertexuniformBuffers.size(); i++)
+	for (size_t i = 0; i < vertexUniformBuffers.size(); i++)
 	{
 
-		BufferData bufferdata = bufferManger->CreateBuffer(UniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
-		VertexuniformBuffers[i] = bufferdata;
+		BufferData bufferdata = bufferManager->CreateBuffer(UniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
+		vertexUniformBuffers[i] = bufferdata;
 
-		VertexUniformBuffersMappedMem[i] = bufferManger->MapMemory(bufferdata);
+		VertexUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
 	}
+
 }
 
 
@@ -84,9 +97,9 @@ void Light::createDescriptorSets(vk::DescriptorPool descriptorpool)
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
 		vk::DescriptorBufferInfo VertexbufferInfo{};
-		VertexbufferInfo.buffer = VertexuniformBuffers[i].buffer;
+		VertexbufferInfo.buffer = vertexUniformBuffers[i].buffer;
 		VertexbufferInfo.offset = 0;
-		VertexbufferInfo.range = sizeof(LightVertexUniformBufferObject);
+		VertexbufferInfo.range = sizeof(TransformMatrices);
 
 		vk::WriteDescriptorSet VertexUniformdescriptorWrite{};
 		VertexUniformdescriptorWrite.dstSet = DescriptorSets[i];
@@ -101,33 +114,29 @@ void Light::createDescriptorSets(vk::DescriptorPool descriptorpool)
 	}
 }
 
-void Light::UpdateUniformBuffer(uint32_t currentImage)
+void Light::UpdateUniformBuffer(uint32_t currentImage, Light* lightref)
 {
-	ModelData.model = glm::mat4(1.0f);
-	ModelData.model = glm::translate(ModelData.model, LightLocation);
-	ModelData.model = glm::scale(ModelData.model, LightScale);
-	ModelData.model = glm::rotate(ModelData.model, glm::radians(LightRotation.x), glm::vec3(0.0f, 0.0f, 1.0f));
-	ModelData.model = glm::rotate(ModelData.model, glm::radians(LightRotation.y), glm::vec3(1.0f, 0.0f, 0.0f));
-	ModelData.model = glm::rotate(ModelData.model, glm::radians(LightRotation.z), glm::vec3(0.0f, 1.0f, 0.0f));
-	ModelData.view  = camera->GetViewMatrix();
-	ModelData.proj  = camera->GetProjectionMatrix();
-	ModelData.proj[1][1] *= -1;
-	ModelData.BaseColor = BaseColor;
-	memcpy(VertexUniformBuffersMappedMem[currentImage], &ModelData, sizeof(ModelData));
+	Drawable::UpdateUniformBuffer(currentImage, lightref);
+
+	transformMatrices.viewMatrix = camera->GetViewMatrix();
+	transformMatrices.projectionMatrix = camera->GetProjectionMatrix();
+	transformMatrices.projectionMatrix[1][1] *= -1;
+	memcpy(VertexUniformBuffersMappedMem[currentImage], &transformMatrices, sizeof(transformMatrices));
+
 
 }
 
 void Light::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)
 {
+	//Send Light Color To The Fragment Shader 
+	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(color), &color);
+
+	//Continue Rendering As Usual
 	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { VertexBufferData.buffer };
+	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
 	commandbuffer.draw(vertices.size(), 1, 0, 0);
 }
 
-glm::mat4 Light::GetModelMatrix()
-{
-	return ModelData.model;
-}
 

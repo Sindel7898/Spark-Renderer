@@ -228,24 +228,6 @@ void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std
 {
 	SetupDockingEnvironment();
 
-	// Your other UI windows...
-	{
-		ImGui::Begin("Hello, world!");
-		ImGuiIO& io = ImGui::GetIO();
-		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-		ImGui::End();
-	}
-
-	// Main viewport with gizmos
-	ImGui::SetNextWindowSize(ImVec2(400, 300));
-	ImGui::Begin("Main Viewport", nullptr, ImGuiWindowFlags_NoBackground);
-	ImGui::Text("Main ViewPort");
-	ImguiViewPortRenderTextureSizeDecider(bRecreateDepth);
-
-	ImGuizmo::SetOrthographic(false);
-	ImGuizmo::SetDrawlist();
-
-
 	// Handle gizmo mode changes
 	if (ImGui::IsKeyPressed(ImGuiKey_1)) {
 		currentGizmoOperation = ImGuizmo::TRANSLATE;
@@ -256,6 +238,26 @@ void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std
 	if (ImGui::IsKeyPressed(ImGuiKey_3)) {
 		currentGizmoOperation = ImGuizmo::SCALE;
 	}
+
+
+	// Your other UI windows...
+	{
+		ImGui::Begin("Hello, world!");
+		ImGuiIO& io = ImGui::GetIO();
+		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+		
+		ImGui::End();
+	}
+
+	// Main viewport with gizmos
+	ImGui::SetNextWindowSize(ImVec2(400, 300));
+	ImGui::Begin("Main Viewport");
+	ImGui::Text("Main ViewPort");
+	ImguiViewPortRenderTextureSizeDecider(bRecreateDepth);
+
+	ImGuizmo::SetOrthographic(false);
+	ImGuizmo::SetDrawlist();
+
 
 	if (camera && !Models.empty())
 	{
@@ -286,7 +288,7 @@ void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std
 			{
 				for (int i = 0; i < Lights.size(); i++)
 				{
-					glm::vec3 LightPosition = Lights[i]->LightLocation;
+					glm::vec3 LightPosition = Lights[i]->position;
 					float distance = CalculateDistanceInScreenSpace(cameraprojection, cameraview, LightPosition);
 
 					if (distance < 100.0f)
@@ -309,17 +311,23 @@ void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std
 				                 currentGizmoOperation, ImGuizmo::LOCAL, glm::value_ptr(ModelsModelMatrix));
 
 
-			ImGui::Begin("Details Panel");
 
 			float matrixTranslation[3], matrixRotation[3], matrixScale[3];
 			ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(ModelsModelMatrix), matrixTranslation, matrixRotation, matrixScale);
-			ImGui::InputFloat3("Tr", matrixTranslation);
-			ImGui::InputFloat3("Rt", matrixRotation);
-			ImGui::InputFloat3("Sc", matrixScale);
+			ImGui::Begin("Details Panel");
+
+			ImGui::Dummy(ImVec2(0.0f, 20.0f));
+			ImGui::Separator();
+
+			ImGui::InputFloat3("Position", matrixTranslation);
+			ImGui::InputFloat3("Rotation", matrixRotation);
+			ImGui::InputFloat3("Scale", matrixScale);
+
+			ImGui::End();
+
 			ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, glm::value_ptr(ModelsModelMatrix));
 			model->SetModelMatrix(ModelsModelMatrix);
 
-			ImGui::End();
 
 			if (ImGuizmo::IsUsing())
 			{
@@ -330,53 +338,48 @@ void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std
 		{
 			auto& light = Lights[selectedLightIndex];
 
-			glm::mat4 modellocation = light->GetModelMatrix();
+			glm::mat4 LightModelMatrix = light->GetModelMatrix();
 
 			ImGuizmo::Manipulate(glm::value_ptr(cameraview), glm::value_ptr(cameraprojection),
-				currentGizmoOperation, ImGuizmo::LOCAL, glm::value_ptr(modellocation));
+				currentGizmoOperation, ImGuizmo::LOCAL, glm::value_ptr(LightModelMatrix));
+
+
+			float matrixTranslation[3], matrixRotation[3], matrixScale[3];
+			ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(LightModelMatrix), matrixTranslation, matrixRotation, matrixScale);
+			ImGui::Begin("Details Panel");
+			
+			ImGui::Dummy(ImVec2(0.0f, 20.0f));
+			ImGui::Separator();
+
+			ImGui::InputFloat3("Position", matrixTranslation);
+			ImGui::InputFloat3("Rotation", matrixRotation);
+			ImGui::InputFloat3("Scale", matrixScale);
+
+			ImGui::Dummy(ImVec2(0.0f, 20.0f));
+			ImGui::Separator();
+
+
+			ImGui::ColorEdit3 ("Color", glm::value_ptr(light->color));
+			ImGui::InputFloat("Ambience Value", &light->ambientStrength);
+			ImGui::End();
+
+			ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, glm::value_ptr(LightModelMatrix));
+			light->SetModelMatrix(LightModelMatrix);
 
 			if (ImGuizmo::IsUsing())
 			{
-				/*glm::vec3 scale;
-				glm::quat rotation;
-				glm::vec3 translation;
-				glm::vec3 skew;
-				glm::vec4 perspective;
-				glm::decompose(modellocation, scale, rotation, translation, skew, perspective);
-
-				light->LightLocation = translation;
-				light->LightRotation = glm::eulerAngles(rotation);
-				light->LightScale = scale;*/
-
-				ImGui::Begin("Details Panel");
-				ImGui::Text("Transformations");
-				ImGui::Spacing();
-				ImGui::Spacing();
-				ImGui::SliderFloat3("Position", (float*)&Lights[selectedLightIndex]->LightLocation, 0.0f, 100.0f);
-				ImGui::Spacing();
-				ImGui::SliderFloat3("Rotation", (float*)&Lights[selectedLightIndex]->LightRotation, 0.0f, 100.0f);
-				ImGui::Spacing();
-				ImGui::SliderFloat3("Scale", (float*)&Lights[selectedLightIndex]->LightScale, 0.0f, 100.0f);
-				ImGui::Spacing();
-				ImGui::Spacing();
-				ImGui::Spacing();
-				ImGui::Spacing();
-				ImGui::Text("Light Details");
-				ImGui::ColorPicker4("Light Color", (float*)&Lights[selectedLightIndex]->BaseColor);
-				ImGui::InputFloat("AmbientStrength", (float*)&Lights[selectedLightIndex]->AmbientStrength);
-				ImGui::Spacing();
-				ImGui::End();
+				light->SetModelMatrix(LightModelMatrix);
 			}
 		}
+		else
+		{
+			ImGui::Begin("Details Panel");
+
+			ImGui::End();
+		}
 	}
+
 	ImGui::End();
-	/*else
-	{
-		ImGui::Begin("Details Panel");
-
-		ImGui::End();
-
-	}*/
 
 	ImGui::Begin("Stats Window");
 
