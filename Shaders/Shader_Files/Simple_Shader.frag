@@ -23,7 +23,7 @@ void main() {
 
     // Fetch and unpack normal from normal map (tangent space → [-1, 1])
     vec3 normalMap = texture(NormalTexSampler, fragTexCoord).rgb;
-    normalMap = normalize(normalMap * 2.0 - 1.0);
+         normalMap = normalize(normalMap * 2.0 - 1.0);
 
     // Transform normal from tangent space to world space
     vec3 worldNormal = normalize(TBN * normalMap);
@@ -39,8 +39,5 @@ void main() {
     vec3 ambient = lub.AmbientStrength * lub.BaseColor.rgb;
 
     // Final color
-    outColor = vec4((ambient + diffuse) * objectColor.rgb, objectColor.a);
-      //outColor = objectColor;
-      //outColor = vec4(normal,1);
-
+    outColor = vec4((ambient + diffuse) * objectColor.rgb, 1);
 }

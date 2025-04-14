@@ -32,8 +32,8 @@ void main() {
     mat3 normalMatrix = transpose(inverse(mat3(ubo.model)));
 
 
-    normal = normalize(normalMatrix * inNormal);
-    Tangent = normalize(normalMatrix * inTangent);
+    normal    = normalize(normalMatrix * inNormal);
+    Tangent   = normalize(normalMatrix * inTangent);
     BiTangent = normalize(normalMatrix * inBiTangent);
     
     TBN = mat3(Tangent, BiTangent, normal);

@@ -12,8 +12,7 @@
 #include "Light.h"
 
 #include <crtdbg.h>
-//#define WIN32_LEAN_AND_MEAN
-//#include "Tracy.hpp"
+
 
 #define DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
 
@@ -40,12 +39,12 @@
 	}
 
 	std::array<const char*, 6> filePaths{
-		"../Textures/skybox2/right.png",  // +X (Right)
-		"../Textures/skybox2/left.png",  // -X (Left)
-		"../Textures/skybox2/top.png",  // +Y (Top)
-		"../Textures/skybox2/bottom.png",  // -Y (Bottom)
-		"../Textures/skybox2/front.png",  // +Z (Front)
-		"../Textures/skybox2/back.png"   // -Z (Back)
+		"../Textures/skybox/posx.jpg",  // +X (Right)
+		"../Textures/skybox/negx.jpg",  // -X (Left)
+		"../Textures/skybox/posy.jpg",  // +Y (Top)
+		"../Textures/skybox/negy.jpg",  // -Y (Bottom)
+		"../Textures/skybox/posz.jpg",  // +Z (Front)
+		"../Textures/skybox/negz.jpg"   // -Z (Back)
 	};
 
 	skyBox = std::shared_ptr<SkyBox>(new SkyBox(filePaths, vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), SkyBoxDeleter{});

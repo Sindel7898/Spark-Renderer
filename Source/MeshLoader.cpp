@@ -30,7 +30,7 @@ void MeshLoader::LoadModel(const std::string& pFile)
 
         std::vector<StoredImageData> Textures;
 
-        StoredImageData TextureData;
+            StoredImageData TextureData;
 
        
             const tinygltf::Material& material = model.materials[0];
@@ -52,11 +52,11 @@ void MeshLoader::LoadModel(const std::string& pFile)
             const tinygltf::Texture& normaltex = model.textures[noramlmaterialIndex];
             const tinygltf::Image& noramlimage = model.images[normaltex.source];
 
-            size_t imageSize = image.width * image.height * 4;
-            TextureData.imageData = new stbi_uc[imageSize];
-            std::memcpy(TextureData.imageData, image.image.data(), imageSize);
-            TextureData.imageHeight = image.height;
-            TextureData.imageWidth = image.width;
+            size_t noramlimagesize = noramlimage.width * noramlimage.height * 4;
+            TextureData.imageData = new stbi_uc[noramlimagesize];
+            std::memcpy(TextureData.imageData, noramlimage.image.data(), noramlimagesize);
+            TextureData.imageHeight = noramlimage.height;
+            TextureData.imageWidth = noramlimage.width;
 
             Textures.push_back(TextureData);
 
