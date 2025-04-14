@@ -248,20 +248,15 @@ void Model::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinela
 	commandbuffer.drawIndexed(storedModelData.IndexData.size(), 1, 0, 0, 0);
 }
 
-void Model::Destructor()
+void Model::CleanUp()
 {
-	Drawable::Destructor();
-
 	if (bufferManager)
 	{
 		bufferManager->DestroyImage(albedoTextureData);
 		bufferManager->DestroyImage(normalTextureData);
 	}
-}
-
-Model::~Model()
-{
-	Destructor();
+	
+	Drawable::Destructor();
 }
 
 

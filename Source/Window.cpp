@@ -40,8 +40,13 @@ Window::Window(int W, int H, std::string WN) : Width(W),Height(H),WindowName(WN)
 
 Window::~Window()
 {
-	if (window) {
-		glfwDestroyWindow(window);
-	}
-	glfwTerminate();
+    CleanUp();
+}
+
+void Window::CleanUp()
+{
+    if (window) {
+        glfwDestroyWindow(window);
+    }
+    glfwTerminate();
 }

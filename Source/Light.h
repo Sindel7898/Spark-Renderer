@@ -22,6 +22,8 @@ public:
 
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
 
+    void CleanUp();
+
     glm::vec3  color;
     float      ambientStrength;
     
@@ -52,5 +54,16 @@ private:
         {{-1.0f, -1.0f, -1.0f}}, {{ 1.0f, -1.0f, -1.0f}}, {{ 1.0f, -1.0f,  1.0f}},
         {{ 1.0f, -1.0f,  1.0f}}, {{-1.0f, -1.0f,  1.0f}}, {{-1.0f, -1.0f, -1.0f}}
     };
+};
 
+
+struct LightDeleter {
+
+    void operator()(Light* light) const {
+
+        if (light) {
+            light->CleanUp();
+            delete light;
+        }
+    }
 };

@@ -14,11 +14,10 @@ void Drawable::Destructor()
 {
 	if (vulkanContext)
 	{
-		vk::Device device = vulkanContext->LogicalDevice;
 
 		if (descriptorSetLayout)
 		{
-			device.destroyDescriptorSetLayout(descriptorSetLayout);
+			vulkanContext->LogicalDevice.destroyDescriptorSetLayout(descriptorSetLayout);
 		}
 	}
 
@@ -49,7 +48,6 @@ void Drawable::Destructor()
 		bufferManager = nullptr;
 		vulkanContext = nullptr;
 		camera = nullptr;
-
 	}
 }
 

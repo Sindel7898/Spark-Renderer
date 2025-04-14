@@ -65,8 +65,6 @@ public:
 	void SwapchainResizeCallback(GLFWwindow* window, int width, int height);
 
 	void CreateGraphicsPipeline();
-	void CreateLightssPipeline();
-	void CreateSkyboxGraphicsPipeline();
 
 	void createCommandBuffer();
 
@@ -82,18 +80,17 @@ public:
 	bool framebufferResized = false;
 private:
 
-	std::unique_ptr<Window> window = nullptr;
+	std::shared_ptr<Window> window = nullptr;
 	std::shared_ptr<VulkanContext> vulkanContext = nullptr;
 	std::shared_ptr<BufferManager> bufferManger = nullptr;
 	std::unique_ptr<MeshLoader> meshloader = nullptr;
 	std::shared_ptr<Camera> camera = nullptr;
 	std::shared_ptr<UserInterface> userinterface = nullptr;
+
 	std::vector<std::shared_ptr<Model>> Models;
 	std::vector<std::shared_ptr<Light>> lights;
-
 	std::shared_ptr<Light> light = nullptr;
-
-	std::unique_ptr<SkyBox, SkyBoxDeleter> skyBox = nullptr;
+	std::shared_ptr<SkyBox> skyBox = nullptr;
 
 
 #ifdef NDEBUG

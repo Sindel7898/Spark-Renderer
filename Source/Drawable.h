@@ -16,20 +16,12 @@ struct TransformMatrices {
 	alignas(16) glm::mat4 projectionMatrix;
 };
 
-//struct TransformMatrices_LightColor {
-//	alignas(16) glm::mat4 model;
-//	alignas(16) glm::mat4 view;
-//	alignas(16) glm::mat4 proj;
-//	alignas(16) glm::vec4 BaseColor;
-//};
-
-
 class Drawable
 {
 public:
 	  Drawable();
 	 virtual ~Drawable();
-	 virtual void Destructor();
+	 void Destructor();
 
 protected:
 	
@@ -62,7 +54,7 @@ protected:
 	 Camera*        camera        = nullptr;
 
 
-	 vk::CommandPool            commandPool;
+	 vk::CommandPool                commandPool;
 	 std::vector<vk::DescriptorSet> DescriptorSets;
 
 public:

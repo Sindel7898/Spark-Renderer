@@ -15,6 +15,9 @@ public:
     ~Window();
     bool shouldClose() { return glfwWindowShouldClose(window); };
     GLFWwindow* GetWindow() { return window; };
+
+     void CleanUp();
+
 private:
     const int Width;
     const int Height;
@@ -22,3 +25,13 @@ private:
     GLFWwindow* window;
 };
 
+struct WindowDeleter {
+
+    void operator()(Window* window) const {
+
+        if (window) {
+            window->CleanUp();
+            delete window;
+        }
+    }
+};

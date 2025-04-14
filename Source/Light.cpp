@@ -140,3 +140,7 @@ void Light::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinela
 }
 
 
+void Light::CleanUp()
+{
+	Drawable::Destructor();
+}

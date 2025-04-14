@@ -19,11 +19,11 @@
 
  App::App()
 {
-	window = std::make_unique<Window>(1920, 1080, "Vulkan Window");
+	window = std::shared_ptr<Window>(new Window(1920, 1080, "Vulkan Window"), WindowDeleter{});
 
 	vulkanContext = std::make_shared<VulkanContext>(*window);
-	bufferManger = std::make_shared<BufferManager>(vulkanContext->LogicalDevice, vulkanContext->PhysicalDevice, vulkanContext->VulkanInstance);
-	camera = std::make_shared<Camera>(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, window->GetWindow());
+	bufferManger  = std::make_shared<BufferManager>(vulkanContext->LogicalDevice, vulkanContext->PhysicalDevice, vulkanContext->VulkanInstance);
+  	camera        = std::make_shared<Camera>(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, window->GetWindow());
 	userinterface = std::shared_ptr<UserInterface>(new UserInterface(vulkanContext.get(), window.get(), bufferManger.get()),UserInterfaceDeleter{});
 	//glfwSetFramebufferSizeCallback(window->GetWindow(),);
 	glfwSetWindowUserPointer(window->GetWindow(), this);
@@ -35,8 +35,8 @@
 	Models.reserve(3);
 
 	for (int i = 0; i < 3; i++) {
-		auto model = std::shared_ptr<Model>(new Model("../Textures/Helmet/DamagedHelmet.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
-	    Models.push_back(std::move(model));
+		auto model = std::shared_ptr<Model>(new Model("../Textures/Helmet/DamagedHelmet.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter{});
+		Models.push_back(std::move(model));
 	}
 
 	std::array<const char*, 6> filePaths{
@@ -48,9 +48,8 @@
 		"../Textures/skybox2/back.png"   // -Z (Back)
 	};
 
-	skyBox = std::unique_ptr<SkyBox, SkyBoxDeleter>(new SkyBox(filePaths, vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
-
-	light = std::shared_ptr<Light>(new Light(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()));
+	skyBox = std::shared_ptr<SkyBox>(new SkyBox(filePaths, vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), SkyBoxDeleter{});
+	light = std::shared_ptr<Light>(new Light(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), LightDeleter{});
 
 	lights.reserve(1);
 	lights.push_back(std::move(light));
@@ -60,9 +59,6 @@
 
 	createCommandBuffer();
 	CreateGraphicsPipeline();
-	//CreateLightssPipeline();
-	//CreateSkyboxGraphicsPipeline();
-	/////////////////////////////////
 	ViewPortImageData = userinterface->CreateViewPortRenderTexture(1920, 1080);
 
 	createDepthTextureImage();
@@ -588,7 +584,7 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 		model->UpdateUniformBuffer(currentImage, lights[0].get());
 	}
 
-	skyBox->UpdateUniformBuffer(currentImage);
+	skyBox->UpdateUniformBuffer(currentImage,lights[0].get());
 }
 
 void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) {
@@ -724,11 +720,6 @@ void App::recreateSwapChain() {
 
 	vulkanContext->create_swapchain();
 
-	/*ImGuiIO& io = ImGui::GetIO();
-	io.DisplaySize = ImVec2(
-		static_cast<float>(vulkanContext->swapchainExtent.width),
-		static_cast<float>(vulkanContext->swapchainExtent.height)
-	);*/
 
 	camera->SetSwapChainHeight(vulkanContext->swapchainExtent.height);
 	camera->SetSwapChainWidth(vulkanContext->swapchainExtent.width);
@@ -751,6 +742,11 @@ void App::DestroyBuffers()
 		model.reset();
 	}
 
+	for (auto& light : lights)
+	{
+		light.reset();
+	}
+
 	skyBox.reset();
 
 	bufferManger->DestroyImage(DepthTextureData);
@@ -769,21 +765,24 @@ void App::DestroyBuffers()
 		vulkanContext->LogicalDevice.freeCommandBuffers(commandPool, commandBuffers);
 		commandBuffers.clear();
 	}
-	//vulkanContext->LogicalDevice.destroyDescriptorPool(ImGuiDescriptorPool);
+
 	vulkanContext->LogicalDevice.destroyCommandPool(commandPool);
 	vulkanContext->VulkanInstance.destroySurfaceKHR(vulkanContext->surface);
 	vulkanContext->LogicalDevice.destroyPipeline(graphicsPipeline);
 	vulkanContext->LogicalDevice.destroyPipeline(SkyBoxgraphicsPipeline);
+	vulkanContext->LogicalDevice.destroyPipeline(LightgraphicsPipeline);
 
 	vulkanContext->LogicalDevice.destroyDescriptorPool(DescriptorPool);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(pipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(SkyBoxpipelineLayout);
+	vulkanContext->LogicalDevice.destroyPipelineLayout(LightpipelineLayout);
 
 	DestroySyncObjects();
 	vulkanContext->LogicalDevice.destroy();
 	vkb::destroy_debug_utils_messenger(vulkanContext->VulkanInstance, vulkanContext->Debug_Messenger);
 	vulkanContext->VulkanInstance.destroy();
 
+	window.reset();
 #ifndef NDEBUG
 	_CrtDumpMemoryLeaks();  // Windows-only dev mode memory tracking
 #endif

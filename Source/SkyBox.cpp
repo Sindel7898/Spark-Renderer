@@ -3,37 +3,41 @@
 #include <memory>
 #include <chrono>
 
-SkyBox::SkyBox(std::array<const char*, 6> filePaths, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* camera, BufferManager* buffermanger)
-	      : vulkanContext(vulkancontext), commandPool(commandpool), camera(camera), bufferManger(buffermanger)
+SkyBox::SkyBox(std::array<const char*, 6> filePaths, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* cameraref, BufferManager* buffermanger)
 {
-	MeshTextureData = bufferManger->CreateCubeMap(filePaths, commandPool, vulkanContext->graphicsQueue);
+	vulkanContext = vulkancontext;
+	commandPool = commandpool;
+	camera = cameraref;
+	bufferManager = buffermanger;
+
+	MeshTextureData = bufferManager->CreateCubeMap(filePaths, commandPool, vulkanContext->graphicsQueue);
 
 	CreateUniformBuffer();
-	CreateVertex();
+	CreateVertexAndIndexBuffer();
 	createDescriptorSetLayout();
 }
 
 
-void SkyBox::CreateVertex()
+void SkyBox::CreateVertexAndIndexBuffer()
 {
 	VkDeviceSize VertexBufferSize = sizeof(vertices.data()[0]) * vertices.size();
-	VertexBufferData = bufferManger->CreateGPUOptimisedBuffer(vertices.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
+	vertexBufferData = bufferManager->CreateGPUOptimisedBuffer(vertices.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
 }
 
 void SkyBox::CreateUniformBuffer()
 {
-	uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-	uniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
+	vertexUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+	VertexUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
 
-	VkDeviceSize UniformBufferSize = sizeof(SkyBoxUniformBufferObject);
+	VkDeviceSize UniformBufferSize = sizeof(TransformMatrices);
 
-	for (size_t i = 0; i < uniformBuffers.size(); i++)
+	for (size_t i = 0; i < vertexUniformBuffers.size(); i++)
 	{
 
-		BufferData bufferdata = bufferManger->CreateBuffer(UniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
-		uniformBuffers[i] = bufferdata;
+		BufferData bufferdata = bufferManager->CreateBuffer(UniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
+		vertexUniformBuffers[i] = bufferdata;
 
-		uniformBuffersMappedMem[i] = bufferManger->MapMemory(bufferdata);
+		VertexUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
 	}
 }
 
@@ -82,9 +86,9 @@ void SkyBox::createDescriptorSets(vk::DescriptorPool descriptorpool)
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
 		vk::DescriptorBufferInfo bufferInfo{};
-		bufferInfo.buffer = uniformBuffers[i].buffer;
+		bufferInfo.buffer = vertexUniformBuffers[i].buffer;
 		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(SkyBoxUniformBufferObject);
+		bufferInfo.range = sizeof(TransformMatrices);
 
 		vk::DescriptorImageInfo imageInfo{};
 		imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -113,28 +117,34 @@ void SkyBox::createDescriptorSets(vk::DescriptorPool descriptorpool)
 	}
 }
 
-void SkyBox::UpdateUniformBuffer(uint32_t currentImage)
+void SkyBox::UpdateUniformBuffer(uint32_t currentImage, Light* lightref)
 {
-	static auto startTime = std::chrono::high_resolution_clock::now();
-	auto currentTime = std::chrono::high_resolution_clock::now();
-	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-	SkyBoxUniformBufferObject ubo{};
-	ubo.model = glm::mat4(1.0f);
-	ubo.view  = camera->GetViewMatrix();
-	ubo.proj  = camera->GetProjectionMatrix();
-	ubo.proj[1][1] *= -1;
+	Drawable::UpdateUniformBuffer(currentImage, lightref);
 
-	memcpy(uniformBuffersMappedMem[currentImage], &ubo, sizeof(ubo));
+	transformMatrices.modelMatrix = glm::mat4(1.0f);
+	transformMatrices.viewMatrix = camera->GetViewMatrix();
+	transformMatrices.projectionMatrix = camera->GetProjectionMatrix();
+	transformMatrices.projectionMatrix[1][1] *= -1;
+
+	memcpy(VertexUniformBuffersMappedMem[currentImage], &transformMatrices, sizeof(transformMatrices));
 }
 
 void SkyBox::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)
 {
 	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { VertexBufferData.buffer };
+	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
 	commandbuffer.draw(vertices.size(), 1, 0, 0);
+}
+
+void SkyBox::CleanUp()
+{
+	
+    bufferManager->DestroyImage(MeshTextureData);
+
+	Drawable::Destructor();
 }
 
 
