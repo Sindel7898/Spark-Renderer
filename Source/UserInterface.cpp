@@ -224,7 +224,8 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex)
 
 
 //call every Frame
-void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std::shared_ptr<Model>>& Models, std::vector<std::shared_ptr<Light>>& Lights)
+void UserInterface::DrawUi(bool& bRecreateDepth,int& DefferedDecider, VkDescriptorSet FinalRenderTextureId, VkDescriptorSet PositionRenderTextureId,
+	                                                                  VkDescriptorSet NormalTextureId, VkDescriptorSet AlbedoTextureId,Camera* camera, std::vector<std::shared_ptr<Model>>& Models, std::vector<std::shared_ptr<Light>>& Lights)
 {
 	SetupDockingEnvironment();
 
@@ -239,6 +240,21 @@ void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std
 		currentGizmoOperation = ImGuizmo::SCALE;
 	}
 
+	if (ImGui::IsKeyPressed(ImGuiKey_4)) {
+		DefferedDecider = 1;
+	}
+	if (ImGui::IsKeyPressed(ImGuiKey_5)) {
+		DefferedDecider = 2;
+
+	}
+	if (ImGui::IsKeyPressed(ImGuiKey_6)) {
+		DefferedDecider = 3;
+
+	}
+	if (ImGui::IsKeyPressed(ImGuiKey_7)) {
+		DefferedDecider = 4;
+
+	}
 
 	// Your other UI windows...
 	{
@@ -253,7 +269,38 @@ void UserInterface::DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std
 	ImGui::SetNextWindowSize(ImVec2(400, 300));
 	ImGui::Begin("Main Viewport");
 	ImGui::Text("Main ViewPort");
-	ImguiViewPortRenderTextureSizeDecider(bRecreateDepth);
+
+	ImVec2 viewportSize;
+
+	if (ImGui::GetMainViewport())
+	{
+		viewportSize = ImGui::GetContentRegionAvail();
+	}
+
+	if (DefferedDecider == 1)
+	{
+		ImGui::Image((ImTextureID)FinalRenderTextureId, viewportSize);
+
+	}
+
+	if (DefferedDecider == 2)
+	{
+		ImGui::Image((ImTextureID)PositionRenderTextureId, viewportSize);
+
+	}
+
+	if (DefferedDecider == 3)
+	{
+		ImGui::Image((ImTextureID)NormalTextureId, viewportSize);
+
+	}
+
+	if (DefferedDecider == 4)
+	{
+		ImGui::Image((ImTextureID)AlbedoTextureId, viewportSize);
+
+	}
+	//ImguiViewPortRenderTextureSizeDecider(bRecreateDepth);
 
 	ImGuizmo::SetOrthographic(false);
 	ImGuizmo::SetDrawlist();
@@ -436,14 +483,14 @@ void UserInterface::ImguiViewPortRenderTextureSizeDecider(bool& bRecreateDepth)
 		}
 
 		vulkancontext->LogicalDevice.waitIdle();
-		ImGui_ImplVulkan_RemoveTexture(RenderTextureId);
+		//ImGui_ImplVulkan_RemoveTexture(RenderTextureId);
 		buffermanager->DestroyImage(ImguiViewPortRenderTextureData);
 		CreateViewPortRenderTexture(static_cast<uint32_t>(viewportSize.x), static_cast<uint32_t>(viewportSize.y));
 		bRecreateDepth = true;
 		lastSize = viewportSize;
 	}
 
-	ImGui::Image((ImTextureID)RenderTextureId, viewportSize);
+	//ImGui::Image((ImTextureID)RenderTextureId, viewportSize);
 }
 
 
@@ -454,9 +501,9 @@ ImageData* UserInterface::CreateViewPortRenderTexture(uint32_t X, uint32_t Y)
 	ImguiViewPortRenderTextureData.imageView = buffermanager->CreateImageView(ImguiViewPortRenderTextureData.image, vulkancontext->swapchainformat, vk::ImageAspectFlagBits::eColor);
 	ImguiViewPortRenderTextureData.imageSampler = buffermanager->CreateImageSampler();
 
-	RenderTextureId = ImGui_ImplVulkan_AddTexture(ImguiViewPortRenderTextureData.imageSampler,
-		ImguiViewPortRenderTextureData.imageView,
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	//RenderTextureId = ImGui_ImplVulkan_AddTexture(ImguiViewPortRenderTextureData.imageSampler,
+	//	ImguiViewPortRenderTextureData.imageView,
+	//	VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 	return &ImguiViewPortRenderTextureData;
 }

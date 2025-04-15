@@ -80,3 +80,37 @@ struct VertexOnly {
 		return attributeDescriptions;
 	}
 };
+
+
+struct FullScreenQuadDescription {
+
+	glm::vec2 vert;
+	glm::vec2 text;
+
+	static vk::VertexInputBindingDescription GetBindingDescription() {
+		vk::VertexInputBindingDescription  bindingdescription{};
+
+		bindingdescription.binding = 0;
+		bindingdescription.stride = sizeof(FullScreenQuadDescription);
+		bindingdescription.inputRate = vk::VertexInputRate::eVertex;
+
+		return bindingdescription;
+	}
+
+	static std::array< vk::VertexInputAttributeDescription, 2> GetAttributeDescription() {
+
+		std::array<vk::VertexInputAttributeDescription, 2> attributeDescriptions{};
+
+		attributeDescriptions[0].binding = 0;
+		attributeDescriptions[0].location = 0;
+		attributeDescriptions[0].format = vk::Format::eR32G32B32Sfloat;
+		attributeDescriptions[0].offset = offsetof(FullScreenQuadDescription, vert);
+
+		attributeDescriptions[1].binding = 0;
+		attributeDescriptions[1].location = 1;
+		attributeDescriptions[1].format = vk::Format::eR32G32Sfloat;
+		attributeDescriptions[1].offset = offsetof(FullScreenQuadDescription, text);
+
+		return attributeDescriptions;
+	}
+};

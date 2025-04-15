@@ -51,9 +51,17 @@ void Drawable::Destructor()
 	}
 }
 
+void Drawable::CreateUniformBuffer()
+{
+}
+
 void Drawable::UpdateUniformBuffer(uint32_t currentImage, Light* lightref)
 {
 	BreakDownAndUpdateModelMatrix();
+}
+
+void Drawable::createDescriptorSets(vk::DescriptorPool descriptorpool)
+{
 }
 
 

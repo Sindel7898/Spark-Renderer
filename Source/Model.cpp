@@ -95,33 +95,65 @@ void Model::CreateUniformBuffer()
 void Model::createDescriptorSetLayout()
 {
 	//Difines type that is sending and where to 
+	//vk::DescriptorSetLayoutBinding VertexUniformBufferBinding{};
+	//VertexUniformBufferBinding.binding = 0;
+	//VertexUniformBufferBinding.descriptorCount = 1;
+	//VertexUniformBufferBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
+	//VertexUniformBufferBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
+
+	//vk::DescriptorSetLayoutBinding FragmentUniformBufferBinding{};
+	//FragmentUniformBufferBinding.binding = 1;
+	//FragmentUniformBufferBinding.descriptorCount = 1;
+	//FragmentUniformBufferBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
+	//FragmentUniformBufferBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+	//vk::DescriptorSetLayoutBinding samplerLayoutBinding{};
+	//samplerLayoutBinding.binding = 2;
+	//samplerLayoutBinding.descriptorCount = 1;
+	//samplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	//samplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+	//vk::DescriptorSetLayoutBinding NormalSamplerLayoutBinding{};
+	//NormalSamplerLayoutBinding.binding = 3;
+	//NormalSamplerLayoutBinding.descriptorCount = 1;
+	//NormalSamplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	//NormalSamplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+	//std::array<vk::DescriptorSetLayoutBinding, 4> bindings = { VertexUniformBufferBinding,
+	//	                                                       FragmentUniformBufferBinding, 
+	//	                                                       samplerLayoutBinding,NormalSamplerLayoutBinding };
+
+	//vk::DescriptorSetLayoutCreateInfo layoutInfo{};
+	//layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+	//layoutInfo.pBindings = bindings.data();
+
+
+	//if (vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &descriptorSetLayout) != vk::Result::eSuccess)
+	//{
+	//	throw std::runtime_error("Failed to create descriptorset layout!");
+	//}
+
 	vk::DescriptorSetLayoutBinding VertexUniformBufferBinding{};
 	VertexUniformBufferBinding.binding = 0;
 	VertexUniformBufferBinding.descriptorCount = 1;
 	VertexUniformBufferBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
 	VertexUniformBufferBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
 
-	vk::DescriptorSetLayoutBinding FragmentUniformBufferBinding{};
-	FragmentUniformBufferBinding.binding = 1;
-	FragmentUniformBufferBinding.descriptorCount = 1;
-	FragmentUniformBufferBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
-	FragmentUniformBufferBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+	vk::DescriptorSetLayoutBinding AlbedoSamplerLayout{};
+	AlbedoSamplerLayout.binding = 1;
+	AlbedoSamplerLayout.descriptorCount = 1;
+	AlbedoSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	AlbedoSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-	vk::DescriptorSetLayoutBinding samplerLayoutBinding{};
-	samplerLayoutBinding.binding = 2;
-	samplerLayoutBinding.descriptorCount = 1;
-	samplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	samplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+	vk::DescriptorSetLayoutBinding NormalSamplerLayout{};
+	NormalSamplerLayout.binding = 2;
+	NormalSamplerLayout.descriptorCount = 1;
+	NormalSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	NormalSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-	vk::DescriptorSetLayoutBinding NormalSamplerLayoutBinding{};
-	NormalSamplerLayoutBinding.binding = 3;
-	NormalSamplerLayoutBinding.descriptorCount = 1;
-	NormalSamplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	NormalSamplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-	std::array<vk::DescriptorSetLayoutBinding, 4> bindings = { VertexUniformBufferBinding,
-		                                                       FragmentUniformBufferBinding, 
-		                                                       samplerLayoutBinding,NormalSamplerLayoutBinding };
+	std::array<vk::DescriptorSetLayoutBinding, 3> bindings = { VertexUniformBufferBinding,
+															   AlbedoSamplerLayout,NormalSamplerLayout, };
 
 	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -148,6 +180,75 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 
 	vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, DescriptorSets.data());
 
+	//////////////////////////////////////////////////////////////////////////////////////////////////
+	////specifies what exactly to send
+	//for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+
+	//	vk::DescriptorBufferInfo vertexbufferInfo{};
+	//	vertexbufferInfo.buffer = vertexUniformBuffers[i].buffer;
+	//	vertexbufferInfo.offset = 0;
+	//	vertexbufferInfo.range = sizeof(TransformMatrices);
+
+	//	vk::WriteDescriptorSet VertexUniformdescriptorWrite{};
+	//	VertexUniformdescriptorWrite.dstSet = DescriptorSets[i];
+	//	VertexUniformdescriptorWrite.dstBinding = 0;
+	//	VertexUniformdescriptorWrite.dstArrayElement = 0;
+	//	VertexUniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+	//	VertexUniformdescriptorWrite.descriptorCount = 1;
+	//	VertexUniformdescriptorWrite.pBufferInfo = &vertexbufferInfo;
+	//	/////////////////////////////////////////////////////////////////////////////////////
+	//	vk::DescriptorBufferInfo FragmentbufferInfo{};
+	//	FragmentbufferInfo.buffer = fragmentUniformBuffers[i].buffer;
+	//	FragmentbufferInfo.offset = 0;
+	//	FragmentbufferInfo.range = sizeof(LightUniformData);
+
+	//	vk::WriteDescriptorSet FragmentUniformdescriptorWrite{};
+	//	FragmentUniformdescriptorWrite.dstSet = DescriptorSets[i];
+	//	FragmentUniformdescriptorWrite.dstBinding = 1;
+	//	FragmentUniformdescriptorWrite.dstArrayElement = 0;
+	//	FragmentUniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+	//	FragmentUniformdescriptorWrite.descriptorCount = 1;
+	//	FragmentUniformdescriptorWrite.pBufferInfo = &FragmentbufferInfo;
+	//	/////////////////////////////////////////////////////////////////////////////////////
+	//	vk::DescriptorImageInfo imageInfo{};
+	//	imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+	//	imageInfo.imageView = albedoTextureData.imageView;
+	//	imageInfo.sampler   = albedoTextureData.imageSampler;
+
+	//	vk::WriteDescriptorSet SamplerdescriptorWrite{};
+	//	SamplerdescriptorWrite.dstSet = DescriptorSets[i];
+	//	SamplerdescriptorWrite.dstBinding = 2;
+	//	SamplerdescriptorWrite.dstArrayElement = 0;
+	//	SamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	//	SamplerdescriptorWrite.descriptorCount = 1;
+	//	SamplerdescriptorWrite.pImageInfo = &imageInfo;
+	//	/////////////////////////////////////////////////////////////////////////////////////
+
+	//		/////////////////////////////////////////////////////////////////////////////////////
+	//	vk::DescriptorImageInfo NormalimageInfo{};
+	//	NormalimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+	//	NormalimageInfo.imageView = normalTextureData.imageView;
+	//	NormalimageInfo.sampler   = normalTextureData.imageSampler;
+
+	//	vk::WriteDescriptorSet NormalSamplerdescriptorWrite{};
+	//	NormalSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+	//	NormalSamplerdescriptorWrite.dstBinding = 3;
+	//	NormalSamplerdescriptorWrite.dstArrayElement = 0;
+	//	NormalSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	//	NormalSamplerdescriptorWrite.descriptorCount = 1;
+	//	NormalSamplerdescriptorWrite.pImageInfo = &NormalimageInfo;
+	//	/////////////////////////////////////////////////////////////////////////////////////
+
+
+	//	std::array<vk::WriteDescriptorSet, 4> descriptorWrites{ VertexUniformdescriptorWrite,
+	//		                                                    FragmentUniformdescriptorWrite ,
+	//		                                                    SamplerdescriptorWrite,NormalSamplerdescriptorWrite };
+
+	//	vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+	//}
+
+
+
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	//specifies what exactly to send
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -164,43 +265,31 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 		VertexUniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
 		VertexUniformdescriptorWrite.descriptorCount = 1;
 		VertexUniformdescriptorWrite.pBufferInfo = &vertexbufferInfo;
-		/////////////////////////////////////////////////////////////////////////////////////
-		vk::DescriptorBufferInfo FragmentbufferInfo{};
-		FragmentbufferInfo.buffer = fragmentUniformBuffers[i].buffer;
-		FragmentbufferInfo.offset = 0;
-		FragmentbufferInfo.range = sizeof(LightUniformData);
-
-		vk::WriteDescriptorSet FragmentUniformdescriptorWrite{};
-		FragmentUniformdescriptorWrite.dstSet = DescriptorSets[i];
-		FragmentUniformdescriptorWrite.dstBinding = 1;
-		FragmentUniformdescriptorWrite.dstArrayElement = 0;
-		FragmentUniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-		FragmentUniformdescriptorWrite.descriptorCount = 1;
-		FragmentUniformdescriptorWrite.pBufferInfo = &FragmentbufferInfo;
+;
 		/////////////////////////////////////////////////////////////////////////////////////
 		vk::DescriptorImageInfo imageInfo{};
 		imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		imageInfo.imageView = albedoTextureData.imageView;
-		imageInfo.sampler   = albedoTextureData.imageSampler;
+		imageInfo.sampler = albedoTextureData.imageSampler;
 
 		vk::WriteDescriptorSet SamplerdescriptorWrite{};
 		SamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		SamplerdescriptorWrite.dstBinding = 2;
+		SamplerdescriptorWrite.dstBinding = 1;
 		SamplerdescriptorWrite.dstArrayElement = 0;
 		SamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		SamplerdescriptorWrite.descriptorCount = 1;
 		SamplerdescriptorWrite.pImageInfo = &imageInfo;
 		/////////////////////////////////////////////////////////////////////////////////////
 
-			/////////////////////////////////////////////////////////////////////////////////////
+		/////////////////////////////////////////////////////////////////////////////////////
 		vk::DescriptorImageInfo NormalimageInfo{};
 		NormalimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		NormalimageInfo.imageView = normalTextureData.imageView;
-		NormalimageInfo.sampler   = normalTextureData.imageSampler;
+		NormalimageInfo.sampler = normalTextureData.imageSampler;
 
 		vk::WriteDescriptorSet NormalSamplerdescriptorWrite{};
 		NormalSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		NormalSamplerdescriptorWrite.dstBinding = 3;
+		NormalSamplerdescriptorWrite.dstBinding = 2;
 		NormalSamplerdescriptorWrite.dstArrayElement = 0;
 		NormalSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		NormalSamplerdescriptorWrite.descriptorCount = 1;
@@ -208,9 +297,8 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 		/////////////////////////////////////////////////////////////////////////////////////
 
 
-		std::array<vk::WriteDescriptorSet, 4> descriptorWrites{ VertexUniformdescriptorWrite,
-			                                                    FragmentUniformdescriptorWrite ,
-			                                                    SamplerdescriptorWrite,NormalSamplerdescriptorWrite };
+		std::array<vk::WriteDescriptorSet, 3> descriptorWrites{ VertexUniformdescriptorWrite,
+																SamplerdescriptorWrite,NormalSamplerdescriptorWrite };
 
 		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	}

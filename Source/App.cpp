@@ -49,6 +49,7 @@
 
 	skyBox = std::shared_ptr<SkyBox>(new SkyBox(filePaths, vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), SkyBoxDeleter{});
 	light = std::shared_ptr<Light>(new Light(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), LightDeleter{});
+	fullScreenQuad = std::shared_ptr<FullScreenQuad>(new FullScreenQuad(bufferManger.get(), vulkanContext.get(), commandPool));
 
 	lights.reserve(1);
 	lights.push_back(std::move(light));
@@ -61,7 +62,7 @@
 	ViewPortImageData = userinterface->CreateViewPortRenderTexture(1920, 1080);
 
 	createDepthTextureImage();
-	
+	createGBuffer();
 }
 
 
@@ -118,8 +119,66 @@ void App::createDepthTextureImage()
 	bufferManger->TransitionImage(commandBuffer, DepthTextureData.image, DataToTransitionInfo);
 
 	bufferManger->SubmitAndDestoyCommandBuffer(commandPool, commandBuffer, vulkanContext->graphicsQueue);
+
 }
 
+
+void App::createGBuffer()
+{
+
+	gbuffer.Position = bufferManger->CreateImage(userinterface->GetRenderTextureExtent(), vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.Position.imageView = bufferManger->CreateImageView(gbuffer.Position.image, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	gbuffer.Position.imageSampler = bufferManger->CreateImageSampler();
+
+	gbuffer.Normal = bufferManger->CreateImage(userinterface->GetRenderTextureExtent(), vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.Normal.imageView = bufferManger->CreateImageView(gbuffer.Normal.image, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	gbuffer.Normal.imageSampler = bufferManger->CreateImageSampler();
+
+	gbuffer.Albedo = bufferManger->CreateImage(userinterface->GetRenderTextureExtent(), vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.Albedo.imageView = bufferManger->CreateImageView(gbuffer.Albedo.image, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
+	gbuffer.Albedo.imageSampler = bufferManger->CreateImageSampler();
+
+	LightingPassImageData = bufferManger->CreateImage(userinterface->GetRenderTextureExtent(), vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	LightingPassImageData.imageView = bufferManger->CreateImageView(LightingPassImageData.image, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	LightingPassImageData.imageSampler = bufferManger->CreateImageSampler();
+
+	fullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
+	vk::CommandBuffer commandBuffer = bufferManger->CreateSingleUseCommandBuffer(commandPool);
+
+	ImageTransitionData transitionInfo{};
+	transitionInfo.oldlayout = vk::ImageLayout::eUndefined;
+	transitionInfo.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
+	transitionInfo.AspectFlag = vk::ImageAspectFlagBits::eColor;
+	transitionInfo.SourceAccessflag = vk::AccessFlagBits::eNone;
+	transitionInfo.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
+	transitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
+	transitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+
+	bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, transitionInfo);
+	bufferManger->TransitionImage(commandBuffer, gbuffer.Normal.image, transitionInfo);
+	bufferManger->TransitionImage(commandBuffer, gbuffer.Albedo.image, transitionInfo);
+	bufferManger->TransitionImage(commandBuffer, LightingPassImageData.image, transitionInfo);
+
+	bufferManger->SubmitAndDestoyCommandBuffer(commandPool, commandBuffer, vulkanContext->graphicsQueue);
+
+
+	FinalRenderTextureId = ImGui_ImplVulkan_AddTexture(LightingPassImageData.imageSampler,
+		                                          LightingPassImageData.imageView,
+		                                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	PositionRenderTextureId = ImGui_ImplVulkan_AddTexture(gbuffer.Position.imageSampler,
+		                                          gbuffer.Position.imageView,
+		                                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	NormalTextureId = ImGui_ImplVulkan_AddTexture(gbuffer.Normal.imageSampler,
+		                                          gbuffer.Normal.imageView,
+		                                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+
+	AlbedoTextureId = ImGui_ImplVulkan_AddTexture(gbuffer.Albedo.imageSampler,
+		                                          gbuffer.Albedo.imageView,
+		                                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+}
 void App::CreateGraphicsPipeline()
 {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -149,6 +208,7 @@ void App::CreateGraphicsPipeline()
 	scissor.setExtent(vulkanContext->swapchainExtent);
 
 	vk::PipelineViewportStateCreateInfo viewportState{};
+	viewportState.setViewportCount(1);
 	viewportState.setViewportCount(1);
 	viewportState.setScissorCount(1);
 	viewportState.setViewports(viewport);
@@ -210,8 +270,8 @@ void App::CreateGraphicsPipeline()
 
 
     {
-    	auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/Simple_Shader.vert.spv");
-    	auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/Simple_Shader.frag.spv");
+    	auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/DefferedLightingPass.vert.spv");
+    	auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/DefferedLightingPass.frag.spv");
     
     	VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
     	VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
@@ -228,33 +288,37 @@ void App::CreateGraphicsPipeline()
     
     	vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo ,FragmentShaderStageInfo };
     
-    	auto BindDesctiptions = ModelVertex::GetBindingDescription();
-    	auto attributeDescriptions = ModelVertex::GetAttributeDescription();
+    	auto BindDesctiptions = FullScreenQuadDescription::GetBindingDescription();
+    	auto attributeDescriptions = FullScreenQuadDescription::GetAttributeDescription();
     
     	vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
     	vertexInputInfo.setVertexBindingDescriptionCount(1);
-    	vertexInputInfo.setVertexAttributeDescriptionCount(5);
+    	vertexInputInfo.setVertexAttributeDescriptionCount(2);
     	vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
     	vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
     
     	vk::PipelineDepthStencilStateCreateInfo depthStencilState;
-    	depthStencilState.depthTestEnable = VK_TRUE;
-    	depthStencilState.depthWriteEnable = VK_TRUE;
+    	depthStencilState.depthTestEnable = VK_FALSE;
+    	depthStencilState.depthWriteEnable = VK_FALSE;
     	depthStencilState.depthCompareOp = vk::CompareOp::eLess;
     	depthStencilState.minDepthBounds = 0.0f;
     	depthStencilState.maxDepthBounds = 1.0f;
     	depthStencilState.stencilTestEnable = VK_FALSE;
-    
+
+		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
+		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
+		pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext->swapchainformat;
+
     	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
     	pipelineLayoutInfo.setLayoutCount = 1;
-    	pipelineLayoutInfo.setSetLayouts(Models[1]->descriptorSetLayout);
+    	pipelineLayoutInfo.setSetLayouts(fullScreenQuad->descriptorSetLayout);
     	pipelineLayoutInfo.pushConstantRangeCount = 0;
     	pipelineLayoutInfo.pPushConstantRanges = nullptr;
     
-    	pipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+		FullScreenQuadgraphicsPipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
     
-    	graphicsPipeline = vulkanContext->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, vertexInputInfo, inputAssembleInfo,
-    		                                                     viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, pipelineLayout);
+		FullScreenQuadgraphicsPipeline = vulkanContext->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, vertexInputInfo, inputAssembleInfo,
+    		                                                     viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, FullScreenQuadgraphicsPipelineLayout);
     
     	vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
     	vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
@@ -363,6 +427,7 @@ void App::CreateGraphicsPipeline()
 		 pipelineLayoutInfo.pushConstantRangeCount = 0;
 		 pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
+
 		 SkyBoxpipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 
 		 SkyBoxgraphicsPipeline =  vulkanContext->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, vertexInputInfo, inputAssembleInfo,
@@ -372,6 +437,104 @@ void App::CreateGraphicsPipeline()
 		 vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
 
 	}
+
+
+	{
+		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/GeometryPass.vert.spv");
+		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/GeometryPass.frag.spv");
+
+		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
+		VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
+
+		vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
+		VertShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+		VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
+		VertShaderStageInfo.module = VertShaderModule;
+		VertShaderStageInfo.pName = "main";
+
+		vk::PipelineShaderStageCreateInfo FragmentShaderStageInfo{};
+		FragmentShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+		FragmentShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
+		FragmentShaderStageInfo.module = FragShaderModule;
+		FragmentShaderStageInfo.pName = "main";
+
+		vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo ,FragmentShaderStageInfo };
+
+		vk::PipelineDepthStencilStateCreateInfo depthStencilState;
+		depthStencilState.depthTestEnable = vk::True;
+		depthStencilState.depthWriteEnable = vk::True;
+		depthStencilState.depthCompareOp = vk::CompareOp::eLess;
+		depthStencilState.minDepthBounds = 0.0f;
+		depthStencilState.maxDepthBounds = 1.0f;
+		depthStencilState.stencilTestEnable = VK_FALSE;
+
+		auto BindDesctiptions      = ModelVertex::GetBindingDescription();
+		auto attributeDescriptions = ModelVertex::GetAttributeDescription();
+
+		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
+		vertexInputInfo.setVertexBindingDescriptionCount(1);
+		vertexInputInfo.setVertexAttributeDescriptionCount(5);
+		vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
+		vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
+
+		std::array<vk::Format, 3> colorFormats = {
+	                             vk::Format::eR16G16B16A16Sfloat, // Position
+	                             vk::Format::eR16G16B16A16Sfloat, // Normal
+	                             vk::Format::eR8G8B8A8Unorm       // Albedo
+	                             };
+
+
+		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
+		pipelineRenderingCreateInfo.colorAttachmentCount = colorFormats.size();
+		pipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats.data();
+		pipelineRenderingCreateInfo.depthAttachmentFormat = vulkanContext->FindCompatableDepthFormat();
+
+		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.setSetLayouts(Models[0]->descriptorSetLayout);
+		pipelineLayoutInfo.pushConstantRangeCount = 0;
+		pipelineLayoutInfo.pPushConstantRanges = nullptr;
+
+		std::array<vk::PipelineColorBlendAttachmentState, 3> colorBlendAttachments = {
+			// Position attachment blend state
+			vk::PipelineColorBlendAttachmentState{}
+				.setColorWriteMask(vk::ColorComponentFlagBits::eR |
+								  vk::ColorComponentFlagBits::eG |
+								  vk::ColorComponentFlagBits::eB |
+								  vk::ColorComponentFlagBits::eA)
+				.setBlendEnable(VK_FALSE),
+
+			// Normal attachment blend state
+			vk::PipelineColorBlendAttachmentState{}
+				.setColorWriteMask(vk::ColorComponentFlagBits::eR |
+								  vk::ColorComponentFlagBits::eG |
+								  vk::ColorComponentFlagBits::eB |
+								  vk::ColorComponentFlagBits::eA)
+				.setBlendEnable(VK_FALSE),
+
+			// Albedo attachment blend state
+			vk::PipelineColorBlendAttachmentState{}
+				.setColorWriteMask(vk::ColorComponentFlagBits::eR |
+								  vk::ColorComponentFlagBits::eG |
+								  vk::ColorComponentFlagBits::eB |
+								  vk::ColorComponentFlagBits::eA)
+				.setBlendEnable(VK_FALSE)
+		};
+
+		vk::PipelineColorBlendStateCreateInfo colorBlend{};
+		colorBlend.setLogicOpEnable(VK_FALSE);
+		colorBlend.setAttachmentCount(colorBlendAttachments.size());
+		colorBlend.setPAttachments(colorBlendAttachments.data());
+
+		geometryPassPipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+
+		geometryPassPipeline = vulkanContext->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, vertexInputInfo, inputAssembleInfo,
+			viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, geometryPassPipelineLayout);
+
+		vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
+		vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
+	}
+
 }
 
 
@@ -476,7 +639,6 @@ void App::Run()
 		camera->Update(deltaTime);
 
 		//ZoneScopedN("UI");
-		userinterface->DrawUi(bRecreateDepth,camera.get(),Models, lights);
 		if (bRecreateDepth)
 		{
 			destroy_DepthImage();
@@ -484,7 +646,10 @@ void App::Run()
 			bRecreateDepth = false;
 		}
 
+		userinterface->DrawUi(bRecreateDepth, DefferedDecider, FinalRenderTextureId, PositionRenderTextureId, 
+			                                                   NormalTextureId, AlbedoTextureId, camera.get(), Models, lights);
 		Draw();		
+
 	}
 
 	vulkanContext->LogicalDevice.waitIdle();
@@ -591,47 +756,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	vk::ClearValue clearColor{};
 	clearColor.color = { 0.0f, 0.0f, 0.0f, 1.0f };
 
-	vk::CommandBufferBeginInfo begininfo{};
-	begininfo.pInheritanceInfo = nullptr;
-	begininfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-	//////////////////////////////////////////////////////////////////////////
-	commandBuffer.begin(begininfo);
-
-	ImageTransitionData DataToTransitionInfo{};
-	DataToTransitionInfo.oldlayout = vk::ImageLayout::eUndefined;
-	DataToTransitionInfo.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
-	DataToTransitionInfo.AspectFlag = vk::ImageAspectFlagBits::eColor;
-	DataToTransitionInfo.SourceAccessflag = vk::AccessFlagBits::eNone;
-	DataToTransitionInfo.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-	DataToTransitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
-	DataToTransitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-
-	bufferManger->TransitionImage(commandBuffer, ViewPortImageData->image, DataToTransitionInfo);
-
 	VkOffset2D imageoffset = { 0, 0 };
-
-	vk::RenderingAttachmentInfoKHR colorAttachmentInfo{};
-	colorAttachmentInfo.imageView = ViewPortImageData->imageView;
-	colorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-	colorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
-	colorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
-	colorAttachmentInfo.clearValue = clearColor;
-
-	vk::RenderingAttachmentInfo depthStencilAttachment;
-	depthStencilAttachment.imageView = DepthTextureData.imageView;
-	depthStencilAttachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-	depthStencilAttachment.loadOp = vk::AttachmentLoadOp::eClear; 
-	depthStencilAttachment.storeOp = vk::AttachmentStoreOp::eDontCare; 
-	depthStencilAttachment.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0); 
-
-	vk::RenderingInfoKHR renderingInfo{};
-	renderingInfo.renderArea.offset = imageoffset;
-	renderingInfo.renderArea.extent.height = userinterface->GetRenderTextureExtent().height;
-	renderingInfo.renderArea.extent.width = userinterface->GetRenderTextureExtent().width;
-	renderingInfo.layerCount = 1;
-	renderingInfo.colorAttachmentCount = 1;
-	renderingInfo.pColorAttachments = &colorAttachmentInfo;
-	renderingInfo.pDepthAttachment = &depthStencilAttachment;
 
 	vk::Viewport viewport{};
 	viewport.x = 0.0f;
@@ -648,24 +773,132 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	vk::DeviceSize offsets[] = { 0 };
 
-	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
-	commandBuffer.beginRendering(renderingInfo);
-	commandBuffer.setViewport(0, 1, &viewport);
-	commandBuffer.setScissor(0, 1, &scissor);
+	ImageTransitionData TransitionColorAttachmentOptimal{};
+	TransitionColorAttachmentOptimal.oldlayout = vk::ImageLayout::eUndefined;
+	TransitionColorAttachmentOptimal.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
+	TransitionColorAttachmentOptimal.AspectFlag = vk::ImageAspectFlagBits::eColor;
+	TransitionColorAttachmentOptimal.SourceAccessflag = vk::AccessFlagBits::eNone;
+	TransitionColorAttachmentOptimal.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
+	TransitionColorAttachmentOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
+	TransitionColorAttachmentOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	
+	vk::CommandBufferBeginInfo begininfo;
+	                          begininfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 
-	skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
-    
-	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
+	commandBuffer.begin(begininfo);
+	bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, TransitionColorAttachmentOptimal);
+	bufferManger->TransitionImage(commandBuffer, gbuffer.Normal.image, TransitionColorAttachmentOptimal);
+	bufferManger->TransitionImage(commandBuffer, gbuffer.Albedo.image, TransitionColorAttachmentOptimal);
+	bufferManger->TransitionImage(commandBuffer, LightingPassImageData.image, TransitionColorAttachmentOptimal);
 
-	for (auto& model : Models)
+
 	{
-		model->Draw(commandBuffer, pipelineLayout, currentFrame);
+		vk::RenderingAttachmentInfoKHR PositioncolorAttachmentInfo{};
+		PositioncolorAttachmentInfo.imageView = gbuffer.Position.imageView;
+		PositioncolorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		PositioncolorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
+		PositioncolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		PositioncolorAttachmentInfo.clearValue = clearColor;
+
+		vk::RenderingAttachmentInfoKHR NormalcolorAttachmentInfo{};
+		NormalcolorAttachmentInfo.imageView = gbuffer.Normal.imageView;
+		NormalcolorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		NormalcolorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
+		NormalcolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		NormalcolorAttachmentInfo.clearValue = clearColor;
+
+		vk::RenderingAttachmentInfoKHR AlbedocolorAttachmentInfo{};
+		AlbedocolorAttachmentInfo.imageView = gbuffer.Albedo.imageView;
+		AlbedocolorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		AlbedocolorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
+		AlbedocolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		AlbedocolorAttachmentInfo.clearValue = clearColor;
+		
+		std::array<vk::RenderingAttachmentInfoKHR, 3> ColorAttachments{ PositioncolorAttachmentInfo ,NormalcolorAttachmentInfo,AlbedocolorAttachmentInfo };
+
+		vk::RenderingAttachmentInfo depthStencilAttachment;
+		depthStencilAttachment.imageView = DepthTextureData.imageView;
+		depthStencilAttachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+		depthStencilAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+		depthStencilAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
+		depthStencilAttachment.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+
+		vk::RenderingInfoKHR renderingInfo{};
+		renderingInfo.renderArea.offset = imageoffset;
+		renderingInfo.renderArea.extent.height = userinterface->GetRenderTextureExtent().height;
+		renderingInfo.renderArea.extent.width = userinterface->GetRenderTextureExtent().width;
+		renderingInfo.layerCount = 1;
+		renderingInfo.colorAttachmentCount = 3;
+		renderingInfo.pColorAttachments = ColorAttachments.data();
+		renderingInfo.pDepthAttachment = &depthStencilAttachment;
+
+
+		commandBuffer.beginRendering(renderingInfo);
+		commandBuffer.setViewport(0, 1, &viewport);
+		commandBuffer.setScissor(0, 1, &scissor);
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, geometryPassPipeline);
+
+		for (auto& model : Models)
+		{
+			model->Draw(commandBuffer, geometryPassPipelineLayout, currentFrame);
+		}
+		commandBuffer.endRendering();
+
+		{
+			ImageTransitionData gbufferTransition{};
+			gbufferTransition.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
+			gbufferTransition.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			gbufferTransition.AspectFlag = vk::ImageAspectFlagBits::eColor;
+			gbufferTransition.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
+			gbufferTransition.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
+			gbufferTransition.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+			gbufferTransition.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
+
+			bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, gbufferTransition);
+			bufferManger->TransitionImage(commandBuffer, gbuffer.Normal.image, gbufferTransition);
+			bufferManger->TransitionImage(commandBuffer, gbuffer.Albedo.image, gbufferTransition);
+
+			vk::RenderingAttachmentInfoKHR LightPassColorAttachmentInfo{};
+			LightPassColorAttachmentInfo.imageView = LightingPassImageData.imageView;
+			LightPassColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			LightPassColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
+			LightPassColorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+			LightPassColorAttachmentInfo.clearValue = clearColor;
+
+
+			vk::RenderingInfoKHR renderingInfo{};
+			renderingInfo.renderArea.offset = imageoffset;
+			renderingInfo.renderArea.extent.height = userinterface->GetRenderTextureExtent().height;
+			renderingInfo.renderArea.extent.width = userinterface->GetRenderTextureExtent().width;
+			renderingInfo.layerCount = 1;
+			renderingInfo.colorAttachmentCount = 1;
+			renderingInfo.pColorAttachments = &LightPassColorAttachmentInfo;
+
+
+			commandBuffer.beginRendering(renderingInfo);
+
+			commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, FullScreenQuadgraphicsPipeline);
+			fullScreenQuad->Draw(commandBuffer, FullScreenQuadgraphicsPipelineLayout, currentFrame);
+
+			commandBuffer.endRendering();
+
+			ImageTransitionData TransitionBacktoColorOutput{};
+			TransitionBacktoColorOutput.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			TransitionBacktoColorOutput.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
+			TransitionBacktoColorOutput.AspectFlag = vk::ImageAspectFlagBits::eColor;
+			TransitionBacktoColorOutput.SourceAccessflag = vk::AccessFlagBits::eShaderRead;
+			TransitionBacktoColorOutput.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
+			TransitionBacktoColorOutput.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
+			TransitionBacktoColorOutput.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+
+			bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, TransitionBacktoColorOutput);
+			bufferManger->TransitionImage(commandBuffer, gbuffer.Normal.image, TransitionBacktoColorOutput);
+			bufferManger->TransitionImage(commandBuffer, gbuffer.Albedo.image, TransitionBacktoColorOutput);
+
+		}
 	}
 
-	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, LightgraphicsPipeline);
-	lights[0]->Draw(commandBuffer, LightpipelineLayout, currentFrame);
 
-	commandBuffer.endRendering();
 
 	ImageTransitionData TransitiontoShader{};
 	TransitiontoShader.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
@@ -676,10 +909,25 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	TransitiontoShader.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 	TransitiontoShader.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 
-	bufferManger->TransitionImage(commandBuffer, ViewPortImageData->image, TransitiontoShader);
+	if (DefferedDecider == 1)
+	{
+		bufferManger->TransitionImage(commandBuffer, LightingPassImageData.image, TransitiontoShader);
+	}
+	if (DefferedDecider == 2)
+	{
+		bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, TransitiontoShader);
+	}
+	if (DefferedDecider == 3)
+	{
+		bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, TransitiontoShader);
+	}
+
+	if (DefferedDecider == 4)
+	{
+		bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, TransitiontoShader);
+	}
 
 	userinterface->RenderUi(commandBuffer, imageIndex);
-
 }
 
 
@@ -767,12 +1015,12 @@ void App::DestroyBuffers()
 
 	vulkanContext->LogicalDevice.destroyCommandPool(commandPool);
 	vulkanContext->VulkanInstance.destroySurfaceKHR(vulkanContext->surface);
-	vulkanContext->LogicalDevice.destroyPipeline(graphicsPipeline);
+	vulkanContext->LogicalDevice.destroyPipeline(FullScreenQuadgraphicsPipeline);
 	vulkanContext->LogicalDevice.destroyPipeline(SkyBoxgraphicsPipeline);
 	vulkanContext->LogicalDevice.destroyPipeline(LightgraphicsPipeline);
 
 	vulkanContext->LogicalDevice.destroyDescriptorPool(DescriptorPool);
-	vulkanContext->LogicalDevice.destroyPipelineLayout(pipelineLayout);
+	vulkanContext->LogicalDevice.destroyPipelineLayout(FullScreenQuadgraphicsPipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(SkyBoxpipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(LightpipelineLayout);
 

@@ -23,7 +23,7 @@ public:
     UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef, BufferManager* Buffermanager);
 
     void RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex);
-    void DrawUi(bool& bRecreateDepth, Camera* camera, std::vector<std::shared_ptr<Model>>& Models, std::vector<std::shared_ptr<Light>>& Lights);
+    void DrawUi(bool& bRecreateDepth, int& DefferedDecider, VkDescriptorSet FinalRenderTextureId, VkDescriptorSet PositionRenderTextureId, VkDescriptorSet NormalTextureId, VkDescriptorSet AlbedoTextureId, Camera* camera, std::vector<std::shared_ptr<Model>>& Models, std::vector<std::shared_ptr<Light>>& Lights);
     float CalculateDistanceInScreenSpace(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position);
    // std::vector<glm::vec3> ShowGuizmoToLocation(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position);
   
@@ -34,7 +34,7 @@ public:
 
     BufferManager* buffermanager = nullptr;
     ImageData ImguiViewPortRenderTextureData;
-    VkDescriptorSet RenderTextureId;
+   // VkDescriptorSet RenderTextureId;
     VulkanContext* vulkancontext = nullptr;
     vk::DescriptorPool  ImGuiDescriptorPool = nullptr;
 
@@ -63,7 +63,7 @@ struct UserInterfaceDeleter {
 
         if (userInterface) {
             userInterface->vulkancontext->LogicalDevice.waitIdle();
-             ImGui_ImplVulkan_RemoveTexture(userInterface->RenderTextureId);
+            // ImGui_ImplVulkan_RemoveTexture(userInterface->RenderTextureId);
              ImGui_ImplVulkan_Shutdown();
              ImGui_ImplGlfw_Shutdown();
              ImGui::DestroyContext(); 

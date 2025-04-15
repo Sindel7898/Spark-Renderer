@@ -12,6 +12,7 @@
 #include "Model.h"
 #include "SkyBox.h"
 #include "UserInterface.h"
+#include "FullScreenQuad.h"
 
 
 class Window;
@@ -21,11 +22,7 @@ class BufferManager;
 class VulkanContext;
 class FramesPerSecondCounter;
 class Light;
-struct UniformBufferObject {
-	alignas(16) glm::mat4 model;
-	alignas(16) glm::mat4 view;
-	alignas(16) glm::mat4 proj;
-};
+struct GBuffer;
 
 class App
 {
@@ -64,6 +61,8 @@ public:
 
 	void SwapchainResizeCallback(GLFWwindow* window, int width, int height);
 
+	void createGBuffer();
+
 	void CreateGraphicsPipeline();
 
 	void createCommandBuffer();
@@ -86,6 +85,7 @@ private:
 	std::unique_ptr<MeshLoader> meshloader = nullptr;
 	std::shared_ptr<Camera> camera = nullptr;
 	std::shared_ptr<UserInterface> userinterface = nullptr;
+	std::shared_ptr<FullScreenQuad> fullScreenQuad = nullptr;
 
 	std::vector<std::shared_ptr<Model>> Models;
 	std::vector<std::shared_ptr<Light>> lights;
@@ -99,13 +99,15 @@ private:
 	const bool enableValidationLayers = true;
 #endif
 
-	vk::PipelineLayout         pipelineLayout = nullptr;
+	vk::PipelineLayout         FullScreenQuadgraphicsPipelineLayout = nullptr;
 	vk::PipelineLayout         LightpipelineLayout = nullptr;
 	vk::PipelineLayout         SkyBoxpipelineLayout = nullptr;
+	vk::PipelineLayout         geometryPassPipelineLayout = nullptr;
 
-	vk::Pipeline               graphicsPipeline = nullptr;
+	vk::Pipeline               FullScreenQuadgraphicsPipeline = nullptr;
 	vk::Pipeline               LightgraphicsPipeline = nullptr;
 	vk::Pipeline               SkyBoxgraphicsPipeline = nullptr;
+	vk::Pipeline               geometryPassPipeline = nullptr;
 
 	vk::CommandPool            commandPool = nullptr;
 
@@ -120,10 +122,21 @@ private:
 	////////////////////////////
 	ImageData DepthTextureData;
 
-	VkDescriptorSet RenderTextureId;
+	VkDescriptorSet FinalRenderTextureId;
+	VkDescriptorSet PositionRenderTextureId;
+	VkDescriptorSet NormalTextureId;
+	VkDescriptorSet AlbedoTextureId;
+
 	ImageData* ViewPortImageData; 
 
 	bool bRecreateDepth = false; 
 
 	bool binitiallayout = true;
+
+	GBuffer gbuffer;
+
+	ImageData LightingPassImageData;
+
+
+	int DefferedDecider = 1;
 };
