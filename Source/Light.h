@@ -26,7 +26,9 @@ public:
 
     glm::vec3  color;
     float      ambientStrength;
-    
+    float      lightIntensity;
+
+    int        lightType;
 private:
 
     const std::vector<VertexOnly> vertices = {

@@ -78,61 +78,22 @@ void Model::CreateUniformBuffer()
 	fragmentUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 	FragmentUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
 
-	VkDeviceSize FragmentuniformBufferSize = sizeof(LightUniformData);
+	//VkDeviceSize FragmentuniformBufferSize = sizeof(LightUniformData);
 
-	for (size_t i = 0; i < fragmentUniformBuffers.size(); i++)
-	{
+	//for (size_t i = 0; i < fragmentUniformBuffers.size(); i++)
+	//{
 
-		BufferData bufferdata = bufferManager->CreateBuffer(FragmentuniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
-		fragmentUniformBuffers[i] = bufferdata;
+	//	BufferData bufferdata = bufferManager->CreateBuffer(FragmentuniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
+	//	fragmentUniformBuffers[i] = bufferdata;
 
-		FragmentUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
-	}
+	//	FragmentUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
+	//}
 }
 
 
 
 void Model::createDescriptorSetLayout()
 {
-	//Difines type that is sending and where to 
-	//vk::DescriptorSetLayoutBinding VertexUniformBufferBinding{};
-	//VertexUniformBufferBinding.binding = 0;
-	//VertexUniformBufferBinding.descriptorCount = 1;
-	//VertexUniformBufferBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
-	//VertexUniformBufferBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
-
-	//vk::DescriptorSetLayoutBinding FragmentUniformBufferBinding{};
-	//FragmentUniformBufferBinding.binding = 1;
-	//FragmentUniformBufferBinding.descriptorCount = 1;
-	//FragmentUniformBufferBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
-	//FragmentUniformBufferBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
-
-	//vk::DescriptorSetLayoutBinding samplerLayoutBinding{};
-	//samplerLayoutBinding.binding = 2;
-	//samplerLayoutBinding.descriptorCount = 1;
-	//samplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	//samplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
-
-	//vk::DescriptorSetLayoutBinding NormalSamplerLayoutBinding{};
-	//NormalSamplerLayoutBinding.binding = 3;
-	//NormalSamplerLayoutBinding.descriptorCount = 1;
-	//NormalSamplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	//NormalSamplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
-
-	//std::array<vk::DescriptorSetLayoutBinding, 4> bindings = { VertexUniformBufferBinding,
-	//	                                                       FragmentUniformBufferBinding, 
-	//	                                                       samplerLayoutBinding,NormalSamplerLayoutBinding };
-
-	//vk::DescriptorSetLayoutCreateInfo layoutInfo{};
-	//layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-	//layoutInfo.pBindings = bindings.data();
-
-
-	//if (vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &descriptorSetLayout) != vk::Result::eSuccess)
-	//{
-	//	throw std::runtime_error("Failed to create descriptorset layout!");
-	//}
-
 	vk::DescriptorSetLayoutBinding VertexUniformBufferBinding{};
 	VertexUniformBufferBinding.binding = 0;
 	VertexUniformBufferBinding.descriptorCount = 1;
@@ -317,10 +278,10 @@ void Model::UpdateUniformBuffer(uint32_t currentImage, Light* lightref)
 
 	if (lightref)
 	{
-		lightData.position        = lightref->position;
+		/*lightData.position        = lightref->position;
 		lightData.color           = lightref->color;
 		lightData.ambientStrength = lightref->ambientStrength;
-		memcpy(FragmentUniformBuffersMappedMem[currentImage], &lightData, sizeof(lightData));
+		memcpy(FragmentUniformBuffersMappedMem[currentImage], &lightData, sizeof(lightData));*/
 	}
 
 }

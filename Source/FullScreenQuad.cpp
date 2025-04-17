@@ -3,6 +3,7 @@
 #include <chrono>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
+#include "Light.h"
 
 FullScreenQuad::FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext, vk::CommandPool commandpool): Drawable()
 {
@@ -12,6 +13,7 @@ FullScreenQuad::FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulk
 	commandPool   = commandpool;
 
 	CreateVertexAndIndexBuffer();
+	CreateUniformBuffer();
 	createDescriptorSetLayout();
 }
 
@@ -27,9 +29,41 @@ void FullScreenQuad::CreateVertexAndIndexBuffer()
 
 }
 
+void FullScreenQuad::CreateUniformBuffer()
+{
+	vertexUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+	VertexUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
+
+	VkDeviceSize VertexuniformBufferSize = sizeof(TransformMatrices);
+
+	for (size_t i = 0; i < vertexUniformBuffers.size(); i++)
+	{
+
+		BufferData bufferdata = bufferManager->CreateBuffer(VertexuniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
+		vertexUniformBuffers[i] = bufferdata;
+
+		VertexUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
+	}
+
+	//////////////////////////////////////////////////////////////
+	fragmentUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+	FragmentUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
+
+	VkDeviceSize FragmentuniformBufferSize = sizeof(LightUniformData) * 100;
+
+	for (size_t i = 0; i < fragmentUniformBuffers.size(); i++)
+	{
+
+		BufferData bufferdata = bufferManager->CreateBuffer(FragmentuniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
+		fragmentUniformBuffers[i] = bufferdata;
+
+		FragmentUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
+	}
+}
 
 void FullScreenQuad::createDescriptorSetLayout()
 {
+
 	vk::DescriptorSetLayoutBinding PositionSampleryLayout{};
 	PositionSampleryLayout.binding = 0;
 	PositionSampleryLayout.descriptorCount = 1;
@@ -48,9 +82,14 @@ void FullScreenQuad::createDescriptorSetLayout()
 	AlbedoSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	AlbedoSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
+	vk::DescriptorSetLayoutBinding LightUniformBufferLayout{};
+	LightUniformBufferLayout.binding = 3;
+	LightUniformBufferLayout.descriptorCount = 1;
+	LightUniformBufferLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
+	LightUniformBufferLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-	std::array<vk::DescriptorSetLayoutBinding, 3> bindings = { PositionSampleryLayout,NormalSamplerLayout,
-															   AlbedoSamplerLayout };
+	std::array<vk::DescriptorSetLayoutBinding, 4> bindings = { LightUniformBufferLayout,PositionSampleryLayout,
+		                                                       NormalSamplerLayout,AlbedoSamplerLayout };
 
 	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -77,12 +116,10 @@ void FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descr
 
 	vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, DescriptorSets.data());
 
-
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	//specifies what exactly to send
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
-		;
 		/////////////////////////////////////////////////////////////////////////////////////
 		vk::DescriptorImageInfo PositionimageInfo{};
 		PositionimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -126,14 +163,49 @@ void FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descr
 		AlbedoSamplerdescriptorWrite.pImageInfo = &AlbedoimageInfo;
 		/////////////////////////////////////////////////////////////////////////////////////
 
-		
-		std::array<vk::WriteDescriptorSet, 3> descriptorWrites{ PositionSamplerdescriptorWrite,
-																NormalSamplerdescriptorWrite,AlbedoSamplerdescriptorWrite };
+		vk::DescriptorBufferInfo LightUniformBufferInfo;
+		LightUniformBufferInfo.buffer = fragmentUniformBuffers[i].buffer;
+		LightUniformBufferInfo.offset = 0;
+		LightUniformBufferInfo.range = sizeof(LightUniformData) * 100;
+
+		vk::WriteDescriptorSet LightUniformBufferDescriptorWrite{};
+		LightUniformBufferDescriptorWrite.dstSet = DescriptorSets[i];
+		LightUniformBufferDescriptorWrite.dstBinding = 3;
+		LightUniformBufferDescriptorWrite.dstArrayElement = 0;
+		LightUniformBufferDescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+		LightUniformBufferDescriptorWrite.descriptorCount = 1;
+		LightUniformBufferDescriptorWrite.pBufferInfo = &LightUniformBufferInfo;
+
+		std::array<vk::WriteDescriptorSet, 4> descriptorWrites{ PositionSamplerdescriptorWrite,NormalSamplerdescriptorWrite,
+			                                                    AlbedoSamplerdescriptorWrite,LightUniformBufferDescriptorWrite };
 
 		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	}
 }
 
+void FullScreenQuad::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref)
+{
+	std::vector<LightUniformData> lightDataspack;
+	lightDataspack.reserve(lightref.size());
+
+	for (int  i = 0; i < lightref.size(); i++)
+	{
+		Drawable::UpdateUniformBuffer(currentImage, lightref[i].get());
+
+		if (lightref[i])
+		{
+			LightUniformData LightData;
+			LightData.positionAndLightType     = glm::vec4(lightref[i]->position,lightref[i]->lightType);
+			LightData.colorAndAmbientStrength  = glm::vec4(lightref[i]->color, lightref[i]->ambientStrength);
+			LightData.lightIntensityAndPadding = glm::vec4(lightref[i]->lightIntensity,0,0,0);
+
+			lightDataspack.push_back(LightData);
+		}
+	}
+
+	memcpy(FragmentUniformBuffersMappedMem[currentImage], lightDataspack.data(), lightDataspack.size() * sizeof(LightUniformData));
+
+}
 
 void FullScreenQuad::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)
 {

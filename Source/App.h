@@ -89,7 +89,6 @@ private:
 
 	std::vector<std::shared_ptr<Model>> Models;
 	std::vector<std::shared_ptr<Light>> lights;
-	std::shared_ptr<Light> light = nullptr;
 	std::shared_ptr<SkyBox> skyBox = nullptr;
 
 

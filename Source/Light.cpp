@@ -16,12 +16,13 @@ Light::Light(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* 
 	CreateVertexAndIndexBuffer();
 	createDescriptorSetLayout();
 
+	lightType       = 1;
 	position        = glm::vec3(1.0f, 1.0f, 1.0f);
 	rotation        = glm::vec3(1.0f, 1.0f, 1.0f);
 	scale           = glm::vec3(0.5f, 0.5f, 0.5f);
 	color           = glm::vec3(1.0f, 1.0f, 1.0f);
-	ambientStrength = 0.3;
-
+	ambientStrength = 0.009f;
+	lightIntensity = 3.0f;
 	transformMatrices.modelMatrix = glm::mat4(1.0f);
 	transformMatrices.modelMatrix = glm::translate(transformMatrices.modelMatrix, position);
 	transformMatrices.modelMatrix = glm::rotate   (transformMatrices.modelMatrix, glm::radians(rotation.x), glm::vec3(0.0f, 0.0f, 1.0f));

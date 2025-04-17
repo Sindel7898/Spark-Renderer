@@ -21,13 +21,13 @@ void main() {
     vec4 worldPos = ubo.model * vec4(inPosition, 1.0);
     Position = worldPos.xyz;
 
-    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
+    gl_Position = ubo.proj * ubo.view * worldPos;
     
     mat3 normalMatrix = transpose(inverse(mat3(ubo.model)));
 
-    vec3 T    = normalize(inTangent);
-    vec3 B    = normalize(inBiTangent);
-    vec3 N    = normalize(inNormal);
+    vec3 T    = normalize(normalMatrix * inTangent);
+    vec3 B    = normalize(normalMatrix * inBiTangent);
+    vec3 N    = normalize(normalMatrix * inNormal);
 
     TBN = mat3(T, B, N);
     fragTexCoord = inTexCoord;

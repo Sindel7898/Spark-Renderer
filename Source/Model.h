@@ -8,11 +8,7 @@
 #include "Light.h"
 #include "Drawable.h"
 
-struct LightUniformData {
-    alignas(16) glm::vec3  position;
-    alignas(16) glm::vec3  color;
-    alignas(16) float      ambientStrength;
-};
+
 
 class Model : public Drawable
 {
@@ -34,7 +30,7 @@ public:
     ImageData  normalTextureData;
     
 
-    LightUniformData lightData;
+   // LightUniformData lightData;
 private:
 
     std::string FilePath;

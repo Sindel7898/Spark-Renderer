@@ -48,11 +48,14 @@
 	};
 
 	skyBox = std::shared_ptr<SkyBox>(new SkyBox(filePaths, vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), SkyBoxDeleter{});
-	light = std::shared_ptr<Light>(new Light(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), LightDeleter{});
 	fullScreenQuad = std::shared_ptr<FullScreenQuad>(new FullScreenQuad(bufferManger.get(), vulkanContext.get(), commandPool));
 
-	lights.reserve(1);
-	lights.push_back(std::move(light));
+	lights.reserve(5);
+
+	for (int i = 0; i < 5; i++) {
+		std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), LightDeleter{});
+		lights.push_back(std::move(light));
+	}
 
 
 	createDescriptorPool();
@@ -93,7 +96,12 @@ void App::createDescriptorPool()
 	}
 
 	skyBox->createDescriptorSets(DescriptorPool);
-	lights[0]->createDescriptorSets(DescriptorPool);
+
+
+	for (auto& light : lights)
+	{
+		light->createDescriptorSets(DescriptorPool);
+	}
 }
 
 void App::createDepthTextureImage()
@@ -740,8 +748,12 @@ void App::Draw()
 }
 
 void App::updateUniformBuffer(uint32_t currentImage) {
+	
+	for (auto& light : lights)
+	{
+		light->UpdateUniformBuffer(currentImage, nullptr);
+	}
 
-	lights[0]->UpdateUniformBuffer(currentImage,nullptr);
 
 	for (auto& model : Models)
 	{
@@ -749,6 +761,8 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 	}
 
 	skyBox->UpdateUniformBuffer(currentImage,lights[0].get());
+
+	fullScreenQuad->UpdateUniformBuffer(currentImage, lights);
 }
 
 void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) {
@@ -820,7 +834,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		depthStencilAttachment.imageView = DepthTextureData.imageView;
 		depthStencilAttachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 		depthStencilAttachment.loadOp = vk::AttachmentLoadOp::eClear;
-		depthStencilAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
+		depthStencilAttachment.storeOp = vk::AttachmentStoreOp::eStore;
 		depthStencilAttachment.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 
 		vk::RenderingInfoKHR renderingInfo{};
@@ -895,6 +909,41 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			bufferManger->TransitionImage(commandBuffer, gbuffer.Normal.image, TransitionBacktoColorOutput);
 			bufferManger->TransitionImage(commandBuffer, gbuffer.Albedo.image, TransitionBacktoColorOutput);
 
+		}
+
+		{
+			vk::RenderingAttachmentInfoKHR LightPassColorAttachmentInfo{};
+			LightPassColorAttachmentInfo.imageView = LightingPassImageData.imageView;
+			LightPassColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			LightPassColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+			LightPassColorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+			LightPassColorAttachmentInfo.clearValue = clearColor;
+
+			vk::RenderingAttachmentInfo depthStencilAttachment;
+			depthStencilAttachment.imageView = DepthTextureData.imageView;
+			depthStencilAttachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+			depthStencilAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
+			depthStencilAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
+			depthStencilAttachment.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+
+			vk::RenderingInfoKHR renderingInfo{};
+			renderingInfo.renderArea.offset = imageoffset;
+			renderingInfo.renderArea.extent.height = userinterface->GetRenderTextureExtent().height;
+			renderingInfo.renderArea.extent.width = userinterface->GetRenderTextureExtent().width;
+			renderingInfo.layerCount = 1;
+			renderingInfo.colorAttachmentCount = 1;
+			renderingInfo.pColorAttachments = &LightPassColorAttachmentInfo;
+			renderingInfo.pDepthAttachment = &depthStencilAttachment;
+
+			commandBuffer.beginRendering(renderingInfo);
+
+			commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, LightgraphicsPipeline);
+
+			for (auto& light : lights)
+			{
+				light->Draw(commandBuffer, LightpipelineLayout, currentFrame);
+			}
+			commandBuffer.endRendering();
 		}
 	}
 

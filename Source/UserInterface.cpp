@@ -407,7 +407,9 @@ void UserInterface::DrawUi(bool& bRecreateDepth,int& DefferedDecider, VkDescript
 
 
 			ImGui::ColorEdit3 ("Color", glm::value_ptr(light->color));
+			ImGui::InputFloat("Light Intensity", &light->lightIntensity);
 			ImGui::InputFloat("Ambience Value", &light->ambientStrength);
+			ImGui::InputInt  ("LightType", &light->lightType);
 			ImGui::End();
 
 			ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, glm::value_ptr(LightModelMatrix));

@@ -16,18 +16,26 @@ struct GBuffer {
     ImageData Albedo;
 };
 
+struct LightUniformData {
+     glm::vec4  positionAndLightType;
+     glm::vec4  colorAndAmbientStrength;
+     glm::vec4  lightIntensityAndPadding;
+};
 class FullScreenQuad : public Drawable
 {
 public:
 
     FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext, vk::CommandPool commandpool);
     void CreateVertexAndIndexBuffer() override;
+    void CreateUniformBuffer() override;
     void createDescriptorSetLayout() override;
     void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer Gbuffer) ;
+    void UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref);
+    //void UpdateUniformBuffer(uint32_t currentImage, Light* lightref) override;
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
-    ////////////////Unneeded
 
     void CleanUp() ;
+   // LightUniformData lightData;
 
    private:
 
