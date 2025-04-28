@@ -42,6 +42,7 @@ public:
 
 
 	void createDescriptorPool();
+	void createTLAS();
 
 
 	void createCommandPool();
@@ -73,20 +74,20 @@ public:
 
 	vk::ShaderModule createShaderModule(const std::vector<char>& code);
 
-	void destroy_swapchain();
 	void destroy_DepthImage();
 
 	bool framebufferResized = false;
 private:
 
-	std::shared_ptr<Window> window = nullptr;
-	std::shared_ptr<VulkanContext> vulkanContext = nullptr;
-	std::shared_ptr<BufferManager> bufferManger = nullptr;
-	std::unique_ptr<MeshLoader> meshloader = nullptr;
-	std::shared_ptr<Camera> camera = nullptr;
-	std::shared_ptr<UserInterface> userinterface = nullptr;
-	std::shared_ptr<FullScreenQuad> fullScreenQuad = nullptr;
-
+	std::shared_ptr<Window>             window = nullptr;
+	std::shared_ptr<VulkanContext>      vulkanContext = nullptr;
+	std::shared_ptr<BufferManager>      bufferManger = nullptr;
+	std::unique_ptr<MeshLoader>         meshloader = nullptr;
+	std::shared_ptr<Camera>             camera = nullptr;
+    std::shared_ptr<UserInterface>      userinterface = nullptr;
+	
+	//Drawables
+	std::shared_ptr<FullScreenQuad>     fullScreenQuad = nullptr;
 	std::vector<std::shared_ptr<Model>> Models;
 	std::vector<std::shared_ptr<Light>> lights;
 	std::shared_ptr<SkyBox> skyBox = nullptr;

@@ -18,12 +18,11 @@
 
  App::App()
 {
-	window = std::shared_ptr<Window>(new Window(1920, 1080, "Vulkan Window"), WindowDeleter{});
-
-	vulkanContext = std::make_shared<VulkanContext>(*window);
-	bufferManger  = std::make_shared<BufferManager>(vulkanContext->LogicalDevice, vulkanContext->PhysicalDevice, vulkanContext->VulkanInstance);
-  	camera        = std::make_shared<Camera>(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, window->GetWindow());
-	userinterface = std::shared_ptr<UserInterface>(new UserInterface(vulkanContext.get(), window.get(), bufferManger.get()),UserInterfaceDeleter{});
+	window        = std::shared_ptr<Window>(new Window(1920, 1080, "Vulkan Window"), WindowDeleter);
+	vulkanContext = std::shared_ptr<VulkanContext>(new VulkanContext(*window), VulkanContextDeleter);
+	bufferManger  = std::shared_ptr<BufferManager>(new BufferManager (vulkanContext->LogicalDevice, vulkanContext->PhysicalDevice, vulkanContext->VulkanInstance), BufferManagerDeleter);
+  	camera        = std::shared_ptr<Camera>(new Camera (vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, window->GetWindow()));
+	userinterface = std::shared_ptr<UserInterface>(new UserInterface(vulkanContext.get(), window.get(), bufferManger.get()),UserInterfaceDeleter);
 	//glfwSetFramebufferSizeCallback(window->GetWindow(),);
 	glfwSetWindowUserPointer(window->GetWindow(), this);
 
@@ -31,10 +30,10 @@
 	//////////////////////////
 	createCommandPool();
 
-	Models.reserve(3);
+	Models.reserve(1);
 
-	for (int i = 0; i < 3; i++) {
-		auto model = std::shared_ptr<Model>(new Model("../Textures/Helmet/DamagedHelmet.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter{});
+	for (int i = 0; i < 1; i++) {
+		auto model = std::shared_ptr<Model>(new Model("../Textures/Helmet/DamagedHelmet.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 		Models.push_back(std::move(model));
 	}
 
@@ -47,17 +46,19 @@
 		"../Textures/skybox/negz.jpg"   // -Z (Back)
 	};
 
-	skyBox = std::shared_ptr<SkyBox>(new SkyBox(filePaths, vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), SkyBoxDeleter{});
-	fullScreenQuad = std::shared_ptr<FullScreenQuad>(new FullScreenQuad(bufferManger.get(), vulkanContext.get(), commandPool));
+	skyBox = std::shared_ptr<SkyBox>(new SkyBox(filePaths, vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), SkyBoxDeleter);
+	
+	
+	fullScreenQuad = std::shared_ptr<FullScreenQuad>(new FullScreenQuad(bufferManger.get(), vulkanContext.get(), commandPool), FullScreenQuadDeleter);
 
-	lights.reserve(5);
+	lights.reserve(0);
 
-	for (int i = 0; i < 5; i++) {
-		std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), LightDeleter{});
+	for (int i = 0; i < 1; i++) {
+		std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), LightDeleter);
 		lights.push_back(std::move(light));
 	}
 
-
+	//createTLAS();
 	createDescriptorPool();
 
 	createCommandBuffer();
@@ -102,6 +103,122 @@ void App::createDescriptorPool()
 	{
 		light->createDescriptorSets(DescriptorPool);
 	}
+}
+
+void App::createTLAS()
+{
+		vk::TransformMatrixKHR transformMatrix{};
+		glm::mat4 glmMatrix = Models[0]->GetModelMatrix();
+
+		for (int i = 0; i < 3; ++i)
+		{
+			for (int j = 0; j < 4; ++j)
+			{
+				transformMatrix.matrix[i][j] = glmMatrix[j][i]; // transpose access
+			}
+		}
+
+		vk::AccelerationStructureInstanceKHR instance{};
+		instance.transform = transformMatrix;
+		instance.instanceCustomIndex = 0;
+		instance.mask = 0xFF;
+		instance.instanceShaderBindingTableRecordOffset = 0;
+		instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+		instance.accelerationStructureReference = Models[0]->GetBLASAddressInfo();
+
+
+	VkDeviceSize InstanceBufferSize = sizeof(instance);
+
+	BufferData instancingBuffer = bufferManger->CreateBuffer(InstanceBufferSize,
+		vk::BufferUsageFlagBits::eShaderDeviceAddress |
+		vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
+		commandPool, vulkanContext->graphicsQueue);;
+
+	vk::BufferDeviceAddressInfoKHR InstanceBufferAddressInfo{};
+	InstanceBufferAddressInfo.buffer = instancingBuffer.buffer;
+
+	vk::DeviceAddress InstanceAddress = vulkanContext->LogicalDevice.getBufferAddress(&InstanceBufferAddressInfo);
+
+	vk::AccelerationStructureGeometryKHR accelerationStructureGeometry{};
+	accelerationStructureGeometry.geometryType = vk::GeometryTypeKHR::eInstances;
+	accelerationStructureGeometry.flags = vk::GeometryFlagBitsKHR::eOpaque;
+	accelerationStructureGeometry.geometry.instances.sType = vk::StructureType::eAccelerationStructureGeometryInstancesDataKHR;
+	accelerationStructureGeometry.geometry.instances.arrayOfPointers = VK_FALSE;
+	accelerationStructureGeometry.geometry.instances.data = InstanceAddress;
+
+
+	vk::AccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo{};
+	accelerationStructureBuildGeometryInfo.type = vk::AccelerationStructureTypeKHR::eTopLevel;
+	accelerationStructureBuildGeometryInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
+	accelerationStructureBuildGeometryInfo.geometryCount = 1;
+	accelerationStructureBuildGeometryInfo.mode = vk::BuildAccelerationStructureModeKHR::eBuild;
+	accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
+
+	uint32_t primitive_count = 1;
+
+	vk::AccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo{};
+
+	vulkanContext->vkGetAccelerationStructureBuildSizesKHR(
+		vulkanContext->LogicalDevice,
+		VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+		(VkAccelerationStructureBuildGeometryInfoKHR*)&accelerationStructureBuildGeometryInfo,
+		&primitive_count,
+		(VkAccelerationStructureBuildSizesInfoKHR*)&accelerationStructureBuildSizesInfo);
+
+
+	BufferData TlasBuffer = bufferManger->CreateBuffer(accelerationStructureBuildSizesInfo.accelerationStructureSize,
+		vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
+		vk::BufferUsageFlagBits::eShaderDeviceAddress,
+		commandPool, vulkanContext->graphicsQueue);
+
+
+	vk::AccelerationStructureCreateInfoKHR    accelerationStructureCreate_info{};
+	accelerationStructureCreate_info.buffer = TlasBuffer.buffer;
+	accelerationStructureCreate_info.size   = TlasBuffer.size;
+	accelerationStructureCreate_info.type   = vk::AccelerationStructureTypeKHR::eTopLevel;
+
+	vk::AccelerationStructureKHR TopLevelAS;
+
+	vulkanContext->vkCreateAccelerationStructureKHR(vulkanContext->LogicalDevice, (VkAccelerationStructureCreateInfoKHR*)&accelerationStructureCreate_info, nullptr, (VkAccelerationStructureKHR*)&TopLevelAS);
+
+
+	BufferData scratchBuffer = bufferManger->CreateBuffer(accelerationStructureBuildSizesInfo.buildScratchSize,
+		vk::BufferUsageFlagBits::eStorageBuffer |
+		vk::BufferUsageFlagBits::eShaderDeviceAddress,
+		commandPool, vulkanContext->graphicsQueue);
+
+	vk::BufferDeviceAddressInfoKHR StorageBufferAddressInfo{};
+	StorageBufferAddressInfo.buffer = scratchBuffer.buffer;
+
+	vk::DeviceAddress  StorageAddress = vulkanContext->LogicalDevice.getBufferAddress(&StorageBufferAddressInfo);
+
+	vk::AccelerationStructureBuildGeometryInfoKHR acceleraitonBuildGeometryInfo{};
+	acceleraitonBuildGeometryInfo.type = vk::AccelerationStructureTypeKHR::eTopLevel;
+	acceleraitonBuildGeometryInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
+	acceleraitonBuildGeometryInfo.mode = vk::BuildAccelerationStructureModeKHR::eBuild;
+	acceleraitonBuildGeometryInfo.dstAccelerationStructure = TopLevelAS;
+	acceleraitonBuildGeometryInfo.geometryCount = 1;
+	acceleraitonBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
+	acceleraitonBuildGeometryInfo.scratchData.deviceAddress = StorageAddress;
+
+	vk::AccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo{};
+	accelerationStructureBuildRangeInfo.primitiveCount = 1;
+	accelerationStructureBuildRangeInfo.primitiveOffset = 0;
+	accelerationStructureBuildRangeInfo.firstVertex = 0;
+	accelerationStructureBuildRangeInfo.transformOffset = 0;
+
+	std::vector<vk::AccelerationStructureBuildRangeInfoKHR*> accelerationBuildStructureRangeInfos = { &accelerationStructureBuildRangeInfo };
+
+	vk::CommandBuffer commandbuffer = bufferManger->CreateSingleUseCommandBuffer(commandPool);
+
+	vulkanContext->vkCmdBuildAccelerationStructuresKHR(
+		commandbuffer, 1,
+		reinterpret_cast<const VkAccelerationStructureBuildGeometryInfoKHR*>(&acceleraitonBuildGeometryInfo),
+		reinterpret_cast<const VkAccelerationStructureBuildRangeInfoKHR* const*>(accelerationBuildStructureRangeInfos.data()));
+
+
+	bufferManger->SubmitAndDestoyCommandBuffer(commandPool, commandbuffer, vulkanContext->graphicsQueue);
+
 }
 
 void App::createDepthTextureImage()
@@ -979,21 +1096,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	userinterface->RenderUi(commandBuffer, imageIndex);
 }
 
-
-void App::destroy_swapchain()
-{
-
-	for (size_t i = 0; i < vulkanContext->swapchainImageViews.size(); i++)
-	{
-		vulkanContext->LogicalDevice.destroyImageView(vulkanContext->swapchainImageViews[i], nullptr);
-	}
-
-	vulkanContext->LogicalDevice.destroySwapchainKHR(vulkanContext->swapChain, nullptr);
-
-	vulkanContext->swapchainImageViews.clear();
-
-}
-
 void App::destroy_DepthImage()
 {
 	bufferManger->DestroyImage(DepthTextureData);
@@ -1012,7 +1114,7 @@ void App::recreateSwapChain() {
 
 	vulkanContext->LogicalDevice.waitIdle();
 
-	destroy_swapchain();
+	vulkanContext->destroy_swapchain();
 
 	vulkanContext->create_swapchain();
 
@@ -1045,16 +1147,19 @@ void App::DestroyBuffers()
 
 	skyBox.reset();
 
+	fullScreenQuad.reset();
 	bufferManger->DestroyImage(DepthTextureData);
-
-	vmaDestroyAllocator(bufferManger->allocator);
+	bufferManger->DestroyImage(LightingPassImageData);
+	bufferManger->DestroyImage(gbuffer.Position);
+	bufferManger->DestroyImage(gbuffer.Albedo);
+	bufferManger->DestroyImage(gbuffer.Normal);
+	bufferManger.reset();
 }
 
 
  App::~App()
 {
 	userinterface.reset();
-	destroy_swapchain(); 
 	DestroyBuffers();
 
 	if (!commandBuffers.empty()) {
@@ -1063,24 +1168,24 @@ void App::DestroyBuffers()
 	}
 
 	vulkanContext->LogicalDevice.destroyCommandPool(commandPool);
-	vulkanContext->VulkanInstance.destroySurfaceKHR(vulkanContext->surface);
 	vulkanContext->LogicalDevice.destroyPipeline(FullScreenQuadgraphicsPipeline);
 	vulkanContext->LogicalDevice.destroyPipeline(SkyBoxgraphicsPipeline);
 	vulkanContext->LogicalDevice.destroyPipeline(LightgraphicsPipeline);
+	vulkanContext->LogicalDevice.destroyPipeline(geometryPassPipeline);
 
 	vulkanContext->LogicalDevice.destroyDescriptorPool(DescriptorPool);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(FullScreenQuadgraphicsPipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(SkyBoxpipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(LightpipelineLayout);
+	vulkanContext->LogicalDevice.destroyPipelineLayout(geometryPassPipelineLayout);
 
 	DestroySyncObjects();
-	vulkanContext->LogicalDevice.destroy();
 	vkb::destroy_debug_utils_messenger(vulkanContext->VulkanInstance, vulkanContext->Debug_Messenger);
-	vulkanContext->VulkanInstance.destroy();
+	vulkanContext.reset();
 
 	window.reset();
 #ifndef NDEBUG
-	_CrtDumpMemoryLeaks();  // Windows-only dev mode memory tracking
+	_CrtDumpMemoryLeaks();  
 #endif
 
 }

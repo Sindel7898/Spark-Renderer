@@ -1,5 +1,6 @@
 #include "AssetManager.h"
 #include "MeshLoader.h"
+#include "stb_image.h"
 
 AssetManager::AssetManager() {
 	meshloader = std::make_shared<MeshLoader>();
@@ -59,17 +60,25 @@ const StoredModelData& AssetManager::GetStoredModelData(const std::string FilePa
 
 AssetManager::~AssetManager() {
 
+	
 	for (auto& MapData : LoadedTextureData)
 	{
-		if (MapData.second[0].imageData) {
-			//stbi_image_free(MapData.second[0].imageData);
-			//MapData.second.imageData[0] = nullptr;
+
+		for (int i = 0; i < MapData.second.size(); i++)
+		{
+			if (MapData.second[i].imageData) {
+				stbi_image_free(MapData.second[i].imageData);
+			}
 		}
 	}
+	LoadedTextureData.clear();
 
 	for (auto& MapData : LoadedModelData)
 	{
 		MapData.second.IndexData.clear();
 		MapData.second.VertexData.clear();
 	}
+
+	LoadedModelData.clear();
+
 }

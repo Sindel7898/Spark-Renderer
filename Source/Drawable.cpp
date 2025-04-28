@@ -23,19 +23,33 @@ void Drawable::Destructor()
 
 	if (bufferManager)
 	{
-		bufferManager->DestroyBuffer(vertexBufferData);
-		bufferManager->DestroyBuffer(indexBufferData);
+		if (vertexBufferData.buffer)
+		{
+			bufferManager->DestroyBuffer(vertexBufferData);
+		}
+
+		if (vertexBufferData.buffer)
+		{
+			bufferManager->DestroyBuffer(indexBufferData);
+		}
+
 
 		for (auto& uniformBuffer : vertexUniformBuffers)
 		{
-			bufferManager->UnmapMemory(uniformBuffer);
-			bufferManager->DestroyBuffer(uniformBuffer);
+			if (uniformBuffer.buffer)
+			{
+				bufferManager->UnmapMemory(uniformBuffer);
+				bufferManager->DestroyBuffer(uniformBuffer);
+			}
 		}
 
 		for (auto& uniformBuffer : fragmentUniformBuffers)
 		{
-			bufferManager->UnmapMemory(uniformBuffer);
-			bufferManager->DestroyBuffer(uniformBuffer);
+			if (uniformBuffer.buffer)
+			{
+				bufferManager->UnmapMemory(uniformBuffer);
+				bufferManager->DestroyBuffer(uniformBuffer);
+			}
 		}
 
 		VertexUniformBuffersMappedMem.clear();

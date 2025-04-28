@@ -37,7 +37,7 @@ public:
     BufferManager(vk::Device& LogicalDevice, vk::PhysicalDevice& PhysicalDevice, vk::Instance& VulkanInstance);
     ~BufferManager();
 
-    BufferData CreateBuffer(VkDeviceSize BufferSize, vk::BufferUsageFlagBits BufferUse, vk::CommandPool commandpool, vk::Queue queue);
+    BufferData CreateBuffer(VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
 
 
     ImageData CreateCubeMap(std::array<const char*,6> FilePaths, vk::CommandPool commandpool, vk::Queue Queue);
@@ -53,11 +53,9 @@ public:
 
 
 
-
-    BufferData CreateGPUOptimisedBuffer(const void* Data, VkDeviceSize BufferSize, vk::BufferUsageFlagBits BufferUse, vk::CommandPool commandpool, vk::Queue queue);
+    BufferData CreateGPUOptimisedBuffer(const void* Data, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
 
     ImageData CreateTextureImage(stbi_uc* pixeldata, int texWidth, int textHeight,vk::Format ImageFormat,  vk::CommandPool commandpool, vk::Queue Queue);
-
 
     void DestroyBuffer(const BufferData& buffer);
 
@@ -79,3 +77,11 @@ private:
     vk::Instance& vulkanInstance;
 };
 
+static inline void BufferManagerDeleter(BufferManager* bufferManager) {
+
+    if (bufferManager)
+    {
+        vmaDestroyAllocator(bufferManager->allocator);
+        delete bufferManager;
+    }
+}

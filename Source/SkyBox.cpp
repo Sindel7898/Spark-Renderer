@@ -143,7 +143,6 @@ void SkyBox::CleanUp()
 {
 	
     bufferManager->DestroyImage(MeshTextureData);
-
 	Drawable::Destructor();
 }
 

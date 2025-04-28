@@ -34,29 +34,52 @@ void VulkanContext::InitVulkan()
 
 void VulkanContext::SelectGPU_CreateDevice()
 {
-	//Select Required Vulkan featuers 
-	vk::PhysicalDeviceVulkan13Features features_1_3{};
-	features_1_3.sType = vk::StructureType::ePhysicalDeviceVulkan13Features;
-	features_1_3.dynamicRendering = VK_TRUE;
-	features_1_3.synchronization2 = VK_TRUE;
+
+	// Ray tracing features
+	vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelFeature{};
+	accelFeature.sType = vk::StructureType::ePhysicalDeviceAccelerationStructureFeaturesKHR;
+	accelFeature.accelerationStructure = VK_TRUE;
+
+	vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeature{};
+	rtPipelineFeature.sType = vk::StructureType::ePhysicalDeviceRayTracingPipelineFeaturesKHR;
+	rtPipelineFeature.rayTracingPipeline = VK_TRUE;
+	rtPipelineFeature.pNext = &accelFeature;
+
 
 	vk::PhysicalDeviceVulkan12Features features_1_2{};
 	features_1_2.sType = vk::StructureType::ePhysicalDeviceVulkan12Features;
 	features_1_2.bufferDeviceAddress = VK_TRUE;
 	features_1_2.descriptorIndexing = VK_TRUE;
+	features_1_2.bufferDeviceAddress = VK_TRUE;
+	features_1_2.pNext = &rtPipelineFeature;
 
-	vk::PhysicalDeviceDescriptorIndexingFeatures indexingFeatures;
+
+	//Select Required Vulkan featuers 
+	vk::PhysicalDeviceVulkan13Features features_1_3{};
+	features_1_3.sType = vk::StructureType::ePhysicalDeviceVulkan13Features;
+	features_1_3.dynamicRendering = VK_TRUE;
+	features_1_3.synchronization2 = VK_TRUE;
+	features_1_3.pNext = &features_1_2;  
 
 	vk::PhysicalDeviceFeatures deviceFeatures{};
 	deviceFeatures.samplerAnisotropy = VK_TRUE;
 
+
 	vkb::PhysicalDeviceSelector selector{ VKB_Instance };
+
+	std::vector<const char*> deviceExtensions = {
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+		VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+		VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+		VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+		VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+		VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
+	};
 
 	vkb::PhysicalDevice physicalDevice = selector
 		.set_minimum_version(1, 3)
-		.set_required_features_13(features_1_3)
-		.set_required_features_12(features_1_2)
 		.set_required_features(deviceFeatures)
+		.add_required_extensions(deviceExtensions)
 		.set_surface(surface)
 		.select()
 		.value();
@@ -69,7 +92,10 @@ void VulkanContext::SelectGPU_CreateDevice()
 
 	//From the selecte device create a logical device
 	vkb::DeviceBuilder deviceBuilder{ physicalDevice };
-	vkb::Device   VKB_Device = deviceBuilder.build().value();
+	vkb::Device VKB_Device = deviceBuilder
+		.add_pNext(&features_1_3)
+		.build()
+		.value();
 	LogicalDevice = VKB_Device.device;
 
 
@@ -91,6 +117,13 @@ void VulkanContext::SelectGPU_CreateDevice()
 	graphicsQueue = VKB_Device.get_queue(vkb::QueueType::graphics).value();
 	presentQueue = VKB_Device.get_queue(vkb::QueueType::present).value();
 	graphicsQueueFamilyIndex = VKB_Device.get_queue_index(vkb::QueueType::graphics).value();
+
+	vkCreateAccelerationStructureKHR        = reinterpret_cast<PFN_vkCreateAccelerationStructureKHR>(vkGetDeviceProcAddr(LogicalDevice, "vkCreateAccelerationStructureKHR"));
+	vkDestroyAccelerationStructureKHR       = reinterpret_cast<PFN_vkDestroyAccelerationStructureKHR>(vkGetDeviceProcAddr(LogicalDevice, "vkDestroyAccelerationStructureKHR"));
+	vkGetAccelerationStructureBuildSizesKHR = reinterpret_cast<PFN_vkGetAccelerationStructureBuildSizesKHR>(vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureBuildSizesKHR"));
+	vkCmdBuildAccelerationStructuresKHR     = reinterpret_cast<PFN_vkCmdBuildAccelerationStructuresKHR>(vkGetDeviceProcAddr(LogicalDevice, "vkCmdBuildAccelerationStructuresKHR"));
+	vkGetAccelerationStructureDeviceAddressKHR = reinterpret_cast<PFN_vkGetAccelerationStructureDeviceAddressKHR>(vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureDeviceAddressKHR"));
+
 }
 
 void VulkanContext::createSurface()
@@ -132,8 +165,15 @@ void VulkanContext::create_swapchain()
 	
 	swapchainExtent = vkbswapChain.extent;
 	swapChain = vkbswapChain.swapchain;
-	swapchainImages = vkbswapChain.get_images().value();
-	swapchainImageViews = vkbswapChain.get_image_views().value();
+	
+	auto imageVector = vkbswapChain.get_images().value(); 
+
+	swapchainImages = std::vector<vk::Image>(imageVector.begin(), imageVector.end());
+
+
+	auto imageViews = vkbswapChain.get_image_views().value();
+
+	swapchainImageViews = std::vector<vk::ImageView>(imageViews.begin(), imageViews.end());
 }
 
 vk::Pipeline VulkanContext::createGraphicsPipeline(vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo, vk::PipelineShaderStageCreateInfo ShaderStages[], 
@@ -191,4 +231,19 @@ vk::Format VulkanContext::FindCompatableDepthFormat()
 			return format;
 		}
 	}
+}
+
+
+void VulkanContext::destroy_swapchain()
+{
+
+	for (size_t i = 0; i <swapchainImageViews.size(); i++)
+	{
+		LogicalDevice.destroyImageView(swapchainImageViews[i], nullptr);
+	}
+   
+	LogicalDevice.destroySwapchainKHR(swapChain, nullptr);
+
+	swapchainImageViews.clear();
+
 }

@@ -12,6 +12,7 @@ BufferManager::BufferManager(vk::Device& LogicalDevice, vk::PhysicalDevice& Phys
 	allocatorInfo.physicalDevice = physicalDevice;
 	allocatorInfo.device = logicalDevice;
 	allocatorInfo.instance = vulkanInstance;
+	allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 
 	if (vmaCreateAllocator(&allocatorInfo, &allocator) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create VMA allocator!");
@@ -19,7 +20,7 @@ BufferManager::BufferManager(vk::Device& LogicalDevice, vk::PhysicalDevice& Phys
 
 }
 
-BufferData BufferManager::CreateBuffer(VkDeviceSize BufferSize, vk::BufferUsageFlagBits BufferUse, vk::CommandPool commandpool, vk::Queue queue)
+BufferData BufferManager::CreateBuffer(VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue)
 {
 	VmaAllocationCreateInfo AllocationInfo = {};
 	AllocationInfo.usage = VMA_MEMORY_USAGE_AUTO;
@@ -49,7 +50,7 @@ BufferData BufferManager::CreateBuffer(VkDeviceSize BufferSize, vk::BufferUsageF
 }
 
 
-BufferData BufferManager::CreateGPUOptimisedBuffer(const void* Data, VkDeviceSize BufferSize, vk::BufferUsageFlagBits BufferUse, vk::CommandPool commandpool, vk::Queue queue)
+BufferData BufferManager::CreateGPUOptimisedBuffer(const void* Data, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue)
 {
 	VmaAllocationCreateInfo AllocationInfo = {};
 	AllocationInfo.usage = VMA_MEMORY_USAGE_AUTO;
@@ -84,7 +85,7 @@ BufferData BufferManager::CreateGPUOptimisedBuffer(const void* Data, VkDeviceSiz
 	VertexBufferInfo.sharingMode = vk::SharingMode::eExclusive;
 
 	VmaAllocationCreateInfo vertexAllocInfo = {};
-	vertexAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+	vertexAllocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
 	vertexAllocInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
 
 	VkBuffer cVertexbuffer;
@@ -509,6 +510,7 @@ vk::CommandBuffer BufferManager::CreateSingleUseCommandBuffer(vk::CommandPool co
 
 	CommandBuffer = logicalDevice.allocateCommandBuffers(CommandBufferAllocateInfo)[0];
 
+
 	vk::CommandBufferBeginInfo CommandBufferBeginInfo;
 	CommandBufferBeginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 
@@ -529,6 +531,7 @@ void BufferManager::SubmitAndDestoyCommandBuffer(vk::CommandPool commandpool,vk:
 
 	logicalDevice.freeCommandBuffers(commandpool, 1, &CommandBuffer);
 }
+
 
 void BufferManager::CopyDataToBuffer(const void* data,  BufferData Buffer) {
 	void* mappedData = MapMemory(Buffer);

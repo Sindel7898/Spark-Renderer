@@ -59,13 +59,10 @@ private:
 };
 
 
-struct LightDeleter {
-
-    void operator()(Light* light) const {
+static inline void LightDeleter(Light* light) {
 
         if (light) {
             light->CleanUp();
             delete light;
         }
-    }
 };

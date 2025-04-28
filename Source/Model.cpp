@@ -30,6 +30,7 @@ Model::Model(const std::string filepath, VulkanContext* vulkancontext, vk::Comma
 	CreateVertexAndIndexBuffer();
 	CreateUniformBuffer();
 	createDescriptorSetLayout();
+	//CreateBottomLevelAccelerationStructure();
 }
 
 void Model::LoadTextures()
@@ -51,11 +52,102 @@ void Model::CreateVertexAndIndexBuffer()
 	storedModelData = AssetManager::GetInstance().GetStoredModelData(FilePath);
 
 	VkDeviceSize VertexBufferSize = sizeof(storedModelData.VertexData[0]) * storedModelData.VertexData.size();
-	vertexBufferData = bufferManager->CreateGPUOptimisedBuffer(storedModelData.VertexData.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
+	vertexBufferData = bufferManager->CreateGPUOptimisedBuffer(storedModelData.VertexData.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress, commandPool, vulkanContext->graphicsQueue);
 
 	VkDeviceSize indexBufferSize = sizeof(uint32_t) * storedModelData.IndexData.size();
-	indexBufferData = bufferManager->CreateGPUOptimisedBuffer(storedModelData.IndexData.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
+	indexBufferData = bufferManager->CreateGPUOptimisedBuffer(storedModelData.IndexData.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR | vk::BufferUsageFlagBits::eShaderDeviceAddress, commandPool, vulkanContext->graphicsQueue);
 
+}
+
+void Model::CreateBottomLevelAccelerationStructure()
+{		
+	vk::BufferDeviceAddressInfoKHR vertexBufferAddressInfo{};
+	vertexBufferAddressInfo.buffer = vertexBufferData.buffer;
+	vk::DeviceAddress vertexAddress = vulkanContext->LogicalDevice.getBufferAddress(&vertexBufferAddressInfo);
+
+
+	vk::BufferDeviceAddressInfoKHR IndexBufferAddressInfo{};
+	IndexBufferAddressInfo.buffer = indexBufferData.buffer;
+	vk::DeviceAddress  indexAddress = vulkanContext->LogicalDevice.getBufferAddress(&IndexBufferAddressInfo);
+
+	uint32_t numTriangles = static_cast<uint32_t>(storedModelData.IndexData.size()) / 3;
+
+	vk::AccelerationStructureGeometryKHR accelerationStructureGeometry{};
+	accelerationStructureGeometry.flags = vk::GeometryFlagBitsKHR::eOpaque;
+	accelerationStructureGeometry.geometryType = vk::GeometryTypeKHR::eTriangles;
+	accelerationStructureGeometry.geometry.triangles.sType = vk::StructureType::eAccelerationStructureGeometryTrianglesDataKHR;
+	accelerationStructureGeometry.geometry.triangles.vertexFormat = vk::Format::eR32G32B32Sfloat;
+	accelerationStructureGeometry.geometry.triangles.vertexData = vertexAddress;
+	accelerationStructureGeometry.geometry.triangles.vertexStride = sizeof(storedModelData.VertexData[0]);
+	accelerationStructureGeometry.geometry.triangles.maxVertex = static_cast<uint32_t>(storedModelData.VertexData.size()) - 1;
+	accelerationStructureGeometry.geometry.triangles.indexType = vk::IndexType::eUint32;
+	accelerationStructureGeometry.geometry.triangles.indexData = indexAddress;
+	accelerationStructureGeometry.geometry.triangles.transformData.deviceAddress = 0;
+
+	vk::AccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo{};
+	accelerationStructureBuildGeometryInfo.type = vk::AccelerationStructureTypeKHR::eBottomLevel;
+	accelerationStructureBuildGeometryInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
+	accelerationStructureBuildGeometryInfo.geometryCount = 1;
+	accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
+
+	vk::AccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfoKHR;
+	
+	vulkanContext->vkGetAccelerationStructureBuildSizesKHR(vulkanContext->LogicalDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+		                                                  (VkAccelerationStructureBuildGeometryInfoKHR*)&accelerationStructureBuildGeometryInfo,
+		                                                  &numTriangles,
+		                                                  (VkAccelerationStructureBuildSizesInfoKHR*)&accelerationStructureBuildSizesInfoKHR);
+
+
+	bottomLevelASBuffer = bufferManager->CreateBuffer(accelerationStructureBuildSizesInfoKHR.accelerationStructureSize,
+		                                                        vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | 
+		                                                        vk::BufferUsageFlagBits::eShaderDeviceAddress, 
+		                                                        commandPool, vulkanContext->graphicsQueue);
+
+	vk::AccelerationStructureCreateInfoKHR  accelerationStructureCreate_info{};
+	accelerationStructureCreate_info.buffer = bottomLevelASBuffer.buffer;
+	accelerationStructureCreate_info.size   = bottomLevelASBuffer.size;
+	accelerationStructureCreate_info.type   = vk::AccelerationStructureTypeKHR::eBottomLevel;
+
+    vulkanContext->vkCreateAccelerationStructureKHR(vulkanContext->LogicalDevice, (VkAccelerationStructureCreateInfoKHR*)&accelerationStructureCreate_info, nullptr, (VkAccelerationStructureKHR*)&bottomLevelAS);
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+	scratchBuffer = bufferManager->CreateBuffer(accelerationStructureBuildSizesInfoKHR.buildScratchSize,
+		vk::BufferUsageFlagBits::eStorageBuffer |
+		vk::BufferUsageFlagBits::eShaderDeviceAddress,
+		commandPool, vulkanContext->graphicsQueue);
+
+	vk::BufferDeviceAddressInfoKHR StorageBufferAddressInfo{};
+	StorageBufferAddressInfo.buffer = scratchBuffer.buffer;
+
+	vk::DeviceAddress  StorageAddress = vulkanContext->LogicalDevice.getBufferAddress(&StorageBufferAddressInfo);
+
+	vk::AccelerationStructureBuildGeometryInfoKHR acceleraitonBuildGeometryInfo{};
+	acceleraitonBuildGeometryInfo.type = vk::AccelerationStructureTypeKHR::eBottomLevel;
+	acceleraitonBuildGeometryInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
+	acceleraitonBuildGeometryInfo.mode = vk::BuildAccelerationStructureModeKHR::eBuild;
+	acceleraitonBuildGeometryInfo.dstAccelerationStructure = bottomLevelAS;
+	acceleraitonBuildGeometryInfo.geometryCount = 1;
+	acceleraitonBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
+	acceleraitonBuildGeometryInfo.scratchData.deviceAddress = StorageAddress;
+
+	vk::AccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo{};
+	accelerationStructureBuildRangeInfo.primitiveCount = numTriangles;
+	accelerationStructureBuildRangeInfo.primitiveOffset = 0;
+	accelerationStructureBuildRangeInfo.firstVertex = 0;
+	accelerationStructureBuildRangeInfo.transformOffset = 0;
+
+	std::vector<vk::AccelerationStructureBuildRangeInfoKHR*> accelerationBuildStructureRangeInfos = { &accelerationStructureBuildRangeInfo };
+
+	vk::CommandBuffer commandbuffer =   bufferManager->CreateSingleUseCommandBuffer(commandPool);
+
+	vulkanContext->vkCmdBuildAccelerationStructuresKHR(
+		commandbuffer,1,
+		reinterpret_cast<const VkAccelerationStructureBuildGeometryInfoKHR*>(&acceleraitonBuildGeometryInfo),
+		reinterpret_cast<const VkAccelerationStructureBuildRangeInfoKHR* const*>(accelerationBuildStructureRangeInfos.data()));
+
+
+	bufferManager->SubmitAndDestoyCommandBuffer(commandPool, commandbuffer, vulkanContext->graphicsQueue);
 }
 
 void Model::CreateUniformBuffer()
@@ -77,17 +169,6 @@ void Model::CreateUniformBuffer()
 	//////////////////////////////////////////////////////////////
 	fragmentUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 	FragmentUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
-
-	//VkDeviceSize FragmentuniformBufferSize = sizeof(LightUniformData);
-
-	//for (size_t i = 0; i < fragmentUniformBuffers.size(); i++)
-	//{
-
-	//	BufferData bufferdata = bufferManager->CreateBuffer(FragmentuniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
-	//	fragmentUniformBuffers[i] = bufferdata;
-
-	//	FragmentUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
-	//}
 }
 
 
@@ -140,74 +221,6 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 	DescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
 
 	vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, DescriptorSets.data());
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////
-	////specifies what exactly to send
-	//for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-
-	//	vk::DescriptorBufferInfo vertexbufferInfo{};
-	//	vertexbufferInfo.buffer = vertexUniformBuffers[i].buffer;
-	//	vertexbufferInfo.offset = 0;
-	//	vertexbufferInfo.range = sizeof(TransformMatrices);
-
-	//	vk::WriteDescriptorSet VertexUniformdescriptorWrite{};
-	//	VertexUniformdescriptorWrite.dstSet = DescriptorSets[i];
-	//	VertexUniformdescriptorWrite.dstBinding = 0;
-	//	VertexUniformdescriptorWrite.dstArrayElement = 0;
-	//	VertexUniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-	//	VertexUniformdescriptorWrite.descriptorCount = 1;
-	//	VertexUniformdescriptorWrite.pBufferInfo = &vertexbufferInfo;
-	//	/////////////////////////////////////////////////////////////////////////////////////
-	//	vk::DescriptorBufferInfo FragmentbufferInfo{};
-	//	FragmentbufferInfo.buffer = fragmentUniformBuffers[i].buffer;
-	//	FragmentbufferInfo.offset = 0;
-	//	FragmentbufferInfo.range = sizeof(LightUniformData);
-
-	//	vk::WriteDescriptorSet FragmentUniformdescriptorWrite{};
-	//	FragmentUniformdescriptorWrite.dstSet = DescriptorSets[i];
-	//	FragmentUniformdescriptorWrite.dstBinding = 1;
-	//	FragmentUniformdescriptorWrite.dstArrayElement = 0;
-	//	FragmentUniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-	//	FragmentUniformdescriptorWrite.descriptorCount = 1;
-	//	FragmentUniformdescriptorWrite.pBufferInfo = &FragmentbufferInfo;
-	//	/////////////////////////////////////////////////////////////////////////////////////
-	//	vk::DescriptorImageInfo imageInfo{};
-	//	imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-	//	imageInfo.imageView = albedoTextureData.imageView;
-	//	imageInfo.sampler   = albedoTextureData.imageSampler;
-
-	//	vk::WriteDescriptorSet SamplerdescriptorWrite{};
-	//	SamplerdescriptorWrite.dstSet = DescriptorSets[i];
-	//	SamplerdescriptorWrite.dstBinding = 2;
-	//	SamplerdescriptorWrite.dstArrayElement = 0;
-	//	SamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	//	SamplerdescriptorWrite.descriptorCount = 1;
-	//	SamplerdescriptorWrite.pImageInfo = &imageInfo;
-	//	/////////////////////////////////////////////////////////////////////////////////////
-
-	//		/////////////////////////////////////////////////////////////////////////////////////
-	//	vk::DescriptorImageInfo NormalimageInfo{};
-	//	NormalimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-	//	NormalimageInfo.imageView = normalTextureData.imageView;
-	//	NormalimageInfo.sampler   = normalTextureData.imageSampler;
-
-	//	vk::WriteDescriptorSet NormalSamplerdescriptorWrite{};
-	//	NormalSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-	//	NormalSamplerdescriptorWrite.dstBinding = 3;
-	//	NormalSamplerdescriptorWrite.dstArrayElement = 0;
-	//	NormalSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	//	NormalSamplerdescriptorWrite.descriptorCount = 1;
-	//	NormalSamplerdescriptorWrite.pImageInfo = &NormalimageInfo;
-	//	/////////////////////////////////////////////////////////////////////////////////////
-
-
-	//	std::array<vk::WriteDescriptorSet, 4> descriptorWrites{ VertexUniformdescriptorWrite,
-	//		                                                    FragmentUniformdescriptorWrite ,
-	//		                                                    SamplerdescriptorWrite,NormalSamplerdescriptorWrite };
-
-	//	vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
-	//}
-
 
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
@@ -275,15 +288,6 @@ void Model::UpdateUniformBuffer(uint32_t currentImage, Light* lightref)
 	transformMatrices.projectionMatrix[1][1] *= -1;
 
 	memcpy(VertexUniformBuffersMappedMem[currentImage], &transformMatrices, sizeof(transformMatrices));
-
-	if (lightref)
-	{
-		/*lightData.position        = lightref->position;
-		lightData.color           = lightref->color;
-		lightData.ambientStrength = lightref->ambientStrength;
-		memcpy(FragmentUniformBuffersMappedMem[currentImage], &lightData, sizeof(lightData));*/
-	}
-
 }
 
 void Model::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)
@@ -302,9 +306,18 @@ void Model::CleanUp()
 	{
 		bufferManager->DestroyImage(albedoTextureData);
 		bufferManager->DestroyImage(normalTextureData);
+		/*bufferManager->DestroyBuffer(bottomLevelASBuffer);
+		bufferManager->DestroyBuffer(scratchBuffer);*/
 	}
 	
 	Drawable::Destructor();
+}
+
+uint64_t Model::GetBLASAddressInfo()
+{
+	vk::AccelerationStructureDeviceAddressInfoKHR addressInfo{};
+	addressInfo.accelerationStructure = bottomLevelAS;
+	return vulkanContext->vkGetAccelerationStructureDeviceAddressKHR(vulkanContext->LogicalDevice, (VkAccelerationStructureDeviceAddressInfoKHR*)&addressInfo);
 }
 
 

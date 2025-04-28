@@ -57,19 +57,18 @@ private:
      ImGuizmo::MODE currentGizmoMode;
 };
 
-struct UserInterfaceDeleter {
+static inline void UserInterfaceDeleter(UserInterface* userInterface) {
 
-    void operator()(UserInterface* userInterface) const {
+   if (userInterface) {
 
-        if (userInterface) {
-            userInterface->vulkancontext->LogicalDevice.waitIdle();
-            // ImGui_ImplVulkan_RemoveTexture(userInterface->RenderTextureId);
-             ImGui_ImplVulkan_Shutdown();
-             ImGui_ImplGlfw_Shutdown();
-             ImGui::DestroyContext(); 
-             userInterface->vulkancontext->LogicalDevice.destroyDescriptorPool(userInterface->ImGuiDescriptorPool);
-             userInterface->buffermanager->DestroyImage(userInterface->ImguiViewPortRenderTextureData);
+       userInterface->vulkancontext->LogicalDevice.waitIdle();
+       // ImGui_ImplVulkan_RemoveTexture(userInterface->RenderTextureId);
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext(); 
+        userInterface->vulkancontext->LogicalDevice.destroyDescriptorPool(userInterface->ImGuiDescriptorPool);
+        userInterface->buffermanager->DestroyImage(userInterface->ImguiViewPortRenderTextureData);
 
-        }
-    }
+   }
+ 
 };

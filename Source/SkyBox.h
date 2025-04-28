@@ -53,13 +53,10 @@ private:
 
 };
 
-struct SkyBoxDeleter {
-
-    void operator()(SkyBox* skyBox) const {
+static inline void SkyBoxDeleter(SkyBox* skyBox){
 
         if (skyBox) {
             skyBox->CleanUp();
             delete skyBox;
         }
-    }
 };

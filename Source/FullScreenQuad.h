@@ -53,4 +53,11 @@ public:
 
 };
 
+static inline void FullScreenQuadDeleter(FullScreenQuad* fullScreenQuad) {
+    if (fullScreenQuad)
+    {
+        fullScreenQuad->CleanUp();
+        delete fullScreenQuad;
+    }
+}
 

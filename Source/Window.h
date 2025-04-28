@@ -25,13 +25,9 @@ private:
     GLFWwindow* window;
 };
 
-struct WindowDeleter {
-
-    void operator()(Window* window) const {
-
-        if (window) {
-            window->CleanUp();
-            delete window;
-        }
+static inline void WindowDeleter(Window* window) {
+    if (window) {
+        window->CleanUp();
+        delete window;
     }
 };

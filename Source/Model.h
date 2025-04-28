@@ -15,11 +15,11 @@ class Model : public Drawable
 public:
 
     Model(const std::string  filepath, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger);
-    void ModelDeleter(Model* model);
     void LoadTextures();
     void CreateVertexAndIndexBuffer() override;
     void createDescriptorSetLayout() override;
     void createDescriptorSets(vk::DescriptorPool descriptorpool) override;
+    void CreateBottomLevelAccelerationStructure();
     void CreateUniformBuffer() override;
     void UpdateUniformBuffer(uint32_t currentImage, Light* lightref);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
@@ -30,21 +30,26 @@ public:
     ImageData  normalTextureData;
     
 
-   // LightUniformData lightData;
+    vk::AccelerationStructureKHR GetBottomLevelAS() const { return bottomLevelAS; }
+    uint64_t  GetBLASAddressInfo();
+    
 private:
 
     std::string FilePath;
     StoredModelData storedModelData;
+
+    vk::AccelerationStructureKHR bottomLevelAS;
+
+    BufferData bottomLevelASBuffer;
+    BufferData scratchBuffer;
 };
 
 
-struct ModelDeleter {
-
-    void operator()(Model* model) const {
+static inline void ModelDeleter(Model* model) {
 
         if (model) {
             model->CleanUp();
             delete model;
         }
-    }
+   
 };

@@ -24,7 +24,7 @@ void main() {
     vec3 FragPosition = texture(samplerposition,inTexCoord).rgb;
     vec3 Normal       = normalize(texture(samplerNormal,inTexCoord).rgb);
     vec3 Albedo       = texture(samplerAlbedo,inTexCoord).rgb;
-
+ 
     vec3  LightDir = vec3(1,1,1);
     float Attenuation = 1.0;
 
@@ -50,10 +50,12 @@ void main() {
          Attenuation       = 1.0 / (Constant + Linear * Distance + Quadratic * (Distance * Distance));
    }
 
-    float DifuseAmount = max(dot(Normal, LightDir), 0.0);
+    float DiffuseAmount = max(dot(Normal, LightDir), 0.0);
 
-    vec3 Diffuse = Albedo * light.colorAndAmbientStrength.rgb * DifuseAmount * Attenuation;
-    vec3 Ambient = Albedo * light.colorAndAmbientStrength.a;
+    vec3 Diffuse = Albedo * DiffuseAmount * Attenuation;
+
+    vec3 Ambient = Albedo * light.colorAndAmbientStrength.rgb *  light.colorAndAmbientStrength.a;
+
     vec3 FinalColor = (Diffuse + Ambient) * light.lightIntensityAndPadding.x;
 
    totalLighting += FinalColor;

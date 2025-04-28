@@ -52,7 +52,7 @@ public:
 private:
 	std::vector<ModelVertex> vertices;
 	std::vector<uint32_t > indices;
-
+	
 	std::string err;
 	std::string warn;
 };
