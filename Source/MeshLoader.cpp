@@ -8,6 +8,7 @@
 #include "tiny_gltf.h"
 #include "mikktspace.h"
 #include "AssetManager.h"
+#include <glm/gtc/type_ptr.hpp>
 
 MeshLoader::MeshLoader()
 {
@@ -26,139 +27,230 @@ void MeshLoader::LoadModel(const std::string& pFile)
         return;
     }
 
+   
+    LoadMaterials(pFile, model);
+
+    std::cout << "Loaded glTF: " << pFile << std::endl;
+
+    for (size_t i = 0; i < model.scenes.size(); i++)
+    {
+        const tinygltf::Scene& scene = model.scenes[i];
+
+        for (size_t j = 0; j < scene.nodes.size(); j++) {
+
+            const tinygltf::Node node = model.nodes[scene.nodes[j]];
+
+            ProcessNode(node, model);
+        }
+    }
+
+}
+
+void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
+{
     if (!model.textures.empty()) {
 
+        //create the list of textures array
         std::vector<StoredImageData> Textures;
 
-            StoredImageData TextureData;
+        // For all the "Materials group" get the individual material  
+        for (int i = 0; i < model.materials.size(); i++)
+        {
+            tinygltf::Material gltfMaterial = model.materials[i];
 
-       
-            const tinygltf::Material& material = model.materials[0];
-            int baseColorTextureindex = material.pbrMetallicRoughness.baseColorTexture.index;
+            //check if the material group has the albedo texture in its map
+            if (gltfMaterial.values.find("baseColorTexture") != gltfMaterial.values.end())
+            {
+                StoredImageData TextureData;
+                //get the texture from the material map
+                tinygltf::Texture& colortex = model.textures[gltfMaterial.values["baseColorTexture"].TextureIndex()];
+                //get the image from the texture
+                const tinygltf::Image& image = model.images[colortex.source];
 
-            const tinygltf::Texture& colortex = model.textures[baseColorTextureindex];
-            const tinygltf::Image& image = model.images[colortex.source];
-           
-            size_t colorimageSize = image.width * image.height * 4; 
-            TextureData.imageData = new stbi_uc[colorimageSize];
-            std::memcpy(TextureData.imageData, image.image.data(), colorimageSize);
-            TextureData.imageHeight = image.height;
-            TextureData.imageWidth = image.width;
+                size_t colorimageSize = image.width * image.height * 4;
+                TextureData.imageData = new stbi_uc[colorimageSize];
+                std::memcpy(TextureData.imageData, image.image.data(), colorimageSize);
+                TextureData.imageHeight = image.height;
+                TextureData.imageWidth = image.width;
 
-            Textures.push_back(TextureData);
-             /////////////////////////////////////////////////////////////////////
+                Textures.push_back(TextureData);
+            }
 
-            int noramlmaterialIndex = material.normalTexture.index;
-            const tinygltf::Texture& normaltex = model.textures[noramlmaterialIndex];
-            const tinygltf::Image& noramlimage = model.images[normaltex.source];
+            //check if the material group has the normal texture in its map. 
+            if (gltfMaterial.additionalValues.find("normalTexture") != gltfMaterial.additionalValues.end())
+            {
+                StoredImageData TextureData;
+                //get the texture from the material map
+                tinygltf::Texture& normaltex = model.textures[gltfMaterial.additionalValues["normalTexture"].TextureIndex()];
+                //get the image from the texture
+                const tinygltf::Image& image = model.images[normaltex.source];
 
-            size_t noramlimagesize = noramlimage.width * noramlimage.height * 4;
-            TextureData.imageData = new stbi_uc[noramlimagesize];
-            std::memcpy(TextureData.imageData, noramlimage.image.data(), noramlimagesize);
-            TextureData.imageHeight = noramlimage.height;
-            TextureData.imageWidth = noramlimage.width;
+                size_t normalimageSize = image.width * image.height * 4;
+                TextureData.imageData = new stbi_uc[normalimageSize];
+                std::memcpy(TextureData.imageData, image.image.data(), normalimageSize);
+                TextureData.imageHeight = image.height;
+                TextureData.imageWidth = image.width;
 
-            Textures.push_back(TextureData);
+                Textures.push_back(TextureData);
+            }
 
-            
+        }
+
         AssetManager::GetInstance().ParseTextureData(pFile, Textures);
     }
     else {
         std::cout << "No textures found in the model.\n";
     }
+}
 
-    std::cout << "Loaded glTF: " << pFile << std::endl;
+void MeshLoader::ProcessNode(const tinygltf::Node& node, const tinygltf::Model& model) {
+    // Process the current node
+    ProcessMesh(node, model);
 
-  
-    for (const auto& mesh : model.meshes) {
+    // Recursively process all child nodes
+    for (int childIndex : node.children) {
 
-        for (const auto& primitive : mesh.primitives) {
-            ProcessMesh(primitive, model);
-        }
+        const tinygltf::Node& childNode = model.nodes[childIndex];
+
+        ProcessNode(childNode, model);
     }
 }
 
-void MeshLoader::ProcessMesh(const tinygltf::Primitive& primitive, tinygltf::Model& model)
+
+void MeshLoader::ProcessMesh(const tinygltf::Node& inputNode, const tinygltf::Model& model)
 {
-    auto getBufferData = [&](const tinygltf::Accessor& accessor) -> const unsigned char* {
-        const auto& view = model.bufferViews[accessor.bufferView];
-        const auto& buffer = model.buffers[view.buffer];
-        return buffer.data.data() + view.byteOffset + accessor.byteOffset;
-        };
-    
-    size_t vertexCount;
-    const float* positions = nullptr;
-    const float* normals = nullptr;
-    const float* texcoords = nullptr;
+    std::vector<ModelVertex> vertices;
+    std::vector<uint32_t > indices;
 
-    if (primitive.attributes.find("POSITION") != primitive.attributes.end()) {
-        const auto& accessor = model.accessors[primitive.attributes.at("POSITION")];
-        positions = reinterpret_cast<const float*>(getBufferData(accessor));
-    
-        vertexCount = accessor.count;
-        vertices.reserve(vertexCount);
+    glm::mat4 ModelMatrix = glm::mat4(1.0f);
+
+
+ 
+
+    if (inputNode.matrix.size() == 16)
+    {
+        ModelMatrix = glm::make_mat4x4(inputNode.matrix.data());
     }
-    else {
-        std::cerr << "Missing POSITION attribute in mesh primitive." << std::endl;
-        return;
-    }
-
-    // NORMAL
-    if (primitive.attributes.find("NORMAL") != primitive.attributes.end()) {
-        const auto& accessor = model.accessors[primitive.attributes.at("NORMAL")];
-        normals = reinterpret_cast<const float*>(getBufferData(accessor));
-    }
-    else {
-        std::cerr << "Missing NORMAL attribute in mesh primitive." << std::endl;
-
-    }
-
-    // TEXCOORD_0
-    if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end()) {
-        const auto& accessor = model.accessors[primitive.attributes.at("TEXCOORD_0")];
-        texcoords = reinterpret_cast<const float*>(getBufferData(accessor));
-    }
-    else {
-        std::cerr << "Missing TEXCOORD_0 attribute in mesh primitive." << std::endl;
-
-    }
-
-    for (size_t i = 0; i < vertexCount; ++i) {
-        ModelVertex vertex;
-        vertex.vert = { positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2] };
-
-        if (normals) {
-            vertex.normal = { normals[i * 3 + 0], normals[i * 3 + 1], normals[i * 3 + 2] };
-        }
-        if (texcoords) {
-            vertex.text = { texcoords[i * 2 + 0], texcoords[i * 2 + 1] };
+    else
+    {
+        if (inputNode.translation.size() == 3)
+        {
+            ModelMatrix = glm::translate(ModelMatrix, glm::vec3(glm::make_vec3(inputNode.translation.data())));
         }
 
-        vertices.push_back(vertex);
+        if (inputNode.rotation.size() == 4)
+        {
+            glm::quat q = glm::make_quat(inputNode.rotation.data());
+            ModelMatrix *= glm::mat4(q);
+        }
+
+        if (inputNode.scale.size() == 3)
+        {
+            ModelMatrix = glm::scale(ModelMatrix, glm::vec3(glm::make_vec3(inputNode.scale.data())));
+        }
     }
 
-    const auto& indexAccessor = model.accessors[primitive.indices];
-    const unsigned char* indexData = getBufferData(indexAccessor);
-    uint32_t indexOffset = static_cast<uint32_t>(indices.size());
-    indices.reserve(indices.size() + indexAccessor.count);
 
-    switch (indexAccessor.componentType) {
-    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
-        for (size_t i = 0; i < indexAccessor.count; ++i)
-            indices.push_back(indexOffset + reinterpret_cast<const uint16_t*>(indexData)[i]);
-        break;
-    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
-        for (size_t i = 0; i < indexAccessor.count; ++i)
-            indices.push_back(indexOffset + static_cast<uint16_t>(reinterpret_cast<const uint32_t*>(indexData)[i]));
-        break;
-    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
-        for (size_t i = 0; i < indexAccessor.count; ++i)
-            indices.push_back(indexOffset + reinterpret_cast<const uint8_t*>(indexData)[i]);
-        break;
-    default:
-        std::cerr << "Unsupported index component type" << std::endl;
-        break;
+    if (inputNode.mesh > -1)
+    {
+        const tinygltf::Mesh mesh = model.meshes[inputNode.mesh];
+
+        for (size_t i = 0; i < mesh.primitives.size(); i++) {
+            uint32_t indexCount = 0;
+
+            const tinygltf::Primitive& glTFPrimitive = mesh.primitives[i];
+            
+            const float* positions = nullptr;
+            const float* normals = nullptr;
+            const float* texcoords = nullptr;
+            size_t vertexCount;
+
+
+            if (glTFPrimitive.attributes.find("POSITION") != glTFPrimitive.attributes.end()) {
+                const tinygltf::Accessor& accessor = model.accessors[glTFPrimitive.attributes.find("POSITION")->second];
+                const tinygltf::BufferView& view   = model.bufferViews[accessor.bufferView];
+                positions = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
+                vertexCount = accessor.count;
+            }
+
+            if (glTFPrimitive.attributes.find("NORMAL") != glTFPrimitive.attributes.end()) {
+                const tinygltf::Accessor& accessor = model.accessors[glTFPrimitive.attributes.find("NORMAL")->second];
+                const tinygltf::BufferView& view   = model.bufferViews[accessor.bufferView];
+                normals = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
+            }
+
+            if (glTFPrimitive.attributes.find("TEXCOORD_0") != glTFPrimitive.attributes.end()) {
+                const tinygltf::Accessor& accessor = model.accessors[glTFPrimitive.attributes.find("TEXCOORD_0")->second];
+                const tinygltf::BufferView& view   = model.bufferViews[accessor.bufferView];
+                texcoords = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
+            }
+
+            for (size_t i = 0; i < vertexCount; ++i) {
+                ModelVertex vertex;
+
+                if (positions)
+                {
+                    vertex.vert = { positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2] };
+                }
+                if (normals) {
+                    vertex.normal = { normals[i * 3 + 0], normals[i * 3 + 1], normals[i * 3 + 2] };
+                }
+                if (texcoords) {
+                    vertex.text = { texcoords[i * 2 + 0], texcoords[i * 2 + 1] };
+                }
+
+                vertices.push_back(vertex);
+            }
+
+            const auto& indexAccessor = model.accessors[glTFPrimitive.indices];
+            const tinygltf::BufferView& bufferView = model.bufferViews[indexAccessor.bufferView];
+            const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+
+            indexCount += static_cast<uint32_t>(indexAccessor.count);
+
+            switch (indexAccessor.componentType) {
+            case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
+                const uint32_t* buf = reinterpret_cast<const uint32_t*>(&buffer.data[indexAccessor.byteOffset + bufferView.byteOffset]);
+                for (size_t index = 0; index < indexAccessor.count; index++) {
+                    indices.push_back(buf[index]);
+                }
+                break;
+            }
+            case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
+                const uint16_t* buf = reinterpret_cast<const uint16_t*>(&buffer.data[indexAccessor.byteOffset + bufferView.byteOffset]);
+                for (size_t index = 0; index < indexAccessor.count; index++) {
+                    indices.push_back(buf[index]);
+                }
+                break;
+            }
+            case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
+                const uint8_t* buf = reinterpret_cast<const uint8_t*>(&buffer.data[indexAccessor.byteOffset + bufferView.byteOffset]);
+                for (size_t index = 0; index < indexAccessor.count; index++) {
+                    indices.push_back(buf[index]);
+                }
+                break;
+            }
+            default:
+                std::cerr << "Index component type " << indexAccessor.componentType << " not supported!" << std::endl;
+                return;
+            }
+
+
+        }
+
+        StoredModelData modeldata; 
+        modeldata.VertexData  = vertices;
+        modeldata.IndexData   = indices;
+        modeldata.modelMatrix = ModelMatrix;
+
+        std::string name = "model" + std::to_string(modelCount);
+
+        AssetManager::GetInstance().ParseModelData(name, modeldata);
+        modelCount++;
     }
+    
+    
+
 
     // Generate tangents and bitangents using MikkTSpace
     MikkTSpaceUserData userData(vertices, indices);
@@ -180,13 +272,13 @@ void MeshLoader::ProcessMesh(const tinygltf::Primitive& primitive, tinygltf::Mod
 }
 
 
-const std::vector<ModelVertex>& MeshLoader::GetVertices() {
-    return vertices;
-}
-
-const std::vector<uint32_t >& MeshLoader::GetIndices() {
-    return indices;
-}
+//const std::vector<ModelVertex>& MeshLoader::GetVertices() {
+//    return vertices;
+//}
+//
+//const std::vector<uint32_t >& MeshLoader::GetIndices() {
+//    return indices;
+//}
 
 
 int GetNumFaces(const SMikkTSpaceContext* context) {

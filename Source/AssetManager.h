@@ -19,19 +19,20 @@ public:
           return instance;
       }
 
-    void LoadModel(const std::string& filePath);
+    void ParseModelData(const std::string& filePath, StoredModelData modeldata);
     void ParseTextureData(const std::string FilePath, std::vector<StoredImageData> Textures);
     const StoredModelData& GetStoredModelData(const std::string FilePath);
 
     //////////////////////////////////////////////////////////
     const std::vector<StoredImageData>& GetStoredImageData(const std::string MeshFilePath);
 
+    std::shared_ptr<MeshLoader> meshloader;
+
 
 private:
     AssetManager();
     ~AssetManager();
 
-    std::shared_ptr<MeshLoader> meshloader;
     std::map<std::string, StoredModelData> LoadedModelData;
     std::map<std::string, std::vector<StoredImageData> > LoadedTextureData;
 };

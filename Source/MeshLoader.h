@@ -3,17 +3,20 @@
 #include "VertexInputLayouts.h"          
 #include <vector>
 #include <string>             
+#include"glm/glm.hpp"
 
 struct StoredModelData
 {
 	std::vector<ModelVertex> VertexData;
 	std::vector<uint32_t >    IndexData;
+	glm::mat4 modelMatrix;
 };
 
 namespace tinygltf {
 	class Model;
 	class TinyGLTF;
 	class Primitive;
+	class Node;
 }
 
 typedef unsigned char stbi_uc;
@@ -42,17 +45,22 @@ public:
 
 	MeshLoader();
 	void LoadModel(const std::string& pFile);
+	void LoadMaterials(const std::string& pFile, tinygltf::Model& model);
 
-	void ProcessMesh(const tinygltf::Primitive& primitive, tinygltf::Model& model);
+	void ProcessNode(const tinygltf::Node& node, const tinygltf::Model& model);
 
-	const std::vector<ModelVertex>& GetVertices();
-	const std::vector<uint32_t >& GetIndices();
+	void ProcessMesh(const tinygltf::Node& inputNode, const tinygltf::Model& model);
+
+	std::vector<std::string> meshnames;
+	//const std::vector<ModelVertex>& GetVertices();
+	//const std::vector<uint32_t >& GetIndices();
+	int modelCount = 0;
 
 
 private:
-	std::vector<ModelVertex> vertices;
-	std::vector<uint32_t > indices;
-	
+	/*std::vector<ModelVertex> vertices;
+	std::vector<uint32_t > indices;*/
+
 	std::string err;
 	std::string warn;
 };

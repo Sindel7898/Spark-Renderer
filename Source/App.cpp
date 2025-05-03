@@ -5,7 +5,6 @@
 #include <vk_mem_alloc.h>
 #include "Window.h"
 #include "Camera.h"
-#include "MeshLoader.h"
 #include "BufferManager.h"
 #include "VulkanContext.h"
 #include "FramesPerSecondCounter.h"
@@ -30,11 +29,20 @@
 	//////////////////////////
 	createCommandPool();
 
-	Models.reserve(1);
+	AssetManager::GetInstance().meshloader->LoadModel("../Textures/Sponza/Sponza.gltf");
 
-	for (int i = 0; i < 1; i++) {
-		auto model = std::shared_ptr<Model>(new Model("../Textures/Helmet/DamagedHelmet.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	int modelindex = 0;
+	int modelcount = AssetManager::GetInstance().meshloader->modelCount;
+	Models.reserve(modelcount);
+
+	for (int i = 0; i < modelcount; i++) {
+
+		std::string modelindexname = "model" + std::to_string(modelindex);
+
+		auto model = std::shared_ptr<Model>(new Model("../Textures/Sponza/Sponza.gltf", modelindexname, vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 		Models.push_back(std::move(model));
+
+		modelindex = i;
 	}
 
 	std::array<const char*, 6> filePaths{
@@ -308,6 +316,7 @@ void App::createGBuffer()
 
 void App::CreateGraphicsPipeline()
 {
+
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 	vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 	pipelineRenderingCreateInfo.colorAttachmentCount = 1;
@@ -991,6 +1000,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		{
 			model->Draw(commandBuffer, geometryPassPipelineLayout, currentFrame);
 		}
+
 		commandBuffer.endRendering();
 
 		{

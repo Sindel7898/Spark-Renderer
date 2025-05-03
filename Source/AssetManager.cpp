@@ -6,20 +6,14 @@ AssetManager::AssetManager() {
 	meshloader = std::make_shared<MeshLoader>();
 }
 
-void AssetManager::LoadModel(const std::string& filePath)
-{
-	meshloader = std::make_shared<MeshLoader>();
 
+
+void AssetManager::ParseModelData(const std::string& filePath, StoredModelData modeldata)
+{
 	//// If File Path is not in the Map Add it and the Data
 	if (LoadedModelData.find(filePath) == LoadedModelData.end()) {
 
-		meshloader->LoadModel(filePath);
-		StoredModelData infotostore{};
-
-		infotostore.VertexData = meshloader->GetVertices();
-		infotostore.IndexData = meshloader->GetIndices();
-
-		LoadedModelData.emplace(filePath, infotostore);
+		LoadedModelData.emplace(filePath, modeldata);
 	}
 }
 
@@ -40,7 +34,6 @@ const std::vector<StoredImageData>& AssetManager::GetStoredImageData(const std::
 		// Either load the data or throw an exception
 		throw std::runtime_error("Texture data not found for path: " + MeshFilePath);
 	}
-
 
 	return FoundData->second;
 }

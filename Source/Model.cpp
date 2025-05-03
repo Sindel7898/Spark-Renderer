@@ -4,10 +4,11 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
 
-Model::Model(const std::string filepath, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger)
+Model::Model(const std::string filepath, std::string modelindex, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger)
 	      : Drawable()
 {
 	FilePath = filepath;
+	ModelIndex = modelindex;
 	vulkanContext = vulkancontext;
 	commandPool = commandpool;
 	camera = rcamera;
@@ -25,7 +26,8 @@ Model::Model(const std::string filepath, VulkanContext* vulkancontext, vk::Comma
 	transformMatrices.modelMatrix = glm::scale(transformMatrices.modelMatrix, scale);
 
 
-	AssetManager::GetInstance().LoadModel(FilePath);
+	//AssetManager::GetInstance().meshloader->LoadModel(filepath);
+
 	LoadTextures();
 	CreateVertexAndIndexBuffer();
 	CreateUniformBuffer();
@@ -49,7 +51,9 @@ void Model::LoadTextures()
 void Model::CreateVertexAndIndexBuffer()
 {
 
-	storedModelData = AssetManager::GetInstance().GetStoredModelData(FilePath);
+	storedModelData = AssetManager::GetInstance().GetStoredModelData(ModelIndex);
+
+	transformMatrices.modelMatrix = storedModelData.modelMatrix;
 
 	VkDeviceSize VertexBufferSize = sizeof(storedModelData.VertexData[0]) * storedModelData.VertexData.size();
 	vertexBufferData = bufferManager->CreateGPUOptimisedBuffer(storedModelData.VertexData.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);

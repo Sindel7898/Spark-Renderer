@@ -85,7 +85,6 @@ private:
 	std::shared_ptr<Window>             window = nullptr;
 	std::shared_ptr<VulkanContext>      vulkanContext = nullptr;
 	std::shared_ptr<BufferManager>      bufferManger = nullptr;
-	std::unique_ptr<MeshLoader>         meshloader = nullptr;
 	std::shared_ptr<Camera>             camera = nullptr;
     std::shared_ptr<UserInterface>      userinterface = nullptr;
 	

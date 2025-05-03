@@ -14,7 +14,7 @@ class Model : public Drawable
 {
 public:
 
-    Model(const std::string  filepath, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger);
+    Model(const std::string filepath, std::string modelindex, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger);
     void LoadTextures();
     void CreateVertexAndIndexBuffer() override;
     void createDescriptorSetLayout() override;
@@ -36,6 +36,8 @@ public:
 private:
 
     std::string FilePath;
+    std::string ModelIndex;;
+
     StoredModelData storedModelData;
 
     //vk::AccelerationStructureKHR bottomLevelAS;
