@@ -14,9 +14,11 @@ layout(location = 0) out vec3  texCoord;
 
 void main() {
     
-    mat4 viewRotOnly = mat4(mat3(ubo.view));
-    vec4 pos = ubo.proj * viewRotOnly *  vec4(inPosition, 1.0);
-    gl_Position = pos.xyww;
+    mat4 viewNoTranslation  = mat4(mat3(ubo.view));
+    vec4 pos = ubo.proj * viewNoTranslation  *  vec4(inPosition, 1.0);
+    gl_Position = pos;
+    gl_Position.z = gl_Position.w; 
+
     texCoord = inPosition;
 
 }

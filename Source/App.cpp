@@ -48,7 +48,6 @@
 
 	skyBox = std::shared_ptr<SkyBox>(new SkyBox(filePaths, vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), SkyBoxDeleter);
 	
-	
 	fullScreenQuad = std::shared_ptr<FullScreenQuad>(new FullScreenQuad(bufferManger.get(), vulkanContext.get(), commandPool), FullScreenQuadDeleter);
 
 	lights.reserve(0);
@@ -63,11 +62,10 @@
 
 	createCommandBuffer();
 	CreateGraphicsPipeline();
-	ViewPortImageData = userinterface->CreateViewPortRenderTexture(1920, 1080);
-
 	createDepthTextureImage();
 	createGBuffer();
 }
+
 
 
 void App::createDescriptorPool()
@@ -105,126 +103,127 @@ void App::createDescriptorPool()
 	}
 }
 
-void App::createTLAS()
-{
-		vk::TransformMatrixKHR transformMatrix{};
-		glm::mat4 glmMatrix = Models[0]->GetModelMatrix();
-
-		for (int i = 0; i < 3; ++i)
-		{
-			for (int j = 0; j < 4; ++j)
-			{
-				transformMatrix.matrix[i][j] = glmMatrix[j][i]; // transpose access
-			}
-		}
-
-		vk::AccelerationStructureInstanceKHR instance{};
-		instance.transform = transformMatrix;
-		instance.instanceCustomIndex = 0;
-		instance.mask = 0xFF;
-		instance.instanceShaderBindingTableRecordOffset = 0;
-		instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
-		instance.accelerationStructureReference = Models[0]->GetBLASAddressInfo();
-
-
-	VkDeviceSize InstanceBufferSize = sizeof(instance);
-
-	BufferData instancingBuffer = bufferManger->CreateBuffer(InstanceBufferSize,
-		vk::BufferUsageFlagBits::eShaderDeviceAddress |
-		vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
-		commandPool, vulkanContext->graphicsQueue);;
-
-	vk::BufferDeviceAddressInfoKHR InstanceBufferAddressInfo{};
-	InstanceBufferAddressInfo.buffer = instancingBuffer.buffer;
-
-	vk::DeviceAddress InstanceAddress = vulkanContext->LogicalDevice.getBufferAddress(&InstanceBufferAddressInfo);
-
-	vk::AccelerationStructureGeometryKHR accelerationStructureGeometry{};
-	accelerationStructureGeometry.geometryType = vk::GeometryTypeKHR::eInstances;
-	accelerationStructureGeometry.flags = vk::GeometryFlagBitsKHR::eOpaque;
-	accelerationStructureGeometry.geometry.instances.sType = vk::StructureType::eAccelerationStructureGeometryInstancesDataKHR;
-	accelerationStructureGeometry.geometry.instances.arrayOfPointers = VK_FALSE;
-	accelerationStructureGeometry.geometry.instances.data = InstanceAddress;
-
-
-	vk::AccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo{};
-	accelerationStructureBuildGeometryInfo.type = vk::AccelerationStructureTypeKHR::eTopLevel;
-	accelerationStructureBuildGeometryInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
-	accelerationStructureBuildGeometryInfo.geometryCount = 1;
-	accelerationStructureBuildGeometryInfo.mode = vk::BuildAccelerationStructureModeKHR::eBuild;
-	accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
-
-	uint32_t primitive_count = 1;
-
-	vk::AccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo{};
-
-	vulkanContext->vkGetAccelerationStructureBuildSizesKHR(
-		vulkanContext->LogicalDevice,
-		VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
-		(VkAccelerationStructureBuildGeometryInfoKHR*)&accelerationStructureBuildGeometryInfo,
-		&primitive_count,
-		(VkAccelerationStructureBuildSizesInfoKHR*)&accelerationStructureBuildSizesInfo);
-
-
-	BufferData TlasBuffer = bufferManger->CreateBuffer(accelerationStructureBuildSizesInfo.accelerationStructureSize,
-		vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
-		vk::BufferUsageFlagBits::eShaderDeviceAddress,
-		commandPool, vulkanContext->graphicsQueue);
-
-
-	vk::AccelerationStructureCreateInfoKHR    accelerationStructureCreate_info{};
-	accelerationStructureCreate_info.buffer = TlasBuffer.buffer;
-	accelerationStructureCreate_info.size   = TlasBuffer.size;
-	accelerationStructureCreate_info.type   = vk::AccelerationStructureTypeKHR::eTopLevel;
-
-	vk::AccelerationStructureKHR TopLevelAS;
-
-	vulkanContext->vkCreateAccelerationStructureKHR(vulkanContext->LogicalDevice, (VkAccelerationStructureCreateInfoKHR*)&accelerationStructureCreate_info, nullptr, (VkAccelerationStructureKHR*)&TopLevelAS);
-
-
-	BufferData scratchBuffer = bufferManger->CreateBuffer(accelerationStructureBuildSizesInfo.buildScratchSize,
-		vk::BufferUsageFlagBits::eStorageBuffer |
-		vk::BufferUsageFlagBits::eShaderDeviceAddress,
-		commandPool, vulkanContext->graphicsQueue);
-
-	vk::BufferDeviceAddressInfoKHR StorageBufferAddressInfo{};
-	StorageBufferAddressInfo.buffer = scratchBuffer.buffer;
-
-	vk::DeviceAddress  StorageAddress = vulkanContext->LogicalDevice.getBufferAddress(&StorageBufferAddressInfo);
-
-	vk::AccelerationStructureBuildGeometryInfoKHR acceleraitonBuildGeometryInfo{};
-	acceleraitonBuildGeometryInfo.type = vk::AccelerationStructureTypeKHR::eTopLevel;
-	acceleraitonBuildGeometryInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
-	acceleraitonBuildGeometryInfo.mode = vk::BuildAccelerationStructureModeKHR::eBuild;
-	acceleraitonBuildGeometryInfo.dstAccelerationStructure = TopLevelAS;
-	acceleraitonBuildGeometryInfo.geometryCount = 1;
-	acceleraitonBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
-	acceleraitonBuildGeometryInfo.scratchData.deviceAddress = StorageAddress;
-
-	vk::AccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo{};
-	accelerationStructureBuildRangeInfo.primitiveCount = 1;
-	accelerationStructureBuildRangeInfo.primitiveOffset = 0;
-	accelerationStructureBuildRangeInfo.firstVertex = 0;
-	accelerationStructureBuildRangeInfo.transformOffset = 0;
-
-	std::vector<vk::AccelerationStructureBuildRangeInfoKHR*> accelerationBuildStructureRangeInfos = { &accelerationStructureBuildRangeInfo };
-
-	vk::CommandBuffer commandbuffer = bufferManger->CreateSingleUseCommandBuffer(commandPool);
-
-	vulkanContext->vkCmdBuildAccelerationStructuresKHR(
-		commandbuffer, 1,
-		reinterpret_cast<const VkAccelerationStructureBuildGeometryInfoKHR*>(&acceleraitonBuildGeometryInfo),
-		reinterpret_cast<const VkAccelerationStructureBuildRangeInfoKHR* const*>(accelerationBuildStructureRangeInfos.data()));
-
-
-	bufferManger->SubmitAndDestoyCommandBuffer(commandPool, commandbuffer, vulkanContext->graphicsQueue);
-
-}
+//void App::createTLAS()
+//{
+//		vk::TransformMatrixKHR transformMatrix{};
+//		glm::mat4 glmMatrix = Models[0]->GetModelMatrix();
+//
+//		for (int i = 0; i < 3; ++i)
+//		{
+//			for (int j = 0; j < 4; ++j)
+//			{
+//				transformMatrix.matrix[i][j] = glmMatrix[j][i]; // transpose access
+//			}
+//		}
+//
+//		vk::AccelerationStructureInstanceKHR instance{};
+//		instance.transform = transformMatrix;
+//		instance.instanceCustomIndex = 0;
+//		instance.mask = 0xFF;
+//		instance.instanceShaderBindingTableRecordOffset = 0;
+//		instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+//		instance.accelerationStructureReference = Models[0]->GetBLASAddressInfo();
+//
+//
+//	VkDeviceSize InstanceBufferSize = sizeof(instance);
+//
+//	BufferData instancingBuffer = bufferManger->CreateBuffer(InstanceBufferSize,
+//		vk::BufferUsageFlagBits::eShaderDeviceAddress |
+//		vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR,
+//		commandPool, vulkanContext->graphicsQueue);;
+//
+//	vk::BufferDeviceAddressInfoKHR InstanceBufferAddressInfo{};
+//	InstanceBufferAddressInfo.buffer = instancingBuffer.buffer;
+//
+//	vk::DeviceAddress InstanceAddress = vulkanContext->LogicalDevice.getBufferAddress(&InstanceBufferAddressInfo);
+//
+//	vk::AccelerationStructureGeometryKHR accelerationStructureGeometry{};
+//	accelerationStructureGeometry.geometryType = vk::GeometryTypeKHR::eInstances;
+//	accelerationStructureGeometry.flags = vk::GeometryFlagBitsKHR::eOpaque;
+//	accelerationStructureGeometry.geometry.instances.sType = vk::StructureType::eAccelerationStructureGeometryInstancesDataKHR;
+//	accelerationStructureGeometry.geometry.instances.arrayOfPointers = VK_FALSE;
+//	accelerationStructureGeometry.geometry.instances.data = InstanceAddress;
+//
+//
+//	vk::AccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo{};
+//	accelerationStructureBuildGeometryInfo.type = vk::AccelerationStructureTypeKHR::eTopLevel;
+//	accelerationStructureBuildGeometryInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
+//	accelerationStructureBuildGeometryInfo.geometryCount = 1;
+//	accelerationStructureBuildGeometryInfo.mode = vk::BuildAccelerationStructureModeKHR::eBuild;
+//	accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
+//
+//	uint32_t primitive_count = 1;
+//
+//	vk::AccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo{};
+//
+//	vulkanContext->vkGetAccelerationStructureBuildSizesKHR(
+//		vulkanContext->LogicalDevice,
+//		VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+//		(VkAccelerationStructureBuildGeometryInfoKHR*)&accelerationStructureBuildGeometryInfo,
+//		&primitive_count,
+//		(VkAccelerationStructureBuildSizesInfoKHR*)&accelerationStructureBuildSizesInfo);
+//
+//
+//	BufferData TlasBuffer = bufferManger->CreateBuffer(accelerationStructureBuildSizesInfo.accelerationStructureSize,
+//		vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
+//		vk::BufferUsageFlagBits::eShaderDeviceAddress,
+//		commandPool, vulkanContext->graphicsQueue);
+//
+//
+//	vk::AccelerationStructureCreateInfoKHR    accelerationStructureCreate_info{};
+//	accelerationStructureCreate_info.buffer = TlasBuffer.buffer;
+//	accelerationStructureCreate_info.size   = TlasBuffer.size;
+//	accelerationStructureCreate_info.type   = vk::AccelerationStructureTypeKHR::eTopLevel;
+//
+//	vk::AccelerationStructureKHR TopLevelAS;
+//
+//	vulkanContext->vkCreateAccelerationStructureKHR(vulkanContext->LogicalDevice, (VkAccelerationStructureCreateInfoKHR*)&accelerationStructureCreate_info, nullptr, (VkAccelerationStructureKHR*)&TopLevelAS);
+//
+//
+//	BufferData scratchBuffer = bufferManger->CreateBuffer(accelerationStructureBuildSizesInfo.buildScratchSize,
+//		vk::BufferUsageFlagBits::eStorageBuffer |
+//		vk::BufferUsageFlagBits::eShaderDeviceAddress,
+//		commandPool, vulkanContext->graphicsQueue);
+//
+//	vk::BufferDeviceAddressInfoKHR StorageBufferAddressInfo{};
+//	StorageBufferAddressInfo.buffer = scratchBuffer.buffer;
+//
+//	vk::DeviceAddress  StorageAddress = vulkanContext->LogicalDevice.getBufferAddress(&StorageBufferAddressInfo);
+//
+//	vk::AccelerationStructureBuildGeometryInfoKHR acceleraitonBuildGeometryInfo{};
+//	acceleraitonBuildGeometryInfo.type = vk::AccelerationStructureTypeKHR::eTopLevel;
+//	acceleraitonBuildGeometryInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
+//	acceleraitonBuildGeometryInfo.mode = vk::BuildAccelerationStructureModeKHR::eBuild;
+//	acceleraitonBuildGeometryInfo.dstAccelerationStructure = TopLevelAS;
+//	acceleraitonBuildGeometryInfo.geometryCount = 1;
+//	acceleraitonBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
+//	acceleraitonBuildGeometryInfo.scratchData.deviceAddress = StorageAddress;
+//
+//	vk::AccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo{};
+//	accelerationStructureBuildRangeInfo.primitiveCount = 1;
+//	accelerationStructureBuildRangeInfo.primitiveOffset = 0;
+//	accelerationStructureBuildRangeInfo.firstVertex = 0;
+//	accelerationStructureBuildRangeInfo.transformOffset = 0;
+//
+//	std::vector<vk::AccelerationStructureBuildRangeInfoKHR*> accelerationBuildStructureRangeInfos = { &accelerationStructureBuildRangeInfo };
+//
+//	vk::CommandBuffer commandbuffer = bufferManger->CreateSingleUseCommandBuffer(commandPool);
+//
+//	vulkanContext->vkCmdBuildAccelerationStructuresKHR(
+//		commandbuffer, 1,
+//		reinterpret_cast<const VkAccelerationStructureBuildGeometryInfoKHR*>(&acceleraitonBuildGeometryInfo),
+//		reinterpret_cast<const VkAccelerationStructureBuildRangeInfoKHR* const*>(accelerationBuildStructureRangeInfos.data()));
+//
+//
+//	bufferManger->SubmitAndDestoyCommandBuffer(commandPool, commandbuffer, vulkanContext->graphicsQueue);
+//
+//}
 
 void App::createDepthTextureImage()
 {
+	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
-	DepthTextureData = bufferManger->CreateImage(userinterface->GetRenderTextureExtent(), vulkanContext->FindCompatableDepthFormat(), vk::ImageUsageFlagBits::eDepthStencilAttachment);
+	DepthTextureData = bufferManger->CreateImage(swapchainextent, vulkanContext->FindCompatableDepthFormat(), vk::ImageUsageFlagBits::eDepthStencilAttachment);
 	DepthTextureData.imageView = bufferManger->CreateImageView(DepthTextureData.image, vulkanContext->FindCompatableDepthFormat(), vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
 
 	vk::CommandBuffer commandBuffer = bufferManger->CreateSingleUseCommandBuffer(commandPool);
@@ -251,19 +250,21 @@ void App::createDepthTextureImage()
 void App::createGBuffer()
 {
 
-	gbuffer.Position = bufferManger->CreateImage(userinterface->GetRenderTextureExtent(), vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
+
+	gbuffer.Position = bufferManger->CreateImage(swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	gbuffer.Position.imageView = bufferManger->CreateImageView(gbuffer.Position.image, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	gbuffer.Position.imageSampler = bufferManger->CreateImageSampler();
 
-	gbuffer.Normal = bufferManger->CreateImage(userinterface->GetRenderTextureExtent(), vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.Normal = bufferManger->CreateImage(swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	gbuffer.Normal.imageView = bufferManger->CreateImageView(gbuffer.Normal.image, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	gbuffer.Normal.imageSampler = bufferManger->CreateImageSampler();
 
-	gbuffer.Albedo = bufferManger->CreateImage(userinterface->GetRenderTextureExtent(), vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.Albedo = bufferManger->CreateImage(swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	gbuffer.Albedo.imageView = bufferManger->CreateImageView(gbuffer.Albedo.image, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
 	gbuffer.Albedo.imageSampler = bufferManger->CreateImageSampler();
 
-	LightingPassImageData = bufferManger->CreateImage(userinterface->GetRenderTextureExtent(), vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	LightingPassImageData = bufferManger->CreateImage(swapchainextent, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	LightingPassImageData.imageView = bufferManger->CreateImageView(LightingPassImageData.image, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
 	LightingPassImageData.imageSampler = bufferManger->CreateImageSampler();
 
@@ -304,6 +305,7 @@ void App::createGBuffer()
 		                                          gbuffer.Albedo.imageView,
 		                                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
+
 void App::CreateGraphicsPipeline()
 {
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -529,9 +531,9 @@ void App::CreateGraphicsPipeline()
 		vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo ,FragmentShaderStageInfo };
 
 		vk::PipelineDepthStencilStateCreateInfo depthStencilState;
-		  										depthStencilState.depthTestEnable = vk::False;
+		  										depthStencilState.depthTestEnable = vk::True;
 												depthStencilState.depthWriteEnable = vk::False;
-												depthStencilState.depthCompareOp = vk::CompareOp::eLess;
+												depthStencilState.depthCompareOp = vk::CompareOp::eLessOrEqual;
 												depthStencilState.minDepthBounds = 0.0f;
 												depthStencilState.maxDepthBounds = 1.0f;
 												depthStencilState.stencilTestEnable = VK_FALSE;
@@ -764,12 +766,14 @@ void App::Run()
 		camera->Update(deltaTime);
 
 		//ZoneScopedN("UI");
-		if (bRecreateDepth)
+	/*	if (bRecreateDepth)
 		{
 			destroy_DepthImage();
+			destroy_GbufferImages();
 			createDepthTextureImage();
+			createGBuffer();
 			bRecreateDepth = false;
-		}
+		}*/
 
 		userinterface->DrawUi(bRecreateDepth, DefferedDecider, FinalRenderTextureId, PositionRenderTextureId, 
 			                                                   NormalTextureId, AlbedoTextureId, camera.get(), Models, lights);
@@ -812,7 +816,7 @@ void App::Draw()
 	recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
 	vulkanContext->LogicalDevice.resetFences(1, &inFlightFences[currentFrame]);
-	
+
 	 // Step 5: Set up synchronization for rendering
      // The GPU will wait for the imageAvailableSemaphore to be signaled before starting rendering.
     // It will wait at the eColorAttachmentOutput stage, which is where color attachment writes occur
@@ -884,25 +888,45 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 
 void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) {
 
+	vk::CommandBufferBeginInfo begininfo{};
+	begininfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+	commandBuffer.begin(begininfo);
+
 	vk::ClearValue clearColor{};
-	clearColor.color = { 0.0f, 0.0f, 0.0f, 1.0f };
+	clearColor.color = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 	VkOffset2D imageoffset = { 0, 0 };
+
+	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
 	vk::Viewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(userinterface->GetRenderTextureExtent().width);
-	viewport.height = static_cast<float>(userinterface->GetRenderTextureExtent().height);
+	viewport.width =  vulkanContext->swapchainExtent.width;
+	viewport.height = vulkanContext->swapchainExtent.height;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
 	vk::Rect2D scissor{};
 	scissor.offset = imageoffset;
-	scissor.extent.width = userinterface->GetRenderTextureExtent().width;
-	scissor.extent.height = userinterface->GetRenderTextureExtent().height;
+	scissor.extent.width =  vulkanContext->swapchainExtent.width;
+	scissor.extent.height = vulkanContext->swapchainExtent.height;
 
 	vk::DeviceSize offsets[] = { 0 };
+
+	{
+		ImageTransitionData TransitionColorAttachmentOptimal{};
+		TransitionColorAttachmentOptimal.oldlayout = vk::ImageLayout::eUndefined;
+		TransitionColorAttachmentOptimal.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
+		TransitionColorAttachmentOptimal.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitionColorAttachmentOptimal.SourceAccessflag = vk::AccessFlagBits::eNone;
+		TransitionColorAttachmentOptimal.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
+		TransitionColorAttachmentOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
+		TransitionColorAttachmentOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+
+		bufferManger->TransitionImage(commandBuffer, LightingPassImageData.image, TransitionColorAttachmentOptimal);
+	}
+
 
 	ImageTransitionData TransitionColorAttachmentOptimal{};
 	TransitionColorAttachmentOptimal.oldlayout = vk::ImageLayout::eUndefined;
@@ -913,39 +937,33 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	TransitionColorAttachmentOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
 	TransitionColorAttachmentOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 	
-	vk::CommandBufferBeginInfo begininfo;
-	                          begininfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-
-	commandBuffer.begin(begininfo);
 	bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, TransitionColorAttachmentOptimal);
 	bufferManger->TransitionImage(commandBuffer, gbuffer.Normal.image, TransitionColorAttachmentOptimal);
 	bufferManger->TransitionImage(commandBuffer, gbuffer.Albedo.image, TransitionColorAttachmentOptimal);
-	bufferManger->TransitionImage(commandBuffer, LightingPassImageData.image, TransitionColorAttachmentOptimal);
-
 
 	{
-		vk::RenderingAttachmentInfoKHR PositioncolorAttachmentInfo{};
+		vk::RenderingAttachmentInfo PositioncolorAttachmentInfo{};
 		PositioncolorAttachmentInfo.imageView = gbuffer.Position.imageView;
 		PositioncolorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		PositioncolorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
 		PositioncolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
 		PositioncolorAttachmentInfo.clearValue = clearColor;
 
-		vk::RenderingAttachmentInfoKHR NormalcolorAttachmentInfo{};
+		vk::RenderingAttachmentInfo NormalcolorAttachmentInfo{};
 		NormalcolorAttachmentInfo.imageView = gbuffer.Normal.imageView;
 		NormalcolorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		NormalcolorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
 		NormalcolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
 		NormalcolorAttachmentInfo.clearValue = clearColor;
 
-		vk::RenderingAttachmentInfoKHR AlbedocolorAttachmentInfo{};
+		vk::RenderingAttachmentInfo AlbedocolorAttachmentInfo{};
 		AlbedocolorAttachmentInfo.imageView = gbuffer.Albedo.imageView;
 		AlbedocolorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		AlbedocolorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
 		AlbedocolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
 		AlbedocolorAttachmentInfo.clearValue = clearColor;
 		
-		std::array<vk::RenderingAttachmentInfoKHR, 3> ColorAttachments{ PositioncolorAttachmentInfo ,NormalcolorAttachmentInfo,AlbedocolorAttachmentInfo };
+		std::array<vk::RenderingAttachmentInfo, 3> ColorAttachments{ PositioncolorAttachmentInfo ,NormalcolorAttachmentInfo,AlbedocolorAttachmentInfo };
 
 		vk::RenderingAttachmentInfo depthStencilAttachment;
 		depthStencilAttachment.imageView = DepthTextureData.imageView;
@@ -954,10 +972,10 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		depthStencilAttachment.storeOp = vk::AttachmentStoreOp::eStore;
 		depthStencilAttachment.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 
-		vk::RenderingInfoKHR renderingInfo{};
+		vk::RenderingInfo renderingInfo{};
 		renderingInfo.renderArea.offset = imageoffset;
-		renderingInfo.renderArea.extent.height = userinterface->GetRenderTextureExtent().height;
-		renderingInfo.renderArea.extent.width = userinterface->GetRenderTextureExtent().width;
+		renderingInfo.renderArea.extent.height =  vulkanContext->swapchainExtent.height;
+		renderingInfo.renderArea.extent.width =   vulkanContext->swapchainExtent.width;
 		renderingInfo.layerCount = 1;
 		renderingInfo.colorAttachmentCount = 3;
 		renderingInfo.pColorAttachments = ColorAttachments.data();
@@ -986,10 +1004,10 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			gbufferTransition.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 
 			bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, gbufferTransition);
-			bufferManger->TransitionImage(commandBuffer, gbuffer.Normal.image, gbufferTransition);
-			bufferManger->TransitionImage(commandBuffer, gbuffer.Albedo.image, gbufferTransition);
+			bufferManger->TransitionImage(commandBuffer, gbuffer.Normal.image  , gbufferTransition);
+			bufferManger->TransitionImage(commandBuffer, gbuffer.Albedo.image  , gbufferTransition);
 
-			vk::RenderingAttachmentInfoKHR LightPassColorAttachmentInfo{};
+			vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
 			LightPassColorAttachmentInfo.imageView = LightingPassImageData.imageView;
 			LightPassColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 			LightPassColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
@@ -997,10 +1015,10 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			LightPassColorAttachmentInfo.clearValue = clearColor;
 
 
-			vk::RenderingInfoKHR renderingInfo{};
+			vk::RenderingInfo renderingInfo{};
 			renderingInfo.renderArea.offset = imageoffset;
-			renderingInfo.renderArea.extent.height = userinterface->GetRenderTextureExtent().height;
-			renderingInfo.renderArea.extent.width = userinterface->GetRenderTextureExtent().width;
+			renderingInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height; 
+			renderingInfo.renderArea.extent.width =  vulkanContext->swapchainExtent.width;
 			renderingInfo.layerCount = 1;
 			renderingInfo.colorAttachmentCount = 1;
 			renderingInfo.pColorAttachments = &LightPassColorAttachmentInfo;
@@ -1012,6 +1030,40 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			fullScreenQuad->Draw(commandBuffer, FullScreenQuadgraphicsPipelineLayout, currentFrame);
 
 			commandBuffer.endRendering();
+
+			///////////////////////////////////////////////////////////////
+			vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
+			SkyBoxRenderAttachInfo.clearValue = clearColor;
+			SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			SkyBoxRenderAttachInfo.imageView = LightingPassImageData.imageView;
+			SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+			SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+
+			vk::RenderingAttachmentInfo DepthAttachInfo;
+			DepthAttachInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+			DepthAttachInfo.imageView = DepthTextureData.imageView;
+			DepthAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+			DepthAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+			DepthAttachInfo.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+
+			vk::RenderingInfo SkyBoxRenderInfo{};
+			SkyBoxRenderInfo.layerCount = 1;
+			SkyBoxRenderInfo.colorAttachmentCount = 1;
+			SkyBoxRenderInfo.pColorAttachments = &SkyBoxRenderAttachInfo;
+			SkyBoxRenderInfo.pDepthAttachment = &DepthAttachInfo;
+			SkyBoxRenderInfo.renderArea.extent.width =  vulkanContext->swapchainExtent.width;
+			SkyBoxRenderInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
+
+
+			commandBuffer.setViewport(0, 1, &viewport);
+			commandBuffer.setScissor(0, 1, &scissor);
+			commandBuffer.beginRendering(SkyBoxRenderInfo);
+			commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
+			skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
+			commandBuffer.endRendering();
+
+
+			//////////////////////////////////////////////////////////////
 
 			ImageTransitionData TransitionBacktoColorOutput{};
 			TransitionBacktoColorOutput.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -1029,7 +1081,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		}
 
 		{
-			vk::RenderingAttachmentInfoKHR LightPassColorAttachmentInfo{};
+			vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
 			LightPassColorAttachmentInfo.imageView = LightingPassImageData.imageView;
 			LightPassColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 			LightPassColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eLoad;
@@ -1043,10 +1095,10 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			depthStencilAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
 			depthStencilAttachment.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 
-			vk::RenderingInfoKHR renderingInfo{};
+			vk::RenderingInfo renderingInfo{};
 			renderingInfo.renderArea.offset = imageoffset;
-			renderingInfo.renderArea.extent.height = userinterface->GetRenderTextureExtent().height;
-			renderingInfo.renderArea.extent.width = userinterface->GetRenderTextureExtent().width;
+			renderingInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
+			renderingInfo.renderArea.extent.width =  vulkanContext->swapchainExtent.width;
 			renderingInfo.layerCount = 1;
 			renderingInfo.colorAttachmentCount = 1;
 			renderingInfo.pColorAttachments = &LightPassColorAttachmentInfo;
@@ -1101,6 +1153,13 @@ void App::destroy_DepthImage()
 	bufferManger->DestroyImage(DepthTextureData);
 }
 
+void App::destroy_GbufferImages()
+{
+	bufferManger->DestroyImage(gbuffer.Position);
+	bufferManger->DestroyImage(gbuffer.Albedo);
+	bufferManger->DestroyImage(gbuffer.Normal);
+	bufferManger->DestroyImage(LightingPassImageData);
+}
 
 void App::recreateSwapChain() {
 	
@@ -1115,13 +1174,19 @@ void App::recreateSwapChain() {
 	vulkanContext->LogicalDevice.waitIdle();
 
 	vulkanContext->destroy_swapchain();
+	destroy_DepthImage();
+	destroy_GbufferImages();
 
 	vulkanContext->create_swapchain();
+	createDepthTextureImage();
+	createGBuffer();
 
 
 	camera->SetSwapChainHeight(vulkanContext->swapchainExtent.height);
 	camera->SetSwapChainWidth(vulkanContext->swapchainExtent.width);
 }
+
+
 
 void App::DestroySyncObjects()
 {

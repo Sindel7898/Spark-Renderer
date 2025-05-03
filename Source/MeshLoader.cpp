@@ -69,7 +69,9 @@ void MeshLoader::LoadModel(const std::string& pFile)
 
     std::cout << "Loaded glTF: " << pFile << std::endl;
 
+  
     for (const auto& mesh : model.meshes) {
+
         for (const auto& primitive : mesh.primitives) {
             ProcessMesh(primitive, model);
         }

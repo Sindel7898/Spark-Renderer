@@ -30,7 +30,7 @@ public:
     ImageData  normalTextureData;
     
 
-    vk::AccelerationStructureKHR GetBottomLevelAS() const { return bottomLevelAS; }
+   // vk::AccelerationStructureKHR GetBottomLevelAS() const { return bottomLevelAS; }
     uint64_t  GetBLASAddressInfo();
     
 private:
@@ -38,7 +38,7 @@ private:
     std::string FilePath;
     StoredModelData storedModelData;
 
-    vk::AccelerationStructureKHR bottomLevelAS;
+    //vk::AccelerationStructureKHR bottomLevelAS;
 
     BufferData bottomLevelASBuffer;
     BufferData scratchBuffer;

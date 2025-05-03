@@ -41,6 +41,7 @@ public:
 	void recreateSwapChain();
 
 
+
 	void createDescriptorPool();
 	void createTLAS();
 
@@ -75,6 +76,8 @@ public:
 	vk::ShaderModule createShaderModule(const std::vector<char>& code);
 
 	void destroy_DepthImage();
+
+	void destroy_GbufferImages();
 
 	bool framebufferResized = false;
 private:
@@ -126,8 +129,6 @@ private:
 	VkDescriptorSet PositionRenderTextureId;
 	VkDescriptorSet NormalTextureId;
 	VkDescriptorSet AlbedoTextureId;
-
-	ImageData* ViewPortImageData; 
 
 	bool bRecreateDepth = false; 
 

@@ -21,7 +21,7 @@ void VulkanContext::InitVulkan()
 
 	if (!inst_ret)
 	{
-		throw std::runtime_error("Failed to create Vulkan instance: ");
+		throw std::runtime_error("Failed to create Vulkan instance: " + inst_ret.error().message());
 	}
 
 	VKB_Instance = inst_ret.value();
@@ -36,14 +36,14 @@ void VulkanContext::SelectGPU_CreateDevice()
 {
 
 	// Ray tracing features
-	vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelFeature{};
-	accelFeature.sType = vk::StructureType::ePhysicalDeviceAccelerationStructureFeaturesKHR;
-	accelFeature.accelerationStructure = VK_TRUE;
+	//vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelFeature{};
+	//accelFeature.sType = vk::StructureType::ePhysicalDeviceAccelerationStructureFeaturesKHR;
+	//accelFeature.accelerationStructure = VK_TRUE;
 
-	vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeature{};
+	/*vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeature{};
 	rtPipelineFeature.sType = vk::StructureType::ePhysicalDeviceRayTracingPipelineFeaturesKHR;
 	rtPipelineFeature.rayTracingPipeline = VK_TRUE;
-	rtPipelineFeature.pNext = &accelFeature;
+	rtPipelineFeature.pNext = &accelFeature;*/
 
 
 	vk::PhysicalDeviceVulkan12Features features_1_2{};
@@ -51,7 +51,7 @@ void VulkanContext::SelectGPU_CreateDevice()
 	features_1_2.bufferDeviceAddress = VK_TRUE;
 	features_1_2.descriptorIndexing = VK_TRUE;
 	features_1_2.bufferDeviceAddress = VK_TRUE;
-	features_1_2.pNext = &rtPipelineFeature;
+	//features_1_2.pNext = &rtPipelineFeature;
 
 
 	//Select Required Vulkan featuers 
@@ -67,37 +67,45 @@ void VulkanContext::SelectGPU_CreateDevice()
 
 	vkb::PhysicalDeviceSelector selector{ VKB_Instance };
 
+
+
 	std::vector<const char*> deviceExtensions = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-		VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
-		VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
-		VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
-		VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+	    //VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+		//VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+		//VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+		//VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
 		VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
 	};
 
-	vkb::PhysicalDevice physicalDevice = selector
+	   auto physicalDeviceResult = selector
 		.set_minimum_version(1, 3)
 		.set_required_features(deviceFeatures)
 		.add_required_extensions(deviceExtensions)
 		.set_surface(surface)
-		.select()
-		.value();
+		.select();
 
-
-	if (!physicalDevice)
+	if (!physicalDeviceResult)
 	{
-		throw std::runtime_error("Failed to select a suitable physical device!");
+		throw std::runtime_error("Failed to select a suitable physical device!" + physicalDeviceResult.error().message());
 	}
 
-	//From the selecte device create a logical device
-	vkb::DeviceBuilder deviceBuilder{ physicalDevice };
-	vkb::Device VKB_Device = deviceBuilder
-		.add_pNext(&features_1_3)
-		.build()
-		.value();
-	LogicalDevice = VKB_Device.device;
+	vkb::PhysicalDevice physicalDevice = physicalDeviceResult.value();
 
+	vkb::DeviceBuilder deviceBuilder{ physicalDevice };
+
+
+	auto deviceResult = deviceBuilder
+		.add_pNext(&features_1_3)
+		.build();
+
+	if (!deviceResult) {
+		throw std::runtime_error("Failed to create logical device: " + deviceResult.error().message());
+	}
+
+	vkb::Device VKB_Device = deviceResult.value();
+
+	LogicalDevice = VKB_Device.device;
 
 	if (LogicalDevice == VK_NULL_HANDLE)
 	{
@@ -118,11 +126,11 @@ void VulkanContext::SelectGPU_CreateDevice()
 	presentQueue = VKB_Device.get_queue(vkb::QueueType::present).value();
 	graphicsQueueFamilyIndex = VKB_Device.get_queue_index(vkb::QueueType::graphics).value();
 
-	vkCreateAccelerationStructureKHR        = reinterpret_cast<PFN_vkCreateAccelerationStructureKHR>(vkGetDeviceProcAddr(LogicalDevice, "vkCreateAccelerationStructureKHR"));
+	/*vkCreateAccelerationStructureKHR        = reinterpret_cast<PFN_vkCreateAccelerationStructureKHR>(vkGetDeviceProcAddr(LogicalDevice, "vkCreateAccelerationStructureKHR"));
 	vkDestroyAccelerationStructureKHR       = reinterpret_cast<PFN_vkDestroyAccelerationStructureKHR>(vkGetDeviceProcAddr(LogicalDevice, "vkDestroyAccelerationStructureKHR"));
 	vkGetAccelerationStructureBuildSizesKHR = reinterpret_cast<PFN_vkGetAccelerationStructureBuildSizesKHR>(vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureBuildSizesKHR"));
 	vkCmdBuildAccelerationStructuresKHR     = reinterpret_cast<PFN_vkCmdBuildAccelerationStructuresKHR>(vkGetDeviceProcAddr(LogicalDevice, "vkCmdBuildAccelerationStructuresKHR"));
-	vkGetAccelerationStructureDeviceAddressKHR = reinterpret_cast<PFN_vkGetAccelerationStructureDeviceAddressKHR>(vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureDeviceAddressKHR"));
+	vkGetAccelerationStructureDeviceAddressKHR = reinterpret_cast<PFN_vkGetAccelerationStructureDeviceAddressKHR>(vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureDeviceAddressKHR"));*/
 
 }
 

@@ -169,7 +169,7 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex)
 			ImGui::RenderPlatformWindowsDefault();
 		 }
 	//// Begin rendering for ImGui
-	vk::RenderingAttachmentInfoKHR imguiColorAttachment{};
+	vk::RenderingAttachmentInfo imguiColorAttachment{};
 	imguiColorAttachment.imageView = vulkancontext->swapchainImageViews[imageIndex];
 	imguiColorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 	imguiColorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
@@ -460,55 +460,6 @@ float UserInterface::CalculateDistanceInScreenSpace(glm::mat4 CameraProjection, 
 	return distance;
 }
 
-//void UserInterface::ShowGuizmoToLocation(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position)
-//{
-//	
-//}
-
-
-void UserInterface::ImguiViewPortRenderTextureSizeDecider(bool& bRecreateDepth)
-{
-	ImVec2 viewportSize;
-
-	if (ImGui::GetMainViewport())
-	{
-		viewportSize = ImGui::GetContentRegionAvail();
-	}
-
-	static ImVec2 lastSize = ImVec2(0.0f, 0.0f);
-
-	if (viewportSize.x != lastSize.x || viewportSize.y != lastSize.y)
-	{
-		if (viewportSize.x <= 5 || viewportSize.y <= 5)
-		{
-			viewportSize = ImVec2(5.0f, 5.0f);
-		}
-
-		vulkancontext->LogicalDevice.waitIdle();
-		//ImGui_ImplVulkan_RemoveTexture(RenderTextureId);
-		buffermanager->DestroyImage(ImguiViewPortRenderTextureData);
-		CreateViewPortRenderTexture(static_cast<uint32_t>(viewportSize.x), static_cast<uint32_t>(viewportSize.y));
-		bRecreateDepth = true;
-		lastSize = viewportSize;
-	}
-
-	//ImGui::Image((ImTextureID)RenderTextureId, viewportSize);
-}
-
-
-ImageData* UserInterface::CreateViewPortRenderTexture(uint32_t X, uint32_t Y)
-{
-	RenderTextureExtent = vk::Extent3D(X, Y,1);
-	ImguiViewPortRenderTextureData = buffermanager->CreateImage(RenderTextureExtent, vulkancontext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	ImguiViewPortRenderTextureData.imageView = buffermanager->CreateImageView(ImguiViewPortRenderTextureData.image, vulkancontext->swapchainformat, vk::ImageAspectFlagBits::eColor);
-	ImguiViewPortRenderTextureData.imageSampler = buffermanager->CreateImageSampler();
-
-	//RenderTextureId = ImGui_ImplVulkan_AddTexture(ImguiViewPortRenderTextureData.imageSampler,
-	//	ImguiViewPortRenderTextureData.imageView,
-	//	VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-	return &ImguiViewPortRenderTextureData;
-}
 
 
 vk::Extent3D UserInterface::GetRenderTextureExtent()
