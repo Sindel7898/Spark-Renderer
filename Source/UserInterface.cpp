@@ -240,67 +240,61 @@ void UserInterface::DrawUi(bool& bRecreateDepth,int& DefferedDecider, VkDescript
 		currentGizmoOperation = ImGuizmo::SCALE;
 	}
 
-	if (ImGui::IsKeyPressed(ImGuiKey_4)) {
-		DefferedDecider = 1;
-	}
-	if (ImGui::IsKeyPressed(ImGuiKey_5)) {
-		DefferedDecider = 2;
 
-	}
-	if (ImGui::IsKeyPressed(ImGuiKey_6)) {
-		DefferedDecider = 3;
-
-	}
-	if (ImGui::IsKeyPressed(ImGuiKey_7)) {
-		DefferedDecider = 4;
-
-	}
-
-	// Your other UI windows...
 	{
 		ImGui::Begin("Hello, world!");
 		ImGuiIO& io = ImGui::GetIO();
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 		
+		if (ImGui::BeginCombo("Render Passes", currentPass.c_str()))
+		{
+			for (int i = 0; i < Passes.size(); i++) {
+
+				bool is_selected = (currentPass == Passes[i]);
+
+				if (ImGui::Selectable(Passes[i].c_str(), is_selected)) {
+					
+					currentPass = Passes[i];
+
+						DefferedDecider = i;
+				}
+			}
+			ImGui::EndCombo();
+		}
+
 		ImGui::End();
 	}
 
 	// Main viewport with gizmos
-	ImGui::SetNextWindowSize(ImVec2(400, 300));
 	ImGui::Begin("Main Viewport");
-	ImGui::Text("Main ViewPort");
-
-	ImVec2 viewportSize;
 
 	if (ImGui::GetMainViewport())
 	{
 		viewportSize = ImGui::GetContentRegionAvail();
 	}
 
-	if (DefferedDecider == 1)
-	{
-		ImGui::Image((ImTextureID)FinalRenderTextureId, viewportSize);
-
-	}
-
-	if (DefferedDecider == 2)
+	if (DefferedDecider == 0)
 	{
 		ImGui::Image((ImTextureID)PositionRenderTextureId, viewportSize);
 
 	}
 
-	if (DefferedDecider == 3)
+	if (DefferedDecider == 1)
 	{
 		ImGui::Image((ImTextureID)NormalTextureId, viewportSize);
-
 	}
 
-	if (DefferedDecider == 4)
+	if (DefferedDecider == 2)
 	{
 		ImGui::Image((ImTextureID)AlbedoTextureId, viewportSize);
+	}
+
+	if (DefferedDecider == 3)
+	{
+		ImGui::Image((ImTextureID)FinalRenderTextureId, viewportSize);
 
 	}
-	//ImguiViewPortRenderTextureSizeDecider(bRecreateDepth);
+
 
 	ImGuizmo::SetOrthographic(false);
 	ImGuizmo::SetDrawlist();
@@ -407,10 +401,28 @@ void UserInterface::DrawUi(bool& bRecreateDepth,int& DefferedDecider, VkDescript
 
 
 			ImGui::ColorEdit3 ("Color", glm::value_ptr(light->color));
-			ImGui::InputFloat("Light Intensity", &light->lightIntensity);
-			ImGui::InputFloat("Ambience Value", &light->ambientStrength);
-			ImGui::InputInt  ("LightType", &light->lightType);
+			ImGui::InputFloat("Light Intensity",      &light->lightIntensity);
+			ImGui::InputFloat("Ambience Value",       &light->ambientStrength);
+
+			if (ImGui::BeginCombo("Light Type", currentItem.c_str()))
+			{
+				for (int i = 0; i < items.size(); i++) {
+
+					bool is_selected = (currentItem == items[i]);
+
+					if (ImGui::Selectable(items[i].c_str(), is_selected)) {
+						currentItem = items[i];
+
+						light->lightType = i;
+					}
+				}
+				ImGui::EndCombo();
+
+			}
+
 			ImGui::End();
+
+		
 
 			ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, glm::value_ptr(LightModelMatrix));
 			light->SetModelMatrix(LightModelMatrix);

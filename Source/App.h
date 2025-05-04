@@ -138,5 +138,5 @@ private:
 	ImageData LightingPassImageData;
 
 
-	int DefferedDecider = 1;
+	int DefferedDecider = 3;
 };

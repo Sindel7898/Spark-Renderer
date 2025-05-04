@@ -4,11 +4,11 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
 
-Model::Model(const std::string filepath, std::string modelindex, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger)
+Model::Model(const std::string filepath, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger)
 	      : Drawable()
 {
+
 	FilePath = filepath;
-	ModelIndex = modelindex;
 	vulkanContext = vulkancontext;
 	commandPool = commandpool;
 	camera = rcamera;
@@ -25,11 +25,8 @@ Model::Model(const std::string filepath, std::string modelindex, VulkanContext* 
 	transformMatrices.modelMatrix = glm::rotate(transformMatrices.modelMatrix, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
 	transformMatrices.modelMatrix = glm::scale(transformMatrices.modelMatrix, scale);
 
-
-	//AssetManager::GetInstance().meshloader->LoadModel(filepath);
-
-	LoadTextures();
 	CreateVertexAndIndexBuffer();
+	LoadTextures();
 	CreateUniformBuffer();
 	createDescriptorSetLayout();
 	//CreateBottomLevelAccelerationStructure();
@@ -44,22 +41,20 @@ void Model::LoadTextures()
 
 	StoredImageData NormalImageData = ModelTextures[1];
 	normalTextureData = bufferManager->CreateTextureImage(NormalImageData.imageData, NormalImageData.imageWidth, NormalImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
-
-
 }
 
 void Model::CreateVertexAndIndexBuffer()
 {
 
-	storedModelData = AssetManager::GetInstance().GetStoredModelData(ModelIndex);
+	storedModelData = &AssetManager::GetInstance().GetStoredModelData(FilePath);
 
-	transformMatrices.modelMatrix = storedModelData.modelMatrix;
+	transformMatrices.modelMatrix = storedModelData->modelMatrix;
 
-	VkDeviceSize VertexBufferSize = sizeof(storedModelData.VertexData[0]) * storedModelData.VertexData.size();
-	vertexBufferData = bufferManager->CreateGPUOptimisedBuffer(storedModelData.VertexData.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
+	VkDeviceSize VertexBufferSize = sizeof(storedModelData->VertexData[0]) * storedModelData->VertexData.size();
+	vertexBufferData = bufferManager->CreateGPUOptimisedBuffer(storedModelData->VertexData.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
 
-	VkDeviceSize indexBufferSize = sizeof(uint32_t) * storedModelData.IndexData.size();
-	indexBufferData = bufferManager->CreateGPUOptimisedBuffer(storedModelData.IndexData.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
+	VkDeviceSize indexBufferSize = sizeof(uint32_t) * storedModelData->IndexData.size();
+	indexBufferData = bufferManager->CreateGPUOptimisedBuffer(storedModelData->IndexData.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
 
 }
 
@@ -301,13 +296,14 @@ void Model::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinela
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
 	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint32);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(storedModelData.IndexData.size(), 1, 0, 0, 0);
+	commandbuffer.drawIndexed(storedModelData->IndexData.size(), 1, 0, 0, 0);
 }
 
 void Model::CleanUp()
 {
 	if (bufferManager)
 	{
+		storedModelData = nullptr;
 		bufferManager->DestroyImage(albedoTextureData);
 		bufferManager->DestroyImage(normalTextureData);
 		/*bufferManager->DestroyBuffer(bottomLevelASBuffer);

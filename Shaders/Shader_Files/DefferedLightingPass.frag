@@ -52,7 +52,7 @@ void main() {
 
     float DiffuseAmount = max(dot(Normal, LightDir), 0.0);
 
-    vec3 Diffuse = Albedo * DiffuseAmount * Attenuation;
+    vec3 Diffuse = Albedo * light.colorAndAmbientStrength.rgb* DiffuseAmount * Attenuation;
 
     vec3 Ambient = Albedo * light.colorAndAmbientStrength.rgb *  light.colorAndAmbientStrength.a;
 

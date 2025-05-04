@@ -51,16 +51,9 @@ public:
 
 	void ProcessMesh(const tinygltf::Node& inputNode, const tinygltf::Model& model);
 
-	std::vector<std::string> meshnames;
-	//const std::vector<ModelVertex>& GetVertices();
-	//const std::vector<uint32_t >& GetIndices();
-	int modelCount = 0;
-
 
 private:
-	/*std::vector<ModelVertex> vertices;
-	std::vector<uint32_t > indices;*/
-
+	std::string FilePath;
 	std::string err;
 	std::string warn;
 };

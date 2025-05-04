@@ -16,6 +16,7 @@ MeshLoader::MeshLoader()
 
 void MeshLoader::LoadModel(const std::string& pFile)
 {
+    FilePath = pFile;
     tinygltf::TinyGLTF loader;
     tinygltf::Model model;
    
@@ -243,10 +244,7 @@ void MeshLoader::ProcessMesh(const tinygltf::Node& inputNode, const tinygltf::Mo
         modeldata.IndexData   = indices;
         modeldata.modelMatrix = ModelMatrix;
 
-        std::string name = "model" + std::to_string(modelCount);
-
-        AssetManager::GetInstance().ParseModelData(name, modeldata);
-        modelCount++;
+        AssetManager::GetInstance().ParseModelData(FilePath, modeldata);
     }
     
     

@@ -29,29 +29,25 @@
 	//////////////////////////
 	createCommandPool();
 
-	AssetManager::GetInstance().meshloader->LoadModel("../Textures/Sponza/Sponza.gltf");
 
-	int modelindex = 0;
-	int modelcount = AssetManager::GetInstance().meshloader->modelCount;
-	Models.reserve(modelcount);
 
-	for (int i = 0; i < modelcount; i++) {
+		auto model = std::shared_ptr<Model>(new Model("../Textures/Helmet/DamagedHelmet.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+		auto model2 = std::shared_ptr<Model>(new Model("../Textures/WaterBottle/WaterBottle.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+		auto model3 = std::shared_ptr<Model>(new Model("../Textures/ScifiHelmet/SciFiHelmet.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 
-		std::string modelindexname = "model" + std::to_string(modelindex);
 
-		auto model = std::shared_ptr<Model>(new Model("../Textures/Sponza/Sponza.gltf", modelindexname, vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 		Models.push_back(std::move(model));
+		Models.push_back(std::move(model2));
+		Models.push_back(std::move(model3));
 
-		modelindex = i;
-	}
 
 	std::array<const char*, 6> filePaths{
-		"../Textures/skybox/posx.jpg",  // +X (Right)
-		"../Textures/skybox/negx.jpg",  // -X (Left)
-		"../Textures/skybox/posy.jpg",  // +Y (Top)
-		"../Textures/skybox/negy.jpg",  // -Y (Bottom)
-		"../Textures/skybox/posz.jpg",  // +Z (Front)
-		"../Textures/skybox/negz.jpg"   // -Z (Back)
+		"../Textures/Skybox/posx.jpg",  // +X (Right)
+		"../Textures/Skybox/negx.jpg",  // -X (Left)
+		"../Textures/Skybox/posy.jpg",  // +Y (Top)
+		"../Textures/Skybox/negy.jpg",  // -Y (Bottom)
+		"../Textures/Skybox/posz.jpg",  // +Z (Front)
+		"../Textures/Skybox/negz.jpg"   // -Z (Back)
 	};
 
 	skyBox = std::shared_ptr<SkyBox>(new SkyBox(filePaths, vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), SkyBoxDeleter);
@@ -1137,22 +1133,25 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	TransitiontoShader.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 	TransitiontoShader.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 
+	if (DefferedDecider == 0)
+	{
+		bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, TransitiontoShader);
+
+	}
 	if (DefferedDecider == 1)
 	{
-		bufferManger->TransitionImage(commandBuffer, LightingPassImageData.image, TransitiontoShader);
+		bufferManger->TransitionImage(commandBuffer, gbuffer.Normal.image, TransitiontoShader);
+
 	}
 	if (DefferedDecider == 2)
 	{
-		bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, TransitiontoShader);
-	}
-	if (DefferedDecider == 3)
-	{
-		bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, TransitiontoShader);
+		bufferManger->TransitionImage(commandBuffer, gbuffer.Albedo.image, TransitiontoShader);
 	}
 
-	if (DefferedDecider == 4)
+	if (DefferedDecider == 3)
 	{
-		bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, TransitiontoShader);
+		bufferManger->TransitionImage(commandBuffer, LightingPassImageData.image, TransitiontoShader);
+
 	}
 
 	userinterface->RenderUi(commandBuffer, imageIndex);

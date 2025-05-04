@@ -29,11 +29,8 @@ public:
    // std::vector<glm::vec3> ShowGuizmoToLocation(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position);
   
     
-    void ImguiViewPortRenderTextureSizeDecider(bool& bRecreateDepth, ImageData& ViewportImageData);
 
-    ImageData* CreateViewPortRenderTexture(uint32_t X, uint32_t Y);
     vk::Extent3D GetRenderTextureExtent();
-    void ImguiViewPortRenderTextureSizeDecider(bool& bRecreateDepth);
 
     BufferManager* buffermanager = nullptr;
     ImageData ImguiViewPortRenderTextureData;
@@ -58,6 +55,15 @@ private:
     
      ImGuizmo::OPERATION currentGizmoOperation;
      ImGuizmo::MODE currentGizmoMode;
+
+     std::vector<std::string> Passes{"Position Pass", "Normal Pass", "Albedo Pass","Light Pass"};
+     std::string currentPass = "Light Pass";
+
+     std::vector<std::string> items{ "Directional", "Point", "Spot" };
+     std::string currentItem = "Point";
+
+     ImVec2 viewportSize;
+
 };
 
 static inline void UserInterfaceDeleter(UserInterface* userInterface) {

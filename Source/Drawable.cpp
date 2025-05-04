@@ -12,6 +12,7 @@ Drawable::~Drawable()
 
 void Drawable::Destructor()
 {
+	//Clean up
 	if (vulkanContext)
 	{
 
@@ -28,7 +29,7 @@ void Drawable::Destructor()
 			bufferManager->DestroyBuffer(vertexBufferData);
 		}
 
-		if (vertexBufferData.buffer)
+		if (indexBufferData.buffer)
 		{
 			bufferManager->DestroyBuffer(indexBufferData);
 		}
