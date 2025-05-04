@@ -4,10 +4,11 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
 #include "Light.h"
+#include "Camera.h"
 
-FullScreenQuad::FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext, vk::CommandPool commandpool): Drawable()
+FullScreenQuad::FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext,Camera* cameraref, vk::CommandPool commandpool): Drawable()
 {
-
+	camera = cameraref;
 	bufferManager = buffermanager;
 	vulkanContext = vulkancontext;
 	commandPool   = commandpool;
@@ -195,9 +196,12 @@ void FullScreenQuad::UpdateUniformBuffer(uint32_t currentImage, std::vector<std:
 		if (lightref[i])
 		{
 			LightUniformData LightData;
-			LightData.positionAndLightType     = glm::vec4(lightref[i]->position,lightref[i]->lightType);
+			LightData.lightPositionAndLightType = glm::vec4(lightref[i]->position,lightref[i]->lightType);
 			LightData.colorAndAmbientStrength  = glm::vec4(lightref[i]->color, lightref[i]->ambientStrength);
-			LightData.lightIntensityAndPadding = glm::vec4(lightref[i]->lightIntensity,0,0,0);
+			LightData.CameraPositionAndLightIntensity = glm::vec4(camera->GetPosition().x, 
+				                                                  camera->GetPosition().y,
+				                                                  camera->GetPosition().z, 
+				                                                  lightref[i]->lightIntensity);
 
 			lightDataspack.push_back(LightData);
 		}

@@ -34,11 +34,13 @@
 		auto model = std::shared_ptr<Model>(new Model("../Textures/Helmet/DamagedHelmet.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 		auto model2 = std::shared_ptr<Model>(new Model("../Textures/WaterBottle/WaterBottle.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 		auto model3 = std::shared_ptr<Model>(new Model("../Textures/ScifiHelmet/SciFiHelmet.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+		auto model4 = std::shared_ptr<Model>(new Model("../Textures/Cube/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 
 
 		Models.push_back(std::move(model));
 		Models.push_back(std::move(model2));
 		Models.push_back(std::move(model3));
+		Models.push_back(std::move(model4));
 
 
 	std::array<const char*, 6> filePaths{
@@ -52,7 +54,7 @@
 
 	skyBox = std::shared_ptr<SkyBox>(new SkyBox(filePaths, vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), SkyBoxDeleter);
 	
-	fullScreenQuad = std::shared_ptr<FullScreenQuad>(new FullScreenQuad(bufferManger.get(), vulkanContext.get(), commandPool), FullScreenQuadDeleter);
+	fullScreenQuad = std::shared_ptr<FullScreenQuad>(new FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), FullScreenQuadDeleter);
 
 	lights.reserve(0);
 

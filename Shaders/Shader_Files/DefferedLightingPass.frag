@@ -9,7 +9,7 @@ layout(location = 0) in vec2 inTexCoord;
 struct LightData{
     vec4    positionAndLightType;
     vec4    colorAndAmbientStrength;
-    vec4    lightIntensityAndPadding;
+    vec4    CameraPositionAndLightIntensity;
 
 };
 layout (binding = 3) uniform LightUniformBuffer {
@@ -38,6 +38,7 @@ void main() {
      
      LightData light = lights[i];
 
+
       if(light.positionAndLightType.w == 0){
 
          LightDir = normalize(-light.positionAndLightType.xyz);
@@ -48,17 +49,27 @@ void main() {
          LightDir          = normalize(light.positionAndLightType.xyz - FragPosition);
          float Distance    = length(light.positionAndLightType.xyz - FragPosition);
          Attenuation       = 1.0 / (Constant + Linear * Distance + Quadratic * (Distance * Distance));
-   }
+   } 
+
 
     float DiffuseAmount = max(dot(Normal, LightDir), 0.0);
 
-    vec3 Diffuse = Albedo * light.colorAndAmbientStrength.rgb* DiffuseAmount * Attenuation;
+    vec3 Diffuse = Albedo * light.colorAndAmbientStrength.rgb * DiffuseAmount;
+
+   vec3  ViewDir    = normalize(light.CameraPositionAndLightIntensity.xyz - FragPosition);
+   vec3  halfwayDir = normalize(LightDir + ViewDir);
+
+   float spec       = pow(max(dot(Normal, halfwayDir), 0.0), 30);
+
+   vec3 specular    = light.colorAndAmbientStrength.rgb * spec * 0.2;
+
+
 
     vec3 Ambient = Albedo * light.colorAndAmbientStrength.rgb *  light.colorAndAmbientStrength.a;
 
-    vec3 FinalColor = (Diffuse + Ambient) * light.lightIntensityAndPadding.x;
+    vec3 lightContribution = (Ambient + (Diffuse + specular) * Attenuation)  * light.CameraPositionAndLightIntensity.w;
 
-   totalLighting += FinalColor;
+   totalLighting += lightContribution;
   }
 
     outFragcolor = vec4(totalLighting, 1.0);

@@ -17,15 +17,15 @@ struct GBuffer {
 };
 
 struct LightUniformData {
-     glm::vec4  positionAndLightType;
+     glm::vec4  lightPositionAndLightType;
      glm::vec4  colorAndAmbientStrength;
-     glm::vec4  lightIntensityAndPadding;
+     glm::vec4  CameraPositionAndLightIntensity;
 };
 class FullScreenQuad : public Drawable
 {
 public:
 
-    FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext, vk::CommandPool commandpool);
+    FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext,Camera* cameraref, vk::CommandPool commandpool);
     void CreateVertexAndIndexBuffer() override;
     void CreateUniformBuffer() override;
     void createDescriptorSetLayout() override;
@@ -51,6 +51,8 @@ public:
                2, 1, 3 
         };
 
+
+        Camera* camera = nullptr;
 };
 
 static inline void FullScreenQuadDeleter(FullScreenQuad* fullScreenQuad) {
