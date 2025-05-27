@@ -8,6 +8,15 @@
 #include "Light.h"
 #include "Drawable.h"
 
+  
+
+struct VertexUniformData
+{
+    TransformMatrices  transformMatrices;
+    glm::mat4 LightViewMatrix;
+    glm::mat4 LightProjectionMatrix;
+
+};
 
 
 class Model : public Drawable
@@ -19,7 +28,6 @@ public:
     void CreateVertexAndIndexBuffer() override;
     void createDescriptorSetLayout() override;
     void createDescriptorSets(vk::DescriptorPool descriptorpool) override;
-    void CreateBottomLevelAccelerationStructure();
     void CreateUniformBuffer() override;
     void UpdateUniformBuffer(uint32_t currentImage, Light* lightref);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
@@ -28,11 +36,12 @@ public:
 
     ImageData  albedoTextureData;
     ImageData  normalTextureData;
-    
 
    // vk::AccelerationStructureKHR GetBottomLevelAS() const { return bottomLevelAS; }
     uint64_t  GetBLASAddressInfo();
-    
+
+    VertexUniformData vertexdata{};
+
 private:
 
     std::string FilePath;

@@ -225,7 +225,7 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex)
 
 //call every Frame
 void UserInterface::DrawUi(bool& bRecreateDepth,int& DefferedDecider, VkDescriptorSet FinalRenderTextureId, VkDescriptorSet PositionRenderTextureId,
-	                                                                  VkDescriptorSet NormalTextureId, VkDescriptorSet AlbedoTextureId,Camera* camera, std::vector<std::shared_ptr<Model>>& Models, std::vector<std::shared_ptr<Light>>& Lights)
+	                                                                  VkDescriptorSet NormalTextureId, VkDescriptorSet AlbedoTextureId, VkDescriptorSet SSSAOTextureId,Camera* camera, std::vector<std::shared_ptr<Model>>& Models, std::vector<std::shared_ptr<Light>>& Lights)
 {
 	SetupDockingEnvironment();
 
@@ -290,6 +290,12 @@ void UserInterface::DrawUi(bool& bRecreateDepth,int& DefferedDecider, VkDescript
 	}
 
 	if (DefferedDecider == 3)
+	{
+		ImGui::Image((ImTextureID)SSSAOTextureId, viewportSize);
+
+	}
+
+	if (DefferedDecider == 4)
 	{
 		ImGui::Image((ImTextureID)FinalRenderTextureId, viewportSize);
 
@@ -417,7 +423,6 @@ void UserInterface::DrawUi(bool& bRecreateDepth,int& DefferedDecider, VkDescript
 					}
 				}
 				ImGui::EndCombo();
-
 			}
 
 			ImGui::End();

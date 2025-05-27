@@ -29,6 +29,7 @@ public:
     float      lightIntensity;
 
     int        lightType;
+
 private:
 
     const std::vector<VertexOnly> vertices = {

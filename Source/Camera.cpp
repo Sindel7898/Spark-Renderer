@@ -2,13 +2,13 @@
 #include <GLFW/glfw3.h>
 
 Camera::Camera(uint32_t SwapChainHeight, uint32_t SwapChainWidth, GLFWwindow* Window) :
-    position(0.0f, 0.0f, 5.0f),
+    position(0.0f, 0.0f, 4.0f),
     worldUp(0.0f, 1.0f, 0.0f),
     pitch(0.0f),
     yaw(-90.0f),
     movementSpeed(15.0f),
     mouseSensitivity(0.1f),
-    fov(90.0f),
+    fov(100.0f),
     nearClip(0.0001f),
     farClip(200.0f),
     firstMouse(true),

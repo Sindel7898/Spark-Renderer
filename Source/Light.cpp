@@ -4,6 +4,7 @@
 #include <chrono>
 #include "Camera.h"
 #include "VulkanContext.h"
+#include <backends/imgui_impl_vulkan.h>
 
 Light::Light(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* cameraref, BufferManager* buffermanger)
 {
@@ -11,18 +12,20 @@ Light::Light(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* 
 	commandPool = commandpool;
 	camera = cameraref;
 	bufferManager = buffermanger;
-
-	CreateUniformBuffer();
+	
 	CreateVertexAndIndexBuffer();
+	CreateUniformBuffer();
 	createDescriptorSetLayout();
 
 	lightType       = 1;
-	position        = glm::vec3(1.0f, 1.0f, 1.0f);
+	position        = glm::vec3(0.0f, -1, 0.0f);
 	rotation        = glm::vec3(1.0f, 1.0f, 1.0f);
 	scale           = glm::vec3(0.5f, 0.5f, 0.5f);
 	color           = glm::vec3(1.0f, 1.0f, 1.0f);
 	ambientStrength = 0.009f;
-	lightIntensity = 3.0f;
+	lightIntensity  = 3.0f;
+
+
 	transformMatrices.modelMatrix = glm::mat4(1.0f);
 	transformMatrices.modelMatrix = glm::translate(transformMatrices.modelMatrix, position);
 	transformMatrices.modelMatrix = glm::rotate   (transformMatrices.modelMatrix, glm::radians(rotation.x), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -123,8 +126,6 @@ void Light::UpdateUniformBuffer(uint32_t currentImage, Light* lightref)
 	transformMatrices.projectionMatrix = camera->GetProjectionMatrix();
 	transformMatrices.projectionMatrix[1][1] *= -1;
 	memcpy(VertexUniformBuffersMappedMem[currentImage], &transformMatrices, sizeof(transformMatrices));
-
-
 }
 
 void Light::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)

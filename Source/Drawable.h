@@ -2,10 +2,11 @@
 #include <cstdint>
 #include <vulkan/vulkan.hpp>
 #include "BufferManager.h"
-//#include <glm/fwd.hpp>
+#include <glm/fwd.hpp>
 #include <glm/ext/matrix_float4x4.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
+
 class VulkanContext;
 class Camera;
 class Light;
@@ -41,13 +42,16 @@ protected:
 
 	 std::vector<void*> VertexUniformBuffersMappedMem;
 	 std::vector<void*> FragmentUniformBuffersMappedMem;
-	 
+
 	 BufferData vertexBufferData;
 	 BufferData indexBufferData;
 
 	
 
 	 TransformMatrices  transformMatrices;
+	 TransformMatrices  ShadowPasstransformMatrices;
+
+
 
 	 BufferManager* bufferManager = nullptr;
 	 VulkanContext* vulkanContext = nullptr;
@@ -61,10 +65,13 @@ public:
 	glm::mat4 GetModelMatrix();
 	void SetModelMatrix(glm::mat4 newModelMatrix);
 
-	vk::DescriptorSetLayout    descriptorSetLayout;
+	vk::DescriptorSetLayout  descriptorSetLayout;
 
 	glm::vec3 position;
 	glm::vec3 rotation;
 	glm::vec3 scale;
+
+	glm::mat4 ViewMatrix;
+	glm::mat4 ProjectionMatrix;
 };
 

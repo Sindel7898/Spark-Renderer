@@ -58,116 +58,24 @@ void Model::CreateVertexAndIndexBuffer()
 
 }
 
-//void Model::CreateBottomLevelAccelerationStructure()
-//{		
-//	vk::BufferDeviceAddressInfoKHR vertexBufferAddressInfo{};
-//	vertexBufferAddressInfo.buffer = vertexBufferData.buffer;
-//	vk::DeviceAddress vertexAddress = vulkanContext->LogicalDevice.getBufferAddress(&vertexBufferAddressInfo);
-//
-//
-//	vk::BufferDeviceAddressInfoKHR IndexBufferAddressInfo{};
-//	IndexBufferAddressInfo.buffer = indexBufferData.buffer;
-//	vk::DeviceAddress  indexAddress = vulkanContext->LogicalDevice.getBufferAddress(&IndexBufferAddressInfo);
-//
-//	uint32_t numTriangles = static_cast<uint32_t>(storedModelData.IndexData.size()) / 3;
-//
-//	vk::AccelerationStructureGeometryKHR accelerationStructureGeometry{};
-//	accelerationStructureGeometry.flags = vk::GeometryFlagBitsKHR::eOpaque;
-//	accelerationStructureGeometry.geometryType = vk::GeometryTypeKHR::eTriangles;
-//	accelerationStructureGeometry.geometry.triangles.sType = vk::StructureType::eAccelerationStructureGeometryTrianglesDataKHR;
-//	accelerationStructureGeometry.geometry.triangles.vertexFormat = vk::Format::eR32G32B32Sfloat;
-//	accelerationStructureGeometry.geometry.triangles.vertexData = vertexAddress;
-//	accelerationStructureGeometry.geometry.triangles.vertexStride = sizeof(storedModelData.VertexData[0]);
-//	accelerationStructureGeometry.geometry.triangles.maxVertex = static_cast<uint32_t>(storedModelData.VertexData.size()) - 1;
-//	accelerationStructureGeometry.geometry.triangles.indexType = vk::IndexType::eUint32;
-//	accelerationStructureGeometry.geometry.triangles.indexData = indexAddress;
-//	accelerationStructureGeometry.geometry.triangles.transformData.deviceAddress = 0;
-//
-//	vk::AccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo{};
-//	accelerationStructureBuildGeometryInfo.type = vk::AccelerationStructureTypeKHR::eBottomLevel;
-//	accelerationStructureBuildGeometryInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
-//	accelerationStructureBuildGeometryInfo.geometryCount = 1;
-//	accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
-//
-//	vk::AccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfoKHR;
-//	
-//	vulkanContext->vkGetAccelerationStructureBuildSizesKHR(vulkanContext->LogicalDevice, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
-//		                                                  (VkAccelerationStructureBuildGeometryInfoKHR*)&accelerationStructureBuildGeometryInfo,
-//		                                                  &numTriangles,
-//		                                                  (VkAccelerationStructureBuildSizesInfoKHR*)&accelerationStructureBuildSizesInfoKHR);
-//
-//
-//	bottomLevelASBuffer = bufferManager->CreateBuffer(accelerationStructureBuildSizesInfoKHR.accelerationStructureSize,
-//		                                                        vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR | 
-//		                                                        vk::BufferUsageFlagBits::eShaderDeviceAddress, 
-//		                                                        commandPool, vulkanContext->graphicsQueue);
-//
-//	vk::AccelerationStructureCreateInfoKHR  accelerationStructureCreate_info{};
-//	accelerationStructureCreate_info.buffer = bottomLevelASBuffer.buffer;
-//	accelerationStructureCreate_info.size   = bottomLevelASBuffer.size;
-//	accelerationStructureCreate_info.type   = vk::AccelerationStructureTypeKHR::eBottomLevel;
-//
-//    vulkanContext->vkCreateAccelerationStructureKHR(vulkanContext->LogicalDevice, (VkAccelerationStructureCreateInfoKHR*)&accelerationStructureCreate_info, nullptr, (VkAccelerationStructureKHR*)&bottomLevelAS);
-//	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-//
-//	scratchBuffer = bufferManager->CreateBuffer(accelerationStructureBuildSizesInfoKHR.buildScratchSize,
-//		vk::BufferUsageFlagBits::eStorageBuffer |
-//		vk::BufferUsageFlagBits::eShaderDeviceAddress,
-//		commandPool, vulkanContext->graphicsQueue);
-//
-//	vk::BufferDeviceAddressInfoKHR StorageBufferAddressInfo{};
-//	StorageBufferAddressInfo.buffer = scratchBuffer.buffer;
-//
-//	vk::DeviceAddress  StorageAddress = vulkanContext->LogicalDevice.getBufferAddress(&StorageBufferAddressInfo);
-//
-//	vk::AccelerationStructureBuildGeometryInfoKHR acceleraitonBuildGeometryInfo{};
-//	acceleraitonBuildGeometryInfo.type = vk::AccelerationStructureTypeKHR::eBottomLevel;
-//	acceleraitonBuildGeometryInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
-//	acceleraitonBuildGeometryInfo.mode = vk::BuildAccelerationStructureModeKHR::eBuild;
-//	acceleraitonBuildGeometryInfo.dstAccelerationStructure = bottomLevelAS;
-//	acceleraitonBuildGeometryInfo.geometryCount = 1;
-//	acceleraitonBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
-//	acceleraitonBuildGeometryInfo.scratchData.deviceAddress = StorageAddress;
-//
-//	vk::AccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfo{};
-//	accelerationStructureBuildRangeInfo.primitiveCount = numTriangles;
-//	accelerationStructureBuildRangeInfo.primitiveOffset = 0;
-//	accelerationStructureBuildRangeInfo.firstVertex = 0;
-//	accelerationStructureBuildRangeInfo.transformOffset = 0;
-//
-//	std::vector<vk::AccelerationStructureBuildRangeInfoKHR*> accelerationBuildStructureRangeInfos = { &accelerationStructureBuildRangeInfo };
-//
-//	vk::CommandBuffer commandbuffer =   bufferManager->CreateSingleUseCommandBuffer(commandPool);
-//
-//	vulkanContext->vkCmdBuildAccelerationStructuresKHR(
-//		commandbuffer,1,
-//		reinterpret_cast<const VkAccelerationStructureBuildGeometryInfoKHR*>(&acceleraitonBuildGeometryInfo),
-//		reinterpret_cast<const VkAccelerationStructureBuildRangeInfoKHR* const*>(accelerationBuildStructureRangeInfos.data()));
-//
-//
-//	bufferManager->SubmitAndDestoyCommandBuffer(commandPool, commandbuffer, vulkanContext->graphicsQueue);
-//}
 
 void Model::CreateUniformBuffer()
 {
-	vertexUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-	VertexUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
-
-	VkDeviceSize VertexuniformBufferSize = sizeof(TransformMatrices);
-
-	for (size_t i = 0; i < vertexUniformBuffers.size(); i++)
 	{
+		vertexUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+		VertexUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
 
-		BufferData bufferdata = bufferManager->CreateBuffer(VertexuniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
-		vertexUniformBuffers[i] = bufferdata;
+		VkDeviceSize VertexuniformBufferSize = sizeof(VertexUniformData);
 
-		VertexUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
+		for (size_t i = 0; i < vertexUniformBuffers.size(); i++)
+		{
+
+			BufferData bufferdata = bufferManager->CreateBuffer(VertexuniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
+			vertexUniformBuffers[i] = bufferdata;
+
+			VertexUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
+		}
 	}
-
-	//////////////////////////////////////////////////////////////
-	fragmentUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-	FragmentUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
 }
 
 
@@ -205,76 +113,81 @@ void Model::createDescriptorSetLayout()
 	{
 		throw std::runtime_error("Failed to create descriptorset layout!");
 	}
+
 }
 
 void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 {
-	// create sets from the pool based on the layout
-	std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
-
-	vk::DescriptorSetAllocateInfo allocinfo;
-	allocinfo.descriptorPool = descriptorpool;
-	allocinfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-	allocinfo.pSetLayouts = layouts.data();
-
-	DescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-
-	vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, DescriptorSets.data());
+	{
+	     // create sets from the pool based on the layout
+		 // 	     
+		std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
 
 
-	////////////////////////////////////////////////////////////////////////////////////////////////
-	//specifies what exactly to send
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-
-		vk::DescriptorBufferInfo vertexbufferInfo{};
-		vertexbufferInfo.buffer = vertexUniformBuffers[i].buffer;
-		vertexbufferInfo.offset = 0;
-		vertexbufferInfo.range = sizeof(TransformMatrices);
-
-		vk::WriteDescriptorSet VertexUniformdescriptorWrite{};
-		VertexUniformdescriptorWrite.dstSet = DescriptorSets[i];
-		VertexUniformdescriptorWrite.dstBinding = 0;
-		VertexUniformdescriptorWrite.dstArrayElement = 0;
-		VertexUniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-		VertexUniformdescriptorWrite.descriptorCount = 1;
-		VertexUniformdescriptorWrite.pBufferInfo = &vertexbufferInfo;
-;
-		/////////////////////////////////////////////////////////////////////////////////////
-		vk::DescriptorImageInfo imageInfo{};
-		imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		imageInfo.imageView = albedoTextureData.imageView;
-		imageInfo.sampler = albedoTextureData.imageSampler;
-
-		vk::WriteDescriptorSet SamplerdescriptorWrite{};
-		SamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		SamplerdescriptorWrite.dstBinding = 1;
-		SamplerdescriptorWrite.dstArrayElement = 0;
-		SamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		SamplerdescriptorWrite.descriptorCount = 1;
-		SamplerdescriptorWrite.pImageInfo = &imageInfo;
-		/////////////////////////////////////////////////////////////////////////////////////
-
-		/////////////////////////////////////////////////////////////////////////////////////
-		vk::DescriptorImageInfo NormalimageInfo{};
-		NormalimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		NormalimageInfo.imageView = normalTextureData.imageView;
-		NormalimageInfo.sampler = normalTextureData.imageSampler;
-
-		vk::WriteDescriptorSet NormalSamplerdescriptorWrite{};
-		NormalSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		NormalSamplerdescriptorWrite.dstBinding = 2;
-		NormalSamplerdescriptorWrite.dstArrayElement = 0;
-		NormalSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		NormalSamplerdescriptorWrite.descriptorCount = 1;
-		NormalSamplerdescriptorWrite.pImageInfo = &NormalimageInfo;
-		/////////////////////////////////////////////////////////////////////////////////////
-
-
-		std::array<vk::WriteDescriptorSet, 3> descriptorWrites{ VertexUniformdescriptorWrite,
-																SamplerdescriptorWrite,NormalSamplerdescriptorWrite };
-
-		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+	     vk::DescriptorSetAllocateInfo allocinfo;
+	     allocinfo.descriptorPool = descriptorpool;
+	     allocinfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	     allocinfo.pSetLayouts = layouts.data();
+		 
+	     DescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+	     
+	     vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, DescriptorSets.data());
+	     
+	     ////////////////////////////////////////////////////////////////////////////////////////////////
+	     //specifies what exactly to send
+	     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+	     
+	     	vk::DescriptorBufferInfo vertexbufferInfo{};
+	     	vertexbufferInfo.buffer = vertexUniformBuffers[i].buffer;
+	     	vertexbufferInfo.offset = 0;
+	     	vertexbufferInfo.range = sizeof(TransformMatrices);
+	     
+	     	vk::WriteDescriptorSet VertexUniformdescriptorWrite{};
+	     	VertexUniformdescriptorWrite.dstSet = DescriptorSets[i];
+	     	VertexUniformdescriptorWrite.dstBinding = 0;
+	     	VertexUniformdescriptorWrite.dstArrayElement = 0;
+	     	VertexUniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+	     	VertexUniformdescriptorWrite.descriptorCount = 1;
+	     	VertexUniformdescriptorWrite.pBufferInfo = &vertexbufferInfo;
+	     	;
+	     	/////////////////////////////////////////////////////////////////////////////////////
+	     	vk::DescriptorImageInfo imageInfo{};
+	     	imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+	     	imageInfo.imageView = albedoTextureData.imageView;
+	     	imageInfo.sampler = albedoTextureData.imageSampler;
+	     
+	     	vk::WriteDescriptorSet SamplerdescriptorWrite{};
+	     	SamplerdescriptorWrite.dstSet = DescriptorSets[i];
+	     	SamplerdescriptorWrite.dstBinding = 1;
+	     	SamplerdescriptorWrite.dstArrayElement = 0;
+	     	SamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	     	SamplerdescriptorWrite.descriptorCount = 1;
+	     	SamplerdescriptorWrite.pImageInfo = &imageInfo;
+	     	/////////////////////////////////////////////////////////////////////////////////////
+	     
+	     	/////////////////////////////////////////////////////////////////////////////////////
+	     	vk::DescriptorImageInfo NormalimageInfo{};
+	     	NormalimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+	     	NormalimageInfo.imageView = normalTextureData.imageView;
+	     	NormalimageInfo.sampler = normalTextureData.imageSampler;
+	     
+	     	vk::WriteDescriptorSet NormalSamplerdescriptorWrite{};
+	     	NormalSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+	     	NormalSamplerdescriptorWrite.dstBinding = 2;
+	     	NormalSamplerdescriptorWrite.dstArrayElement = 0;
+	     	NormalSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	     	NormalSamplerdescriptorWrite.descriptorCount = 1;
+	     	NormalSamplerdescriptorWrite.pImageInfo = &NormalimageInfo;
+	     	/////////////////////////////////////////////////////////////////////////////////////
+	     
+	     
+	     	std::array<vk::WriteDescriptorSet, 3> descriptorWrites{ VertexUniformdescriptorWrite,
+	     															SamplerdescriptorWrite,NormalSamplerdescriptorWrite };
+	     
+	     	vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+	     }
 	}
+
 }
 
 
@@ -286,8 +199,14 @@ void Model::UpdateUniformBuffer(uint32_t currentImage, Light* lightref)
 	transformMatrices.projectionMatrix = camera->GetProjectionMatrix();
 	transformMatrices.projectionMatrix[1][1] *= -1;
 
-	memcpy(VertexUniformBuffersMappedMem[currentImage], &transformMatrices, sizeof(transformMatrices));
+	vertexdata.transformMatrices = transformMatrices;
+	vertexdata.LightViewMatrix = lightref->ViewMatrix;
+	vertexdata.LightProjectionMatrix = lightref->ProjectionMatrix;
+	vertexdata.LightProjectionMatrix[1][1] *= -1;
+
+	memcpy(VertexUniformBuffersMappedMem[currentImage], &vertexdata, sizeof(VertexUniformData));
 }
+
 
 void Model::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)
 {
@@ -299,6 +218,7 @@ void Model::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinela
 	commandbuffer.drawIndexed(storedModelData->IndexData.size(), 1, 0, 0, 0);
 }
 
+
 void Model::CleanUp()
 {
 	if (bufferManager)
@@ -306,6 +226,7 @@ void Model::CleanUp()
 		storedModelData = nullptr;
 		bufferManager->DestroyImage(albedoTextureData);
 		bufferManager->DestroyImage(normalTextureData);
+
 		/*bufferManager->DestroyBuffer(bottomLevelASBuffer);
 		bufferManager->DestroyBuffer(scratchBuffer);*/
 	}

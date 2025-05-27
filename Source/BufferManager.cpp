@@ -449,14 +449,14 @@ vk::ImageView BufferManager::CreateImageView(vk::Image Image, vk::Format ImageFo
    return logicalDevice.createImageView(imageviewinfo);
 }
 
-vk::Sampler BufferManager::CreateImageSampler() {
+vk::Sampler BufferManager::CreateImageSampler(vk::SamplerAddressMode addressMode) {
 
 	vk::SamplerCreateInfo SamplerInfo{};
 	SamplerInfo.magFilter = vk::Filter::eLinear;
 	SamplerInfo.minFilter = vk::Filter::eLinear;
-	SamplerInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
-	SamplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
-	SamplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
+	SamplerInfo.addressModeU = addressMode;
+	SamplerInfo.addressModeV = addressMode;
+	SamplerInfo.addressModeW = addressMode;
 	SamplerInfo.anisotropyEnable = vk::True;
 	SamplerInfo.maxAnisotropy = physicalDevice.getProperties().limits.maxSamplerAnisotropy;
 	SamplerInfo.borderColor = vk::BorderColor::eIntOpaqueBlack;

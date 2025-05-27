@@ -23,8 +23,7 @@ public:
     UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef, BufferManager* Buffermanager);
 
     void RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex);
-    void DrawUi(bool& bRecreateDepth, int& DefferedDecider, VkDescriptorSet FinalRenderTextureId, VkDescriptorSet PositionRenderTextureId, VkDescriptorSet NormalTextureId, VkDescriptorSet AlbedoTextureId, Camera* camera, std::vector<std::shared_ptr<Model>>& Models, std::vector<std::shared_ptr<Light>>& Lights);
-    void DrawUi(bool& bRecreateDepth, int& DefferedDecider, ImageData& ViewportImageData, VkDescriptorSet FinalRenderTextureId, VkDescriptorSet PositionRenderTextureId, VkDescriptorSet NormalTextureId, VkDescriptorSet AlbedoTextureId, Camera* camera, std::vector<std::shared_ptr<Model>>& Models, std::vector<std::shared_ptr<Light>>& Lights);
+    void DrawUi(bool& bRecreateDepth, int& DefferedDecider, VkDescriptorSet FinalRenderTextureId, VkDescriptorSet PositionRenderTextureId, VkDescriptorSet NormalTextureId, VkDescriptorSet AlbedoTextureId, VkDescriptorSet SSSAOTextureId, Camera* camera, std::vector<std::shared_ptr<Model>>& Models, std::vector<std::shared_ptr<Light>>& Lights);
     float CalculateDistanceInScreenSpace(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position);
    // std::vector<glm::vec3> ShowGuizmoToLocation(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position);
   
@@ -56,7 +55,7 @@ private:
      ImGuizmo::OPERATION currentGizmoOperation;
      ImGuizmo::MODE currentGizmoMode;
 
-     std::vector<std::string> Passes{"Position Pass", "Normal Pass", "Albedo Pass","Light Pass"};
+     std::vector<std::string> Passes{"Position Pass", "Normal Pass", "Albedo Pass","SSAO Pass","Light Pass"};
      std::string currentPass = "Light Pass";
 
      std::vector<std::string> items{ "Directional", "Point", "Spot" };

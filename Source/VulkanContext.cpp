@@ -189,12 +189,12 @@ vk::Pipeline VulkanContext::createGraphicsPipeline(vk::PipelineRenderingCreateIn
 	                                               vk::PipelineViewportStateCreateInfo viewportState,              vk::PipelineRasterizationStateCreateInfo rasterizerinfo,
 	                                               vk::PipelineMultisampleStateCreateInfo multisampling,           vk::PipelineDepthStencilStateCreateInfo depthStencilState,   
 	                                               vk::PipelineColorBlendStateCreateInfo colorBlend,               vk::PipelineDynamicStateCreateInfo DynamicState, 
-	                                               vk::PipelineLayout&  pipelineLayout)
+	                                               vk::PipelineLayout&  pipelineLayout, int numOfShaderStages)
 {
 
 	vk::GraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.pNext = &pipelineRenderingCreateInfo; // Add this line
-	pipelineInfo.stageCount = 2;
+	pipelineInfo.stageCount = numOfShaderStages;
 	pipelineInfo.pStages = ShaderStages;
 	pipelineInfo.pVertexInputState = &vertexInputInfo;
 	pipelineInfo.pInputAssemblyState = &inputAssembleInfo;

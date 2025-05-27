@@ -3,7 +3,7 @@
 layout (binding = 1) uniform sampler2D samplerColor;
 layout (binding = 2) uniform sampler2D samplerNormalMap;
 
-layout(location = 0) in vec3 Position;           
+layout(location = 0) in vec3 Position;        
 layout(location = 1) in vec2 fragTexCoord;           
 layout(location = 2) in mat3 TBN; 
 

@@ -12,7 +12,8 @@
 #include "Model.h"
 #include "SkyBox.h"
 #include "UserInterface.h"
-#include "FullScreenQuad.h"
+#include "Lighting_FullScreenQuad.h"
+#include "SSAO_FullScreenQuad.h"
 
 
 class Window;
@@ -89,7 +90,9 @@ private:
     std::shared_ptr<UserInterface>      userinterface = nullptr;
 	
 	//Drawables
-	std::shared_ptr<FullScreenQuad>     fullScreenQuad = nullptr;
+	std::shared_ptr<Lighting_FullScreenQuad>     lighting_FullScreenQuad = nullptr;
+	std::shared_ptr<SSA0_FullScreenQuad>         ssao_FullScreenQuad = nullptr;
+
 	std::vector<std::shared_ptr<Model>> Models;
 	std::vector<std::shared_ptr<Light>> lights;
 	std::shared_ptr<SkyBox> skyBox = nullptr;
@@ -105,11 +108,13 @@ private:
 	vk::PipelineLayout         LightpipelineLayout = nullptr;
 	vk::PipelineLayout         SkyBoxpipelineLayout = nullptr;
 	vk::PipelineLayout         geometryPassPipelineLayout = nullptr;
+	vk::PipelineLayout         SSAOPipelineLayout = nullptr;
 
 	vk::Pipeline               FullScreenQuadgraphicsPipeline = nullptr;
 	vk::Pipeline               LightgraphicsPipeline = nullptr;
 	vk::Pipeline               SkyBoxgraphicsPipeline = nullptr;
 	vk::Pipeline               geometryPassPipeline = nullptr;
+	vk::Pipeline               SSAOPipeline = nullptr;
 
 	vk::CommandPool            commandPool = nullptr;
 
@@ -128,6 +133,7 @@ private:
 	VkDescriptorSet PositionRenderTextureId;
 	VkDescriptorSet NormalTextureId;
 	VkDescriptorSet AlbedoTextureId;
+	VkDescriptorSet SSAOTextureId;
 
 	bool bRecreateDepth = false; 
 
@@ -138,5 +144,5 @@ private:
 	ImageData LightingPassImageData;
 
 
-	int DefferedDecider = 3;
+	int DefferedDecider = 4;
 };

@@ -10,14 +10,17 @@ struct LightData{
     vec4    positionAndLightType;
     vec4    colorAndAmbientStrength;
     vec4    CameraPositionAndLightIntensity;
+    mat4    LightProjectionViewMatrix;
 
 };
 layout (binding = 3) uniform LightUniformBuffer {
    
-   LightData lights[3];
+   LightData lights[1];
 };
 
 layout (location = 0) out vec4 outFragcolor;
+
+
 
 void main() {
 
@@ -34,7 +37,7 @@ void main() {
 
     vec3 totalLighting = vec3(0.0);
 
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 1; i++) {
      
      LightData light = lights[i];
 
@@ -46,8 +49,8 @@ void main() {
     }
     else if (light.positionAndLightType.w == 1){
     
-         LightDir          = normalize(light.positionAndLightType.xyz - FragPosition);
-         float Distance    = length(light.positionAndLightType.xyz - FragPosition);
+         LightDir          = normalize(light.positionAndLightType.xyz - FragPosition.xyz);
+         float Distance    = length(light.positionAndLightType.xyz -  FragPosition.xyz);
          Attenuation       = 1.0 / (Constant + Linear * Distance + Quadratic * (Distance * Distance));
    } 
 
@@ -56,21 +59,22 @@ void main() {
 
     vec3 Diffuse = Albedo * light.colorAndAmbientStrength.rgb * DiffuseAmount;
 
-   vec3  ViewDir    = normalize(light.CameraPositionAndLightIntensity.xyz - FragPosition);
+   vec3  ViewDir    = normalize(light.CameraPositionAndLightIntensity.xyz -  FragPosition.xyz);
    vec3  halfwayDir = normalize(LightDir + ViewDir);
 
    float spec       = pow(max(dot(Normal, halfwayDir), 0.0), 30);
 
    vec3 specular    = light.colorAndAmbientStrength.rgb * spec * 0.2;
 
+   vec3 Ambient = Albedo * light.colorAndAmbientStrength.rgb *  light.colorAndAmbientStrength.a;
 
+   vec4 lightSpacePos = light.LightProjectionViewMatrix * vec4(FragPosition, 1.0);
 
-    vec3 Ambient = Albedo * light.colorAndAmbientStrength.rgb *  light.colorAndAmbientStrength.a;
-
-    vec3 lightContribution = (Ambient + (Diffuse + specular) * Attenuation)  * light.CameraPositionAndLightIntensity.w;
+    vec3 lightContribution = (Ambient  + Diffuse + specular) * Attenuation  * light.CameraPositionAndLightIntensity.w;
 
    totalLighting += lightContribution;
   }
+
 
     outFragcolor = vec4(totalLighting, 1.0);
 }
