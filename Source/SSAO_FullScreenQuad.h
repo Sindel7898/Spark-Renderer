@@ -20,9 +20,6 @@ public:
 
     void CleanUp();
 
-
-    ImageData SSAOImage;
-
 private:
 
     std::vector<Vertex> quad = {

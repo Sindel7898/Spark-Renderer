@@ -145,21 +145,25 @@ void App::createGBuffer()
 
 	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
-	gbuffer.Position = bufferManger->CreateImage(swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	gbuffer.Position.imageView = bufferManger->CreateImageView(gbuffer.Position.image, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	gbuffer.Position.imageSampler = bufferManger->CreateImageSampler();
+	gbuffer.Position = bufferManger->CreateImage(swapchainextent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.Position.imageView = bufferManger->CreateImageView(gbuffer.Position.image, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
+	gbuffer.Position.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
-	gbuffer.Normal = bufferManger->CreateImage(swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	gbuffer.Normal.imageView = bufferManger->CreateImageView(gbuffer.Normal.image, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	gbuffer.Normal.imageSampler = bufferManger->CreateImageSampler();
+	gbuffer.Normal = bufferManger->CreateImage(swapchainextent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.Normal.imageView = bufferManger->CreateImageView(gbuffer.Normal.image, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
+	gbuffer.Normal.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+
+	gbuffer.SSAO = bufferManger->CreateImage(swapchainextent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.SSAO.imageView = bufferManger->CreateImageView(gbuffer.SSAO.image, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
+	gbuffer.SSAO.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	gbuffer.Albedo = bufferManger->CreateImage(swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	gbuffer.Albedo.imageView = bufferManger->CreateImageView(gbuffer.Albedo.image, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
-	gbuffer.Albedo.imageSampler = bufferManger->CreateImageSampler();
+	gbuffer.Albedo.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	LightingPassImageData = bufferManger->CreateImage(swapchainextent, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	LightingPassImageData.imageView = bufferManger->CreateImageView(LightingPassImageData.image, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
-	LightingPassImageData.imageSampler = bufferManger->CreateImageSampler();
+	LightingPassImageData.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
 	ssao_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
@@ -187,8 +191,8 @@ void App::createGBuffer()
 		                                                  LightingPassImageData.imageView,
 		                                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-	SSAOTextureId           = ImGui_ImplVulkan_AddTexture(ssao_FullScreenQuad->SSAOImage.imageSampler,
-		                                                  ssao_FullScreenQuad->SSAOImage.imageView,
+	SSAOTextureId           = ImGui_ImplVulkan_AddTexture(gbuffer.SSAO.imageSampler,
+		                                                  gbuffer.SSAO.imageView,
 		                                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 
@@ -388,7 +392,7 @@ void App::CreateGraphicsPipeline()
 		depthStencilState.maxDepthBounds = 1.0f;
 		depthStencilState.stencilTestEnable = vk::False;
 
-		std::array<vk::Format, 1> colorFormats = { vk::Format::eR32Sfloat };
+		std::array<vk::Format, 1> colorFormats = { vk::Format::eR32G32B32A32Sfloat };
 
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
@@ -401,7 +405,10 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.pPushConstantRanges = nullptr;
 		
 		vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
-		colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR;
+		colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR |
+			vk::ColorComponentFlagBits::eG |
+			vk::ColorComponentFlagBits::eB |
+			vk::ColorComponentFlagBits::eA;
 		colorBlendAttachment.blendEnable = vk::True;
 
 		colorBlendAttachment.setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha);
@@ -580,8 +587,8 @@ void App::CreateGraphicsPipeline()
 		vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
 
 		std::array<vk::Format, 3> colorFormats = {
-	                             vk::Format::eR16G16B16A16Sfloat, // Position
-	                             vk::Format::eR16G16B16A16Sfloat, // Normal
+	                             vk::Format::eR32G32B32A32Sfloat, // Position
+	                             vk::Format::eR32G32B32A32Sfloat, // Normal
 	                             vk::Format::eR8G8B8A8Unorm,       // Albedo
 	                             };
 
@@ -892,57 +899,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	vk::DeviceSize offsets[] = { 0 };
 
-	{
-
-		ImageTransitionData transitionInfo{};
-		transitionInfo.oldlayout = vk::ImageLayout::eUndefined;
-		transitionInfo.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		transitionInfo.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		transitionInfo.SourceAccessflag = vk::AccessFlagBits::eNone;
-		transitionInfo.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		transitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
-		transitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-
-		bufferManger->TransitionImage(commandBuffer, ssao_FullScreenQuad->SSAOImage.image, transitionInfo);
-
-		vk::RenderingAttachmentInfo SSAOColorAttachment{};
-		SSAOColorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
-		SSAOColorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
-		SSAOColorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		SSAOColorAttachment.imageView = ssao_FullScreenQuad->SSAOImage.imageView;
-		SSAOColorAttachment.clearValue = clearColor;
-
-		vk::RenderingInfo renderingInfo{};
-		renderingInfo.renderArea.offset = imageoffset;
-		renderingInfo.renderArea.extent.width = 1920;
-		renderingInfo.renderArea.extent.height = 1080;
-		renderingInfo.layerCount = 1;
-		renderingInfo.colorAttachmentCount = 1;
-		renderingInfo.pColorAttachments = &SSAOColorAttachment;
-
-		vk::Viewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = 1920;
-		viewport.height = 1080;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		vk::Rect2D scissor{};
-		scissor.offset = imageoffset;
-		scissor.extent.width = 1920;
-		scissor.extent.height = 1080;
-
-
-		commandBuffer.beginRendering(renderingInfo);
-		commandBuffer.setViewport(0, 1, &viewport);
-		commandBuffer.setScissor(0, 1, &scissor);
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SSAOPipeline);
-
-		ssao_FullScreenQuad->Draw(commandBuffer, SSAOPipelineLayout, currentFrame);
-		commandBuffer.endRendering();
-	}
-
 	 /////////////////// GBUFFER PASS ///////////////////////// 
 	{
 		ImageTransitionData TransitionColorAttachmentOptimal{};
@@ -1013,6 +969,57 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	}
 	/////////////////// GBUFFER PASS END ///////////////////////// 
 
+
+	{
+		//transiiton position and normal in prep of ssao
+		ImageTransitionData transitiontoshaderInfo{};
+		transitiontoshaderInfo.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
+		transitiontoshaderInfo.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		transitiontoshaderInfo.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		transitiontoshaderInfo.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
+		transitiontoshaderInfo.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
+		transitiontoshaderInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		transitiontoshaderInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
+
+		bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, transitiontoshaderInfo);
+		bufferManger->TransitionImage(commandBuffer, gbuffer.Normal.image, transitiontoshaderInfo);
+
+		ImageTransitionData transitionInfo{};
+		transitionInfo.oldlayout = vk::ImageLayout::eUndefined;
+		transitionInfo.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
+		transitionInfo.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		transitionInfo.SourceAccessflag = vk::AccessFlagBits::eNone;
+		transitionInfo.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
+		transitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
+		transitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+
+		bufferManger->TransitionImage(commandBuffer, gbuffer.SSAO.image, transitionInfo);
+
+		vk::RenderingAttachmentInfo SSAOColorAttachment{};
+		SSAOColorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+		SSAOColorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+		SSAOColorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		SSAOColorAttachment.imageView = gbuffer.SSAO.imageView;
+		SSAOColorAttachment.clearValue = clearColor;
+
+		vk::RenderingInfo renderingInfo{};
+		renderingInfo.renderArea.offset = imageoffset;
+		renderingInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
+		renderingInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
+		renderingInfo.layerCount = 1;
+		renderingInfo.colorAttachmentCount = 1;
+		renderingInfo.pColorAttachments = &SSAOColorAttachment;
+
+
+		commandBuffer.beginRendering(renderingInfo);
+		commandBuffer.setViewport(0, 1, &viewport);
+		commandBuffer.setScissor(0, 1, &scissor);
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SSAOPipeline);
+
+		ssao_FullScreenQuad->Draw(commandBuffer, SSAOPipelineLayout, currentFrame);
+		commandBuffer.endRendering();
+	}
+
     /////////////////// LIGHTING PASS ///////////////////////// 
 	{
 		ImageTransitionData gbufferTransition{};
@@ -1024,8 +1031,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		gbufferTransition.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 		gbufferTransition.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 
-		bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, gbufferTransition);
-		bufferManger->TransitionImage(commandBuffer, gbuffer.Normal.image  , gbufferTransition);
+		//bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, gbufferTransition);
+		//bufferManger->TransitionImage(commandBuffer, gbuffer.Normal.image  , gbufferTransition);
 		bufferManger->TransitionImage(commandBuffer, gbuffer.Albedo.image  , gbufferTransition);
 
 		vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
@@ -1148,9 +1155,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	/////////////////// FORWARD PASS END ///////////////////////// 
 
 
-
-
-
 	////////// Transition image in prep for GUI ////////////////////
 	ImageTransitionData TransitiontoShader{};
 	TransitiontoShader.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
@@ -1161,32 +1165,12 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	TransitiontoShader.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 	TransitiontoShader.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 
-	if (DefferedDecider == 0)
-	{
-		bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, TransitiontoShader);
+	bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, TransitiontoShader);
+	bufferManger->TransitionImage(commandBuffer, gbuffer.Normal.image, TransitiontoShader);
+	bufferManger->TransitionImage(commandBuffer, gbuffer.Albedo.image, TransitiontoShader); 
+	bufferManger->TransitionImage(commandBuffer, gbuffer.SSAO.image, TransitiontoShader);
+	bufferManger->TransitionImage(commandBuffer, LightingPassImageData.image, TransitiontoShader); 
 
-	}
-	if (DefferedDecider == 1)
-	{
-		bufferManger->TransitionImage(commandBuffer, gbuffer.Normal.image, TransitiontoShader);
-
-	}
-	if (DefferedDecider == 2)
-	{
-		bufferManger->TransitionImage(commandBuffer, gbuffer.Albedo.image, TransitiontoShader);
-	}
-
-	if (DefferedDecider == 3)
-	{
-		bufferManger->TransitionImage(commandBuffer,ssao_FullScreenQuad->SSAOImage.image, TransitiontoShader);
-
-	}
-
-	if (DefferedDecider == 4)
-	{
-		bufferManger->TransitionImage(commandBuffer, LightingPassImageData.image, TransitiontoShader);
-
-	}
 
 	userinterface->RenderUi(commandBuffer, imageIndex);
 }
@@ -1219,6 +1203,8 @@ void App::recreateSwapChain() {
 	vulkanContext->destroy_swapchain();
 	destroy_DepthImage();
 	destroy_GbufferImages();
+
+	vulkanContext->LogicalDevice.waitIdle();
 
 	vulkanContext->create_swapchain();
 	createDepthTextureImage();

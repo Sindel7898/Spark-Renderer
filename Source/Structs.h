@@ -7,8 +7,8 @@ struct Vertex {
 
 struct GBuffer {
     ImageData Position;
-    ImageData LightSpacePosition;
     ImageData Normal;
+    ImageData SSAO;
     ImageData Albedo;
 };
 

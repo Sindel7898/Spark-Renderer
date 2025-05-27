@@ -6,9 +6,12 @@ layout (binding = 1) uniform sampler2D samplerNormal;
 layout(location = 0) in vec2 inTexCoord;           
 
 
-layout (location = 0) out float outSSAO_Color;
+layout (location = 0) out vec4 outFragcolor;
 
 void main() {
+    
+    vec4 position = texture(samplerposition,inTexCoord);
+    vec4 normals = texture(samplerNormal,inTexCoord);
 
-    outSSAO_Color = 0.7f;
+    outFragcolor = vec4(normals.rgb,1.0f);
 }

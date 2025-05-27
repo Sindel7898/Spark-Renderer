@@ -63,12 +63,6 @@ void SSA0_FullScreenQuad::createDescriptorSetLayout()
 void SSA0_FullScreenQuad::createSSAOImage()
 {
 
-	vk::Extent3D SSAOSize(1920, 1080, 1);
-	SSAOImage = bufferManager->CreateImage(SSAOSize, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	SSAOImage.imageView = bufferManager->CreateImageView(SSAOImage.image, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
-	SSAOImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
-
-
 
 }
 
