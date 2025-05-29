@@ -109,9 +109,8 @@ BufferData BufferManager::CreateGPUOptimisedBuffer(const void* Data, VkDeviceSiz
 	return FinalBufferData;
 }
 
-ImageData BufferManager::CreateTextureImage(stbi_uc* pixeldata, int texWidth, int textHeight, vk::Format ImageFormat, vk::CommandPool commandpool, vk::Queue Queue)
+ImageData BufferManager::CreateTextureImage(const void* pixeldata, vk::DeviceSize imagesize, int texWidth, int textHeight,vk::Format ImageFormat, vk::CommandPool commandpool, vk::Queue Queue)
 {
-	vk::DeviceSize imagesize =  texWidth* textHeight * 4;
 
 	vk::BufferCreateInfo StagingBufferCreateInfo = {};
 	StagingBufferCreateInfo.size = imagesize;

@@ -749,15 +749,6 @@ void App::Run()
 		CalculateFps(fpsCounter);
 		camera->Update(deltaTime);
 
-		//ZoneScopedN("UI");
-	/*	if (bRecreateDepth)
-		{
-			destroy_DepthImage();
-			destroy_GbufferImages();
-			createDepthTextureImage();
-			createGBuffer();
-			bRecreateDepth = false;
-		}*/
 
 		userinterface->DrawUi(bRecreateDepth, DefferedDecider, FinalRenderTextureId, PositionRenderTextureId, 
 			                                                   NormalTextureId, AlbedoTextureId, SSAOTextureId, camera.get(), Models, lights);
@@ -869,6 +860,8 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 	skyBox->UpdateUniformBuffer(currentImage,lights[0].get());
 
 	lighting_FullScreenQuad->UpdateUniformBuffer(currentImage, lights);
+
+	ssao_FullScreenQuad->UpdataeUniformBufferData();
 }
 
 void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) {

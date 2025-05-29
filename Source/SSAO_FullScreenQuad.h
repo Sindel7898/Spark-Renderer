@@ -6,6 +6,13 @@
 #include "Drawable.h"
 #include "Structs.h"
 
+struct SSAOUniformBuffer
+{
+    glm::mat4  CameraProjMatrix;
+    glm::mat4  CameraViewMatrix;
+    glm::vec4  ssaoKernel[64];
+
+};
 class SSA0_FullScreenQuad : public Drawable
 {
 public:
@@ -13,13 +20,16 @@ public:
     SSA0_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext, Camera* cameraref, vk::CommandPool commandpool);
     void CreateVertexAndIndexBuffer() override;
     void createDescriptorSetLayout() override;
-    void createSSAOImage();
-
+    void CreateKernel();
+    void UpdataeUniformBufferData();
+    void CreateUniformBuffer() override;
+    float lerp(float a, float b, float f);
     void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer Gbuffer);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
 
     void CleanUp();
 
+    ImageData NoiseTexture;
 private:
 
     std::vector<Vertex> quad = {
@@ -36,6 +46,9 @@ private:
 
 
     Camera* camera = nullptr;
+    std::vector<glm::vec4> ssaoNoise;
+    SSAOUniformBuffer SSAOuniformbuffer;
+
 };
 
 static inline void SSA0_FullScreenQuadDeleter(SSA0_FullScreenQuad* SSA0_fullScreenQuad) {

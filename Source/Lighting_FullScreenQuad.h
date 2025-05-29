@@ -12,7 +12,6 @@ struct LightUniformData {
      glm::vec4  colorAndAmbientStrength;
      glm::vec4  CameraPositionAndLightIntensity;
      glm::mat4  LightViewProjMatrix;
-
 };
 
 class Lighting_FullScreenQuad : public Drawable
