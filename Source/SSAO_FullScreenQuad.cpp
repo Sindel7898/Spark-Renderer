@@ -17,6 +17,9 @@ SSA0_FullScreenQuad::SSA0_FullScreenQuad(BufferManager* buffermanager, VulkanCon
 	CreateUniformBuffer();
 	CreateKernel();
 	createDescriptorSetLayout();
+
+
+	SSAOuniformbuffer.KernelSizeRadiusBiasAndPadding = glm::vec4(KernelSize, Radius, Bias, 1);
 }
 
 
@@ -55,7 +58,7 @@ void SSA0_FullScreenQuad::CreateUniformBuffer()
 		glm::vec4 noise(
 			randomFloats(generator) * 2.0 - 1.0,
 			randomFloats(generator) * 2.0 - 1.0,
-			1.0f, 1.0f);
+			0.0f, 0.0f);
 		ssaoNoise.push_back(noise);
 	}
 
@@ -112,25 +115,32 @@ void SSA0_FullScreenQuad::CreateKernel()
 	std::uniform_real_distribution<float> randomFloats(0.0f, 1.0f);
 	std::default_random_engine generator;
 
-	for (unsigned int i = 0; i < 64; i++)
+	for (unsigned int i = 0; i < 32; i++)
 	{
 		glm::vec4 sample(randomFloats(generator) * 2.0 - 1.0,
 			             randomFloats(generator) * 2.0 - 1.0,
 			             randomFloats(generator),
 			             randomFloats(generator));
 
-		float scale = (float)i / 64.0;
+		
+		sample = glm::normalize(sample); // Normalize first
+		sample *= randomFloats(generator); // Then scale
+
+		float scale = (float)i / 32.0;
 		scale = lerp(0.1f, 1.0f, scale * scale);
 		sample *= scale;
 		SSAOuniformbuffer.ssaoKernel[i] = sample;
-
 	}
 }
 
 void SSA0_FullScreenQuad::UpdataeUniformBufferData()
 {
 	SSAOuniformbuffer.CameraProjMatrix = camera->GetProjectionMatrix();
+	SSAOuniformbuffer.CameraProjMatrix[1][1] *= -1;
+
 	SSAOuniformbuffer.CameraViewMatrix = camera->GetViewMatrix();
+
+	SSAOuniformbuffer.KernelSizeRadiusBiasAndPadding = glm::vec4(KernelSize, Radius, Bias, 1);
 
 	for (size_t i = 0; i < FragmentUniformBuffersMappedMem.size(); i++)
 	{
@@ -165,8 +175,8 @@ void SSA0_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool 
 		/////////////////////////////////////////////////////////////////////////////////////
 		vk::DescriptorImageInfo PositionimageInfo{};
 		PositionimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		PositionimageInfo.imageView = Gbuffer.Position.imageView;
-		PositionimageInfo.sampler = Gbuffer.Position.imageSampler;
+		PositionimageInfo.imageView = Gbuffer.ViewSpacePosition.imageView;
+		PositionimageInfo.sampler = Gbuffer.ViewSpacePosition.imageSampler;
 
 		vk::WriteDescriptorSet PositionSamplerdescriptorWrite{};
 		PositionSamplerdescriptorWrite.dstSet = DescriptorSets[i];
@@ -179,8 +189,8 @@ void SSA0_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool 
 ;
         vk::DescriptorImageInfo NormalimageInfo{};
         NormalimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-        NormalimageInfo.imageView = Gbuffer.Normal.imageView;
-        NormalimageInfo.sampler = Gbuffer.Normal.imageSampler;
+        NormalimageInfo.imageView = Gbuffer.ViewSpaceNormal.imageView;
+        NormalimageInfo.sampler = Gbuffer.ViewSpaceNormal.imageSampler;
         
         vk::WriteDescriptorSet NormalSamplerdescriptorWrite{};
         NormalSamplerdescriptorWrite.dstSet = DescriptorSets[i];

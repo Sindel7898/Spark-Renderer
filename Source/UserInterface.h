@@ -16,14 +16,17 @@ class BufferManager;
 class Camera;
 class Model;
 class Light;
+class SSA0_FullScreenQuad;
 
 class UserInterface
 {
-public:
+ public:
     UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef, BufferManager* Buffermanager);
 
     void RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex);
-    void DrawUi(bool& bRecreateDepth, int& DefferedDecider, VkDescriptorSet FinalRenderTextureId, VkDescriptorSet PositionRenderTextureId, VkDescriptorSet NormalTextureId, VkDescriptorSet AlbedoTextureId, VkDescriptorSet SSSAOTextureId, Camera* camera, std::vector<std::shared_ptr<Model>>& Models, std::vector<std::shared_ptr<Light>>& Lights);
+    void DrawUi(bool& bRecreateDepth, int& DefferedDecider, VkDescriptorSet FinalRenderTextureId, VkDescriptorSet PositionRenderTextureId, 
+                VkDescriptorSet NormalTextureId, VkDescriptorSet AlbedoTextureId, VkDescriptorSet SSSAOTextureId, Camera* camera, 
+                std::vector<std::shared_ptr<Model>>& Models, std::vector<std::shared_ptr<Light>>& Lights, SSA0_FullScreenQuad* SSAO);
     float CalculateDistanceInScreenSpace(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position);
    // std::vector<glm::vec3> ShowGuizmoToLocation(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position);
   
@@ -38,7 +41,7 @@ public:
     vk::DescriptorPool  ImGuiDescriptorPool = nullptr;
 
 
-private:
+ private:
     void InitImgui();
     void SetupDockingEnvironment();
 

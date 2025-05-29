@@ -1,5 +1,6 @@
 #include "Drawable.h"
 #include "VulkanContext.h"
+#include "Light.h"
 
 
 Drawable::Drawable()
@@ -85,6 +86,23 @@ glm::mat4 Drawable::GetModelMatrix()
 {
 	return transformMatrices.modelMatrix;
 }
+
+void Drawable::SetPosition(glm::vec3 newposition)
+{
+	transformMatrices.modelMatrix = glm::translate(transformMatrices.modelMatrix, newposition);
+}
+
+void Drawable::SetRotation(glm::vec3 rotationAxis, float radians)
+{
+	transformMatrices.modelMatrix = glm::rotate(transformMatrices.modelMatrix, glm::radians(radians), rotationAxis);
+}
+
+
+void Drawable::SetScale(glm::vec3 newscale)
+{
+	transformMatrices.modelMatrix = glm::scale(transformMatrices.modelMatrix, newscale);
+}
+
 
 void Drawable::SetModelMatrix(glm::mat4 newModelMatrix)
 {

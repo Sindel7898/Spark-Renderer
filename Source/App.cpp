@@ -57,12 +57,20 @@
 	lighting_FullScreenQuad = std::shared_ptr<Lighting_FullScreenQuad>(new Lighting_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), Lighting_FullScreenQuadDeleter);
 	ssao_FullScreenQuad     = std::shared_ptr<SSA0_FullScreenQuad>(new SSA0_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSA0_FullScreenQuadDeleter);
 
-	lights.reserve(0);
+	lights.reserve(2);
 
-	for (int i = 0; i < 1; i++) {
+	for (int i = 0; i < 3; i++) {
 		std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), LightDeleter);
 		lights.push_back(std::move(light));
 	}
+
+	lights[0]->SetPosition(glm::vec3(20.0f, 0.0f, 0.0f));
+	lights[1]->SetPosition(glm::vec3(0.0f, 10.0f, 0.0f));
+	lights[2]->SetPosition(glm::vec3(-20.0f, 0.0f, 0.0f));
+
+	lights[0]->color = glm::vec3(1.0f, 0.0f, 0.0f);
+	lights[1]->color = glm::vec3(0.0f, 1.0f, 0.0f);
+	lights[2]->color = glm::vec3(0.0f, 0.0f, 1.0f);
 
 	//createTLAS();
 	createDescriptorPool();
@@ -149,9 +157,17 @@ void App::createGBuffer()
 	gbuffer.Position.imageView = bufferManger->CreateImageView(gbuffer.Position.image, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
 	gbuffer.Position.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
+	gbuffer.ViewSpacePosition = bufferManger->CreateImage(swapchainextent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.ViewSpacePosition.imageView = bufferManger->CreateImageView(gbuffer.ViewSpacePosition.image, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
+	gbuffer.ViewSpacePosition.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+
 	gbuffer.Normal = bufferManger->CreateImage(swapchainextent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	gbuffer.Normal.imageView = bufferManger->CreateImageView(gbuffer.Normal.image, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
 	gbuffer.Normal.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+
+	gbuffer.ViewSpaceNormal = bufferManger->CreateImage(swapchainextent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.ViewSpaceNormal.imageView = bufferManger->CreateImageView(gbuffer.ViewSpaceNormal.image, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
+	gbuffer.ViewSpaceNormal.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	gbuffer.SSAO = bufferManger->CreateImage(swapchainextent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	gbuffer.SSAO.imageView = bufferManger->CreateImageView(gbuffer.SSAO.image, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
@@ -179,6 +195,8 @@ void App::createGBuffer()
 	transitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
 	transitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 
+	bufferManger->TransitionImage(commandBuffer, gbuffer.ViewSpacePosition.image, transitionInfo);
+	bufferManger->TransitionImage(commandBuffer, gbuffer.ViewSpaceNormal.image, transitionInfo);
 	bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, transitionInfo);
 	bufferManger->TransitionImage(commandBuffer, gbuffer.Normal.image, transitionInfo);
 	bufferManger->TransitionImage(commandBuffer, gbuffer.Albedo.image, transitionInfo);
@@ -586,10 +604,12 @@ void App::CreateGraphicsPipeline()
 		vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
 		vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
 
-		std::array<vk::Format, 3> colorFormats = {
+		std::array<vk::Format, 5> colorFormats = {
 	                             vk::Format::eR32G32B32A32Sfloat, // Position
+								 vk::Format::eR32G32B32A32Sfloat, // ViewSpacePosition
 	                             vk::Format::eR32G32B32A32Sfloat, // Normal
-	                             vk::Format::eR8G8B8A8Unorm,       // Albedo
+					             vk::Format::eR32G32B32A32Sfloat, // // ViewSpaceNormal
+	                             vk::Format::eR8G8B8A8Unorm,      // Albedo
 	                             };
 
 
@@ -604,7 +624,7 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
 		pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
-		std::array<vk::PipelineColorBlendAttachmentState, 3> colorBlendAttachments = {
+		std::array<vk::PipelineColorBlendAttachmentState, 5> colorBlendAttachments = {
 			// Position attachment blend state
 			vk::PipelineColorBlendAttachmentState{}
 				.setColorWriteMask(vk::ColorComponentFlagBits::eR |
@@ -620,6 +640,20 @@ void App::CreateGraphicsPipeline()
 								  vk::ColorComponentFlagBits::eA)
 				.setBlendEnable(VK_FALSE),
 
+			// Albedo attachment blend state
+			vk::PipelineColorBlendAttachmentState{}
+				.setColorWriteMask(vk::ColorComponentFlagBits::eR |
+								  vk::ColorComponentFlagBits::eG |
+								  vk::ColorComponentFlagBits::eB |
+								  vk::ColorComponentFlagBits::eA)
+				.setBlendEnable(VK_FALSE),
+			// Albedo attachment blend state
+			vk::PipelineColorBlendAttachmentState{}
+				.setColorWriteMask(vk::ColorComponentFlagBits::eR |
+								  vk::ColorComponentFlagBits::eG |
+								  vk::ColorComponentFlagBits::eB |
+								  vk::ColorComponentFlagBits::eA)
+				.setBlendEnable(VK_FALSE),
 			// Albedo attachment blend state
 			vk::PipelineColorBlendAttachmentState{}
 				.setColorWriteMask(vk::ColorComponentFlagBits::eR |
@@ -751,7 +785,7 @@ void App::Run()
 
 
 		userinterface->DrawUi(bRecreateDepth, DefferedDecider, FinalRenderTextureId, PositionRenderTextureId, 
-			                                                   NormalTextureId, AlbedoTextureId, SSAOTextureId, camera.get(), Models, lights);
+			                                                   NormalTextureId, AlbedoTextureId, SSAOTextureId, camera.get(), Models, lights,ssao_FullScreenQuad.get());
 		Draw();		
 
 	}
@@ -904,7 +938,9 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TransitionColorAttachmentOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 
 		bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, TransitionColorAttachmentOptimal);
+		bufferManger->TransitionImage(commandBuffer, gbuffer.ViewSpacePosition.image, TransitionColorAttachmentOptimal);
 		bufferManger->TransitionImage(commandBuffer, gbuffer.Normal.image, TransitionColorAttachmentOptimal);
+		bufferManger->TransitionImage(commandBuffer, gbuffer.ViewSpaceNormal.image, TransitionColorAttachmentOptimal);
 		bufferManger->TransitionImage(commandBuffer, gbuffer.Albedo.image, TransitionColorAttachmentOptimal);
 
 
@@ -915,12 +951,27 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		PositioncolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
 		PositioncolorAttachmentInfo.clearValue = clearColor;
 
+		vk::RenderingAttachmentInfo ViewSpacePositioncolorAttachmentInfo{};
+		ViewSpacePositioncolorAttachmentInfo.imageView = gbuffer.ViewSpacePosition.imageView;
+		ViewSpacePositioncolorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		ViewSpacePositioncolorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
+		ViewSpacePositioncolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		ViewSpacePositioncolorAttachmentInfo.clearValue = clearColor;
+
+
 		vk::RenderingAttachmentInfo NormalcolorAttachmentInfo{};
 		NormalcolorAttachmentInfo.imageView = gbuffer.Normal.imageView;
 		NormalcolorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		NormalcolorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
 		NormalcolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
 		NormalcolorAttachmentInfo.clearValue = clearColor;
+
+		vk::RenderingAttachmentInfo ViewSpaceNormalcolorAttachmentInfo{};
+		ViewSpaceNormalcolorAttachmentInfo.imageView = gbuffer.ViewSpaceNormal.imageView;
+		ViewSpaceNormalcolorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		ViewSpaceNormalcolorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
+		ViewSpaceNormalcolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		ViewSpaceNormalcolorAttachmentInfo.clearValue = clearColor;
 
 		vk::RenderingAttachmentInfo AlbedocolorAttachmentInfo{};
 		AlbedocolorAttachmentInfo.imageView = gbuffer.Albedo.imageView;
@@ -929,7 +980,9 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		AlbedocolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
 		AlbedocolorAttachmentInfo.clearValue = clearColor;
 
-		std::array<vk::RenderingAttachmentInfo, 3> ColorAttachments{ PositioncolorAttachmentInfo,NormalcolorAttachmentInfo,AlbedocolorAttachmentInfo };
+		std::array<vk::RenderingAttachmentInfo, 5> ColorAttachments{ PositioncolorAttachmentInfo,ViewSpacePositioncolorAttachmentInfo,
+			                                                         NormalcolorAttachmentInfo, ViewSpaceNormalcolorAttachmentInfo,
+			                                                         AlbedocolorAttachmentInfo };
 
 		vk::RenderingAttachmentInfo depthStencilAttachment;
 		depthStencilAttachment.imageView = DepthTextureData.imageView;
@@ -974,8 +1027,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		transitiontoshaderInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 		transitiontoshaderInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 
-		bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, transitiontoshaderInfo);
-		bufferManger->TransitionImage(commandBuffer, gbuffer.Normal.image, transitiontoshaderInfo);
+		bufferManger->TransitionImage(commandBuffer, gbuffer.ViewSpacePosition.image, transitiontoshaderInfo);
+		bufferManger->TransitionImage(commandBuffer, gbuffer.ViewSpaceNormal.image, transitiontoshaderInfo);
 
 		ImageTransitionData transitionInfo{};
 		transitionInfo.oldlayout = vk::ImageLayout::eUndefined;
@@ -1024,8 +1077,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		gbufferTransition.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 		gbufferTransition.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 
-		//bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, gbufferTransition);
-		//bufferManger->TransitionImage(commandBuffer, gbuffer.Normal.image  , gbufferTransition);
+		bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, gbufferTransition);
+		bufferManger->TransitionImage(commandBuffer, gbuffer.Normal.image  , gbufferTransition);
 		bufferManger->TransitionImage(commandBuffer, gbuffer.Albedo.image  , gbufferTransition);
 
 		vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
@@ -1093,6 +1146,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TransitionBacktoColorOutput.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 		TransitionBacktoColorOutput.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 
+		bufferManger->TransitionImage(commandBuffer, gbuffer.ViewSpacePosition.image, TransitionBacktoColorOutput);
+		bufferManger->TransitionImage(commandBuffer, gbuffer.ViewSpaceNormal.image, TransitionBacktoColorOutput);
 		bufferManger->TransitionImage(commandBuffer, gbuffer.Position.image, TransitionBacktoColorOutput);
 		bufferManger->TransitionImage(commandBuffer, gbuffer.Normal.image, TransitionBacktoColorOutput);
 		bufferManger->TransitionImage(commandBuffer, gbuffer.Albedo.image, TransitionBacktoColorOutput);

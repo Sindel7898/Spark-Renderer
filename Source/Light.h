@@ -19,6 +19,7 @@ public:
     void createDescriptorSets(vk::DescriptorPool descriptorpool) override;
     void UpdateUniformBuffer(uint32_t currentImage, Light* lightref) override;
     void createDescriptorSetLayout() override;
+ 
 
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
 

@@ -13,8 +13,10 @@ layout(set = 0,binding = 0) uniform UniformBufferObject {
 } ubo;
 
 layout(location = 0) out vec4 Position;   
-layout(location = 1) out vec2 fragTexCoord;           
-layout(location = 2) out mat3 TBN; 
+layout(location = 1) out vec4 ViewSpacePosition;   
+layout(location = 2) out vec2 fragTexCoord;           
+layout(location = 3) out mat3 TBN; 
+layout(location = 6) out mat3 ViewSpaceTBN; 
 
 void main() {
     
@@ -22,16 +24,20 @@ void main() {
     vec4 viewPos = ubo.view * worldPos;
    
     Position = worldPos;
+    ViewSpacePosition = viewPos;
 
     gl_Position = ubo.proj * viewPos;
     
-    mat3 modelMatrix = transpose(inverse(mat3(ubo.model)));
+    mat3 normalMatrix = transpose(inverse(mat3(ubo.model)));
 
-    vec3 T = normalize(vec3(modelMatrix * inTangent  ));
-    vec3 B = normalize(vec3(modelMatrix * inBiTangent));
-    vec3 N = normalize(vec3(modelMatrix * inNormal   ));
+    vec3 T = normalize(vec3(normalMatrix * inTangent  ));
+    vec3 B = normalize(vec3(normalMatrix * inBiTangent));
+    vec3 N = normalize(vec3(normalMatrix * inNormal   ));
 
     TBN = mat3(T, B, N);
+
+    mat3 viewMatrix3 = mat3(ubo.view);
+    ViewSpaceTBN =  TBN * viewMatrix3;
 
     fragTexCoord = inTexCoord;
 }

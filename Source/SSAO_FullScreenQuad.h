@@ -10,7 +10,8 @@ struct SSAOUniformBuffer
 {
     glm::mat4  CameraProjMatrix;
     glm::mat4  CameraViewMatrix;
-    glm::vec4  ssaoKernel[64];
+    glm::vec4  KernelSizeRadiusBiasAndPadding;
+    glm::vec4  ssaoKernel[34];
 
 };
 class SSA0_FullScreenQuad : public Drawable
@@ -30,6 +31,10 @@ public:
     void CleanUp();
 
     ImageData NoiseTexture;
+
+    int KernelSize = 34;
+    float Radius = 0.5f;
+    float Bias = 0.01;
 private:
 
     std::vector<Vertex> quad = {

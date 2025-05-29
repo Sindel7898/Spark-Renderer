@@ -4,6 +4,7 @@
 #include "Camera.h"
 #include "Model.h"
 #include "Light.h"
+#include "SSAO_FullScreenQuad.h"
 
 UserInterface::UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef, BufferManager* Buffermanager)
 {
@@ -27,11 +28,57 @@ void UserInterface::InitImgui()
 	///////////////////////////////////////////////////////
 	//Imgui Style Setup
 	ImGui::StyleColorsDark();
+
+
 	if (io.ConfigFlags)
 	{
 		ImGuiStyle& style = ImGui::GetStyle();
 		style.WindowRounding = 10.0f;
-		style.Colors[ImGuiCol_WindowBg] = ImVec4(0, 0, 0, 100);
+	
+		ImVec4* colors = style.Colors;
+
+		colors[ImGuiCol_WindowBg] = ImVec4{ 0.01f, 0.01f, 0.01f, 1.0f };
+
+		// Headers
+		colors[ImGuiCol_Header] = ImVec4{ 0.02f, 0.02f, 0.02f, 1.0f };
+		colors[ImGuiCol_HeaderHovered] = ImVec4{ 0.02f, 0.02f, 0.02f, 1.0f };
+		colors[ImGuiCol_HeaderActive] = ImVec4{ 0.00f, 0.00f, 0.00f, 1.0f };
+
+		// Buttons
+		colors[ImGuiCol_Button] = ImVec4{ 0.02f, 0.02f, 0.02f, 1.0f };
+		colors[ImGuiCol_ButtonHovered] = ImVec4{ 0.03f, 0.03f, 0.03f, 1.0f };
+		colors[ImGuiCol_ButtonActive] = ImVec4{ 0.00f, 0.00f, 0.00f, 1.0f };
+
+		// Frame BG
+		colors[ImGuiCol_FrameBg] = ImVec4{ 0.03f, 0.03f, 0.03f, 1.0f };
+		colors[ImGuiCol_FrameBgHovered] = ImVec4{ 0.02f, 0.02f, 0.02f, 1.0f };
+		colors[ImGuiCol_FrameBgActive] = ImVec4{ 0.00f, 0.00f, 0.00f, 1.0f };
+
+		// Tabs
+		colors[ImGuiCol_Tab] = ImVec4{ 0.03f, 0.03f, 0.03f, 1.0f };
+		colors[ImGuiCol_TabHovered] = ImVec4{ 0.07f, 0.07f, 0.07f, 1.0f };
+		colors[ImGuiCol_TabActive] = ImVec4{ 0.03f, 0.03f, 0.03f, 1.0f };
+		colors[ImGuiCol_TabUnfocused] = ImVec4{ 0.02f, 0.02f, 0.02f, 1.0f };
+		colors[ImGuiCol_TabUnfocusedActive] = ImVec4{ 0.01f, 0.01f, 0.01f, 1.0f };
+
+		// Title
+		colors[ImGuiCol_TitleBg] = ImVec4{ 0.01f, 0.01, 0.01f, 1.0f };
+		colors[ImGuiCol_TitleBgActive] = ImVec4{ 0.02f, 0.02f, 0.02f, 1.0f };
+		colors[ImGuiCol_TitleBgCollapsed] = ImVec4{ 0.00f, 0.00f, 0.00f, 1.0f };
+
+
+
+		// Style adjustments
+		//style.WindowRounding = 5.3f;
+		style.FrameRounding = 2.3f;
+		style.ScrollbarRounding = 0;
+
+		style.WindowTitleAlign = ImVec2(0.50f, 0.50f);
+		style.WindowPadding = ImVec2(8.0f, 8.0f);
+		style.FramePadding = ImVec2(5.0f, 5.0f);
+		style.ItemSpacing = ImVec2(6.0f, 6.0f);
+		style.ItemInnerSpacing = ImVec2(6.0f, 6.0f);
+		style.IndentSpacing = 25.0f;
 	}
 	/////////////////////////////////////////////////////
 
@@ -137,10 +184,11 @@ void UserInterface::SetupDockingEnvironment()
 		ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.2f, nullptr, &dock_main_id);
 		ImGuiID dock_Bottom_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.2f, nullptr, &dock_main_id);
 
+		ImGuiID dock_DetailsPanel_Top_id;
+		ImGuiID dock_DetailsPanel_Bottom_id = ImGui::DockBuilderSplitNode(dock_right_id, ImGuiDir_Down, 0.5, nullptr,&dock_DetailsPanel_Top_id);
 		// Dock windows
-		ImGui::DockBuilderDockWindow("Stats Window", dock_Bottom_id);
-		ImGui::DockBuilderDockWindow("Hello, world!", dock_left_id);
-		ImGui::DockBuilderDockWindow("Details Panel", dock_right_id);
+		ImGui::DockBuilderDockWindow("Global Settings", dock_DetailsPanel_Bottom_id);
+		ImGui::DockBuilderDockWindow("Details Panel", dock_DetailsPanel_Top_id);
 		ImGui::DockBuilderDockWindow("Main Viewport", dock_main_id);
 
 		ImGui::DockBuilderFinish(dockspace_id);
@@ -225,7 +273,8 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex)
 
 //call every Frame
 void UserInterface::DrawUi(bool& bRecreateDepth,int& DefferedDecider, VkDescriptorSet FinalRenderTextureId, VkDescriptorSet PositionRenderTextureId,
-	                                                                  VkDescriptorSet NormalTextureId, VkDescriptorSet AlbedoTextureId, VkDescriptorSet SSSAOTextureId,Camera* camera, std::vector<std::shared_ptr<Model>>& Models, std::vector<std::shared_ptr<Light>>& Lights)
+	                       VkDescriptorSet NormalTextureId, VkDescriptorSet AlbedoTextureId, VkDescriptorSet SSSAOTextureId,Camera* camera,
+	                        std::vector<std::shared_ptr<Model>>& Models, std::vector<std::shared_ptr<Light>>& Lights, SSA0_FullScreenQuad* SSAO)
 {
 	SetupDockingEnvironment();
 
@@ -242,7 +291,7 @@ void UserInterface::DrawUi(bool& bRecreateDepth,int& DefferedDecider, VkDescript
 
 
 	{
-		ImGui::Begin("Hello, world!");
+		ImGui::Begin("Global Settings");
 		ImGuiIO& io = ImGui::GetIO();
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 		
@@ -261,6 +310,11 @@ void UserInterface::DrawUi(bool& bRecreateDepth,int& DefferedDecider, VkDescript
 			}
 			ImGui::EndCombo();
 		}
+
+		ImGui::Text("SSAO Settings");
+		ImGui::InputInt("Kernel Size", &SSAO->KernelSize);
+		ImGui::InputFloat("radius", &SSAO->Radius);
+		ImGui::InputFloat("Bias", &SSAO->Bias);
 
 		ImGui::End();
 	}
@@ -427,8 +481,6 @@ void UserInterface::DrawUi(bool& bRecreateDepth,int& DefferedDecider, VkDescript
 
 			ImGui::End();
 
-		
-
 			ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, glm::value_ptr(LightModelMatrix));
 			light->SetModelMatrix(LightModelMatrix);
 
@@ -444,10 +496,6 @@ void UserInterface::DrawUi(bool& bRecreateDepth,int& DefferedDecider, VkDescript
 			ImGui::End();
 		}
 	}
-
-	ImGui::End();
-
-	ImGui::Begin("Stats Window");
 
 	ImGui::End();
 }
