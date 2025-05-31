@@ -9,7 +9,7 @@ layout (binding = 3) uniform KernelData{
      mat4 CameraProjMatrix;
      mat4 CameraViewMatrix;
      vec4 KernelSizeRadiusBiasAndPadding;
-     vec4 samples[34];
+     vec4 samples[64];
 }KD;
 
 layout(location = 0) in vec2 inTexCoord;           
@@ -17,9 +17,7 @@ layout(location = 0) in vec2 inTexCoord;
 
 layout (location = 0) out vec4 outFragcolor;
 
-const vec2 noiseScale = vec2(2560/4.0, 1440/4.0);  
-
- float radius = KD.KernelSizeRadiusBiasAndPadding.y;
+const vec2 noiseScale = vec2(2560 /4.0, 1440 /4.0);  
 
 void main() {
     
@@ -32,24 +30,25 @@ void main() {
     mat3 TBN       = mat3(tangent, bitangent, ViewSpaceNormal);  
 
     float occlusion = 0.0f;
-    
+    float radius = KD.KernelSizeRadiusBiasAndPadding.y;
+
   for(int i = 0; i < KD.KernelSizeRadiusBiasAndPadding.x; ++i){
-    vec3 samplePos = ViewSpaceFragPos.xyz + (TBN * KD.samples[i].xyz) * 1.0;
-    
-    vec4 offset = KD.CameraProjMatrix * vec4(samplePos, 1.0);
-    offset.xyz /= offset.w;               
-    offset.xyz  = offset.xyz * 0.5 + 0.5; 
 
-    vec3 offsetFragPos = texture(samplerposition, offset.xy).xyz;
-    float sampleDepth = offsetFragPos.z;
+       vec3 samplePos = TBN * KD.samples[i].xyz;
+            samplePos = ViewSpaceFragPos + samplePos * radius;
 
+       vec4 offset = KD.CameraProjMatrix * vec4(samplePos, 1.0);
+       offset.xyz /= offset.w;               
+       offset.xyz  = offset.xyz * 0.5 + 0.5; 
+       
+       float  sampleDepth  = texture(samplerposition, offset.xy).z;
+       
+       float rangeCheck = smoothstep(0.0, 1.0, radius/ abs(ViewSpaceFragPos.z - sampleDepth));
+       
 
-    float depthDiff = ViewSpaceFragPos.z - sampleDepth;
-    float rangeCheck = smoothstep(0.0, radius, abs(depthDiff));
-
-    if(sampleDepth >= ViewSpaceFragPos.z + KD.KernelSizeRadiusBiasAndPadding.z) {
-            occlusion += (1.0 - rangeCheck);
-        }
+       if(sampleDepth >= ViewSpaceFragPos.z + KD.KernelSizeRadiusBiasAndPadding.z) {
+               occlusion += (1.0 * rangeCheck);
+           }
 }
 
     occlusion = 1.0 - (occlusion / KD.KernelSizeRadiusBiasAndPadding.x);

@@ -115,18 +115,18 @@ void SSA0_FullScreenQuad::CreateKernel()
 	std::uniform_real_distribution<float> randomFloats(0.0f, 1.0f);
 	std::default_random_engine generator;
 
-	for (unsigned int i = 0; i < 32; i++)
+	for (unsigned int i = 0; i < KernelSize; i++)
 	{
 		glm::vec4 sample(randomFloats(generator) * 2.0 - 1.0,
 			             randomFloats(generator) * 2.0 - 1.0,
 			             randomFloats(generator),
-			             randomFloats(generator));
+			             0.0f);
 
 		
 		sample = glm::normalize(sample); // Normalize first
 		sample *= randomFloats(generator); // Then scale
 
-		float scale = (float)i / 32.0;
+		float scale = (float)i / KernelSize;
 		scale = lerp(0.1f, 1.0f, scale * scale);
 		sample *= scale;
 		SSAOuniformbuffer.ssaoKernel[i] = sample;

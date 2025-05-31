@@ -28,7 +28,7 @@ void main() {
 
     gl_Position = ubo.proj * viewPos;
     
-    mat3 normalMatrix = transpose(inverse(mat3(ubo.model)));
+    mat3 normalMatrix = transpose(inverse(mat3(ubo.model * ubo.view)));
 
     vec3 T = normalize(vec3(normalMatrix * inTangent  ));
     vec3 B = normalize(vec3(normalMatrix * inBiTangent));

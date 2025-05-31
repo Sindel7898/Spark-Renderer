@@ -24,7 +24,7 @@ void main() {
   outNormal = vec4(tnorm, 1.0);
 
   vec3 vtnorm = ViewSpaceTBN * normalize(texture(samplerNormalMap, fragTexCoord).xyz * 2.0 - vec3(1.0));
-  outViewSpaceNormal = vec4(vtnorm, 1.0);
+  outViewSpaceNormal = vec4(tnorm, 1.0);
 
   outAlbedo = texture(samplerColor,fragTexCoord);
 }
