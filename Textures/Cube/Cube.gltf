@@ -129,10 +129,13 @@
       "uri": "laminate-flooring-brown_albedo.png"
     },
     {
-      "uri": "laminate-flooring-brown_albedo.png"
+      "uri": "laminate-flooring-brown_roughness.png"
     },
     {
       "uri": "laminate-flooring-brown_normal-ogl.png"
+    },
+    {
+      "uri": "MetalRoughnessAO.png"
     }
   ],
   "materials": [
@@ -145,6 +148,9 @@
         "metallicRoughnessTexture": {
           "index": 1
         }
+      },
+      "MetalRoughnessAOPack": {
+        "index": 3
       },
       "normalTexture": {
         "index": 2
@@ -200,6 +206,10 @@
     {
       "sampler": 0,
       "source": 2
+    },
+    {
+      "sampler": 0,
+      "source": 3
     }
   ]
 }

@@ -19,7 +19,7 @@ SSA0_FullScreenQuad::SSA0_FullScreenQuad(BufferManager* buffermanager, VulkanCon
 	createDescriptorSetLayout();
 
 
-	SSAOuniformbuffer.KernelSizeRadiusBiasAndPadding = glm::vec4(KernelSize, Radius, Bias, 1);
+	SSAOuniformbuffer.KernelSizeRadiusBiasAndBool = glm::vec4(KernelSize, Radius, Bias, bShouldSSAO);
 }
 
 
@@ -119,7 +119,7 @@ void SSA0_FullScreenQuad::CreateKernel()
 	{
 		glm::vec4 sample(randomFloats(generator) * 2.0 - 1.0,
 			             randomFloats(generator) * 2.0 - 1.0,
-			             randomFloats(generator),
+			             randomFloats(generator) ,
 			             0.0f);
 
 		
@@ -140,7 +140,7 @@ void SSA0_FullScreenQuad::UpdataeUniformBufferData()
 
 	SSAOuniformbuffer.CameraViewMatrix = camera->GetViewMatrix();
 
-	SSAOuniformbuffer.KernelSizeRadiusBiasAndPadding = glm::vec4(KernelSize, Radius, Bias, 1);
+	SSAOuniformbuffer.KernelSizeRadiusBiasAndBool = glm::vec4(KernelSize, Radius, Bias, bShouldSSAO);
 
 	for (size_t i = 0; i < FragmentUniformBuffersMappedMem.size(); i++)
 	{

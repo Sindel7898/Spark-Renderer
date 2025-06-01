@@ -2,6 +2,7 @@
 
 layout (binding = 1) uniform sampler2D samplerColor;
 layout (binding = 2) uniform sampler2D samplerNormalMap;
+layout (binding = 3) uniform sampler2D samplerMetallicRoughnessMapAO;
 
 layout(location = 0) in vec4 Position;   
 layout(location = 1) in vec4 ViewSpacePosition;        
@@ -14,9 +15,12 @@ layout (location = 1) out vec4 outViewSpacePosition;
 layout (location = 2) out vec4 outNormal;
 layout (location = 3) out vec4 outViewSpaceNormal;
 layout (location = 4) out vec4 outAlbedo;
+layout (location = 5) out vec4 outMetallicRoughnessMapAO;
+
+
 
 void main() {
-
+  
   outPosition = Position;
   outViewSpacePosition = ViewSpacePosition;
 
@@ -24,7 +28,9 @@ void main() {
   outNormal = vec4(tnorm, 1.0);
 
   vec3 vtnorm = ViewSpaceTBN * normalize(texture(samplerNormalMap, fragTexCoord).xyz * 2.0 - vec3(1.0));
-  outViewSpaceNormal = vec4(tnorm, 1.0);
+  outViewSpaceNormal = vec4(vtnorm, 1.0);
+
+  outMetallicRoughnessMapAO = texture(samplerMetallicRoughnessMapAO,fragTexCoord);
 
   outAlbedo = texture(samplerColor,fragTexCoord);
 }

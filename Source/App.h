@@ -14,6 +14,7 @@
 #include "UserInterface.h"
 #include "Lighting_FullScreenQuad.h"
 #include "SSAO_FullScreenQuad.h"
+#include "SSAOBlur_FullScreenQuad.h"
 
 
 class Window;
@@ -40,11 +41,12 @@ public:
 
 	void createDepthTextureImage();
 	void recreateSwapChain();
+	void recreatePipeline();
+	void destroyPipeline();
 
 
 
 	void createDescriptorPool();
-	void createTLAS();
 
 
 	void createCommandPool();
@@ -81,20 +83,29 @@ public:
 	void destroy_GbufferImages();
 
 	bool framebufferResized = false;
+	int DefferedDecider = 4;
+
+	//Drawables
+	std::shared_ptr<Lighting_FullScreenQuad>     lighting_FullScreenQuad = nullptr;
+	std::shared_ptr<SSA0_FullScreenQuad>         ssao_FullScreenQuad = nullptr;
+	std::shared_ptr<SSAOBlur_FullScreenQuad>     ssaoBlur_FullScreenQuad = nullptr;
+
+	VkDescriptorSet FinalRenderTextureId;
+	VkDescriptorSet PositionRenderTextureId;
+	VkDescriptorSet NormalTextureId;
+	VkDescriptorSet AlbedoTextureId;
+	VkDescriptorSet SSAOTextureId;
+
+	std::shared_ptr<Camera>             camera = nullptr;
+	std::vector<std::shared_ptr<Model>> Models;
+	std::vector<std::shared_ptr<Light>> lights;
 private:
 
 	std::shared_ptr<Window>             window = nullptr;
 	std::shared_ptr<VulkanContext>      vulkanContext = nullptr;
 	std::shared_ptr<BufferManager>      bufferManger = nullptr;
-	std::shared_ptr<Camera>             camera = nullptr;
     std::shared_ptr<UserInterface>      userinterface = nullptr;
 	
-	//Drawables
-	std::shared_ptr<Lighting_FullScreenQuad>     lighting_FullScreenQuad = nullptr;
-	std::shared_ptr<SSA0_FullScreenQuad>         ssao_FullScreenQuad = nullptr;
-
-	std::vector<std::shared_ptr<Model>> Models;
-	std::vector<std::shared_ptr<Light>> lights;
 	std::shared_ptr<SkyBox> skyBox = nullptr;
 
 
@@ -109,12 +120,14 @@ private:
 	vk::PipelineLayout         SkyBoxpipelineLayout = nullptr;
 	vk::PipelineLayout         geometryPassPipelineLayout = nullptr;
 	vk::PipelineLayout         SSAOPipelineLayout = nullptr;
+	vk::PipelineLayout         SSAOBlurPipelineLayout = nullptr;
 
 	vk::Pipeline               FullScreenQuadgraphicsPipeline = nullptr;
 	vk::Pipeline               LightgraphicsPipeline = nullptr;
 	vk::Pipeline               SkyBoxgraphicsPipeline = nullptr;
 	vk::Pipeline               geometryPassPipeline = nullptr;
 	vk::Pipeline               SSAOPipeline = nullptr;
+	vk::Pipeline               SSAOBlurPipeline = nullptr;
 
 	vk::CommandPool            commandPool = nullptr;
 
@@ -129,11 +142,7 @@ private:
 	////////////////////////////
 	ImageData DepthTextureData;
 
-	VkDescriptorSet FinalRenderTextureId;
-	VkDescriptorSet PositionRenderTextureId;
-	VkDescriptorSet NormalTextureId;
-	VkDescriptorSet AlbedoTextureId;
-	VkDescriptorSet SSAOTextureId;
+
 
 	bool bRecreateDepth = false; 
 
@@ -144,5 +153,4 @@ private:
 	ImageData LightingPassImageData;
 
 
-	int DefferedDecider = 4;
 };

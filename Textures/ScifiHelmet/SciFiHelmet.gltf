@@ -135,27 +135,33 @@
          "uri" : "SciFiHelmet_Normal.png"
       },
       {
-         "uri" : "SciFiHelmet_AmbientOcclusion.png"
+        "uri": "SciFiHelmet_AmbientOcclusion.png"
+      },
+      {
+        "uri": "MetalRoughnessAO.png"
       }
    ],
    "materials" : [
-      {
-         "name" : "SciFiHelmet",
-         "normalTexture" : {
-            "index" : 2
-         },
-         "occlusionTexture" : {
-            "index" : 3
-         },
-         "pbrMetallicRoughness" : {
-            "baseColorTexture" : {
-               "index" : 0
-            },
-            "metallicRoughnessTexture" : {
-               "index" : 1
-            }
-         }
+    {
+      "name": "SciFiHelmet",
+      "normalTexture": {
+        "index": 2
+      },
+      "occlusionTexture": {
+        "index": 3
+      },
+      "MetalRoughnessAOPack": {
+        "index": 4
+      },
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicRoughnessTexture": {
+          "index": 1
+        }
       }
+    }
    ],
    "meshes" : [
       {
@@ -220,9 +226,13 @@
          "sampler" : 0,
          "source" : 2
       },
-      {
-         "sampler" : 0,
-         "source" : 3
-      }
+    {
+      "sampler": 0,
+      "source": 3
+    },
+    {
+      "sampler": 0,
+      "source": 4
+    }
    ]
 }

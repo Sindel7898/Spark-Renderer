@@ -11,6 +11,8 @@ struct GBuffer {
     ImageData Normal;
     ImageData ViewSpaceNormal;
     ImageData SSAO;
+    ImageData SSAOBlured;
+    ImageData Materials;
     ImageData Albedo;
 };
 

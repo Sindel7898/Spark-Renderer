@@ -59,42 +59,65 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
         {
             tinygltf::Material gltfMaterial = model.materials[i];
 
-            //check if the material group has the albedo texture in its map
-            if (gltfMaterial.values.find("baseColorTexture") != gltfMaterial.values.end())
             {
-                StoredImageData TextureData;
-                //get the texture from the material map
-                tinygltf::Texture& colortex = model.textures[gltfMaterial.values["baseColorTexture"].TextureIndex()];
-                //get the image from the texture
-                const tinygltf::Image& image = model.images[colortex.source];
-
-                size_t colorimageSize = image.width * image.height * 4;
-                TextureData.imageData = new stbi_uc[colorimageSize];
-                std::memcpy(TextureData.imageData, image.image.data(), colorimageSize);
-                TextureData.imageHeight = image.height;
-                TextureData.imageWidth = image.width;
-
-                Textures.push_back(TextureData);
+               //check if the material group has the albedo texture in its map
+               if (gltfMaterial.values.find("baseColorTexture") != gltfMaterial.values.end())
+               {
+                   StoredImageData TextureData;
+                   //get the texture from the material map
+                   tinygltf::Texture& colortex = model.textures[gltfMaterial.values["baseColorTexture"].TextureIndex()];
+                   //get the image from the texture
+                   const tinygltf::Image& image = model.images[colortex.source];
+               
+                   size_t colorimageSize = image.width * image.height * 4;
+                   TextureData.imageData = new stbi_uc[colorimageSize];
+                   std::memcpy(TextureData.imageData, image.image.data(), colorimageSize);
+                   TextureData.imageHeight = image.height;
+                   TextureData.imageWidth = image.width;
+               
+                   Textures.push_back(TextureData);
+               }
             }
 
-            //check if the material group has the normal texture in its map. 
-            if (gltfMaterial.additionalValues.find("normalTexture") != gltfMaterial.additionalValues.end())
             {
-                StoredImageData TextureData;
-                //get the texture from the material map
-                tinygltf::Texture& normaltex = model.textures[gltfMaterial.additionalValues["normalTexture"].TextureIndex()];
-                //get the image from the texture
-                const tinygltf::Image& image = model.images[normaltex.source];
-
-                size_t normalimageSize = image.width * image.height * 4;
-                TextureData.imageData = new stbi_uc[normalimageSize];
-                std::memcpy(TextureData.imageData, image.image.data(), normalimageSize);
-                TextureData.imageHeight = image.height;
-                TextureData.imageWidth = image.width;
-
-                Textures.push_back(TextureData);
+               //check if the material group has the normal texture in its map. 
+               if (gltfMaterial.additionalValues.find("normalTexture") != gltfMaterial.additionalValues.end())
+               {
+                   StoredImageData TextureData;
+                   //get the texture from the material map
+                   tinygltf::Texture& normaltex = model.textures[gltfMaterial.additionalValues["normalTexture"].TextureIndex()];
+                   //get the image from the texture
+                   const tinygltf::Image& image = model.images[normaltex.source];
+               
+                   size_t normalimageSize = image.width * image.height * 4;
+                   TextureData.imageData = new stbi_uc[normalimageSize];
+                   std::memcpy(TextureData.imageData, image.image.data(), normalimageSize);
+                   TextureData.imageHeight = image.height;
+                   TextureData.imageWidth = image.width;
+               
+                   Textures.push_back(TextureData);
+               }
             }
 
+            {
+                //check if the material group has the normal texture in its map. 
+                if (gltfMaterial.additionalValues.find("MetalRoughnessAOPack") != gltfMaterial.additionalValues.end())
+                {
+                    StoredImageData TextureData;
+                    //get the texture from the material map
+                    tinygltf::Texture& metalicroughnesstex = model.textures[gltfMaterial.additionalValues["MetalRoughnessAOPack"].TextureIndex()];
+                    //get the image from the texture
+                    const tinygltf::Image& image = model.images[metalicroughnesstex.source];
+
+                    size_t metalicroughnessimageSize = image.width * image.height * 4;
+                    TextureData.imageData = new stbi_uc[metalicroughnessimageSize];
+                    std::memcpy(TextureData.imageData, image.image.data(), metalicroughnessimageSize);
+                    TextureData.imageHeight = image.height;
+                    TextureData.imageWidth = image.width;
+
+                    Textures.push_back(TextureData);
+                }
+            }
         }
 
         AssetManager::GetInstance().ParseTextureData(pFile, Textures);

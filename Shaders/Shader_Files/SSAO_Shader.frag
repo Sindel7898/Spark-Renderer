@@ -8,8 +8,8 @@ layout (binding = 3) uniform KernelData{
      
      mat4 CameraProjMatrix;
      mat4 CameraViewMatrix;
-     vec4 KernelSizeRadiusBiasAndPadding;
-     vec4 samples[64];
+     vec4 KernelSizeRadiusBiasAndBool;
+     vec4 samples[32];
 }KD;
 
 layout(location = 0) in vec2 inTexCoord;           
@@ -21,37 +21,43 @@ const vec2 noiseScale = vec2(2560 /4.0, 1440 /4.0);
 
 void main() {
     
-    vec3 ViewSpaceFragPos  = texture(samplerposition,inTexCoord).xyz;
-    vec3 ViewSpaceNormal   = texture(samplerNormal, inTexCoord).xyz;
-    vec3 randomVec         = texture(samplerNoise,inTexCoord * noiseScale).xyz;
+    if(KD.KernelSizeRadiusBiasAndBool.w == 1){
+        vec3 ViewSpaceFragPos  = texture(samplerposition,inTexCoord).rgb;
+        vec3 ViewSpaceNormal   = texture(samplerNormal, inTexCoord).rgb;
+        vec3 randomVec         = texture(samplerNoise,inTexCoord * noiseScale).rgb;
+        
+        vec3 tangent   = normalize(randomVec - ViewSpaceNormal * dot(randomVec,ViewSpaceNormal));
+        vec3 bitangent = cross(ViewSpaceNormal,tangent);
+        mat3 TBN       = mat3(tangent, bitangent, ViewSpaceNormal);  
+        
+        float occlusion = 0.0f;
+        float radius = KD.KernelSizeRadiusBiasAndBool.y;
 
-    vec3 tangent   = normalize(randomVec - ViewSpaceNormal * dot(randomVec,ViewSpaceNormal));
-    vec3 bitangent = cross(ViewSpaceNormal,tangent);
-    mat3 TBN       = mat3(tangent, bitangent, ViewSpaceNormal);  
-
-    float occlusion = 0.0f;
-    float radius = KD.KernelSizeRadiusBiasAndPadding.y;
-
-  for(int i = 0; i < KD.KernelSizeRadiusBiasAndPadding.x; ++i){
-
-       vec3 samplePos = TBN * KD.samples[i].xyz;
-            samplePos = ViewSpaceFragPos + samplePos * radius;
-
-       vec4 offset = KD.CameraProjMatrix * vec4(samplePos, 1.0);
-       offset.xyz /= offset.w;               
-       offset.xyz  = offset.xyz * 0.5 + 0.5; 
+       for(int i = 0; i < KD.KernelSizeRadiusBiasAndBool.x; ++i){
        
-       float  sampleDepth  = texture(samplerposition, offset.xy).z;
+           vec3 samplePos = TBN * KD.samples[i].xyz;
+                samplePos = ViewSpaceFragPos + samplePos * radius;
        
-       float rangeCheck = smoothstep(0.0, 1.0, radius/ abs(ViewSpaceFragPos.z - sampleDepth));
-       
+           vec4 offset = KD.CameraProjMatrix * vec4(samplePos, 1.0);
+           offset.xyz /= offset.w;               
+           offset.xyz  = offset.xyz * 0.5 + 0.5; 
+           
+           float  sampleDepth  = texture(samplerposition, offset.xy).z;
+           
+           float rangeCheck = smoothstep(0.0, 1.0, radius/ abs(ViewSpaceFragPos.z - sampleDepth));
+          
+           if(sampleDepth >= ViewSpaceFragPos.z + KD.KernelSizeRadiusBiasAndBool.z) {
+                   occlusion += (1.0 * rangeCheck);
+               }
+          }
 
-       if(sampleDepth >= ViewSpaceFragPos.z + KD.KernelSizeRadiusBiasAndPadding.z) {
-               occlusion += (1.0 * rangeCheck);
-           }
-}
-
-    occlusion = 1.0 - (occlusion / KD.KernelSizeRadiusBiasAndPadding.x);
+    occlusion = 1.0 - (occlusion / KD.KernelSizeRadiusBiasAndBool.x);
    
     outFragcolor =  vec4(occlusion,occlusion,occlusion,1.0f);
+
+    }
+    else { 
+    outFragcolor =  vec4(1.0f);
+    }
+   
 }

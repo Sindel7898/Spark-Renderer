@@ -28,7 +28,7 @@ void main() {
 
     gl_Position = ubo.proj * viewPos;
     
-    mat3 normalMatrix = transpose(inverse(mat3(ubo.model * ubo.view)));
+    mat3 normalMatrix = transpose(inverse(mat3(ubo.model)));
 
     vec3 T = normalize(vec3(normalMatrix * inTangent  ));
     vec3 B = normalize(vec3(normalMatrix * inBiTangent));
@@ -36,8 +36,7 @@ void main() {
 
     TBN = mat3(T, B, N);
 
-    mat3 viewMatrix3 = mat3(ubo.view);
-    ViewSpaceTBN =  TBN * viewMatrix3;
+    ViewSpaceTBN = mat3(T, B, N);;
 
     fragTexCoord = inTexCoord;
 }

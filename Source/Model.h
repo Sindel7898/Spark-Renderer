@@ -36,9 +36,7 @@ public:
 
     ImageData  albedoTextureData;
     ImageData  normalTextureData;
-
-   // vk::AccelerationStructureKHR GetBottomLevelAS() const { return bottomLevelAS; }
-    uint64_t  GetBLASAddressInfo();
+    ImageData  MetallicRoughnessTextureData;
 
     VertexUniformData vertexdata{};
 

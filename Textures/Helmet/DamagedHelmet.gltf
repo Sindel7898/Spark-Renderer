@@ -110,34 +110,40 @@
         },
         {
             "uri": "Default_normal.jpg"
-        }
+        },
+        {
+            "uri": "MetalRoughnessAO.png"
+       }
     ],
     "materials" : [
-        {
-            "emissiveFactor" : [
-                1.0,
-                1.0,
-                1.0
-            ],
-            "emissiveTexture" : {
-                "index" : 2
-            },
-            "name" : "Material_MR",
-            "normalTexture" : {
-                "index" : 4
-            },
-            "occlusionTexture" : {
-                "index" : 3
-            },
-            "pbrMetallicRoughness" : {
-                "baseColorTexture" : {
-                    "index" : 0
-                },
-                "metallicRoughnessTexture" : {
-                    "index" : 1
-                }
-            }
+      {
+        "emissiveFactor": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "emissiveTexture": {
+          "index": 2
+        },
+        "name": "Material_MR",
+        "normalTexture": {
+          "index": 4
+        },
+        "occlusionTexture": {
+          "index": 3
+        },
+        "MetalRoughnessAOPack": {
+          "index": 5
+        },
+        "pbrMetallicRoughness": {
+          "baseColorTexture": {
+            "index": 0
+          },
+          "metallicRoughnessTexture": {
+            "index": 1
+          }
         }
+      }
     ],
     "meshes" : [
         {
@@ -199,8 +205,12 @@
             "source" : 3
         },
         {
-            "sampler" : 0,
-            "source" : 4
+          "sampler": 0,
+          "source": 4
+        },
+        {
+          "sampler": 0,
+          "source": 5
         }
     ]
 }

@@ -3,6 +3,8 @@
 layout (binding = 0) uniform sampler2D samplerPosition;
 layout (binding = 1) uniform sampler2D samplerNormal;
 layout (binding = 2) uniform sampler2D samplerAlbedo;
+layout (binding = 3) uniform sampler2D samplerSSAO;
+layout (binding = 4) uniform sampler2D samplerMaterials;
 
 layout(location = 0) in vec2 inTexCoord;           
 
@@ -13,7 +15,7 @@ struct LightData{
     mat4    LightProjectionViewMatrix;
 
 };
-layout (binding = 3) uniform LightUniformBuffer {
+layout (binding = 5) uniform LightUniformBuffer {
    
    LightData lights[3];
 };
@@ -27,7 +29,11 @@ void main() {
     vec3 FragPosition = texture(samplerPosition,inTexCoord).rgb;
     vec3 Normal       = normalize(texture(samplerNormal,inTexCoord).rgb);
     vec3 Albedo       = texture(samplerAlbedo,inTexCoord).rgb;
- 
+    float SSAO        = texture(samplerSSAO,inTexCoord).r;
+    float Metalic     = texture(samplerMaterials,inTexCoord).r;
+    float Roughtness  = texture(samplerMaterials,inTexCoord).g;
+    float AO          = texture(samplerMaterials,inTexCoord).b;
+
     const float Shininess       = 30.0;
     const float SpecularStrength = 0.2;
 
@@ -38,6 +44,7 @@ void main() {
     const float Quadratic  = 0.032;
 
     vec3 totalLighting = vec3(0.0);
+    float ambientOcclusion = AO * SSAO;
 
   for (int i = 0; i < 3; i++) {
      
@@ -68,12 +75,15 @@ void main() {
     float spec       = pow(max(dot(Normal, halfwayDir), 0.0), Shininess);
     vec3  specular    = light.colorAndAmbientStrength.rgb * spec * SpecularStrength;
 
-    vec3 Ambient = Albedo * light.colorAndAmbientStrength.rgb *  light.colorAndAmbientStrength.a;
+
+    vec3 ambientColor = light.colorAndAmbientStrength.rgb * light.colorAndAmbientStrength.a;
+    vec3 Ambient = Albedo * ambientColor * ambientOcclusion;
+
 
     vec3 lightContribution = (Ambient  + Diffuse + specular) * Attenuation  * light.CameraPositionAndLightIntensity.w;
 
     totalLighting += lightContribution;
   }
 
-    outFragcolor = vec4(totalLighting, 1.0);
+    outFragcolor = vec4(Roughtness,Roughtness,Roughtness, 1.0);
 }

@@ -70,15 +70,29 @@ void Lighting_FullScreenQuad::createDescriptorSetLayout()
 		AlbedoSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		AlbedoSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
+		vk::DescriptorSetLayoutBinding SSAOSamplerLayout{};
+		SSAOSamplerLayout.binding = 3;
+		SSAOSamplerLayout.descriptorCount = 1;
+		SSAOSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		SSAOSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+		vk::DescriptorSetLayoutBinding MaterialsSamplerLayout{};
+		MaterialsSamplerLayout.binding = 4;
+		MaterialsSamplerLayout.descriptorCount = 1;
+		MaterialsSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		MaterialsSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
 		vk::DescriptorSetLayoutBinding LightUniformBufferLayout{};
-		LightUniformBufferLayout.binding = 3;
+		LightUniformBufferLayout.binding = 5;
 		LightUniformBufferLayout.descriptorCount = 1;
 		LightUniformBufferLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
 		LightUniformBufferLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-		std::array<vk::DescriptorSetLayoutBinding, 4> bindings = { PositionSampleryLayout,        // binding 0
+		std::array<vk::DescriptorSetLayoutBinding, 6> bindings = { PositionSampleryLayout,        // binding 0
 																   NormalSamplerLayout,           // binding 1
 																   AlbedoSamplerLayout,           // binding 2
+			                                                       SSAOSamplerLayout,
+			                                                       MaterialsSamplerLayout,
 																   LightUniformBufferLayout       // binding 3
 		};
 
@@ -156,6 +170,35 @@ void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorP
 		AlbedoSamplerdescriptorWrite.pImageInfo = &AlbedoimageInfo;
 		/////////////////////////////////////////////////////////////////////////////////////
 
+		vk::DescriptorImageInfo SSAOimageInfo{};
+		SSAOimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		SSAOimageInfo.imageView = Gbuffer.SSAOBlured.imageView;
+		SSAOimageInfo.sampler = Gbuffer.SSAOBlured.imageSampler;
+
+		vk::WriteDescriptorSet SSAOSamplerdescriptorWrite{};
+		SSAOSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+		SSAOSamplerdescriptorWrite.dstBinding = 3;
+		SSAOSamplerdescriptorWrite.dstArrayElement = 0;
+		SSAOSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		SSAOSamplerdescriptorWrite.descriptorCount = 1;
+		SSAOSamplerdescriptorWrite.pImageInfo = &SSAOimageInfo;
+		/////////////////////////////////////////////////////////////////////////////////////
+
+		vk::DescriptorImageInfo MaterialsimageInfo{};
+		MaterialsimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		MaterialsimageInfo.imageView = Gbuffer.Materials.imageView;
+		MaterialsimageInfo.sampler = Gbuffer.Materials.imageSampler;
+
+		vk::WriteDescriptorSet MaterialsSamplerdescriptorWrite{};
+		MaterialsSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+		MaterialsSamplerdescriptorWrite.dstBinding = 4;
+		MaterialsSamplerdescriptorWrite.dstArrayElement = 0;
+		MaterialsSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		MaterialsSamplerdescriptorWrite.descriptorCount = 1;
+		MaterialsSamplerdescriptorWrite.pImageInfo = &MaterialsimageInfo;
+
+		/////////////////////////////////////////////////////////////////////////////////////
+
 		vk::DescriptorBufferInfo LightUniformBufferInfo;
 		LightUniformBufferInfo.buffer = fragmentUniformBuffers[i].buffer;
 		LightUniformBufferInfo.offset = 0;
@@ -163,16 +206,18 @@ void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorP
 
 		vk::WriteDescriptorSet LightUniformBufferDescriptorWrite{};
 		LightUniformBufferDescriptorWrite.dstSet = DescriptorSets[i];
-		LightUniformBufferDescriptorWrite.dstBinding = 3;
+		LightUniformBufferDescriptorWrite.dstBinding = 5;
 		LightUniformBufferDescriptorWrite.dstArrayElement = 0;
 		LightUniformBufferDescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
 		LightUniformBufferDescriptorWrite.descriptorCount = 1;
 		LightUniformBufferDescriptorWrite.pBufferInfo = &LightUniformBufferInfo;
 
-		std::array<vk::WriteDescriptorSet, 4> descriptorWrites = {
+		std::array<vk::WriteDescriptorSet, 6> descriptorWrites = {
 	                                                                PositionSamplerdescriptorWrite,        // binding 0
 	                                                                NormalSamplerdescriptorWrite,          // binding 1
 	                                                                AlbedoSamplerdescriptorWrite,          // binding 2
+																	SSAOSamplerdescriptorWrite,
+																	MaterialsSamplerdescriptorWrite,
 	                                                                LightUniformBufferDescriptorWrite      // binding 3
 		                                                         };
 

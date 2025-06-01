@@ -17,6 +17,7 @@ class Camera;
 class Model;
 class Light;
 class SSA0_FullScreenQuad;
+class App;
 
 class UserInterface
 {
@@ -27,8 +28,9 @@ class UserInterface
     void DrawUi(bool& bRecreateDepth, int& DefferedDecider, VkDescriptorSet FinalRenderTextureId, VkDescriptorSet PositionRenderTextureId, 
                 VkDescriptorSet NormalTextureId, VkDescriptorSet AlbedoTextureId, VkDescriptorSet SSSAOTextureId, Camera* camera, 
                 std::vector<std::shared_ptr<Model>>& Models, std::vector<std::shared_ptr<Light>>& Lights, SSA0_FullScreenQuad* SSAO);
+
+    void DrawUi(App* appref);
     float CalculateDistanceInScreenSpace(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position);
-   // std::vector<glm::vec3> ShowGuizmoToLocation(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position);
   
     
 
