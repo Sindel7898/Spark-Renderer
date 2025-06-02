@@ -69,9 +69,9 @@
 	lights[1]->SetPosition(glm::vec3(0.0f, 10.0f, 0.0f));
 	lights[2]->SetPosition(glm::vec3(-20.0f, 0.0f, 0.0f));
 
-	lights[0]->color = glm::vec3(1.0f, 0.0f, 0.0f);
-	lights[1]->color = glm::vec3(0.0f, 1.0f, 0.0f);
-	lights[2]->color = glm::vec3(0.0f, 0.0f, 1.0f);
+	lights[0]->color = glm::vec3(1.0f, 1.0f, 1.0f);
+	lights[1]->color = glm::vec3(1.0f, 1.0f, 1.0f);
+	lights[2]->color = glm::vec3(1.0f, 1.0f, 1.0f);
 
 	createDescriptorPool();
 
@@ -331,7 +331,7 @@ void App::CreateGraphicsPipeline()
 
 
     {
-    	auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/DefferedLightingPass.vert.spv");
+    	auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/FullScreenQuad.vert.spv");
     	auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/DefferedLightingPass.frag.spv");
     
     	VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
@@ -386,7 +386,7 @@ void App::CreateGraphicsPipeline()
     }
 	
 	{
-		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/SSAO_Shader.vert.spv");
+		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/FullScreenQuad.vert.spv");
 		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/SSAO_Shader.frag.spv");
 
 		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
@@ -464,7 +464,7 @@ void App::CreateGraphicsPipeline()
 	}
 
 	{
-		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/SSAO_Shader.vert.spv");
+		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/FullScreenQuad.vert.spv");
 		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/SSAOBlur_Shader.frag.spv");
 
 		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);

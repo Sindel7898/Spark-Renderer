@@ -24,11 +24,9 @@ public:
     void createDescriptorSetLayout() override;
     void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer Gbuffer);
     void UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref);
-    //void UpdateUniformBuffer(uint32_t currentImage, Light* lightref) override;
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
 
     void CleanUp() ;
-   // LightUniformData lightData;
 
    private:
 

@@ -1,4 +1,5 @@
 #version 450
+const float PI = 3.14159265359;
 
 layout (binding = 0) uniform sampler2D samplerPosition;
 layout (binding = 1) uniform sampler2D samplerNormal;
@@ -22,68 +23,123 @@ layout (binding = 5) uniform LightUniformBuffer {
 
 layout (location = 0) out vec4 outFragcolor;
 
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}  
 
+float DistributionGGX(vec3 N, vec3 H, float roughness)
+{
+    float a      = roughness*roughness;
+    float a2     = a*a;
+    float NdotH  = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH*NdotH;
+	
+    float num   = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+	
+    return num / denom;
+}
+
+float GeometrySchlickGGX(float NdotV, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
+
+    float num   = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+	
+    return num / denom;
+}
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+{
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2  = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1  = GeometrySchlickGGX(NdotL, roughness);
+	
+    return ggx1 * ggx2;
+}
 
 void main() {
 
-    vec3 FragPosition = texture(samplerPosition,inTexCoord).rgb;
-    vec3 Normal       = normalize(texture(samplerNormal,inTexCoord).rgb);
-    vec3 Albedo       = texture(samplerAlbedo,inTexCoord).rgb;
-    float SSAO        = texture(samplerSSAO,inTexCoord).r;
-    float Metalic     = texture(samplerMaterials,inTexCoord).r;
-    float Roughtness  = texture(samplerMaterials,inTexCoord).g;
-    float AO          = texture(samplerMaterials,inTexCoord).b;
-
-    const float Shininess       = 30.0;
-    const float SpecularStrength = 0.2;
-
+   //Defaults/////////////////////////////
     vec3  LightDir = vec3(1,1,1);
 
     const float Constant   = 1.0;
     const float Linear     = 0.09;
     const float Quadratic  = 0.032;
 
+    vec3 radiance      = vec3(0.0);
     vec3 totalLighting = vec3(0.0);
+    ///////////////////////////////////////
+
+    vec3  WorldPos = texture(samplerPosition,inTexCoord).rgb;
+    vec3  Normal       = normalize(texture(samplerNormal,inTexCoord).rgb);
+    vec3  Albedo       = texture(samplerAlbedo,inTexCoord).rgb;
+    float SSAO         = texture(samplerSSAO,inTexCoord).r;
+    float Metallic      = texture(samplerMaterials,inTexCoord).r;
+    float Roughness   = texture(samplerMaterials,inTexCoord).g;
+    float AO           = texture(samplerMaterials,inTexCoord).b;
     float ambientOcclusion = AO * SSAO;
+
+
+    vec3  ViewDir    = normalize(lights[0].CameraPositionAndLightIntensity.xyz -  WorldPos);
+
+       vec3 ambientColor = vec3(0.12);
+       vec3 Ambient = Albedo * ambientColor * ambientOcclusion;
 
   for (int i = 0; i < 3; i++) {
      
      float Attenuation = 1.0;
 
      LightData light = lights[i];
+     vec3 Lo      = vec3(0.0);
 
 
       if(light.positionAndLightType.w == 0){
 
          LightDir = normalize(-light.positionAndLightType.xyz);
+         radiance = light.colorAndAmbientStrength.rgb ;
 
        }
       else if (light.positionAndLightType.w == 1){
                
-               vec3 LightPos = light.positionAndLightType.xyz;
-               LightDir          = normalize(LightPos - FragPosition);
-               float Distance    = length(LightPos -  FragPosition);
+               vec3 LightPos     = light.positionAndLightType.xyz;
+               LightDir          = normalize(LightPos - WorldPos);
+               float Distance    = length(LightPos -  WorldPos);
                Attenuation       = 1.0 / (Constant + Linear * Distance + Quadratic * (Distance * Distance));
-      }  
+               radiance          = light.colorAndAmbientStrength.rgb * Attenuation;
+    }  
 
-
-    float DiffuseAmount = max(dot(Normal, LightDir), 0.0);
-    vec3  Diffuse        = Albedo * light.colorAndAmbientStrength.rgb * DiffuseAmount;
-
-    vec3  ViewDir    = normalize(light.CameraPositionAndLightIntensity.xyz -  FragPosition.xyz);
     vec3  halfwayDir = normalize(LightDir + ViewDir);
-    float spec       = pow(max(dot(Normal, halfwayDir), 0.0), Shininess);
-    vec3  specular    = light.colorAndAmbientStrength.rgb * spec * SpecularStrength;
+
+    vec3 F0 = vec3(0.04); 
+    F0      = mix(F0, Albedo, Metallic);
+    vec3 F  = fresnelSchlick(max(dot(halfwayDir, ViewDir), 0.0), F0);
+
+    float NDF = DistributionGGX(Normal, halfwayDir, Roughness);       
+    float G   = GeometrySmith(Normal, ViewDir, LightDir, Roughness);   
 
 
-    vec3 ambientColor = light.colorAndAmbientStrength.rgb * light.colorAndAmbientStrength.a;
-    vec3 Ambient = Albedo * ambientColor * ambientOcclusion;
+    vec3 numerator    = NDF * G * F;
+    float denominator = 4.0 * max(dot(Normal, ViewDir), 0.0) * max(dot(Normal, LightDir), 0.0)  + 0.0001;
+    vec3 specular = (numerator / denominator) ;
+    
+    vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+  
+    kD *= 1.0 - Metallic;	
+
+     float NdotL = max(dot(Normal, LightDir), 0.0);        
+     Lo += (kD * Albedo / PI + specular) * radiance * NdotL;
 
 
-    vec3 lightContribution = (Ambient  + Diffuse + specular) * Attenuation  * light.CameraPositionAndLightIntensity.w;
-
-    totalLighting += lightContribution;
+    totalLighting += Lo * light.CameraPositionAndLightIntensity.w;  
   }
+  
+    vec3 finalColor = Ambient + totalLighting;
 
-    outFragcolor = vec4(Roughtness,Roughtness,Roughtness, 1.0);
+    outFragcolor = vec4(finalColor, 1.0);
 }
