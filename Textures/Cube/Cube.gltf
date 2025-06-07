@@ -126,13 +126,13 @@
   ],
   "images": [
     {
-      "uri": "laminate-flooring-brown_albedo.png"
+      "uri": "StoneBricksSplitface001_COL_2K.jpg"
     },
     {
-      "uri": "laminate-flooring-brown_roughness.png"
+      "uri": "StoneBricksSplitface001_REFL_2K.jpg"
     },
     {
-      "uri": "laminate-flooring-brown_normal-ogl.png"
+      "uri": "StoneBricksSplitface001_NRM_2K.png"
     },
     {
       "uri": "MetalRoughnessAO.png"

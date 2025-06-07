@@ -87,8 +87,8 @@ void main() {
 
     vec3  ViewDir    = normalize(lights[0].CameraPositionAndLightIntensity.xyz -  WorldPos);
 
-       vec3 ambientColor = vec3(0.12);
-       vec3 Ambient = Albedo * ambientColor * ambientOcclusion;
+       vec3 ambientvalue= vec3(0.08);
+       vec3 Ambient = Albedo * ambientvalue * ambientOcclusion;
 
   for (int i = 0; i < 3; i++) {
      
@@ -140,6 +140,7 @@ void main() {
   }
   
     vec3 finalColor = Ambient + totalLighting;
+    finalColor = finalColor / (finalColor + vec3(1.0));
 
     outFragcolor = vec4(finalColor, 1.0);
 }

@@ -15,6 +15,7 @@
 #include "Lighting_FullScreenQuad.h"
 #include "SSAO_FullScreenQuad.h"
 #include "SSAOBlur_FullScreenQuad.h"
+#include "FXAA_FullScreenQuad.h"
 
 
 class Window;
@@ -89,6 +90,7 @@ public:
 	std::shared_ptr<Lighting_FullScreenQuad>     lighting_FullScreenQuad = nullptr;
 	std::shared_ptr<SSA0_FullScreenQuad>         ssao_FullScreenQuad = nullptr;
 	std::shared_ptr<SSAOBlur_FullScreenQuad>     ssaoBlur_FullScreenQuad = nullptr;
+	std::shared_ptr<FXAA_FullScreenQuad>         fxaa_FullScreenQuad = nullptr;
 
 	VkDescriptorSet FinalRenderTextureId;
 	VkDescriptorSet PositionRenderTextureId;
@@ -115,14 +117,17 @@ private:
 	const bool enableValidationLayers = true;
 #endif
 
-	vk::PipelineLayout         FullScreenQuadgraphicsPipelineLayout = nullptr;
+	vk::PipelineLayout         DeferedLightingPassPipelineLayout = nullptr;
+	vk::PipelineLayout         FXAAPassPipelineLayout = nullptr;
+
 	vk::PipelineLayout         LightpipelineLayout = nullptr;
 	vk::PipelineLayout         SkyBoxpipelineLayout = nullptr;
 	vk::PipelineLayout         geometryPassPipelineLayout = nullptr;
 	vk::PipelineLayout         SSAOPipelineLayout = nullptr;
 	vk::PipelineLayout         SSAOBlurPipelineLayout = nullptr;
 
-	vk::Pipeline               FullScreenQuadgraphicsPipeline = nullptr;
+	vk::Pipeline               DeferedLightingPassPipeline = nullptr;
+	vk::Pipeline               FXAAPassPipeline = nullptr;
 	vk::Pipeline               LightgraphicsPipeline = nullptr;
 	vk::Pipeline               SkyBoxgraphicsPipeline = nullptr;
 	vk::Pipeline               geometryPassPipeline = nullptr;
