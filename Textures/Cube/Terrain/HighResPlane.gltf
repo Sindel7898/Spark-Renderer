@@ -1,0 +1,159 @@
+{
+	"asset": {
+		"generator": "Khronos glTF Blender I/O v4.4.56",
+		"version": "2.0"
+	},
+	"scene": 0,
+	"scenes": [
+		{
+			"name": "Scene",
+			"nodes": [ 0 ]
+		}
+	],
+	"nodes": [
+		{
+			"mesh": 0,
+			"name": "Plane"
+		}
+	],
+	"meshes": [
+		{
+			"name": "Plane",
+			"primitives": [
+				{
+					"attributes": {
+						"POSITION": 0,
+						"NORMAL": 1,
+						"TEXCOORD_0": 2
+					},
+					"indices": 3,
+					"material": 0
+				}
+			]
+		}
+	],
+	"accessors": [
+		{
+			"bufferView": 0,
+			"componentType": 5126,
+			"count": 4225,
+			"max": [ 1, 0, 1 ],
+			"min": [ -1, 0, -1 ],
+			"type": "VEC3"
+		},
+		{
+			"bufferView": 1,
+			"componentType": 5126,
+			"count": 4225,
+			"type": "VEC3"
+		},
+		{
+			"bufferView": 2,
+			"componentType": 5126,
+			"count": 4225,
+			"type": "VEC2"
+		},
+		{
+			"bufferView": 3,
+			"componentType": 5123,
+			"count": 24576,
+			"type": "SCALAR"
+		}
+	],
+	"bufferViews": [
+		{
+			"buffer": 0,
+			"byteLength": 50700,
+			"byteOffset": 0,
+			"target": 34962
+		},
+		{
+			"buffer": 0,
+			"byteLength": 50700,
+			"byteOffset": 50700,
+			"target": 34962
+		},
+		{
+			"buffer": 0,
+			"byteLength": 33800,
+			"byteOffset": 101400,
+			"target": 34962
+		},
+		{
+			"buffer": 0,
+			"byteLength": 49152,
+			"byteOffset": 135200,
+			"target": 34963
+		}
+	],
+	"buffers": [
+		{
+			"byteLength": 184352,
+			"uri": "HighResPlane.bin"
+		}
+	],
+	"images": [
+		{
+			"uri": "patchy-meadow1_albedo.png"
+		},
+		{
+			"uri": "NormalMap.png"
+		},
+		{
+			"uri": "MetalRoughnessAO.png"
+		},
+		{
+			"uri": "MetalRoughnessAO.png"
+		},
+		{
+			"uri": "Height_Map.png"
+		}
+	],
+	"samplers": [
+		{}
+	],
+	"textures": [
+		{
+			"sampler": 0,
+			"source": 0
+		},
+		{
+			"sampler": 0,
+			"source": 1
+		},
+		{
+			"sampler": 0,
+			"source": 2
+		},
+		{
+			"sampler": 0,
+			"source": 3
+		},
+		{
+			"sampler": 0,
+			"source": 4
+		}
+	],
+	"materials": [
+		{
+			"name": "Cube",
+			"pbrMetallicRoughness": {
+				"baseColorTexture": {
+					"index": 0
+				},
+				"metallicRoughnessTexture": {
+					"index": 1
+				}
+			},
+			"normalTexture": {
+				"index": 1
+			},
+			"MetalRoughnessAOPack": {
+				"index": 3
+			},
+			"HeightMap": {
+				"index": 4
+			}
+		}
+	]
+}

@@ -46,7 +46,7 @@ class UserInterface
     Window* window = nullptr;
     vk::Extent3D RenderTextureExtent = (0, 0, 0);
 
-    int selectedModelIndex = -1;
+    int UserInterfaceItemsIndex = -1;
     int selectedLightIndex = -1;
 
 

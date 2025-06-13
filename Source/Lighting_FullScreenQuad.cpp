@@ -236,7 +236,7 @@ void Lighting_FullScreenQuad::UpdateUniformBuffer(uint32_t currentImage, std::ve
 
 	for (int  i = 0; i < lightref.size(); i++)
 	{
-		Drawable::UpdateUniformBuffer(currentImage, lightref[i].get());
+		Drawable::UpdateUniformBuffer(currentImage);
 
 		if (lightref[i])
 		{

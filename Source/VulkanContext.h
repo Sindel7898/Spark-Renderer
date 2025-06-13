@@ -1,6 +1,6 @@
 #pragma once
-#include "VkBootstrap.h"
 #include <vulkan/vulkan.hpp>
+#include "VkBootstrap.h"
 #include <iostream>
 #include <GLFW/glfw3.h>
 #include "../Source/Window.h"
@@ -53,11 +53,9 @@ public:
 
 	Window window; 
 
-	/*PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR;
-	PFN_vkDestroyAccelerationStructureKHR vkDestroyAccelerationStructureKHR;
-	PFN_vkGetAccelerationStructureBuildSizesKHR vkGetAccelerationStructureBuildSizesKHR;
-	PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR;
-	PFN_vkCmdBuildAccelerationStructuresKHR vkCmdBuildAccelerationStructuresKHR;*/
+
+	///////EXTENSIONS
+	PFN_vkCmdSetPolygonModeEXT vkCmdSetPolygonModeEXT = nullptr;
 };
 
 static inline void VulkanContextDeleter(VulkanContext* vulkanContext)

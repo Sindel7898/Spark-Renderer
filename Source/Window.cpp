@@ -1,5 +1,6 @@
 #include "Window.h"
 #include <stdexcept>
+#include "stb_image.h"
 
 
 #ifdef _WIN32
@@ -21,6 +22,19 @@ Window::Window(int W, int H, std::string WN) : Width(W),Height(H),WindowName(WN)
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
     window = glfwCreateWindow(Width, Height, WindowName.c_str(), nullptr, nullptr);
+
+    int Height; 
+    int Width;
+    int texchannels;
+
+    unsigned char* pixels =  stbi_load("../Textures/WindowLogo/PlaceHolder.JPG", &Width, &Height,&texchannels, STBI_rgb_alpha);
+
+    GLFWimage image;
+    image.height = 600;
+    image.width  = 900;
+    image.pixels = pixels;
+
+    glfwSetWindowIcon(window, 1, &image);
 
 #ifdef _WIN32
     HWND hwnd = glfwGetWin32Window(window);

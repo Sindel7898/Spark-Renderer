@@ -119,9 +119,9 @@ void Light::createDescriptorSets(vk::DescriptorPool descriptorpool)
 	}
 }
 
-void Light::UpdateUniformBuffer(uint32_t currentImage, Light* lightref)
+void Light::UpdateUniformBuffer(uint32_t currentImage)
 {
-	Drawable::UpdateUniformBuffer(currentImage, lightref);
+	Drawable::UpdateUniformBuffer(currentImage);
 
 	transformMatrices.viewMatrix = camera->GetViewMatrix();
 	transformMatrices.projectionMatrix = camera->GetProjectionMatrix();

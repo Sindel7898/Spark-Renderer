@@ -24,10 +24,10 @@ void main() {
   outPosition = Position;
   outViewSpacePosition = ViewSpacePosition;
 
-  vec3 tnorm = TBN * normalize(texture(samplerNormalMap, fragTexCoord).xyz * 2.0 - vec3(1.0));
+  vec3 tnorm = TBN * normalize(texture(samplerNormalMap, fragTexCoord).rgb * 2.0 - vec3(1.0));
   outNormal = vec4(tnorm, 1.0);
 
-  vec3 vtnorm = ViewSpaceTBN * normalize(texture(samplerNormalMap, fragTexCoord).xyz * 2.0 - vec3(1.0));
+  vec3 vtnorm = ViewSpaceTBN * normalize(texture(samplerNormalMap, fragTexCoord).rgb * 2.0 - vec3(1.0));
   outViewSpaceNormal = vec4(vtnorm, 1.0);
 
   outMetallicRoughnessMapAO = texture(samplerMetallicRoughnessMapAO,fragTexCoord);

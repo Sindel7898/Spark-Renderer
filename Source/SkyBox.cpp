@@ -10,7 +10,7 @@ SkyBox::SkyBox(std::array<const char*, 6> filePaths, VulkanContext* vulkancontex
 	camera = cameraref;
 	bufferManager = buffermanger;
 
-	MeshTextureData = bufferManager->CreateCubeMap(filePaths, commandPool, vulkanContext->graphicsQueue);
+	MeshTextureData = bufferManager->CreateCubeMap (filePaths, commandPool, vulkanContext->graphicsQueue);
 
 	CreateUniformBuffer();
 	CreateVertexAndIndexBuffer();
@@ -117,10 +117,10 @@ void SkyBox::createDescriptorSets(vk::DescriptorPool descriptorpool)
 	}
 }
 
-void SkyBox::UpdateUniformBuffer(uint32_t currentImage, Light* lightref)
+void SkyBox::UpdateUniformBuffer(uint32_t currentImage)
 {
 
-	Drawable::UpdateUniformBuffer(currentImage, lightref);
+	Drawable::UpdateUniformBuffer(currentImage);
 
 	transformMatrices.modelMatrix = glm::mat4(1.0f);
 	transformMatrices.viewMatrix = camera->GetViewMatrix();

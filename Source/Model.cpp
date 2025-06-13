@@ -79,7 +79,7 @@ void Model::CreateUniformBuffer()
 		vertexUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		VertexUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
 
-		VkDeviceSize VertexuniformBufferSize = sizeof(VertexUniformData);
+		VkDeviceSize VertexuniformBufferSize = sizeof(transformMatrices);
 
 		for (size_t i = 0; i < vertexUniformBuffers.size(); i++)
 		{
@@ -223,20 +223,15 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 }
 
 
-void Model::UpdateUniformBuffer(uint32_t currentImage, Light* lightref)
+void Model::UpdateUniformBuffer(uint32_t currentImage)
 {
-	Drawable::UpdateUniformBuffer(currentImage, lightref);
+	Drawable::UpdateUniformBuffer(currentImage);
 	
 	transformMatrices.viewMatrix = camera->GetViewMatrix();
 	transformMatrices.projectionMatrix = camera->GetProjectionMatrix();
 	transformMatrices.projectionMatrix[1][1] *= -1;
 
-	vertexdata.transformMatrices = transformMatrices;
-	vertexdata.LightViewMatrix = lightref->ViewMatrix;
-	vertexdata.LightProjectionMatrix = lightref->ProjectionMatrix;
-	vertexdata.LightProjectionMatrix[1][1] *= -1;
-
-	memcpy(VertexUniformBuffersMappedMem[currentImage], &vertexdata, sizeof(VertexUniformData));
+	memcpy(VertexUniformBuffersMappedMem[currentImage], &transformMatrices, sizeof(transformMatrices));
 }
 
 

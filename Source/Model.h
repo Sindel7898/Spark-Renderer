@@ -7,16 +7,7 @@
 #include "AssetManager.h"
 #include "Light.h"
 #include "Drawable.h"
-
-  
-
-struct VertexUniformData
-{
-    TransformMatrices  transformMatrices;
-    glm::mat4 LightViewMatrix;
-    glm::mat4 LightProjectionMatrix;
-
-};
+#include "structs.h"
 
 
 class Model : public Drawable
@@ -29,7 +20,7 @@ public:
     void createDescriptorSetLayout() override;
     void createDescriptorSets(vk::DescriptorPool descriptorpool) override;
     void CreateUniformBuffer() override;
-    void UpdateUniformBuffer(uint32_t currentImage, Light* lightref);
+    void UpdateUniformBuffer(uint32_t currentImage);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
     void CleanUp() ;
 

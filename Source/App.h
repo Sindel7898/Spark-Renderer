@@ -16,6 +16,7 @@
 #include "SSAO_FullScreenQuad.h"
 #include "SSAOBlur_FullScreenQuad.h"
 #include "FXAA_FullScreenQuad.h"
+#include "Terrain.h"
 
 
 class Window;
@@ -86,12 +87,13 @@ public:
 	bool framebufferResized = false;
 	int DefferedDecider = 4;
 
+	bool bWireFrame = false;
 	//Drawables
 	std::shared_ptr<Lighting_FullScreenQuad>     lighting_FullScreenQuad = nullptr;
 	std::shared_ptr<SSA0_FullScreenQuad>         ssao_FullScreenQuad = nullptr;
 	std::shared_ptr<SSAOBlur_FullScreenQuad>     ssaoBlur_FullScreenQuad = nullptr;
 	std::shared_ptr<FXAA_FullScreenQuad>         fxaa_FullScreenQuad = nullptr;
-
+	std::shared_ptr<Terrain>                     terrain = nullptr;
 	VkDescriptorSet FinalRenderTextureId;
 	VkDescriptorSet PositionRenderTextureId;
 	VkDescriptorSet NormalTextureId;
@@ -101,6 +103,9 @@ public:
 	std::shared_ptr<Camera>             camera = nullptr;
 	std::vector<std::shared_ptr<Model>> Models;
 	std::vector<std::shared_ptr<Light>> lights;
+	std::vector<Drawable*> UserInterfaceItems;
+
+
 private:
 
 	std::shared_ptr<Window>             window = nullptr;
@@ -119,12 +124,12 @@ private:
 
 	vk::PipelineLayout         DeferedLightingPassPipelineLayout = nullptr;
 	vk::PipelineLayout         FXAAPassPipelineLayout = nullptr;
-
 	vk::PipelineLayout         LightpipelineLayout = nullptr;
 	vk::PipelineLayout         SkyBoxpipelineLayout = nullptr;
 	vk::PipelineLayout         geometryPassPipelineLayout = nullptr;
 	vk::PipelineLayout         SSAOPipelineLayout = nullptr;
 	vk::PipelineLayout         SSAOBlurPipelineLayout = nullptr;
+	vk::PipelineLayout         TerrainGeometryPassPipelineLayout = nullptr;
 
 	vk::Pipeline               DeferedLightingPassPipeline = nullptr;
 	vk::Pipeline               FXAAPassPipeline = nullptr;
@@ -133,6 +138,7 @@ private:
 	vk::Pipeline               geometryPassPipeline = nullptr;
 	vk::Pipeline               SSAOPipeline = nullptr;
 	vk::Pipeline               SSAOBlurPipeline = nullptr;
+	vk::Pipeline               TerrainGeometryPassPipeline = nullptr;
 
 	vk::CommandPool            commandPool = nullptr;
 

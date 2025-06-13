@@ -71,7 +71,7 @@ void Drawable::CreateUniformBuffer()
 {
 }
 
-void Drawable::UpdateUniformBuffer(uint32_t currentImage, Light* lightref)
+void Drawable::UpdateUniformBuffer(uint32_t currentImage)
 {
 	BreakDownAndUpdateModelMatrix();
 }

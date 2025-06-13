@@ -28,11 +28,10 @@ protected:
 	
      virtual void CreateVertexAndIndexBuffer() = 0;
      virtual void CreateUniformBuffer();
-	 virtual void UpdateUniformBuffer(uint32_t currentImage, Light* lightref);
+	 virtual void UpdateUniformBuffer(uint32_t currentImage);
 	 virtual void createDescriptorSetLayout() = 0;
 	 virtual void createDescriptorSets(vk::DescriptorPool descriptorpool);
 	 virtual void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) = 0;
-
 
 	  void BreakDownAndUpdateModelMatrix();
 

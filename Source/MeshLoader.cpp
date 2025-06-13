@@ -118,6 +118,27 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
                     Textures.push_back(TextureData);
                 }
             }
+
+
+            {
+                //check if the material group has the normal texture in its map. 
+                if (gltfMaterial.additionalValues.find("HeightMap") != gltfMaterial.additionalValues.end())
+                {
+                    StoredImageData TextureData;
+                    //get the texture from the material map
+                    tinygltf::Texture& HeightMaptex = model.textures[gltfMaterial.additionalValues["HeightMap"].TextureIndex()];
+                    //get the image from the texture
+                    const tinygltf::Image& image = model.images[HeightMaptex.source];
+
+                    size_t HeightMapteximageSize = image.width * image.height * 4;
+                    TextureData.imageData = new stbi_uc[HeightMapteximageSize];
+                    std::memcpy(TextureData.imageData, image.image.data(), HeightMapteximageSize);
+                    TextureData.imageHeight = image.height;
+                    TextureData.imageWidth = image.width;
+
+                    Textures.push_back(TextureData);
+                }
+            }
         }
 
         AssetManager::GetInstance().ParseTextureData(pFile, Textures);

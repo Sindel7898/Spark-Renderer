@@ -1,6 +1,5 @@
 #include "VulkanContext.h"
 
-
 VulkanContext::VulkanContext(Window& Window) : window(Window){
 	InitVulkan();
 	createSurface();
@@ -30,53 +29,23 @@ void VulkanContext::InitVulkan()
 	VulkanInstance = VKB_Instance.instance;
 	Debug_Messenger = VKB_Instance.debug_messenger;
 
+
 }
 
 void VulkanContext::SelectGPU_CreateDevice()
 {
-
-	// Ray tracing features
-	//vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelFeature{};
-	//accelFeature.sType = vk::StructureType::ePhysicalDeviceAccelerationStructureFeaturesKHR;
-	//accelFeature.accelerationStructure = VK_TRUE;
-
-	/*vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeature{};
-	rtPipelineFeature.sType = vk::StructureType::ePhysicalDeviceRayTracingPipelineFeaturesKHR;
-	rtPipelineFeature.rayTracingPipeline = VK_TRUE;
-	rtPipelineFeature.pNext = &accelFeature;*/
-
-
-	vk::PhysicalDeviceVulkan12Features features_1_2{};
-	features_1_2.sType = vk::StructureType::ePhysicalDeviceVulkan12Features;
-	features_1_2.bufferDeviceAddress = VK_TRUE;
-	features_1_2.descriptorIndexing = VK_TRUE;
-	features_1_2.bufferDeviceAddress = VK_TRUE;
-	//features_1_2.pNext = &rtPipelineFeature;
-
-
-	//Select Required Vulkan featuers 
-	vk::PhysicalDeviceVulkan13Features features_1_3{};
-	features_1_3.sType = vk::StructureType::ePhysicalDeviceVulkan13Features;
-	features_1_3.dynamicRendering = VK_TRUE;
-	features_1_3.synchronization2 = VK_TRUE;
-	features_1_3.pNext = &features_1_2;  
-
 	vk::PhysicalDeviceFeatures deviceFeatures{};
 	deviceFeatures.samplerAnisotropy = VK_TRUE;
-
-
-	vkb::PhysicalDeviceSelector selector{ VKB_Instance };
-
-
+	deviceFeatures.fillModeNonSolid = VK_TRUE;
 
 	std::vector<const char*> deviceExtensions = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-	    //VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
-		//VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
-		//VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
-		//VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+		VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME,
+	    VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME,
 		VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
 	};
+
+	vkb::PhysicalDeviceSelector selector{ VKB_Instance };
 
 	   auto physicalDeviceResult = selector
 		.set_minimum_version(1, 3)
@@ -92,8 +61,25 @@ void VulkanContext::SelectGPU_CreateDevice()
 
 	vkb::PhysicalDevice physicalDevice = physicalDeviceResult.value();
 
-	vkb::DeviceBuilder deviceBuilder{ physicalDevice };
 
+	vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT extendedDynamicState3Features{};
+	extendedDynamicState3Features.extendedDynamicState3PolygonMode = vk::True;
+	extendedDynamicState3Features.pNext = nullptr;
+
+	vk::PhysicalDeviceVulkan12Features features_1_2{};
+	features_1_2.sType = vk::StructureType::ePhysicalDeviceVulkan12Features;
+	features_1_2.bufferDeviceAddress = vk::True;
+	features_1_2.descriptorIndexing  = vk::True;
+	features_1_2.bufferDeviceAddress = vk::True;
+	features_1_2.pNext = &extendedDynamicState3Features;
+	//Select Required Vulkan featuers 
+	vk::PhysicalDeviceVulkan13Features features_1_3{};
+	features_1_3.sType = vk::StructureType::ePhysicalDeviceVulkan13Features;
+	features_1_3.dynamicRendering = vk::True;
+	features_1_3.synchronization2 = vk::True;
+	features_1_3.pNext = &features_1_2;
+
+	vkb::DeviceBuilder deviceBuilder{ physicalDevice };
 
 	auto deviceResult = deviceBuilder
 		.add_pNext(&features_1_3)
@@ -106,6 +92,7 @@ void VulkanContext::SelectGPU_CreateDevice()
 	vkb::Device VKB_Device = deviceResult.value();
 
 	LogicalDevice = VKB_Device.device;
+
 
 	if (LogicalDevice == VK_NULL_HANDLE)
 	{
@@ -126,6 +113,10 @@ void VulkanContext::SelectGPU_CreateDevice()
 	presentQueue = VKB_Device.get_queue(vkb::QueueType::present).value();
 	graphicsQueueFamilyIndex = VKB_Device.get_queue_index(vkb::QueueType::graphics).value();
 
+
+	vkCmdSetPolygonModeEXT = reinterpret_cast<PFN_vkCmdSetPolygonModeEXT>(vkGetDeviceProcAddr(LogicalDevice, "vkCmdSetPolygonModeEXT"));
+	
+	
 	/*vkCreateAccelerationStructureKHR        = reinterpret_cast<PFN_vkCreateAccelerationStructureKHR>(vkGetDeviceProcAddr(LogicalDevice, "vkCreateAccelerationStructureKHR"));
 	vkDestroyAccelerationStructureKHR       = reinterpret_cast<PFN_vkDestroyAccelerationStructureKHR>(vkGetDeviceProcAddr(LogicalDevice, "vkDestroyAccelerationStructureKHR"));
 	vkGetAccelerationStructureBuildSizesKHR = reinterpret_cast<PFN_vkGetAccelerationStructureBuildSizesKHR>(vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureBuildSizesKHR"));

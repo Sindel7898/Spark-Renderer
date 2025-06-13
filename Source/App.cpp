@@ -34,14 +34,17 @@
 		auto model = std::shared_ptr<Model>(new Model("../Textures/Helmet/DamagedHelmet.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 		auto model2 = std::shared_ptr<Model>(new Model("../Textures/WaterBottle/WaterBottle.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 		auto model3 = std::shared_ptr<Model>(new Model("../Textures/ScifiHelmet/SciFiHelmet.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-		auto model4 = std::shared_ptr<Model>(new Model("../Textures/Cube/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-
+		terrain     = std::shared_ptr<Terrain>(new Terrain("../Textures/Cube/Terrain/HighResPlane.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), TerrainDeleter);
 
 		Models.push_back(std::move(model));
 		Models.push_back(std::move(model2));
 		Models.push_back(std::move(model3));
-		Models.push_back(std::move(model4));
 
+		UserInterfaceItems.push_back(Models[0].get());
+		UserInterfaceItems.push_back(Models[1].get());
+		UserInterfaceItems.push_back(Models[2].get());
+
+		UserInterfaceItems.push_back(terrain.get());
 
 	std::array<const char*, 6> filePaths{
 		"../Textures/Skybox/px.png",  // +X (Right)
@@ -76,6 +79,11 @@
 	lights[0]->color = glm::vec3(1.0f, 1.0f, 1.0f);
 	lights[1]->color = glm::vec3(1.0f, 1.0f, 1.0f);
 	lights[2]->color = glm::vec3(1.0f, 1.0f, 1.0f);
+
+	UserInterfaceItems.push_back(lights[0].get());
+	UserInterfaceItems.push_back(lights[1].get());
+	UserInterfaceItems.push_back(lights[2].get());
+
 
 	createDescriptorPool();
 
@@ -115,6 +123,7 @@ void App::createDescriptorPool()
 	}
 
 	skyBox->createDescriptorSets(DescriptorPool);
+	terrain->createDescriptorSets(DescriptorPool);
 
 
 	for (auto& light : lights)
@@ -330,6 +339,7 @@ void App::CreateGraphicsPipeline()
 	std::vector<vk::DynamicState> DynamicStates = {
 	vk::DynamicState::eViewport,
 	vk::DynamicState::eScissor,
+	vk::DynamicState::ePolygonModeEXT
 	};
 
 	vk::PipelineDynamicStateCreateInfo DynamicState{};
@@ -843,6 +853,124 @@ void App::CreateGraphicsPipeline()
 		vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
 	}
 
+	{
+		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/Terrain_GeometryPass.vert.spv");
+		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/Terrain_GeometryPass.frag.spv");
+
+		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
+		VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
+
+		vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
+		VertShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+		VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
+		VertShaderStageInfo.module = VertShaderModule;
+		VertShaderStageInfo.pName = "main";
+
+		vk::PipelineShaderStageCreateInfo FragmentShaderStageInfo{};
+		FragmentShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+		FragmentShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
+		FragmentShaderStageInfo.module = FragShaderModule;
+		FragmentShaderStageInfo.pName = "main";
+
+		vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo ,FragmentShaderStageInfo };
+
+		vk::PipelineDepthStencilStateCreateInfo depthStencilState;
+		depthStencilState.depthTestEnable = vk::True;
+		depthStencilState.depthWriteEnable = vk::True;
+		depthStencilState.depthCompareOp = vk::CompareOp::eLess;
+		depthStencilState.minDepthBounds = 0.0f;
+		depthStencilState.maxDepthBounds = 1.0f;
+		depthStencilState.stencilTestEnable = VK_FALSE;
+
+		auto BindDesctiptions = ModelVertex::GetBindingDescription();
+		auto attributeDescriptions = ModelVertex::GetAttributeDescription();
+
+		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
+		vertexInputInfo.setVertexBindingDescriptionCount(1);
+		vertexInputInfo.setVertexAttributeDescriptionCount(5);
+		vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
+		vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
+
+		std::array<vk::Format, 6> colorFormats = {
+								 vk::Format::eR16G16B16A16Sfloat, // Position
+								 vk::Format::eR16G16B16A16Sfloat, // ViewSpacePosition
+								 vk::Format::eR16G16B16A16Sfloat, // Normal
+								 vk::Format::eR16G16B16A16Sfloat, // // ViewSpaceNormal
+								 vk::Format::eR8G8B8A8Srgb,      // Albedo
+								 vk::Format::eR8G8B8A8Unorm,
+		};
+
+
+		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
+		pipelineRenderingCreateInfo.colorAttachmentCount = colorFormats.size();
+		pipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats.data();
+		pipelineRenderingCreateInfo.depthAttachmentFormat = vulkanContext->FindCompatableDepthFormat();
+
+		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.setSetLayouts(terrain->descriptorSetLayout);//
+		pipelineLayoutInfo.pushConstantRangeCount = 0;
+		pipelineLayoutInfo.pPushConstantRanges = nullptr;
+
+		std::array<vk::PipelineColorBlendAttachmentState, 6> colorBlendAttachments = {
+			// Position attachment blend state
+			vk::PipelineColorBlendAttachmentState{}
+				.setColorWriteMask(vk::ColorComponentFlagBits::eR |
+								  vk::ColorComponentFlagBits::eG |
+								  vk::ColorComponentFlagBits::eB |
+								  vk::ColorComponentFlagBits::eA)
+				.setBlendEnable(VK_FALSE),
+			// Normal attachment blend state
+			vk::PipelineColorBlendAttachmentState{}
+				.setColorWriteMask(vk::ColorComponentFlagBits::eR |
+								  vk::ColorComponentFlagBits::eG |
+								  vk::ColorComponentFlagBits::eB |
+								  vk::ColorComponentFlagBits::eA)
+				.setBlendEnable(VK_FALSE),
+
+			// Albedo attachment blend state
+			vk::PipelineColorBlendAttachmentState{}
+				.setColorWriteMask(vk::ColorComponentFlagBits::eR |
+								  vk::ColorComponentFlagBits::eG |
+								  vk::ColorComponentFlagBits::eB |
+								  vk::ColorComponentFlagBits::eA)
+				.setBlendEnable(VK_FALSE),
+			// Albedo attachment blend state
+			vk::PipelineColorBlendAttachmentState{}
+				.setColorWriteMask(vk::ColorComponentFlagBits::eR |
+								  vk::ColorComponentFlagBits::eG |
+								  vk::ColorComponentFlagBits::eB |
+								  vk::ColorComponentFlagBits::eA)
+				.setBlendEnable(VK_FALSE),
+			// Albedo attachment blend state
+			vk::PipelineColorBlendAttachmentState{}
+				.setColorWriteMask(vk::ColorComponentFlagBits::eR |
+								  vk::ColorComponentFlagBits::eG |
+								  vk::ColorComponentFlagBits::eB |
+								  vk::ColorComponentFlagBits::eA)
+				.setBlendEnable(VK_FALSE),
+			// Albedo attachment blend state
+		vk::PipelineColorBlendAttachmentState{}
+			.setColorWriteMask(vk::ColorComponentFlagBits::eR |
+							  vk::ColorComponentFlagBits::eG |
+							  vk::ColorComponentFlagBits::eB |
+							  vk::ColorComponentFlagBits::eA)
+			.setBlendEnable(VK_FALSE)
+		};
+
+		vk::PipelineColorBlendStateCreateInfo colorBlend{};
+		colorBlend.setLogicOpEnable(VK_FALSE);
+		colorBlend.setAttachmentCount(colorBlendAttachments.size());
+		colorBlend.setPAttachments(colorBlendAttachments.data());
+
+		TerrainGeometryPassPipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+
+		TerrainGeometryPassPipeline = vulkanContext->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, vertexInputInfo, inputAssembleInfo,
+			viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, TerrainGeometryPassPipelineLayout);
+
+		vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
+		vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
+	}
 
 
 
@@ -1046,18 +1174,19 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 
 	for (auto& light : lights)
 	{
-		light->UpdateUniformBuffer(currentImage, nullptr);
+		light->UpdateUniformBuffer(currentImage);
 	}
 
 
 	for (auto& model : Models)
 	{
-		model->UpdateUniformBuffer(currentImage, lights[0].get());
+		model->UpdateUniformBuffer(currentImage);
 	}
 
-	skyBox->UpdateUniformBuffer(currentImage,lights[0].get());
+	skyBox->UpdateUniformBuffer(currentImage);
 
 	lighting_FullScreenQuad->UpdateUniformBuffer(currentImage, lights);
+	terrain->UpdateUniformBuffer(currentImage);
 
 	ssao_FullScreenQuad->UpdataeUniformBufferData();
 }
@@ -1087,6 +1216,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	scissor.offset = imageoffset;
 	scissor.extent.width =  vulkanContext->swapchainExtent.width;
 	scissor.extent.height = vulkanContext->swapchainExtent.height;
+
 
 	vk::DeviceSize offsets[] = { 0 };
 
@@ -1177,15 +1307,30 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.setScissor(0, 1, &scissor);
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, geometryPassPipeline);
 
+		if (bWireFrame)
+		{
+			vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_LINE);
+		}
+		else
+		{
+			vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
+		}
+
 		for (auto& model : Models)
 		{
 			model->Draw(commandBuffer, geometryPassPipelineLayout, currentFrame);
 		}
 
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, TerrainGeometryPassPipeline);
+
+		terrain->Draw(commandBuffer, TerrainGeometryPassPipelineLayout, currentFrame);
+
 		commandBuffer.endRendering();
+
 	}
 	/////////////////// GBUFFER PASS END ///////////////////////// 
 
+	vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
 
 	{
 		//transiiton position and normal in prep of ssao

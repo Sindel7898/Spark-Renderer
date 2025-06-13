@@ -23,7 +23,7 @@ public:
     ImageData FxaaImage;
 
     glm::vec4 bFXAA_Padding;
-    int bFXAA = 0;
+    int bFXAA = 1;
 private:
 
     std::vector<Vertex> quad = {
