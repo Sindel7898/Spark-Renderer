@@ -94,6 +94,8 @@ public:
 	std::shared_ptr<SSAOBlur_FullScreenQuad>     ssaoBlur_FullScreenQuad = nullptr;
 	std::shared_ptr<FXAA_FullScreenQuad>         fxaa_FullScreenQuad = nullptr;
 	std::shared_ptr<Terrain>                     terrain = nullptr;
+
+
 	VkDescriptorSet FinalRenderTextureId;
 	VkDescriptorSet PositionRenderTextureId;
 	VkDescriptorSet NormalTextureId;

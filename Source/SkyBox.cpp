@@ -21,7 +21,8 @@ SkyBox::SkyBox(std::array<const char*, 6> filePaths, VulkanContext* vulkancontex
 void SkyBox::CreateVertexAndIndexBuffer()
 {
 	VkDeviceSize VertexBufferSize = sizeof(vertices.data()[0]) * vertices.size();
-	vertexBufferData = bufferManager->CreateGPUOptimisedBuffer(vertices.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
+	vertexBufferData.BufferID = "SkyBox Vertex Buffer";
+	bufferManager->CreateGPUOptimisedBuffer(&vertexBufferData,vertices.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
 }
 
 void SkyBox::CreateUniformBuffer()
@@ -33,8 +34,10 @@ void SkyBox::CreateUniformBuffer()
 
 	for (size_t i = 0; i < vertexUniformBuffers.size(); i++)
 	{
+		BufferData bufferdata;
+		bufferdata.BufferID = "SkyBox Uniform Buffer";
 
-		BufferData bufferdata = bufferManager->CreateBuffer(UniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
+		 bufferManager->CreateBuffer(&bufferdata,UniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
 		vertexUniformBuffers[i] = bufferdata;
 
 		VertexUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);

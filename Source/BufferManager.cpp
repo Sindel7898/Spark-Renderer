@@ -20,7 +20,7 @@ BufferManager::BufferManager(vk::Device& LogicalDevice, vk::PhysicalDevice& Phys
 
 }
 
-BufferData BufferManager::CreateBuffer(VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue)
+void BufferManager::CreateBuffer(BufferData* bufferData,VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue)
 {
 	VmaAllocationCreateInfo AllocationInfo = {};
 	AllocationInfo.usage = VMA_MEMORY_USAGE_AUTO;
@@ -41,16 +41,61 @@ BufferData BufferManager::CreateBuffer(VkDeviceSize BufferSize, vk::BufferUsageF
 		throw std::runtime_error("Failed to create buffer!");
 	}
 
-	BufferData BufferData;
-	BufferData.buffer = vk::Buffer(Buffer);
-	BufferData.size = cBufferCreateInfo.size;
-	BufferData.usage = BufferUse;
-	BufferData.allocation = allocation;
-	return BufferData;
+	bufferData->buffer = vk::Buffer(Buffer);
+	bufferData->size = cBufferCreateInfo.size;
+	bufferData->usage = BufferUse;
+	bufferData->allocation = allocation;
+
+	AddBufferLog(bufferData);
+}
+
+void BufferManager::AddBufferLog(BufferData* bufferData)
+{
+	if (bufferData->BufferID.empty())
+	{
+	  throw	std::runtime_error("A buffer you are trying to create does not have an ID");
+	}
+
+	std::string ConstructedID = bufferData->BufferID;
+
+	auto FoundLog = bufferLog.find(ConstructedID);
+
+	if (FoundLog == bufferLog.end()) {
+		IDdata data;
+		data.instance = 0;
+		data.IsActive = true;
+
+		bufferLog.emplace(bufferData->BufferID,data);
+	}
+	else
+	{
+		IDdata data;
+		data.instance = FoundLog->second.instance + 1;
+		data.IsActive = true;
+
+		auto newLogID = FoundLog->first + "instance" + std::to_string(data.instance);
+		bufferData->BufferID = newLogID;
+		bufferLog.emplace(newLogID, data);
+	}
+}
+
+void BufferManager::RemoveBufferLog(BufferData bufferData)
+{
+	if (bufferData.BufferID.empty())
+	{
+		throw std::runtime_error("A buffer you are trying to destroy does not have an ID");
+	}
+	auto FoundLog = bufferLog.find(bufferData.BufferID);
+
+	if (FoundLog != bufferLog.end()) {
+		bufferLog.erase(FoundLog);
+	}
 }
 
 
-BufferData BufferManager::CreateGPUOptimisedBuffer(const void* Data, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue)
+
+
+void BufferManager::CreateGPUOptimisedBuffer(BufferData* bufferData,const void* Data, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue)
 {
 	VmaAllocationCreateInfo AllocationInfo = {};
 	AllocationInfo.usage = VMA_MEMORY_USAGE_AUTO;
@@ -71,12 +116,14 @@ BufferData BufferManager::CreateGPUOptimisedBuffer(const void* Data, VkDeviceSiz
 		throw std::runtime_error("Failed to create buffer!");
 	}
 
+
 	BufferData StagingBufferData;
 	StagingBufferData.buffer = vk::Buffer(StagineBuffer);
 	StagingBufferData.size = cStagingBufferCreateInfo.size;
 	StagingBufferData.usage = vk::BufferUsageFlagBits::eTransferSrc;
 	StagingBufferData.allocation = StagineBufferAllocation;
-
+	StagingBufferData.BufferID = "GPU Staging Buffer";
+	AddBufferLog(&StagingBufferData);
 	CopyDataToBuffer(Data, StagingBufferData);
 
 	vk::BufferCreateInfo VertexBufferInfo;
@@ -99,14 +146,21 @@ BufferData BufferManager::CreateGPUOptimisedBuffer(const void* Data, VkDeviceSiz
 	BufferData FinalBufferData;
 	FinalBufferData.buffer = vk::Buffer(cVertexbuffer);
 	FinalBufferData.size = VertexBufferInfo.size;
-	FinalBufferData.usage = vk::BufferUsageFlagBits::eTransferDst | BufferUse; ;
+	FinalBufferData.usage = vk::BufferUsageFlagBits::eTransferDst | BufferUse;
 	FinalBufferData.allocation = VertexBufferAllocation;
 
 	CopyBufferToAnotherBuffer(commandpool, StagingBufferData, FinalBufferData, queue);
 	
 	DestroyBuffer(StagingBufferData);
 
-	return FinalBufferData;
+	bufferData->buffer = FinalBufferData.buffer;
+	bufferData->size = FinalBufferData.size;
+	bufferData->usage = FinalBufferData.usage;
+	bufferData->allocation = FinalBufferData.allocation;
+	bufferData->BufferID = "GPU Optimised Final Buffer";
+
+	AddBufferLog(bufferData);
+
 }
 
 ImageData BufferManager::CreateTextureImage(const void* pixeldata, vk::DeviceSize imagesize, int texWidth, int textHeight,vk::Format ImageFormat, vk::CommandPool commandpool, vk::Queue Queue)
@@ -136,6 +190,8 @@ ImageData BufferManager::CreateTextureImage(const void* pixeldata, vk::DeviceSiz
 	StagineBuffer.size = imagesize;
 	StagineBuffer.allocation = StagingBufferAllocation;
 	StagineBuffer.usage = vk::BufferUsageFlagBits::eTransferSrc;
+	StagineBuffer.BufferID = "Texture Staging Buffer";
+	AddBufferLog(&StagineBuffer);
 
 	CopyDataToBuffer(pixeldata, StagineBuffer);
 
@@ -562,8 +618,10 @@ void BufferManager::UnmapMemory(const BufferData& buffer) {
 	vmaUnmapMemory(allocator, buffer.allocation);
 }
 
-void BufferManager::DestroyBuffer(const BufferData& buffer) {
+void BufferManager::DestroyBuffer(BufferData& buffer) {
 
+	
+		RemoveBufferLog(buffer);
 	vmaDestroyBuffer(allocator, static_cast<VkBuffer>(buffer.buffer), buffer.allocation);
 }
 

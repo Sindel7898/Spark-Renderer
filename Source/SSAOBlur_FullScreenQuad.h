@@ -33,8 +33,6 @@ private:
            0, 1, 2,
            2, 1, 3
     };
-
-    ImageData SSAOBlureImageData;
 };
 
 static inline void SSAOBlur_FullScreenQuadDeleter(SSAOBlur_FullScreenQuad* SSA0_fullScreenQuad) {

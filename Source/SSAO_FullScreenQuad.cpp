@@ -27,10 +27,12 @@ void SSA0_FullScreenQuad::CreateVertexAndIndexBuffer()
 {
 
 	VkDeviceSize VertexBufferSize = sizeof(quad[0]) * quad.size();
-	vertexBufferData = bufferManager->CreateGPUOptimisedBuffer(quad.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
+	vertexBufferData.BufferID = "SSAO Vertex Buffer";
+    bufferManager->CreateGPUOptimisedBuffer(&vertexBufferData,quad.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
 
 	VkDeviceSize indexBufferSize = sizeof(uint16_t) * quadIndices.size();
-	indexBufferData = bufferManager->CreateGPUOptimisedBuffer(quadIndices.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
+	indexBufferData.BufferID = "SSAO Index Buffer";
+	bufferManager->CreateGPUOptimisedBuffer(&indexBufferData,quadIndices.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
 
 }
 
@@ -43,7 +45,11 @@ void SSA0_FullScreenQuad::CreateUniformBuffer()
 
 	for (size_t i = 0; i < fragmentUniformBuffers.size(); i++)
 	{
-	  fragmentUniformBuffers[i] = bufferManager->CreateBuffer(FragmentBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
+		BufferData bufferdata;
+		bufferdata.BufferID = "SSAO Vertex Uniform Buffer" + i;
+
+	  bufferManager->CreateBuffer(&bufferdata,FragmentBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
+	  fragmentUniformBuffers[i] = bufferdata;
 	  FragmentUniformBuffersMappedMem[i] = bufferManager->MapMemory(fragmentUniformBuffers[i]);
 	}
 
@@ -255,7 +261,7 @@ void SSA0_FullScreenQuad::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayo
 
 void SSA0_FullScreenQuad::CleanUp()
 {
-
+	bufferManager->DestroyImage(NoiseTexture);
 	Drawable::Destructor();
 }
 

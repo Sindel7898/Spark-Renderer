@@ -540,6 +540,7 @@ void App::CreateGraphicsPipeline()
 			viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, SSAOPipelineLayout,2);
 
 		vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
+		vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
 	}
 
 	{
@@ -618,6 +619,8 @@ void App::CreateGraphicsPipeline()
 			viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, SSAOBlurPipelineLayout, 2);
 
 		vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
+		vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
+
 	}
 
 	{
@@ -1662,9 +1665,15 @@ void App::destroy_DepthImage()
 void App::destroy_GbufferImages()
 {
 	bufferManger->DestroyImage(gbuffer.Position);
-	bufferManger->DestroyImage(gbuffer.Albedo);
+	bufferManger->DestroyImage(gbuffer.ViewSpacePosition);
 	bufferManger->DestroyImage(gbuffer.Normal);
+	bufferManger->DestroyImage(gbuffer.ViewSpaceNormal);
+	bufferManger->DestroyImage(gbuffer.SSAO);
+	bufferManger->DestroyImage(gbuffer.SSAOBlured);
+	bufferManger->DestroyImage(gbuffer.Materials);
+	bufferManger->DestroyImage(gbuffer.Albedo);
 	bufferManger->DestroyImage(LightingPassImageData);
+
 	fxaa_FullScreenQuad->DestroyImage();
 
 }
@@ -1705,8 +1714,6 @@ void App::recreatePipeline()
 }
 
 
-
-
 void App::DestroySyncObjects()
 {
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -1719,6 +1726,10 @@ void App::DestroySyncObjects()
 
 void App::DestroyBuffers()
 {
+
+	destroy_DepthImage();
+	destroy_GbufferImages();
+
 	for (auto& model : Models)
 	{
 		model.reset();
@@ -1732,29 +1743,34 @@ void App::DestroyBuffers()
 	skyBox.reset();
 
 	lighting_FullScreenQuad.reset();
-	bufferManger->DestroyImage(DepthTextureData);
-	bufferManger->DestroyImage(LightingPassImageData);
-	bufferManger->DestroyImage(gbuffer.Position);
-	bufferManger->DestroyImage(gbuffer.Albedo);
-	bufferManger->DestroyImage(gbuffer.Normal);
+	ssao_FullScreenQuad.reset();
+	ssaoBlur_FullScreenQuad.reset();
+	fxaa_FullScreenQuad.reset();
+	terrain.reset();
+
 	bufferManger.reset();
 }
 
 void App::destroyPipeline()
 {
 	vulkanContext->LogicalDevice.destroyPipeline(DeferedLightingPassPipeline);
-	vulkanContext->LogicalDevice.destroyPipeline(SkyBoxgraphicsPipeline);
+	vulkanContext->LogicalDevice.destroyPipeline(FXAAPassPipeline);
 	vulkanContext->LogicalDevice.destroyPipeline(LightgraphicsPipeline);
+	vulkanContext->LogicalDevice.destroyPipeline(SkyBoxgraphicsPipeline);
 	vulkanContext->LogicalDevice.destroyPipeline(geometryPassPipeline);
 	vulkanContext->LogicalDevice.destroyPipeline(SSAOPipeline);
 	vulkanContext->LogicalDevice.destroyPipeline(SSAOBlurPipeline);
+	vulkanContext->LogicalDevice.destroyPipeline(TerrainGeometryPassPipeline);
 
 	vulkanContext->LogicalDevice.destroyPipelineLayout(DeferedLightingPassPipelineLayout);
-	vulkanContext->LogicalDevice.destroyPipelineLayout(SkyBoxpipelineLayout);
+	vulkanContext->LogicalDevice.destroyPipelineLayout(FXAAPassPipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(LightpipelineLayout);
+	vulkanContext->LogicalDevice.destroyPipelineLayout(SkyBoxpipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(geometryPassPipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(SSAOPipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(SSAOBlurPipelineLayout);
+	vulkanContext->LogicalDevice.destroyPipelineLayout(TerrainGeometryPassPipelineLayout);
+
 }
 
 

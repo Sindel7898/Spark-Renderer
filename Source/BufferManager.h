@@ -3,9 +3,17 @@
 #include <vulkan/vulkan.hpp>
 #include <vk_mem_alloc.h>
 #include "stb_image.h"
+#include <unordered_map>
+#include <iostream>
+
+struct IDdata {
+    int instance;
+    bool IsActive;
+};
 
 struct BufferData {
 
+    std::string BufferID;
     vk::Buffer buffer{};
     vk::DeviceSize size{};
     vk::BufferUsageFlags usage{};
@@ -35,9 +43,11 @@ class BufferManager
 public:
 
     BufferManager(vk::Device& LogicalDevice, vk::PhysicalDevice& PhysicalDevice, vk::Instance& VulkanInstance);
-    ~BufferManager();
+    void CreateBuffer(BufferData* BufferData, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
+    void AddBufferLog(BufferData* bufferdata);
+    void RemoveBufferLog(BufferData bufferdata);
 
-    BufferData CreateBuffer(VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
+    ~BufferManager();
 
 
     ImageData CreateCubeMap(std::array<const char*,6> FilePaths, vk::CommandPool commandpool, vk::Queue Queue);
@@ -53,12 +63,12 @@ public:
 
 
 
-    BufferData CreateGPUOptimisedBuffer(const void* Data, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
+    void CreateGPUOptimisedBuffer(BufferData* bufferData,const void* Data, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
 
     ImageData CreateTextureImage(const void* pixeldata, vk::DeviceSize imagesize, int texWidth, int textHeight, vk::Format ImageFormat, vk::CommandPool commandpool, vk::Queue Queue);
 
 
-    void DestroyBuffer(const BufferData& buffer);
+    void DestroyBuffer(BufferData& buffer);
 
     void DestroyImage(const ImageData& buffer);
 
@@ -72,16 +82,32 @@ public:
 
     void DeleteAllocation(VmaAllocation allocation);
 
+    std::unordered_map<std::string, IDdata> bufferLog;
+    int bufferCounts = 0;
+
 private:
     vk::Device& logicalDevice;
     vk::PhysicalDevice& physicalDevice;
     vk::Instance& vulkanInstance;
+
+    std::unordered_map<std::string, bool> imageLog;
 };
 
 static inline void BufferManagerDeleter(BufferManager* bufferManager) {
 
     if (bufferManager)
     {
+        std::cout << "You have " << bufferManager->bufferLog.size() << " Unfreed Buffers" << std::endl;
+
+        if (bufferManager->bufferLog.size() != 0)
+        {
+            std::cout << "Unfreed Buffers "<< std::endl;
+
+            for (auto Buffer : bufferManager->bufferLog)
+            {
+                std::cout << Buffer.first << std::endl;
+            }
+        }
         vmaDestroyAllocator(bufferManager->allocator);
         delete bufferManager;
     }

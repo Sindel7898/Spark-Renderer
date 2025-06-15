@@ -65,10 +65,12 @@ void Terrain::CreateVertexAndIndexBuffer()
 	storedModelData = &AssetManager::GetInstance().GetStoredModelData(FilePath);
 
 	VkDeviceSize VertexBufferSize = sizeof(storedModelData->VertexData[0]) * storedModelData->VertexData.size();
-	vertexBufferData = bufferManager->CreateGPUOptimisedBuffer(storedModelData->VertexData.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
+	vertexBufferData.BufferID = "Terrain Vertex Buffer";
+	bufferManager->CreateGPUOptimisedBuffer(&vertexBufferData,storedModelData->VertexData.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
 
 	VkDeviceSize indexBufferSize = sizeof(uint32_t) * storedModelData->IndexData.size();
-	indexBufferData = bufferManager->CreateGPUOptimisedBuffer(storedModelData->IndexData.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
+	indexBufferData.BufferID = "Terrain Index Buffer";
+	bufferManager->CreateGPUOptimisedBuffer(&indexBufferData,storedModelData->IndexData.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
 
 }
 
@@ -83,8 +85,9 @@ void Terrain::CreateUniformBuffer()
 
 		for (size_t i = 0; i < vertexUniformBuffers.size(); i++)
 		{
-
-			BufferData bufferdata = bufferManager->CreateBuffer(VertexuniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
+			BufferData bufferdata;
+			bufferdata.BufferID = "Terrain Vertex Uniform Buffer" + i;
+			bufferManager->CreateBuffer(&bufferdata,VertexuniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
 			vertexUniformBuffers[i] = bufferdata;
 
 			VertexUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
@@ -272,6 +275,9 @@ void Terrain::CleanUp()
 		storedModelData = nullptr;
 		bufferManager->DestroyImage(albedoTextureData);
 		bufferManager->DestroyImage(normalTextureData);
+		bufferManager->DestroyImage(MetallicRoughnessTextureData);
+		bufferManager->DestroyImage(HeighMapTextureData);
+
 	}
 	
 	Drawable::Destructor();

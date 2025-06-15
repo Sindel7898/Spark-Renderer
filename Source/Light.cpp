@@ -38,7 +38,8 @@ Light::Light(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* 
 void Light::CreateVertexAndIndexBuffer()
 {
 	VkDeviceSize VertexBufferSize = sizeof(vertices.data()[0]) * vertices.size();
-	vertexBufferData = bufferManager->CreateGPUOptimisedBuffer(vertices.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
+	vertexBufferData.BufferID = "Light Vertex Buffer";
+	bufferManager->CreateGPUOptimisedBuffer(&vertexBufferData,vertices.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
 }
 
 void Light::CreateUniformBuffer()
@@ -50,8 +51,9 @@ void Light::CreateUniformBuffer()
 
 	for (size_t i = 0; i < vertexUniformBuffers.size(); i++)
 	{
-
-		BufferData bufferdata = bufferManager->CreateBuffer(UniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
+		BufferData bufferdata;
+		bufferdata.BufferID = "Light Uniform Buffer";
+	    bufferManager->CreateBuffer(&bufferdata,UniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
 		vertexUniformBuffers[i] = bufferdata;
 
 		VertexUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);

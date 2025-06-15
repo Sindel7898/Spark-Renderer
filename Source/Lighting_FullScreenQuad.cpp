@@ -23,10 +23,12 @@ void Lighting_FullScreenQuad::CreateVertexAndIndexBuffer()
 {
 
 	VkDeviceSize VertexBufferSize = sizeof(quad[0]) * quad.size();
-	vertexBufferData = bufferManager->CreateGPUOptimisedBuffer(quad.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
+	vertexBufferData.BufferID = " Lighting FullScreen Quad Vertex Buffer";
+	bufferManager->CreateGPUOptimisedBuffer(&vertexBufferData, quad.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
 
 	VkDeviceSize indexBufferSize = sizeof(uint16_t) * quadIndices.size();
-	indexBufferData = bufferManager->CreateGPUOptimisedBuffer(quadIndices.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
+	indexBufferData.BufferID = " Lighting FullScreen Quad Index Buffer";
+	bufferManager->CreateGPUOptimisedBuffer(&indexBufferData,quadIndices.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
 
 }
 
@@ -40,8 +42,10 @@ void Lighting_FullScreenQuad::CreateUniformBuffer()
 
 	for (size_t i = 0; i < fragmentUniformBuffers.size(); i++)
 	{
+		BufferData bufferdata;
 
-		BufferData bufferdata = bufferManager->CreateBuffer(FragmentuniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
+		bufferdata.BufferID = " Lighting FullScreen Quad Fragment Uniform Buffer" + i;
+		bufferManager->CreateBuffer(&bufferdata,FragmentuniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
 		fragmentUniformBuffers[i] = bufferdata;
 
 		FragmentUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
