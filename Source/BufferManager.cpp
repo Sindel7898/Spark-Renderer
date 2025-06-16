@@ -63,7 +63,6 @@ void BufferManager::AddBufferLog(BufferData* bufferData)
 	if (FoundLog == bufferLog.end()) {
 		IDdata data;
 		data.instance = 0;
-		data.IsActive = true;
 
 		bufferLog.emplace(bufferData->BufferID,data);
 	}
@@ -71,7 +70,6 @@ void BufferManager::AddBufferLog(BufferData* bufferData)
 	{
 		IDdata data;
 		data.instance = FoundLog->second.instance + 1;
-		data.IsActive = true;
 
 		auto newLogID = FoundLog->first + "instance" + std::to_string(data.instance);
 		bufferData->BufferID = newLogID;
@@ -91,9 +89,6 @@ void BufferManager::RemoveBufferLog(BufferData bufferData)
 		bufferLog.erase(FoundLog);
 	}
 }
-
-
-
 
 void BufferManager::CreateGPUOptimisedBuffer(BufferData* bufferData,const void* Data, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue)
 {
@@ -200,7 +195,10 @@ ImageData BufferManager::CreateTextureImage(const void* pixeldata, vk::DeviceSiz
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	vk::Extent3D imageExtent = { static_cast<uint32_t>(texWidth),static_cast<uint32_t>(textHeight),1 };
 
-	ImageData TextureImageData = CreateImage(imageExtent, ImageFormat, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
+	 ImageData TextureImageData;
+	 TextureImageData.ImageID = "StagineBuffer texture";
+
+	 CreateImage(&TextureImageData,imageExtent, ImageFormat, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -251,7 +249,7 @@ ImageData BufferManager::CreateTextureImage(const void* pixeldata, vk::DeviceSiz
 	return TextureImageData;
 }
 
-ImageData BufferManager::CreateCubeMap(std::array<const char*, 6> filePaths, vk::CommandPool commandpool, vk::Queue Queue)
+void BufferManager::CreateCubeMap(ImageData* imageData,std::array<const char*, 6> filePaths, vk::CommandPool commandpool, vk::Queue Queue)
 {
 	struct FaceData {
 		stbi_uc* pixels;
@@ -347,10 +345,10 @@ ImageData BufferManager::CreateCubeMap(std::array<const char*, 6> filePaths, vk:
 		throw std::runtime_error("Failed to create cube map image!");
 	}
 
-	ImageData cubeImageData;
-	cubeImageData.image = vk::Image(cCubeImage);
-	cubeImageData.allocation = cubeAllocation;
+	imageData->image = vk::Image(cCubeImage);
+	imageData->allocation = cubeAllocation;
 
+	AddImageLog(imageData);
 	// Transfer data from staging buffer to cube map image
 	vk::CommandBuffer cmdBuffer = CreateSingleUseCommandBuffer(commandpool);
 
@@ -359,7 +357,7 @@ ImageData BufferManager::CreateCubeMap(std::array<const char*, 6> filePaths, vk:
 	acquireBarrier.newLayout = vk::ImageLayout::eTransferDstOptimal;
 	acquireBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	acquireBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	acquireBarrier.image = cubeImageData.image;
+	acquireBarrier.image = imageData->image;
 	acquireBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
 	acquireBarrier.subresourceRange.baseMipLevel = 0;
 	acquireBarrier.subresourceRange.levelCount = 1;
@@ -399,7 +397,7 @@ ImageData BufferManager::CreateCubeMap(std::array<const char*, 6> filePaths, vk:
 
 	cmdBuffer.copyBufferToImage(
 		vk::Buffer(cStagingBuffer),
-		cubeImageData.image,
+		imageData->image,
 		vk::ImageLayout::eTransferDstOptimal,
 		static_cast<uint32_t>(copyRegions.size()),
 		copyRegions.data()
@@ -411,7 +409,7 @@ ImageData BufferManager::CreateCubeMap(std::array<const char*, 6> filePaths, vk:
 	releaseBarrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 	releaseBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	releaseBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	releaseBarrier.image = cubeImageData.image;
+	releaseBarrier.image = imageData->image;
 	releaseBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
 	releaseBarrier.subresourceRange.baseMipLevel = 0;
 	releaseBarrier.subresourceRange.levelCount = 1;
@@ -436,7 +434,7 @@ ImageData BufferManager::CreateCubeMap(std::array<const char*, 6> filePaths, vk:
 
 	// Create cube map view
 	vk::ImageViewCreateInfo viewInfo = {};
-	viewInfo.image = cubeImageData.image;
+	viewInfo.image = imageData->image;
 	viewInfo.viewType = vk::ImageViewType::eCube; // This makes it a cube map!
 	viewInfo.format = vk::Format::eR8G8B8A8Srgb;
 	viewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
@@ -447,13 +445,17 @@ ImageData BufferManager::CreateCubeMap(std::array<const char*, 6> filePaths, vk:
 
 
 
-	cubeImageData.imageView = logicalDevice.createImageView(viewInfo);
-	cubeImageData.imageSampler = CreateImageSampler();
-
-	return cubeImageData;
+	imageData->imageView = logicalDevice.createImageView(viewInfo);
+	imageData->imageSampler = CreateImageSampler();
 }
 
-ImageData BufferManager::CreateImage( vk::Extent3D imageExtent, vk::Format imageFormat, vk::ImageUsageFlags UsageFlag) {
+void BufferManager::CreateImage(ImageData* imageData,vk::Extent3D imageExtent, vk::Format imageFormat, vk::ImageUsageFlags UsageFlag) {
+
+
+	if (imageData->ImageID.empty())
+	{
+		throw std::exception("An image you are trying to create does not have an ID");
+	}
 
 	vk::ImageCreateInfo imagecreateinfo;
 	imagecreateinfo.imageType = vk::ImageType::e2D;
@@ -480,15 +482,53 @@ ImageData BufferManager::CreateImage( vk::Extent3D imageExtent, vk::Format image
 		throw std::runtime_error("Failed to create image!");
 	}
 
-	ImageData imageData;
-	imageData.image = vk::Image(cTextureImage);
-	imageData.allocation = ImageAllocation;
+	imageData->image = vk::Image(cTextureImage);
+	imageData->allocation = ImageAllocation;
 	//imageData.imageView = CreateImageView(imageData.image);
 	//imageData.imageSampler = CreateImageSampler();
-
-	return  imageData;
+	AddImageLog(imageData);
 }
 
+void BufferManager::AddImageLog(ImageData* imageData)
+{
+	if (imageData->ImageID.empty())
+	{
+		throw	std::runtime_error("A buffer you are trying to create does not have an ID");
+	}
+
+	std::string ConstructedID = imageData->ImageID;
+
+	auto FoundLog = imageLog.find(ConstructedID);
+
+	if (FoundLog == imageLog.end()) {
+		IDdata data;
+		data.instance = 0;
+
+		imageLog.emplace(imageData->ImageID, data);
+	}
+	else
+	{
+		IDdata data;
+		data.instance = FoundLog->second.instance + 1;
+
+		auto newLogID = FoundLog->first + "instance" + std::to_string(data.instance);
+		imageData->ImageID = newLogID;
+		imageLog.emplace(newLogID, data);
+	}
+}
+
+void BufferManager::RemoveImageLog(ImageData imageData)
+{
+	if (imageData.ImageID.empty())
+	{
+		throw std::runtime_error("A buffer you are trying to destroy does not have an ID");
+	}
+	auto FoundLog = imageLog.find(imageData.ImageID);
+
+	if (FoundLog != imageLog.end()) {
+		imageLog.erase(FoundLog);
+	}
+}
 vk::ImageView BufferManager::CreateImageView(vk::Image Image, vk::Format ImageFormat = vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlags ImageAspectBits = vk::ImageAspectFlagBits::eColor) {
 
 	vk::ImageViewCreateInfo imageviewinfo{};
@@ -621,7 +661,7 @@ void BufferManager::UnmapMemory(const BufferData& buffer) {
 void BufferManager::DestroyBuffer(BufferData& buffer) {
 
 	
-		RemoveBufferLog(buffer);
+	RemoveBufferLog(buffer);
 	vmaDestroyBuffer(allocator, static_cast<VkBuffer>(buffer.buffer), buffer.allocation);
 }
 
@@ -641,6 +681,8 @@ void BufferManager::DestroyImage(const ImageData& imagedata) {
 	{
 		vmaDestroyImage(allocator, imagedata.image, imagedata.allocation);
 	}
+
+	RemoveImageLog(imagedata);
 }
 
 BufferManager::~BufferManager()

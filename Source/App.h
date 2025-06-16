@@ -155,8 +155,6 @@ private:
 	////////////////////////////
 	ImageData DepthTextureData;
 
-
-
 	bool bRecreateDepth = false; 
 
 	bool binitiallayout = true;
@@ -164,6 +162,4 @@ private:
 	GBuffer gbuffer;
 
 	ImageData LightingPassImageData;
-
-
 };

@@ -10,7 +10,8 @@ SkyBox::SkyBox(std::array<const char*, 6> filePaths, VulkanContext* vulkancontex
 	camera = cameraref;
 	bufferManager = buffermanger;
 
-	MeshTextureData = bufferManager->CreateCubeMap (filePaths, commandPool, vulkanContext->graphicsQueue);
+	  MeshTextureData.ImageID = "skybox Cube Map Texture";
+	  bufferManager->CreateCubeMap (&MeshTextureData,filePaths, commandPool, vulkanContext->graphicsQueue);
 
 	CreateUniformBuffer();
 	CreateVertexAndIndexBuffer();
@@ -37,7 +38,7 @@ void SkyBox::CreateUniformBuffer()
 		BufferData bufferdata;
 		bufferdata.BufferID = "SkyBox Uniform Buffer";
 
-		 bufferManager->CreateBuffer(&bufferdata,UniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
+	 bufferManager->CreateBuffer(&bufferdata,UniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
 		vertexUniformBuffers[i] = bufferdata;
 
 		VertexUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);

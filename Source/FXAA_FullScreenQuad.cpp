@@ -34,7 +34,8 @@ void FXAA_FullScreenQuad::CreateVertexAndIndexBuffer()
 
 void FXAA_FullScreenQuad::CreateImage(vk::Extent3D imageExtent)
 {
-	   FxaaImage = bufferManager->CreateImage(imageExtent, vulkanContext->swapchainformat,vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	   FxaaImage.ImageID = "Gbuffer FxaaImage Texture";
+	   bufferManager->CreateImage(&FxaaImage,imageExtent, vulkanContext->swapchainformat,vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 
 	   FxaaImage.imageView = bufferManager->CreateImageView(FxaaImage.image, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
 	   FxaaImage.imageSampler = bufferManager->CreateImageSampler();

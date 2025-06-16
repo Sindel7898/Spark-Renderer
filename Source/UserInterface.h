@@ -33,7 +33,6 @@ class UserInterface
     vk::Extent3D GetRenderTextureExtent();
 
     BufferManager* buffermanager = nullptr;
-    ImageData ImguiViewPortRenderTextureData;
    // VkDescriptorSet RenderTextureId;
     VulkanContext* vulkancontext = nullptr;
     vk::DescriptorPool  ImGuiDescriptorPool = nullptr;
@@ -76,8 +75,6 @@ static inline void UserInterfaceDeleter(UserInterface* userInterface) {
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext(); 
         userInterface->vulkancontext->LogicalDevice.destroyDescriptorPool(userInterface->ImGuiDescriptorPool);
-        userInterface->buffermanager->DestroyImage(userInterface->ImguiViewPortRenderTextureData);
-
    }
  
 };

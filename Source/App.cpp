@@ -137,7 +137,9 @@ void App::createDepthTextureImage()
 {
 	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
-	DepthTextureData = bufferManger->CreateImage(swapchainextent, vulkanContext->FindCompatableDepthFormat(), vk::ImageUsageFlagBits::eDepthStencilAttachment);
+
+	DepthTextureData.ImageID = "Depth Texture";
+	bufferManger->CreateImage(&DepthTextureData,swapchainextent, vulkanContext->FindCompatableDepthFormat(), vk::ImageUsageFlagBits::eDepthStencilAttachment);
 	DepthTextureData.imageView = bufferManger->CreateImageView(DepthTextureData.image, vulkanContext->FindCompatableDepthFormat(), vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
 
 	vk::CommandBuffer commandBuffer = bufferManger->CreateSingleUseCommandBuffer(commandPool);
@@ -166,41 +168,50 @@ void App::createGBuffer()
 
 	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
-	gbuffer.Position = bufferManger->CreateImage(swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.Position.ImageID = "Gbuffer Position Texture";
+	bufferManger->CreateImage(&gbuffer.Position,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	gbuffer.Position.imageView = bufferManger->CreateImageView(gbuffer.Position.image, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	gbuffer.Position.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
-	gbuffer.ViewSpacePosition = bufferManger->CreateImage(swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.ViewSpacePosition.ImageID = "Gbuffer Position Texture";
+	bufferManger->CreateImage(&gbuffer.ViewSpacePosition,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	gbuffer.ViewSpacePosition.imageView = bufferManger->CreateImageView(gbuffer.ViewSpacePosition.image, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	gbuffer.ViewSpacePosition.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	gbuffer.Normal = bufferManger->CreateImage(swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.Normal.ImageID = "Gbuffer Position Texture";
+	bufferManger->CreateImage(&gbuffer.Normal,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	gbuffer.Normal.imageView = bufferManger->CreateImageView(gbuffer.Normal.image, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	gbuffer.Normal.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
-	gbuffer.ViewSpaceNormal = bufferManger->CreateImage(swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.ViewSpaceNormal.ImageID = "Gbuffer ViewSpaceNormal Texture";
+	bufferManger->CreateImage(&gbuffer.ViewSpaceNormal,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	gbuffer.ViewSpaceNormal.imageView = bufferManger->CreateImageView(gbuffer.ViewSpaceNormal.image, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	gbuffer.ViewSpaceNormal.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 	//////////////////////////////////////////////////////////////////////////////////////////////////////
-	gbuffer.SSAO = bufferManger->CreateImage(swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.SSAO.ImageID = "Gbuffer SSAO Texture";
+	bufferManger->CreateImage(&gbuffer.SSAO,swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	gbuffer.SSAO.imageView = bufferManger->CreateImageView(gbuffer.SSAO.image, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
 	gbuffer.SSAO.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
-	gbuffer.SSAOBlured = bufferManger->CreateImage(swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.SSAOBlured.ImageID = "Gbuffer SSAOBlured Texture";
+	bufferManger->CreateImage(&gbuffer.SSAOBlured,swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	gbuffer.SSAOBlured.imageView = bufferManger->CreateImageView(gbuffer.SSAOBlured.image, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
 	gbuffer.SSAOBlured.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	gbuffer.Materials = bufferManger->CreateImage(swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.Materials.ImageID = "Gbuffer Materials Texture";
+	bufferManger->CreateImage(&gbuffer.Materials ,swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	gbuffer.Materials.imageView = bufferManger->CreateImageView(gbuffer.Materials.image, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
 	gbuffer.Materials.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	gbuffer.Albedo = bufferManger->CreateImage(swapchainextent, vk::Format::eR8G8B8A8Srgb, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.Albedo.ImageID = "Gbuffer Albedo Texture";
+	bufferManger->CreateImage(&gbuffer.Albedo,swapchainextent, vk::Format::eR8G8B8A8Srgb, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	gbuffer.Albedo.imageView = bufferManger->CreateImageView(gbuffer.Albedo.image, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor);
 	gbuffer.Albedo.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
-	LightingPassImageData = bufferManger->CreateImage(swapchainextent, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	LightingPassImageData.ImageID = "Gbuffer LightingPass Texture";
+	bufferManger->CreateImage(&LightingPassImageData,swapchainextent, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	LightingPassImageData.imageView = bufferManger->CreateImageView(LightingPassImageData.image, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
 	LightingPassImageData.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
@@ -1776,6 +1787,7 @@ void App::destroyPipeline()
 
  App::~App()
 {
+
 	userinterface.reset();
 	DestroyBuffers();
 

@@ -87,14 +87,15 @@ void main() {
 
     vec3  ViewDir    = normalize(lights[0].CameraPositionAndLightIntensity.xyz -  WorldPos);
 
-       vec3 ambientvalue= vec3(0.08);
-       vec3 Ambient = Albedo * ambientvalue * ambientOcclusion;
+      vec3 ambientvalue= vec3(0.08);
+      vec3 Ambient = Albedo * ambientvalue * ambientOcclusion;
 
   for (int i = 0; i < 3; i++) {
-     
+
      float Attenuation = 1.0;
 
      LightData light = lights[i];
+
      vec3 Lo      = vec3(0.0);
 
 
@@ -114,7 +115,6 @@ void main() {
     }  
 
     vec3  halfwayDir = normalize(LightDir + ViewDir);
-
     vec3 F0 = vec3(0.04); 
     F0      = mix(F0, Albedo, Metallic);
     vec3 F  = fresnelSchlick(max(dot(halfwayDir, ViewDir), 0.0), F0);

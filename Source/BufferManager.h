@@ -8,7 +8,7 @@
 
 struct IDdata {
     int instance;
-    bool IsActive;
+   // bool IsActive; // not needed anymore 
 };
 
 struct BufferData {
@@ -21,6 +21,7 @@ struct BufferData {
 };
 
 struct ImageData {
+    std::string ImageID;
     vk::Image image{};
     vk::ImageView imageView{};
     vk::Sampler imageSampler{};
@@ -47,12 +48,15 @@ public:
     void AddBufferLog(BufferData* bufferdata);
     void RemoveBufferLog(BufferData bufferdata);
 
+    void AddImageLog(ImageData* imageData);
+    void RemoveImageLog(ImageData imageData);
+
     ~BufferManager();
 
 
-    ImageData CreateCubeMap(std::array<const char*,6> FilePaths, vk::CommandPool commandpool, vk::Queue Queue);
+    void CreateCubeMap(ImageData*  imageData,std::array<const char*,6> FilePaths, vk::CommandPool commandpool, vk::Queue Queue);
 
-    ImageData CreateImage(vk::Extent3D imageExtent, vk::Format imageFormat, vk::ImageUsageFlags UsageFlag);
+    void CreateImage(ImageData* imageData,vk::Extent3D imageExtent, vk::Format imageFormat, vk::ImageUsageFlags UsageFlag);
     vk::ImageView CreateImageView(vk::Image ImageToConvert, vk::Format ImageFormat, vk::ImageAspectFlags ImageAspectBits);
     vk::Sampler CreateImageSampler(vk::SamplerAddressMode addressMode = vk::SamplerAddressMode::eRepeat);
 
@@ -83,6 +87,8 @@ public:
     void DeleteAllocation(VmaAllocation allocation);
 
     std::unordered_map<std::string, IDdata> bufferLog;
+    std::unordered_map<std::string, IDdata> imageLog;
+
     int bufferCounts = 0;
 
 private:
@@ -90,7 +96,6 @@ private:
     vk::PhysicalDevice& physicalDevice;
     vk::Instance& vulkanInstance;
 
-    std::unordered_map<std::string, bool> imageLog;
 };
 
 static inline void BufferManagerDeleter(BufferManager* bufferManager) {
@@ -108,6 +113,21 @@ static inline void BufferManagerDeleter(BufferManager* bufferManager) {
                 std::cout << Buffer.first << std::endl;
             }
         }
+
+
+        std::cout << "You have " << bufferManager->imageLog.size() << " Unfreed Images" << std::endl;
+
+        if (bufferManager->imageLog.size() != 0)
+        {
+            std::cout << "Unfreed Images " << std::endl;
+
+            for (auto Images : bufferManager->imageLog)
+            {
+                std::cout << Images.first << std::endl;
+            }
+        }
+
+
         vmaDestroyAllocator(bufferManager->allocator);
         delete bufferManager;
     }
