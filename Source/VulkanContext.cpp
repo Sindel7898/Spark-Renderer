@@ -42,7 +42,8 @@ void VulkanContext::SelectGPU_CreateDevice()
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 		VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME,
 	    VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME,
-		VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
+		VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+		VK_EXT_MESH_SHADER_EXTENSION_NAME
 	};
 
 	vkb::PhysicalDeviceSelector selector{ VKB_Instance };
@@ -61,10 +62,20 @@ void VulkanContext::SelectGPU_CreateDevice()
 
 	vkb::PhysicalDevice physicalDevice = physicalDeviceResult.value();
 
+	vk::PhysicalDeviceMultiviewFeaturesKHR multiviewFeatures;
+	multiviewFeatures.multiview = true;
+	multiviewFeatures.pNext = nullptr;
 
+	vk::PhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures;
+	meshShaderFeatures.taskShader = vk::True;
+	meshShaderFeatures.meshShader = vk::True;
+	meshShaderFeatures.meshShaderQueries = vk::True;
+	meshShaderFeatures.multiviewMeshShader = vk::True;
+	meshShaderFeatures.pNext = &multiviewFeatures;
+	
 	vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT extendedDynamicState3Features{};
 	extendedDynamicState3Features.extendedDynamicState3PolygonMode = vk::True;
-	extendedDynamicState3Features.pNext = nullptr;
+	extendedDynamicState3Features.pNext = &meshShaderFeatures;
 
 	vk::PhysicalDeviceVulkan12Features features_1_2{};
 	features_1_2.sType = vk::StructureType::ePhysicalDeviceVulkan12Features;
@@ -72,7 +83,7 @@ void VulkanContext::SelectGPU_CreateDevice()
 	features_1_2.descriptorIndexing  = vk::True;
 	features_1_2.bufferDeviceAddress = vk::True;
 	features_1_2.pNext = &extendedDynamicState3Features;
-	//Select Required Vulkan featuers 
+
 	vk::PhysicalDeviceVulkan13Features features_1_3{};
 	features_1_3.sType = vk::StructureType::ePhysicalDeviceVulkan13Features;
 	features_1_3.dynamicRendering = vk::True;
@@ -114,15 +125,9 @@ void VulkanContext::SelectGPU_CreateDevice()
 	graphicsQueueFamilyIndex = VKB_Device.get_queue_index(vkb::QueueType::graphics).value();
 
 
-	vkCmdSetPolygonModeEXT = reinterpret_cast<PFN_vkCmdSetPolygonModeEXT>(vkGetDeviceProcAddr(LogicalDevice, "vkCmdSetPolygonModeEXT"));
+	vkCmdSetPolygonModeEXT = (PFN_vkCmdSetPolygonModeEXT) vkGetDeviceProcAddr(LogicalDevice, "vkCmdSetPolygonModeEXT");
+	vkcmdDrawMeshTaskEXT   = (PFN_vkCmdDrawMeshTasksEXT)  vkGetDeviceProcAddr(LogicalDevice, "vkCmdDrawMeshTasksEXT");
 	
-	
-	/*vkCreateAccelerationStructureKHR        = reinterpret_cast<PFN_vkCreateAccelerationStructureKHR>(vkGetDeviceProcAddr(LogicalDevice, "vkCreateAccelerationStructureKHR"));
-	vkDestroyAccelerationStructureKHR       = reinterpret_cast<PFN_vkDestroyAccelerationStructureKHR>(vkGetDeviceProcAddr(LogicalDevice, "vkDestroyAccelerationStructureKHR"));
-	vkGetAccelerationStructureBuildSizesKHR = reinterpret_cast<PFN_vkGetAccelerationStructureBuildSizesKHR>(vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureBuildSizesKHR"));
-	vkCmdBuildAccelerationStructuresKHR     = reinterpret_cast<PFN_vkCmdBuildAccelerationStructuresKHR>(vkGetDeviceProcAddr(LogicalDevice, "vkCmdBuildAccelerationStructuresKHR"));
-	vkGetAccelerationStructureDeviceAddressKHR = reinterpret_cast<PFN_vkGetAccelerationStructureDeviceAddressKHR>(vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureDeviceAddressKHR"));*/
-
 }
 
 void VulkanContext::createSurface()
@@ -177,20 +182,14 @@ void VulkanContext::create_swapchain()
 	swapchainImageViews = std::vector<vk::ImageView>(imageViews.begin(), imageViews.end());
 }
 
-vk::Pipeline VulkanContext::createGraphicsPipeline(vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo, vk::PipelineShaderStageCreateInfo ShaderStages[], 
-	                                               vk::PipelineVertexInputStateCreateInfo vertexInputInfo,         vk::PipelineInputAssemblyStateCreateInfo inputAssembleInfo,
-	                                               vk::PipelineViewportStateCreateInfo viewportState,              vk::PipelineRasterizationStateCreateInfo rasterizerinfo,
-	                                               vk::PipelineMultisampleStateCreateInfo multisampling,           vk::PipelineDepthStencilStateCreateInfo depthStencilState,   
-	                                               vk::PipelineColorBlendStateCreateInfo colorBlend,               vk::PipelineDynamicStateCreateInfo DynamicState, 
-	                                               vk::PipelineLayout&  pipelineLayout, int numOfShaderStages)
+vk::Pipeline VulkanContext::createGraphicsPipeline(vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo, vk::PipelineShaderStageCreateInfo ShaderStages[], vk::PipelineVertexInputStateCreateInfo* vertexInputInfo, vk::PipelineInputAssemblyStateCreateInfo* inputAssembleInfo, vk::PipelineViewportStateCreateInfo viewportState, vk::PipelineRasterizationStateCreateInfo rasterizerinfo, vk::PipelineMultisampleStateCreateInfo multisampling, vk::PipelineDepthStencilStateCreateInfo depthStencilState, vk::PipelineColorBlendStateCreateInfo colorBlend, vk::PipelineDynamicStateCreateInfo DynamicState, vk::PipelineLayout& pipelineLayout, int numOfShaderStages)
 {
-
 	vk::GraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.pNext = &pipelineRenderingCreateInfo; // Add this line
 	pipelineInfo.stageCount = numOfShaderStages;
 	pipelineInfo.pStages = ShaderStages;
-	pipelineInfo.pVertexInputState = &vertexInputInfo;
-	pipelineInfo.pInputAssemblyState = &inputAssembleInfo;
+	pipelineInfo.pVertexInputState = vertexInputInfo;
+	pipelineInfo.pInputAssemblyState = inputAssembleInfo;
 	pipelineInfo.pViewportState = &viewportState;
 	pipelineInfo.pRasterizationState = &rasterizerinfo;
 	pipelineInfo.pMultisampleState = &multisampling;

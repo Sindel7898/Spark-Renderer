@@ -6,7 +6,7 @@
 // Modification for compatability with Impulsions rendering pipeline 
 
 layout (binding = 0) uniform sampler2D screenTexture;
-layout(location = 0) in vec2 inTexCoord;           
+layout (location = 0) in vec2 inTexCoord;           
 layout (location = 0) out vec4 outFragcolor;
 
 layout(push_constant) uniform PushConstants {

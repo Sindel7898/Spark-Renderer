@@ -26,6 +26,7 @@ class BufferManager;
 class VulkanContext;
 class FramesPerSecondCounter;
 class Light;
+class Grass;
 struct GBuffer;
 
 class App
@@ -94,6 +95,7 @@ public:
 	std::shared_ptr<SSAOBlur_FullScreenQuad>     ssaoBlur_FullScreenQuad = nullptr;
 	std::shared_ptr<FXAA_FullScreenQuad>         fxaa_FullScreenQuad = nullptr;
 	std::shared_ptr<Terrain>                     terrain = nullptr;
+	std::shared_ptr<Grass>                       grass = nullptr;
 
 
 	VkDescriptorSet FinalRenderTextureId;
@@ -132,6 +134,7 @@ private:
 	vk::PipelineLayout         SSAOPipelineLayout = nullptr;
 	vk::PipelineLayout         SSAOBlurPipelineLayout = nullptr;
 	vk::PipelineLayout         TerrainGeometryPassPipelineLayout = nullptr;
+	vk::PipelineLayout         GrassPassPipelineLayout = nullptr;
 
 	vk::Pipeline               DeferedLightingPassPipeline = nullptr;
 	vk::Pipeline               FXAAPassPipeline = nullptr;
@@ -141,6 +144,7 @@ private:
 	vk::Pipeline               SSAOPipeline = nullptr;
 	vk::Pipeline               SSAOBlurPipeline = nullptr;
 	vk::Pipeline               TerrainGeometryPassPipeline = nullptr;
+	vk::Pipeline               GrassPassPipeline = nullptr;
 
 	vk::CommandPool            commandPool = nullptr;
 

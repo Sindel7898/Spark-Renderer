@@ -3,13 +3,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-struct ModelVertex {
+struct alignas(16)  ModelVertex {
 
-	glm::vec3 vert;
-	glm::vec2 text;
-	glm::vec3 normal;
-	glm::vec3 tangent;
-	glm::vec3 bitangent;
+	alignas(16) glm::vec3 vert;
+	alignas(16) glm::vec2 text;
+	alignas(16) glm::vec3 normal;
+	alignas(16) glm::vec3 tangent;
+	alignas(16) glm::vec3 bitangent;
 
 	static vk::VertexInputBindingDescription GetBindingDescription() {
 		vk::VertexInputBindingDescription  bindingdescription{};

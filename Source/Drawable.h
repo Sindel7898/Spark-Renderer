@@ -17,6 +17,11 @@ struct TransformMatrices {
 	alignas(16) glm::mat4 projectionMatrix;
 };
 
+struct InstanceTransformMatrices {
+	alignas(16) glm::mat4 viewMatrix;
+	alignas(16) glm::mat4 projectionMatrix;
+};
+
 class Drawable
 {
 public:
@@ -49,6 +54,7 @@ protected:
 
 	 TransformMatrices  transformMatrices;
 	 TransformMatrices  ShadowPasstransformMatrices;
+	 InstanceTransformMatrices InstancetransformMatrices;
 
 
 

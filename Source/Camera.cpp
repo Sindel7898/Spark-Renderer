@@ -9,7 +9,7 @@ Camera::Camera(uint32_t SwapChainHeight, uint32_t SwapChainWidth, GLFWwindow* Wi
     movementSpeed(15.0f),
     mouseSensitivity(0.1f),
     fov(100.0f),
-    nearClip(0.0001f),
+    nearClip(0.1f),
     farClip(200.0f),
     firstMouse(true),
     mouseCaptured(false),
@@ -116,7 +116,7 @@ void Camera::UpdateViewMatrix() {
 }
 
 void Camera::UpdateProjectionMatrix() {
-    float aspectRatio = swapChainWidth / swapChainHeight;
+    float aspectRatio = static_cast<float>(swapChainWidth) / static_cast<float>(swapChainHeight);
     projectionMatrix = glm::perspective(glm::radians(fov), aspectRatio, nearClip, farClip);
 }
 

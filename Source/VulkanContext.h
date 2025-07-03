@@ -17,8 +17,8 @@ public:
 	void SelectGPU_CreateDevice();
 	void createSurface();
 	void create_swapchain();
-	vk::Pipeline createGraphicsPipeline(vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo, vk::PipelineShaderStageCreateInfo ShaderStages[],          vk::PipelineVertexInputStateCreateInfo vertexInputInfo, 
-		                                vk::PipelineInputAssemblyStateCreateInfo inputAssembleInfo,     vk::PipelineViewportStateCreateInfo viewportState,         vk::PipelineRasterizationStateCreateInfo rasterizerinfo, 
+	vk::Pipeline createGraphicsPipeline(vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo, vk::PipelineShaderStageCreateInfo ShaderStages[],          vk::PipelineVertexInputStateCreateInfo* vertexInputInfo, 
+		                                vk::PipelineInputAssemblyStateCreateInfo* inputAssembleInfo,     vk::PipelineViewportStateCreateInfo viewportState,         vk::PipelineRasterizationStateCreateInfo rasterizerinfo, 
 		                                vk::PipelineMultisampleStateCreateInfo multisampling,           vk::PipelineDepthStencilStateCreateInfo depthStencilState, vk::PipelineColorBlendStateCreateInfo colorBlend, 
 		                                vk::PipelineDynamicStateCreateInfo DynamicState, vk::PipelineLayout& pipelineLayout, int numOfShaderStages = 2);
 
@@ -56,6 +56,7 @@ public:
 
 	///////EXTENSIONS
 	PFN_vkCmdSetPolygonModeEXT vkCmdSetPolygonModeEXT = nullptr;
+	PFN_vkCmdDrawMeshTasksEXT  vkcmdDrawMeshTaskEXT   = nullptr;
 };
 
 static inline void VulkanContextDeleter(VulkanContext* vulkanContext)

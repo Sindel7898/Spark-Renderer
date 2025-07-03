@@ -14,9 +14,9 @@ Terrain::Terrain(const std::string filepath, VulkanContext* vulkancontext, vk::C
 	camera = rcamera;
 	bufferManager = buffermanger;
 
-	position = glm::vec3(1.0f,1.0f,1.0f);
+	position = glm::vec3(0.0f,-3.02f,0.0f);
 	rotation = glm::vec3(0.0f,0.0f,0.0f);
-	scale =    glm::vec3(100.0f, -5.0f, 100.0f);
+	scale =    glm::vec3(50, 0.0f, 50.0f);
 
 	transformMatrices.modelMatrix = glm::mat4(1.0f);
 	transformMatrices.modelMatrix = glm::translate(transformMatrices.modelMatrix, position);
@@ -58,6 +58,7 @@ void Terrain::LoadTextures()
 	vk::DeviceSize  HeighMapImageDataImagesize = HeighMapImageData.imageWidth * HeighMapImageData.imageHeight * 4;
 
 	HeighMapTextureData = bufferManager->CreateTextureImage(HeighMapImageData.imageData, HeighMapImageDataImagesize, HeighMapImageData.imageWidth, HeighMapImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
+
 }
 
 void Terrain::CreateVertexAndIndexBuffer()
