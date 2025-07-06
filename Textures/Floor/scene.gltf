@@ -137,13 +137,13 @@
   ],
   "images": [
     {
-      "uri": "textures/floortile1_baseColor.png"
+      "uri": "textures/streaky-metal1_albedo.png"
     },
     {
-      "uri": "textures/floortile1_metallicRoughness.png"
+      "uri": "textures/MetalRoughnessAO.png"
     },
     {
-      "uri": "textures/floortile1_normal.png"
+      "uri": "textures/streaky-metal1_normal-ogl.png"
     }
   ],
   "materials": [
@@ -152,17 +152,13 @@
       "normalTexture": {
         "index": 2
       },
-      "occlusionTexture": {
-        "index": 1,
-        "strength": 0.5479115422602233
+      "metallicFactor": 0.0,
+      "MetalRoughnessAOPack": {
+        "index": 1
       },
       "pbrMetallicRoughness": {
         "baseColorTexture": {
           "index": 0
-        },
-        "metallicFactor": 0.0,
-        "metallicRoughnessTexture": {
-          "index": 1
         }
       }
     }

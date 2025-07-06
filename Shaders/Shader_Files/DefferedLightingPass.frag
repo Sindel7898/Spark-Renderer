@@ -75,12 +75,12 @@ void main() {
     vec3 totalLighting = vec3(0.0);
     ///////////////////////////////////////
 
-    vec3  WorldPos = texture(samplerPosition,inTexCoord).rgb;
+    vec3  WorldPos     = texture(samplerPosition,inTexCoord).rgb;
     vec3  Normal       = normalize(texture(samplerNormal,inTexCoord).rgb);
     vec3  Albedo       = texture(samplerAlbedo,inTexCoord).rgb;
     float SSAO         = texture(samplerSSAO,inTexCoord).r;
-    float Metallic      = texture(samplerMaterials,inTexCoord).r;
-    float Roughness   = texture(samplerMaterials,inTexCoord).g;
+    float Metallic     = texture(samplerMaterials,inTexCoord).r;
+    float Roughness    = texture(samplerMaterials,inTexCoord).g;
     float AO           = texture(samplerMaterials,inTexCoord).b;
     float ambientOcclusion = AO * SSAO;
 
@@ -140,7 +140,8 @@ void main() {
   }
   
     vec3 finalColor = Ambient + totalLighting;
-    finalColor = finalColor / (finalColor + vec3(1.0));
+
+   // finalColor = finalColor / (finalColor + vec3(1.0));
 
     outFragcolor = vec4(finalColor, 1.0);
 }

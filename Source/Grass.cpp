@@ -63,7 +63,7 @@ void Grass::GeneratePositionalData()
 			glm::vec3 Position(posX, -3, posZ);
 
 			glm::vec3 Rotation(0, 0, 0);
-			glm::vec3 Scale   (2, 2, 2);
+			glm::vec3 Scale   (1.3, 1.3, 1.3);
 
 			glm::mat4 model = glm::mat4(1.0f);
 			          model = glm::translate(model, Position);

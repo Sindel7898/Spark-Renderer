@@ -10,33 +10,44 @@ layout(set = 0,binding = 0) uniform UniformBufferObject {
     mat4 model;
     mat4 view;
     mat4 proj;
+    vec4 IsReflective;
 } ubo;
 
-layout(location = 0) out vec4 Position;   
+layout(location = 0) out vec4 WorldSpacPosition;   
 layout(location = 1) out vec4 ViewSpacePosition;   
 layout(location = 2) out vec2 fragTexCoord;           
-layout(location = 3) out mat3 TBN; 
+layout(location = 3) out mat3 WorldSpaceTBN; 
 layout(location = 6) out mat3 ViewSpaceTBN; 
+layout(location = 9) out vec4 IsReflective; 
 
 void main() {
     
     vec4 worldPos = ubo.model * vec4(inPosition, 1.0);
     vec4 viewPos = ubo.view * worldPos;
    
-    Position = worldPos;
+    WorldSpacPosition = worldPos;
     ViewSpacePosition = viewPos;
 
     gl_Position = ubo.proj * viewPos;
 
     mat3 normalMatrix = transpose(inverse(mat3(ubo.model)));
 
-    vec3 T = normalize(vec3(normalMatrix * inTangent  ));
-    vec3 B = normalize(vec3(normalMatrix * inBiTangent));
-    vec3 N = normalize(vec3(normalMatrix * inNormal   ));
+    vec3 worldT  = normalize(vec3(normalMatrix * inTangent  ));
+    vec3 worldB  = normalize(vec3(normalMatrix * inBiTangent));
+    vec3 worldN  = normalize(vec3(normalMatrix * inNormal   ));
 
-    TBN = mat3(T, B, N);
+    WorldSpaceTBN = mat3(worldT, worldB, worldN);
 
-    ViewSpaceTBN = mat3(T, B, N);;
+
+    mat3 ViewSpacenormalMatrix = transpose(inverse(mat3(ubo.view)));
+
+    vec3 vT = normalize(vec3(ViewSpacenormalMatrix * worldT));
+    vec3 vB = normalize(vec3(ViewSpacenormalMatrix * worldB));
+    vec3 vN = normalize(vec3(ViewSpacenormalMatrix * worldN));
+
+    ViewSpaceTBN = mat3(vT, vB, vN);
 
     fragTexCoord = inTexCoord;
+    IsReflective = ubo.IsReflective;
+
 }

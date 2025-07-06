@@ -215,10 +215,10 @@ vk::Pipeline VulkanContext::createGraphicsPipeline(vk::PipelineRenderingCreateIn
 vk::Format VulkanContext::FindCompatableDepthFormat()
 {
 	const std::vector<vk::Format> candidates = {
+	   vk::Format::eD16Unorm,
 	   vk::Format::eD32SfloatS8Uint,  
 	   vk::Format::eD24UnormS8Uint,   
 	   vk::Format::eD32Sfloat,        
-	   vk::Format::eD16Unorm,         
 	   vk::Format::eD16UnormS8Uint   
 	};
 

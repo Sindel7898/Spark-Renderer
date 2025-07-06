@@ -1,4 +1,5 @@
 #version 450
+
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec2 inTexCoord;
 layout(location = 2) in vec3 inNormal;       
@@ -57,15 +58,15 @@ void main() {
    
    vec3 pointOnCurve = Cubic_Bezier(p0, p1, p2, p3, t);
 
-   vec4 worldPos = model * vec4(inPosition, 1.0);
+   vec4 worldPos = model * vec4(pointOnCurve, 1.0);
 
      
-     vec3 worldNormal =  transpose(inverse(mat3(model))) * inNormal;
+   vec3 worldNormal =  transpose(inverse(mat3(model))) * inNormal;
 
-    OutNormal = worldNormal;
+  OutNormal = worldNormal;
 
-    OutPosition = worldPos;
-    OutCurrentHeight = inPosition.y;
+  OutPosition = worldPos;
+  OutCurrentHeight = inPosition.y;
 
    gl_Position = ubo.proj * ubo.view * worldPos;
 }

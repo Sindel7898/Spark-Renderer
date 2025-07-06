@@ -359,9 +359,17 @@ void UserInterface::DrawUi(App* appref)
 
 	if (appref->DefferedDecider == 4)
 	{
+		ImGui::Image((ImTextureID)appref->SSRTextureId, viewportSize);
+
+	}
+
+	if (appref->DefferedDecider == 5)
+	{
 		ImGui::Image((ImTextureID)appref->FinalRenderTextureId, viewportSize);
 
 	}
+
+
 
 	ImGuizmo::SetOrthographic(false);
 	ImGuizmo::SetDrawlist();

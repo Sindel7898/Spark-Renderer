@@ -10,6 +10,12 @@
 #include "structs.h"
 
 
+struct ModelData {
+    TransformMatrices  transformMatrices;
+	glm::vec4 IsReflectiveWithPadding;
+
+};
+
 class Model : public Drawable
 {
 public:
@@ -22,6 +28,7 @@ public:
     void CreateUniformBuffer() override;
     void UpdateUniformBuffer(uint32_t currentImage);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
+    void ReflectiveSwitch(bool breflective);
     void CleanUp() ;
 
 
@@ -33,11 +40,11 @@ public:
 
 private:
 
+	int IsReflective = 0;
+
     std::string FilePath;
 
     const StoredModelData* storedModelData = nullptr;
-
-    //vk::AccelerationStructureKHR bottomLevelAS;
 
     BufferData bottomLevelASBuffer;
     BufferData scratchBuffer;

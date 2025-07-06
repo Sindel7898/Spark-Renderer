@@ -29,7 +29,6 @@ Model::Model(const std::string filepath, VulkanContext* vulkancontext, vk::Comma
 	LoadTextures();
 	CreateUniformBuffer();
 	createDescriptorSetLayout();
-	//CreateBottomLevelAccelerationStructure();
 }
 
 void Model::LoadTextures()
@@ -81,7 +80,7 @@ void Model::CreateUniformBuffer()
 		vertexUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		VertexUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
 
-		VkDeviceSize VertexuniformBufferSize = sizeof(transformMatrices);
+		VkDeviceSize VertexuniformBufferSize = sizeof(ModelData);
 
 		for (size_t i = 0; i < vertexUniformBuffers.size(); i++)
 		{
@@ -162,7 +161,7 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 	     	vk::DescriptorBufferInfo vertexbufferInfo{};
 	     	vertexbufferInfo.buffer = vertexUniformBuffers[i].buffer;
 	     	vertexbufferInfo.offset = 0;
-	     	vertexbufferInfo.range = sizeof(TransformMatrices);
+	     	vertexbufferInfo.range = sizeof(ModelData);
 	     
 	     	vk::WriteDescriptorSet VertexUniformdescriptorWrite{};
 	     	VertexUniformdescriptorWrite.dstSet = DescriptorSets[i];
@@ -233,8 +232,12 @@ void Model::UpdateUniformBuffer(uint32_t currentImage)
 	transformMatrices.viewMatrix = camera->GetViewMatrix();
 	transformMatrices.projectionMatrix = camera->GetProjectionMatrix();
 	transformMatrices.projectionMatrix[1][1] *= -1;
+	
+	ModelData modelData;
+	modelData.transformMatrices = transformMatrices;
+	modelData.IsReflectiveWithPadding = glm::vec4(IsReflective, 0.0f, 0.0f, 0.0f);
 
-	memcpy(VertexUniformBuffersMappedMem[currentImage], &transformMatrices, sizeof(transformMatrices));
+	memcpy(VertexUniformBuffersMappedMem[currentImage], &modelData, sizeof(modelData));
 }
 
 
@@ -248,6 +251,16 @@ void Model::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinela
 	commandbuffer.drawIndexed(storedModelData->IndexData.size(), 1, 0, 0, 0);
 }
 
+void Model::ReflectiveSwitch(bool breflective)
+{
+	if (breflective)
+	{
+		IsReflective = 1;
+	}
+	else {
+		IsReflective = 0;
+	}
+}
 
 void Model::CleanUp()
 {

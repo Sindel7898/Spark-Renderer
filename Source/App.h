@@ -16,6 +16,7 @@
 #include "SSAO_FullScreenQuad.h"
 #include "SSAOBlur_FullScreenQuad.h"
 #include "FXAA_FullScreenQuad.h"
+#include "SSR_FullScreenQuad.h"
 #include "Terrain.h"
 
 
@@ -86,7 +87,7 @@ public:
 	void destroy_GbufferImages();
 
 	bool framebufferResized = false;
-	int DefferedDecider = 4;
+	int DefferedDecider = 5;
 
 	bool bWireFrame = false;
 	//Drawables
@@ -94,11 +95,10 @@ public:
 	std::shared_ptr<SSA0_FullScreenQuad>         ssao_FullScreenQuad = nullptr;
 	std::shared_ptr<SSAOBlur_FullScreenQuad>     ssaoBlur_FullScreenQuad = nullptr;
 	std::shared_ptr<FXAA_FullScreenQuad>         fxaa_FullScreenQuad = nullptr;
-	std::shared_ptr<Terrain>                     terrain = nullptr;
-	std::shared_ptr<Grass>                       grass = nullptr;
-
+	std::shared_ptr<SSR_FullScreenQuad>          ssr_FullScreenQuad = nullptr;
 
 	VkDescriptorSet FinalRenderTextureId;
+	VkDescriptorSet SSRTextureId;
 	VkDescriptorSet PositionRenderTextureId;
 	VkDescriptorSet NormalTextureId;
 	VkDescriptorSet AlbedoTextureId;
@@ -133,8 +133,7 @@ private:
 	vk::PipelineLayout         geometryPassPipelineLayout = nullptr;
 	vk::PipelineLayout         SSAOPipelineLayout = nullptr;
 	vk::PipelineLayout         SSAOBlurPipelineLayout = nullptr;
-	vk::PipelineLayout         TerrainGeometryPassPipelineLayout = nullptr;
-	vk::PipelineLayout         GrassPassPipelineLayout = nullptr;
+	vk::PipelineLayout         SSRPipelineLayout = nullptr;
 
 	vk::Pipeline               DeferedLightingPassPipeline = nullptr;
 	vk::Pipeline               FXAAPassPipeline = nullptr;
@@ -143,8 +142,8 @@ private:
 	vk::Pipeline               geometryPassPipeline = nullptr;
 	vk::Pipeline               SSAOPipeline = nullptr;
 	vk::Pipeline               SSAOBlurPipeline = nullptr;
-	vk::Pipeline               TerrainGeometryPassPipeline = nullptr;
-	vk::Pipeline               GrassPassPipeline = nullptr;
+	vk::Pipeline               SSRPipeline = nullptr;
+
 
 	vk::CommandPool            commandPool = nullptr;
 

@@ -16,21 +16,19 @@ void main()
 
     vec3 color;
 
-    if (OutCurrentHeight > 0.2) {
-        color = mix(tipColor, baseColor, 0.8);
-    } else {
-        color = mix(baseColor, tipColor, 0.8);
-    }
+   // if (OutCurrentHeight > 0.2) {
+     //   color = mix(tipColor, baseColor, 0.8);
+    ///} else {
+       // color = mix(baseColor, tipColor, 0.8);
+    //}
 
-    outAlbedo = vec4(color, 1.0);
+    outAlbedo = vec4(baseColor, 1.0);
 
     // Output world or view-space position as-is (usually vec4)
     outFragPosition = OutPosition;
 
     // Normalize the input normal to be safe
-    vec3 normal = normalize(InNormal);
-
-    outFragNormal = vec4(normal, 1.0);
+    outFragNormal = vec4(normalize(InNormal), 1.0);
 
     outMaterials = vec4(0.0, 0.0, 0.0, 1.0); 
 }

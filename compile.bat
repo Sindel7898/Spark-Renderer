@@ -17,6 +17,7 @@ C:\VulkanSDK\1.3.296.0\Bin\glslc.exe Shaders\Shader_Files\SSAOBlur_Shader.frag  
 C:\VulkanSDK\1.3.296.0\Bin\glslc.exe Shaders\Shader_Files\FXAA.frag                  -o  Shaders\Compiled_Shader_Files\FXAA.frag.spv
 C:\VulkanSDK\1.3.296.0\Bin\glslc.exe Shaders\Shader_Files\Terrain_GeometryPass.frag  -o  Shaders\Compiled_Shader_Files\Terrain_GeometryPass.frag.spv
 C:\VulkanSDK\1.3.296.0\Bin\glslc.exe Shaders\Shader_Files\Grass.frag                 -o  Shaders\Compiled_Shader_Files\Grass.frag.spv
+C:\VulkanSDK\1.3.296.0\Bin\glslc.exe Shaders\Shader_Files\SSR.frag                   -o  Shaders\Compiled_Shader_Files\SSR.frag.spv
 
 
 pause
