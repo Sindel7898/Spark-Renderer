@@ -14,27 +14,33 @@ layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragcolor;
 
 vec2 ScreenDimensions = textureSize(ColorTexture,0);
+const int MAX_ITERATION = 128;
+const int MAX_THICKNESS = 10;
 
+void ComputeReflection(vec4 ViewPosition,vec3 ViewNormal,
+                                                        out float outMaxDistance,
+                                                        out vec3  outSamplePosInTS,
+                                                        out vec3  outReflDirInTS ){
+       
+       //Get The Reflection Direction Of the Position And Normal In ViewSpace.
+       vec3 viewDir   = normalize(ViewPosition.xyz);
+  vec4 ReflectionInVS = vec4(reflect(viewDir, ViewNormal.xyz),0);
 
-float outMaxDistance;
-vec3  outSamplePosInTS;
-vec3  outReflDirInTS;
+       //Get End Point Of Reflection In ViewSpace
+  vec4 ReflectionEndPositionInVS = ViewPosition + ReflectionInVS * 10;
 
-void ComputeReflection(vec4 position,vec3 normal){
-
-  vec4 ReflectionInVS = vec4(reflect(position.xyz, normal.xyz),0);
-  vec4 ReflectionEndPositionInVS = position + ReflectionInVS * 1000;
-       ReflectionEndPositionInVS /= (ReflectionEndPositionInVS.z < 0 ? ReflectionEndPositionInVS.z : 1);
-
+       //Convert The End Position From ViewSpace To Clip Space
   vec4 ReflectionEndPosInCS = pc.ProjectionMatrix * vec4(ReflectionEndPositionInVS.xyz, 1);
        ReflectionEndPosInCS /= ReflectionEndPosInCS.w;
 
-
-  vec4 PositionInCS = pc.ProjectionMatrix * position;
+       //Convert The Current Position From ViewSpace To Clip Space
+  vec4 PositionInCS = pc.ProjectionMatrix * ViewPosition;
        PositionInCS /= PositionInCS.w;
 
+       //Reflection Direction In Clip Space Computed
   vec3 ReflectionDir = normalize((ReflectionEndPosInCS - PositionInCS).xyz);
 
+       //Convert Position From Clip Space To Texture Space
        PositionInCS.xy  *= vec2(0.5f, -0.5f);
        PositionInCS.xy  += vec2(0.5f, 0.5f);
        
@@ -69,12 +75,16 @@ void ComputeReflection(vec4 position,vec3 normal){
     outMaxDistance = min(outMaxDistance, tempMaxDistanceZ);
 }
 
-bool FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceDistance){
 
-     vec3 ReflectionEndPosInTS = SamplePosInTS + RefDirInTS * MaxTraceDistance;
+float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceDistance,out vec3 Intersection){
 
-     vec3 dp                   = ReflectionEndPosInTS.xyz - SamplePosInTS.xyz;
- 
+     //Claucluate The End Position Of The Reflection In TextureSpace
+     vec3 ReflectionEndPosInTS = SamplePosInTS + RefDirInTS * MaxTraceDistance; //Values Based On Outputs From Previous Functions
+
+     //Direction To Travel In TexTure Space
+     vec3 dp                   = ReflectionEndPosInTS.xyz - SamplePosInTS.xyz; 
+     
+     //Come back to this Section 
      vec2 sampleScreenPos      = vec2(SamplePosInTS.xy        * ScreenDimensions.xy);
      vec2 endPosScreenPos      = vec2(ReflectionEndPosInTS.xy * ScreenDimensions.xy);
 
@@ -87,8 +97,35 @@ bool FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceDi
      vec4 RayDirInTS  = vec4(dp.xyz, 0);
 	 vec4 rayStartPos = rayPosInTS;
 
+     // Version 0.
+    int hitIndex = -1;
 
-  return false;
+    for(int i = 0;i< max_dist && i< MAX_ITERATION;i ++)
+    {
+	    float depth = texture(DepthTexture, rayPosInTS.xy).x;
+	    float thickness = rayPosInTS.z - depth;
+        
+	    if(thickness>=0 && thickness< MAX_THICKNESS)
+	    {
+	        hitIndex = i;
+	    	break;
+	    }
+	    	
+         rayPosInTS += RayDirInTS;
+    }
+
+        bool intersected = hitIndex >= 0;
+             Intersection = rayStartPos.xyz + RayDirInTS.xyz * hitIndex;
+
+       float intensity = intersected ? 1 : 0;
+
+      return intensity;
+}
+
+vec4 ComputeReflectedColor(float intensity, vec3 intersection,vec4 skyColor)
+{
+    vec4 ssr_color = texture(ColorTexture, intersection.xy);
+    return mix(skyColor, ssr_color, intensity);
 }
 
 void main() {
@@ -99,17 +136,22 @@ void main() {
   vec4  ViewSpacePosition  = texture(ViewSpacePositionTexture ,inTexCoord).rgba;
   float mask               = texture(NormalTexture,inTexCoord).a;
 
-  vec4 SkyColor        = vec4(0,0,1,1);
-  vec4 ReflectionColor = vec4(0,0,0,1);
+   vec4 SkyColor        = vec4(0,0,0.0,1);
+   vec4 ReflectionColor = vec4(0,0,0,1);
 
   if(mask != 0){
 
-        ReflectionColor = SkyColor;
+         float MaxDistance_Result;
+         vec3  SamplePosInTS_Result;
+         vec3  ReflDirInTS_Result;
+         vec3  Intersection_Result;
 
-        ComputeReflection(ViewSpacePosition,Normal);
-        
-  outFragcolor = vec4(outSamplePosInTS,1);
-  }else{
-     outFragcolor = vec4(0.0f);
+        ComputeReflection(ViewSpacePosition,Normal,MaxDistance_Result,SamplePosInTS_Result,ReflDirInTS_Result);
+        float Intensity = FindIntersection_Linear(SamplePosInTS_Result,ReflDirInTS_Result,MaxDistance_Result,Intersection_Result);
+
+         ReflectionColor  = ComputeReflectedColor(Intensity,Intersection_Result,SkyColor);
+  
   }
+
+  outFragcolor  = vec4(Color,1.0f) + ReflectionColor;
 }

@@ -695,7 +695,7 @@ void App::CreateGraphicsPipeline()
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.setLayoutCount = 1;
 		pipelineLayoutInfo.setSetLayouts(ssr_FullScreenQuad->descriptorSetLayout);
-		pipelineLayoutInfo.pushConstantRangeCount = 0;
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges = &range;
 
 		vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
