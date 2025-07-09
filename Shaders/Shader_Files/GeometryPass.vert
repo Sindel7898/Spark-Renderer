@@ -41,9 +41,9 @@ void main() {
 
     mat3 ViewSpacenormalMatrix = transpose(inverse(mat3(ubo.view)));
 
-    vec3 vT = normalize(vec3(ViewSpacenormalMatrix * worldT));
-    vec3 vB = normalize(vec3(ViewSpacenormalMatrix * worldB));
-    vec3 vN = normalize(vec3(ViewSpacenormalMatrix * worldN));
+    vec3 vT = normalize(vec3(ViewSpacenormalMatrix * inTangent));
+    vec3 vB = normalize(vec3(ViewSpacenormalMatrix * inBiTangent));
+    vec3 vN = normalize(vec3(ViewSpacenormalMatrix * inNormal));
 
     ViewSpaceTBN = mat3(vT, vB, vN);
 

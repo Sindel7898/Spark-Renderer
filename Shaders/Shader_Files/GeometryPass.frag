@@ -26,7 +26,7 @@ void main() {
   outViewSpacePosition = ViewSpacePosition;
 
   vec3 tnorm = normalize(WorldSpaceTBN * normalize(texture(samplerNormalMap, fragTexCoord).rgb * 2.0 - vec3(1.0)));
-  outNormal = vec4(tnorm, IsReflective.x);
+  outNormal = vec4(tnorm, 1);
 
   vec3 vtnorm = ViewSpaceTBN * normalize(texture(samplerNormalMap, fragTexCoord).rgb * 2.0 - vec3(1.0));
   outViewSpaceNormal = vec4(vtnorm, IsReflective.x);

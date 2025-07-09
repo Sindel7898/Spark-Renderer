@@ -547,8 +547,8 @@ vk::ImageView BufferManager::CreateImageView(vk::Image Image, vk::Format ImageFo
 vk::Sampler BufferManager::CreateImageSampler(vk::SamplerAddressMode addressMode) {
 
 	vk::SamplerCreateInfo SamplerInfo{};
-	SamplerInfo.magFilter = vk::Filter::eLinear;
-	SamplerInfo.minFilter = vk::Filter::eLinear;
+	SamplerInfo.magFilter = vk::Filter::eNearest;
+	SamplerInfo.minFilter = vk::Filter::eNearest;
 	SamplerInfo.addressModeU = addressMode;
 	SamplerInfo.addressModeV = addressMode;
 	SamplerInfo.addressModeW = addressMode;
@@ -558,7 +558,7 @@ vk::Sampler BufferManager::CreateImageSampler(vk::SamplerAddressMode addressMode
 	SamplerInfo.unnormalizedCoordinates = vk::False;
 	SamplerInfo.compareEnable = vk::False;
 	SamplerInfo.compareOp = vk::CompareOp::eAlways;
-	SamplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;
+	SamplerInfo.mipmapMode = vk::SamplerMipmapMode::eNearest;
 	SamplerInfo.mipLodBias = 0.0f;
 	SamplerInfo.minLod = 0.0f;
 	SamplerInfo.maxLod = 0.0f;

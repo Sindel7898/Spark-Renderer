@@ -14,8 +14,8 @@ layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragcolor;
 
 vec2 ScreenDimensions = textureSize(ColorTexture,0);
-const int MAX_ITERATION = 128;
-const int MAX_THICKNESS = 10;
+const int MAX_ITERATION = 150;
+const float MAX_THICKNESS = 0.01;
 
 void ComputeReflection(vec4 ViewPosition,vec3 ViewNormal,
                                                         out float outMaxDistance,
@@ -27,7 +27,7 @@ void ComputeReflection(vec4 ViewPosition,vec3 ViewNormal,
   vec4 ReflectionInVS = vec4(reflect(viewDir, ViewNormal.xyz),0);
 
        //Get End Point Of Reflection In ViewSpace
-  vec4 ReflectionEndPositionInVS = ViewPosition + ReflectionInVS * 10;
+  vec4 ReflectionEndPositionInVS = ViewPosition + ReflectionInVS * 1000;
 
        //Convert The End Position From ViewSpace To Clip Space
   vec4 ReflectionEndPosInCS = pc.ProjectionMatrix * vec4(ReflectionEndPositionInVS.xyz, 1);
@@ -91,7 +91,10 @@ float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceD
      vec2 dp2 = endPosScreenPos - sampleScreenPos;
 
      const float max_dist = max(abs(dp2.x), abs(dp2.y));
-     dp /= max_dist;
+     //dp /= max_dist;
+
+     float stepScale = 4; // try 2.0 or 3.0 for bigger steps
+     dp /= (max_dist / stepScale);
 
      vec4 rayPosInTS  = vec4(SamplePosInTS.xyz + dp, 0);
      vec4 RayDirInTS  = vec4(dp.xyz, 0);
@@ -122,10 +125,10 @@ float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceD
       return intensity;
 }
 
-vec4 ComputeReflectedColor(float intensity, vec3 intersection,vec4 skyColor)
+vec4 ComputeReflectedColor(float intensity, vec3 intersection)
 {
     vec4 ssr_color = texture(ColorTexture, intersection.xy);
-    return mix(skyColor, ssr_color, intensity);
+    return ssr_color;
 }
 
 void main() {
@@ -149,9 +152,9 @@ void main() {
         ComputeReflection(ViewSpacePosition,Normal,MaxDistance_Result,SamplePosInTS_Result,ReflDirInTS_Result);
         float Intensity = FindIntersection_Linear(SamplePosInTS_Result,ReflDirInTS_Result,MaxDistance_Result,Intersection_Result);
 
-         ReflectionColor  = ComputeReflectedColor(Intensity,Intersection_Result,SkyColor);
+         ReflectionColor  = ComputeReflectedColor(Intensity,Intersection_Result);
   
   }
 
-  outFragcolor  = vec4(Color,1.0f) + ReflectionColor;
+   outFragcolor  = vec4(Color,1.0f) + ReflectionColor;
 }

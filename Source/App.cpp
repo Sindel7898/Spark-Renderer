@@ -39,7 +39,6 @@
 	
 		model4.get()->SetScale(glm::vec3(0.100f, 0.100f, 0.050f));
 		model4.get()->SetPosition(glm::vec3(0, -20.0f, 0.0f));
-		model2.get()->ReflectiveSwitch(true);
 		model4.get()->ReflectiveSwitch(true);
 
 		Models.push_back(std::move(model));
