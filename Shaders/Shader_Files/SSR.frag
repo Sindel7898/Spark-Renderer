@@ -42,7 +42,7 @@ void ComputeReflection(vec4 ViewPosition,vec3 ViewNormal,
 
        //Convert Position From Clip Space To Texture Space
        PositionInCS.xy  *= vec2(0.5f, -0.5f);
-       PositionInCS.xy  += vec2(0.5f, 0.5f);
+       PositionInCS.xy  += vec2(0.5f, 0.5f); //look into this
        
        ReflectionDir.xy *= vec2(0.5f, -0.5f);
        
