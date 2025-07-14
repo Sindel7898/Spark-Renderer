@@ -15,7 +15,7 @@ layout (location = 0) out vec4 outFragcolor;
 
 vec2 ScreenDimensions = textureSize(ColorTexture,0);
 const int MAX_ITERATION = 150;
-const float MAX_THICKNESS = 0.01;
+float MAX_THICKNESS = 0.0004;
 
 void ComputeReflection(vec4 ViewPosition,vec3 ViewNormal,
                                                         out float outMaxDistance,
@@ -27,7 +27,7 @@ void ComputeReflection(vec4 ViewPosition,vec3 ViewNormal,
   vec4 ReflectionInVS = vec4(reflect(viewDir, ViewNormal.xyz),0);
 
        //Get End Point Of Reflection In ViewSpace
-  vec4 ReflectionEndPositionInVS = ViewPosition + ReflectionInVS * 1000;
+  vec4 ReflectionEndPositionInVS = ViewPosition + ReflectionInVS * 300;
 
        //Convert The End Position From ViewSpace To Clip Space
   vec4 ReflectionEndPosInCS = pc.ProjectionMatrix * vec4(ReflectionEndPositionInVS.xyz, 1);
@@ -42,7 +42,7 @@ void ComputeReflection(vec4 ViewPosition,vec3 ViewNormal,
 
        //Convert Position From Clip Space To Texture Space
        PositionInCS.xy  *= vec2(0.5f, -0.5f);
-       PositionInCS.xy  += vec2(0.5f, 0.5f); //look into this
+       PositionInCS.xy  += vec2(0.5f, 0.5f); 
        
        ReflectionDir.xy *= vec2(0.5f, -0.5f);
        
@@ -91,9 +91,8 @@ float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceD
      vec2 dp2 = endPosScreenPos - sampleScreenPos;
 
      const float max_dist = max(abs(dp2.x), abs(dp2.y));
-     //dp /= max_dist;
 
-     float stepScale = 4; // try 2.0 or 3.0 for bigger steps
+     float stepScale = 2; 
      dp /= (max_dist / stepScale);
 
      vec4 rayPosInTS  = vec4(SamplePosInTS.xyz + dp, 0);
@@ -103,26 +102,29 @@ float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceD
      // Version 0.
     int hitIndex = -1;
 
-    for(int i = 0;i< max_dist && i< MAX_ITERATION;i ++)
+    for(int i = 0; i < max_dist && i < MAX_ITERATION; i++)
     {
-	    float depth = texture(DepthTexture, rayPosInTS.xy).x;
-	    float thickness = rayPosInTS.z - depth;
+	    float depth = texture(DepthTexture, rayPosInTS.xy).x; // ray hit  current depth
+	    float thickness = rayPosInTS.z - depth; // rays current depth - hit depth
         
-	    if(thickness>=0 && thickness< MAX_THICKNESS)
+
+	    if(thickness >= 0 && thickness < MAX_THICKNESS) // if we hit somthinging increase the index
 	    {
 	        hitIndex = i;
-	    	break;
 	    }
-	    	
-         rayPosInTS += RayDirInTS;
+
+        if(hitIndex != -1) break;
+
+         rayPosInTS += RayDirInTS; // move sampling point every itteration
     }
+
 
         bool intersected = hitIndex >= 0;
              Intersection = rayStartPos.xyz + RayDirInTS.xyz * hitIndex;
 
-       float intensity = intersected ? 1 : 0;
+        float intensity = intersected ? 1 : 0;
 
-      return intensity;
+        return intensity;
 }
 
 vec4 ComputeReflectedColor(float intensity, vec3 intersection)
@@ -156,5 +158,7 @@ void main() {
   
   }
 
-   outFragcolor  = vec4(Color,1.0f) + ReflectionColor;
+     outFragcolor  = vec4(Color,1.0f) + ReflectionColor;
+     //outFragcolor  = ViewSpacePosition;
+
 }
