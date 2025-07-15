@@ -6,12 +6,13 @@
 #include "Light.h"
 #include "Camera.h"
 
-Lighting_FullScreenQuad::Lighting_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext,Camera* cameraref, vk::CommandPool commandpool): Drawable()
+Lighting_FullScreenQuad::Lighting_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext,Camera* cameraref, vk::CommandPool commandpool, SkyBox* skyboxref): Drawable()
 {
 	camera = cameraref;
 	bufferManager = buffermanager;
 	vulkanContext = vulkancontext;
 	commandPool   = commandpool;
+	ReflectiveCubeMapData = &skyboxref->SkyBoxTextureData;
 
 	CreateVertexAndIndexBuffer();
 	CreateUniformBuffer();
@@ -86,17 +87,25 @@ void Lighting_FullScreenQuad::createDescriptorSetLayout()
 		MaterialsSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		MaterialsSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
+		vk::DescriptorSetLayoutBinding ReflectiveCubeSamplerLayout{};
+		ReflectiveCubeSamplerLayout.binding = 5;
+		ReflectiveCubeSamplerLayout.descriptorCount = 1;
+		ReflectiveCubeSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		ReflectiveCubeSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
 		vk::DescriptorSetLayoutBinding LightUniformBufferLayout{};
-		LightUniformBufferLayout.binding = 5;
+		LightUniformBufferLayout.binding = 6;
 		LightUniformBufferLayout.descriptorCount = 1;
 		LightUniformBufferLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
 		LightUniformBufferLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-		std::array<vk::DescriptorSetLayoutBinding, 6> bindings = { PositionSampleryLayout,        // binding 0
+
+		std::array<vk::DescriptorSetLayoutBinding, 7> bindings = { PositionSampleryLayout,        // binding 0
 																   NormalSamplerLayout,           // binding 1
 																   AlbedoSamplerLayout,           // binding 2
 			                                                       SSAOSamplerLayout,
 			                                                       MaterialsSamplerLayout,
+																   ReflectiveCubeSamplerLayout,
 																   LightUniformBufferLayout       // binding 3
 		};
 
@@ -201,6 +210,20 @@ void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorP
 		MaterialsSamplerdescriptorWrite.descriptorCount = 1;
 		MaterialsSamplerdescriptorWrite.pImageInfo = &MaterialsimageInfo;
 
+
+		vk::DescriptorImageInfo ReflectiveCubeimageInfo{};
+		ReflectiveCubeimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		ReflectiveCubeimageInfo.imageView = ReflectiveCubeMapData->imageView;
+		ReflectiveCubeimageInfo.sampler = ReflectiveCubeMapData->imageSampler;
+
+		vk::WriteDescriptorSet ReflectiveCubeSamplerdescriptorWrite{};
+		ReflectiveCubeSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+		ReflectiveCubeSamplerdescriptorWrite.dstBinding = 5;
+		ReflectiveCubeSamplerdescriptorWrite.dstArrayElement = 0;
+		ReflectiveCubeSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		ReflectiveCubeSamplerdescriptorWrite.descriptorCount = 1;
+		ReflectiveCubeSamplerdescriptorWrite.pImageInfo = &ReflectiveCubeimageInfo;
+
 		/////////////////////////////////////////////////////////////////////////////////////
 
 		vk::DescriptorBufferInfo LightUniformBufferInfo;
@@ -210,18 +233,19 @@ void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorP
 
 		vk::WriteDescriptorSet LightUniformBufferDescriptorWrite{};
 		LightUniformBufferDescriptorWrite.dstSet = DescriptorSets[i];
-		LightUniformBufferDescriptorWrite.dstBinding = 5;
+		LightUniformBufferDescriptorWrite.dstBinding = 6;
 		LightUniformBufferDescriptorWrite.dstArrayElement = 0;
 		LightUniformBufferDescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
 		LightUniformBufferDescriptorWrite.descriptorCount = 1;
 		LightUniformBufferDescriptorWrite.pBufferInfo = &LightUniformBufferInfo;
 
-		std::array<vk::WriteDescriptorSet, 6> descriptorWrites = {
+		std::array<vk::WriteDescriptorSet, 7> descriptorWrites = {
 	                                                                PositionSamplerdescriptorWrite,        // binding 0
 	                                                                NormalSamplerdescriptorWrite,          // binding 1
 	                                                                AlbedoSamplerdescriptorWrite,          // binding 2
 																	SSAOSamplerdescriptorWrite,
 																	MaterialsSamplerdescriptorWrite,
+																	ReflectiveCubeSamplerdescriptorWrite,
 	                                                                LightUniformBufferDescriptorWrite      // binding 3
 		                                                         };
 

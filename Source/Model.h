@@ -8,7 +8,6 @@
 #include "Light.h"
 #include "Drawable.h"
 #include "structs.h"
-#include "SkyBox.h"
 
 struct ModelData {
     TransformMatrices  transformMatrices;
@@ -20,7 +19,7 @@ class Model : public Drawable
 {
 public:
 
-    Model(const std::string filepath, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, SkyBox* skyboxref);
+    Model(const std::string filepath, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger);
     void LoadTextures();
     void CreateVertexAndIndexBuffer() override;
     void createDescriptorSetLayout() override;
@@ -42,7 +41,6 @@ private:
 
 	int IsReflective = 0;
 
-	ImageData* ReflectiveCubeMapData;
     std::string FilePath;
     const StoredModelData* storedModelData = nullptr;
     BufferData bottomLevelASBuffer;

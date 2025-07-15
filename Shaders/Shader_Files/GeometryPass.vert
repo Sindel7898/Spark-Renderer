@@ -19,7 +19,6 @@ layout(location = 2) out vec2 fragTexCoord;
 layout(location = 3) out mat3 WorldSpaceTBN; 
 layout(location = 6) out mat3 ViewSpaceTBN; 
 layout(location = 9) out vec4 IsReflective; 
-layout(location = 10)out mat4 InverseModel; 
 
 void main() {
     
@@ -50,6 +49,4 @@ void main() {
 
     fragTexCoord = inTexCoord;
     IsReflective = ubo.IsReflective;
-    InverseModel = inverse(ubo.model);
-
 }

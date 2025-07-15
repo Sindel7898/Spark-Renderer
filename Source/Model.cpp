@@ -4,7 +4,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
 
-Model::Model(const std::string filepath, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, SkyBox* skyboxref)
+Model::Model(const std::string filepath, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger)
 	      : Drawable()
 {
 
@@ -13,7 +13,6 @@ Model::Model(const std::string filepath, VulkanContext* vulkancontext, vk::Comma
 	commandPool = commandpool;
 	camera = rcamera;
 	bufferManager = buffermanger;
-	ReflectiveCubeMapData = &skyboxref->SkyBoxTextureData;
 
 	position = glm::vec3(1.0f,1.0f,1.0f);
 	rotation = glm::vec3(90.0f,0.0f,0.0f);
@@ -123,15 +122,9 @@ void Model::createDescriptorSetLayout()
 	MetallicRoughnessSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	MetallicRoughnessSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-	vk::DescriptorSetLayoutBinding ReflectiveCubeSamplerLayout{};
-	ReflectiveCubeSamplerLayout.binding = 4;
-	ReflectiveCubeSamplerLayout.descriptorCount = 1;
-	ReflectiveCubeSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	ReflectiveCubeSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
-
-	std::array<vk::DescriptorSetLayoutBinding, 5> bindings = { VertexUniformBufferBinding,
+	std::array<vk::DescriptorSetLayoutBinding, 4> bindings = { VertexUniformBufferBinding,
 															   AlbedoSamplerLayout,NormalSamplerLayout,MetallicRoughnessSamplerLayout,
-	                                                           ReflectiveCubeSamplerLayout };
+	                                                            };
 
 	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -223,22 +216,11 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 
 			/////////////////////////////////////////////////////////////////////////////////////
 
-			vk::DescriptorImageInfo ReflectiveCubeimageInfo{};
-			ReflectiveCubeimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			ReflectiveCubeimageInfo.imageView   = ReflectiveCubeMapData->imageView;
-			ReflectiveCubeimageInfo.sampler     = ReflectiveCubeMapData->imageSampler;
 
-			vk::WriteDescriptorSet ReflectiveCubeSamplerdescriptorWrite{};
-			ReflectiveCubeSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-			ReflectiveCubeSamplerdescriptorWrite.dstBinding = 4;
-			ReflectiveCubeSamplerdescriptorWrite.dstArrayElement = 0;
-			ReflectiveCubeSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-			ReflectiveCubeSamplerdescriptorWrite.descriptorCount = 1;
-			ReflectiveCubeSamplerdescriptorWrite.pImageInfo = &ReflectiveCubeimageInfo;
 
 	     
-	     	std::array<vk::WriteDescriptorSet, 5> descriptorWrites{ VertexUniformdescriptorWrite,
-	     															SamplerdescriptorWrite,NormalSamplerdescriptorWrite,MetallicRoughnessSamplerdescriptorWrite,ReflectiveCubeSamplerdescriptorWrite };
+	     	std::array<vk::WriteDescriptorSet, 4> descriptorWrites{ VertexUniformdescriptorWrite,
+	     															SamplerdescriptorWrite,NormalSamplerdescriptorWrite,MetallicRoughnessSamplerdescriptorWrite };
 	     
 	     	vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	     }

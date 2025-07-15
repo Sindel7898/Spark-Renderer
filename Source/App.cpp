@@ -44,10 +44,10 @@
 	skyBox = std::shared_ptr<SkyBox>(new SkyBox(filePaths, vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), SkyBoxDeleter);
 
 
-	auto model  = std::shared_ptr<Model>(new Model("../Textures/Helmet/DamagedHelmet.gltf"   , vulkanContext.get(), commandPool, camera.get(), bufferManger.get(), skyBox.get()), ModelDeleter);
-	auto model2 = std::shared_ptr<Model>(new Model("../Textures/WaterBottle/WaterBottle.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get(), skyBox.get()), ModelDeleter);
-	auto model3 = std::shared_ptr<Model>(new Model("../Textures/ScifiHelmet/SciFiHelmet.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get(), skyBox.get()), ModelDeleter);
-	auto model4 = std::shared_ptr<Model>(new Model("../Textures/Floor/scene.gltf"            , vulkanContext.get(), commandPool, camera.get(), bufferManger.get(), skyBox.get()), ModelDeleter);
+	auto model  = std::shared_ptr<Model>(new Model("../Textures/Helmet/DamagedHelmet.gltf"   , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model2 = std::shared_ptr<Model>(new Model("../Textures/WaterBottle/WaterBottle.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model3 = std::shared_ptr<Model>(new Model("../Textures/ScifiHelmet/SciFiHelmet.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model4 = std::shared_ptr<Model>(new Model("../Textures/Floor/scene.gltf"            , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	
 	model4.get()->SetScale(glm::vec3(0.100f, 0.100f, 0.050f));
 	model4.get()->SetPosition(glm::vec3(0, -20.0f, 0.0f));
@@ -64,7 +64,7 @@
 	UserInterfaceItems.push_back(Models[3].get());
 		
 
-	lighting_FullScreenQuad = std::shared_ptr<Lighting_FullScreenQuad>(new Lighting_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), Lighting_FullScreenQuadDeleter);
+	lighting_FullScreenQuad = std::shared_ptr<Lighting_FullScreenQuad>(new Lighting_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool, skyBox.get()), Lighting_FullScreenQuadDeleter);
 	ssao_FullScreenQuad     = std::shared_ptr<SSA0_FullScreenQuad>(new SSA0_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSA0_FullScreenQuadDeleter);
 	ssaoBlur_FullScreenQuad = std::shared_ptr<SSAOBlur_FullScreenQuad>(new SSAOBlur_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSAOBlur_FullScreenQuadDeleter);
 	fxaa_FullScreenQuad     = std::shared_ptr<FXAA_FullScreenQuad>(new FXAA_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), FXAA_FullScreenQuadDeleter);

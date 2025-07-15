@@ -5,6 +5,7 @@
 #include "VulkanContext.h"
 #include "Drawable.h"
 #include "Structs.h"
+#include "SkyBox.h"
 
 
 struct LightUniformData {
@@ -18,7 +19,7 @@ class Lighting_FullScreenQuad : public Drawable
 {
 public:
 
-    Lighting_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext,Camera* cameraref, vk::CommandPool commandpool);
+    Lighting_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext,Camera* cameraref, vk::CommandPool commandpool, SkyBox* skyboxref);
     void CreateVertexAndIndexBuffer() override;
     void CreateUniformBuffer() override;
     void createDescriptorSetLayout() override;
@@ -44,6 +45,8 @@ public:
 
 
         Camera* camera = nullptr;
+
+        ImageData* ReflectiveCubeMapData;
 };
 
 static inline void Lighting_FullScreenQuadDeleter(Lighting_FullScreenQuad* fullScreenQuad) {

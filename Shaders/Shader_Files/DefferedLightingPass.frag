@@ -6,6 +6,7 @@ layout (binding = 1) uniform sampler2D samplerNormal;
 layout (binding = 2) uniform sampler2D samplerAlbedo;
 layout (binding = 3) uniform sampler2D samplerSSAO;
 layout (binding = 4) uniform sampler2D samplerMaterials;
+layout (binding = 5) uniform samplerCube samplerReflectiveCubeMap;
 
 layout(location = 0) in vec2 inTexCoord;           
 
@@ -16,7 +17,7 @@ struct LightData{
     mat4    LightProjectionViewMatrix;
 
 };
-layout (binding = 5) uniform LightUniformBuffer {
+layout (binding = 6) uniform LightUniformBuffer {
    
    LightData lights[3];
 };
@@ -30,7 +31,8 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
 
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
-    float a      = roughness*roughness;
+    float safeRoughness = max(roughness, 0.05);
+    float a      = safeRoughness*safeRoughness;
     float a2     = a*a;
     float NdotH  = max(dot(N, H), 0.0);
     float NdotH2 = NdotH*NdotH;
@@ -85,9 +87,22 @@ void main() {
     float ambientOcclusion = AO * SSAO;
 
 
-    vec3  ViewDir    = normalize(lights[0].CameraPositionAndLightIntensity.xyz -  WorldPos);
+     vec3  ViewDir    = normalize(lights[0].CameraPositionAndLightIntensity.xyz -  WorldPos);
 
-      vec3 ambientvalue= vec3(0.08);
+
+
+    vec3 cI = normalize(WorldPos - lights[0].CameraPositionAndLightIntensity.xyz); 
+    vec3 cR = reflect (cI, normalize(Normal));
+    vec3 Reflection = texture(samplerReflectiveCubeMap, cR).rgb;
+    vec3 AlbedoWithReflections = mix(Albedo,Reflection,Metallic);
+    Albedo = AlbedoWithReflections.rgb;
+
+
+
+
+
+     
+      vec3 ambientvalue = vec3(0.2);
       vec3 Ambient = Albedo * ambientvalue * ambientOcclusion;
 
   for (int i = 0; i < 3; i++) {
@@ -140,6 +155,5 @@ void main() {
   }
   
     vec3 finalColor = Ambient + totalLighting;
-
     outFragcolor = vec4(finalColor, 1.0);
 }

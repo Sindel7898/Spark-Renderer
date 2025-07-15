@@ -14,7 +14,7 @@ layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragcolor;
 
 const int MAX_ITERATION = 150;
-float MAX_THICKNESS = 0.0004;
+float MAX_THICKNESS = 0.0002;
 
 void ComputeReflection(vec4 ViewPosition,vec3 ViewNormal,
                                                         out float outMaxDistance,
@@ -71,7 +71,7 @@ void ComputeReflection(vec4 ViewPosition,vec3 ViewNormal,
     } else {
         tempMaxDistanceZ = (1 - outSamplePosInTS.z) / outReflDirInTS.z;
     }
-    outMaxDistance = min(outMaxDistance, tempMaxDistanceZ);
+    outMaxDistance = 20;
 }
 
 
@@ -129,7 +129,7 @@ float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceD
 
 vec4 ComputeReflectedColor(float intensity, vec3 intersection)
 {
-    vec4 ssr_color = texture(ColorTexture, intersection.xy,5);
+    vec4 ssr_color = texture(ColorTexture, intersection.xy);
     return ssr_color;
 }
 
@@ -141,7 +141,6 @@ void main() {
   vec4  ViewSpacePosition  = texture(ViewSpacePositionTexture ,inTexCoord).rgba;
   float mask               = texture(NormalTexture,inTexCoord).a;
 
-   vec4 SkyColor        = vec4(0,0,0.0,1);
    vec4 ReflectionColor = vec4(0,0,0,1);
 
   if(mask != 0){
@@ -159,6 +158,4 @@ void main() {
   }
 
      outFragcolor  = vec4(Color,1.0f) + ReflectionColor;
-     //outFragcolor  = ViewSpacePosition;
-
 }

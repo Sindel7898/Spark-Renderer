@@ -3,7 +3,6 @@
 layout (binding = 1) uniform sampler2D   samplerColor;
 layout (binding = 2) uniform sampler2D   samplerNormalMap;
 layout (binding = 3) uniform sampler2D   samplerMetallicRoughnessMapAO;
-layout (binding = 4) uniform samplerCube samplerReflectiveCubeMap;
 
 layout(location = 0) in vec4 WorldSpacePosition;   
 layout(location = 1) in vec4 ViewSpacePosition;        
@@ -11,7 +10,6 @@ layout(location = 2) in vec2 fragTexCoord;
 layout(location = 3) in mat3 WorldSpaceTBN; 
 layout(location = 6) in mat3 ViewSpaceTBN; 
 layout(location = 9) in vec4 IsReflective; 
-layout(location = 10)in mat4 InverseModel; 
 
 layout (location = 0) out vec4 outWorldPosition;
 layout (location = 1) out vec4 outViewSpacePosition;
@@ -35,15 +33,6 @@ void main() {
 
   outMetallicRoughnessMapAO = vec4(texture(samplerMetallicRoughnessMapAO,fragTexCoord).rgb,IsReflective.r);
 
-
-  vec3 Reflection = normalize(reflect(ViewSpacePosition.xyz,normalize(vtnorm)));
-  	   Reflection = vec3(InverseModel * vec4(Reflection, 0.0));
-       Reflection.xy *= -1.0;
-
-  vec4 Albedo           = texture(samplerColor,fragTexCoord);
-  vec4 MappedReflection = texture(samplerReflectiveCubeMap,Reflection);
-  vec4 Result           = mix(Albedo,MappedReflection,outMetallicRoughnessMapAO.r);
-  vec4 FinalResult      = mix(Result,Albedo,outMetallicRoughnessMapAO.g);
-
-  outAlbedo   = vec4(FinalResult.rgb,1.0);
+  vec4 Albedo = texture(samplerColor,fragTexCoord);
+  outAlbedo   = vec4(Albedo.rgb,1.0);
 }
