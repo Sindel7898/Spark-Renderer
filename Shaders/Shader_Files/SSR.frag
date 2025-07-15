@@ -13,7 +13,6 @@ layout (binding = 3) uniform sampler2D DepthTexture;
 layout (location = 0) in vec2 inTexCoord;           
 layout (location = 0) out vec4 outFragcolor;
 
-vec2 ScreenDimensions = textureSize(ColorTexture,0);
 const int MAX_ITERATION = 150;
 float MAX_THICKNESS = 0.0004;
 
@@ -83,7 +82,8 @@ float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceD
 
      //Direction To Travel In TexTure Space
      vec3 dp                   = ReflectionEndPosInTS.xyz - SamplePosInTS.xyz; 
-     
+     vec2 ScreenDimensions = textureSize(ColorTexture,0);
+
      //Come back to this Section 
      vec2 sampleScreenPos      = vec2(SamplePosInTS.xy        * ScreenDimensions.xy);
      vec2 endPosScreenPos      = vec2(ReflectionEndPosInTS.xy * ScreenDimensions.xy);
