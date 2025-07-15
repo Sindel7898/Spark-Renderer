@@ -25,7 +25,7 @@ public:
     void CleanUp();
 
 
-    ImageData MeshTextureData;
+    ImageData SkyBoxTextureData;
     TransformMatrices  transformMatrices;
 
 private:

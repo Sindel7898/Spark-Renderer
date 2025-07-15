@@ -141,7 +141,5 @@ void main() {
   
     vec3 finalColor = Ambient + totalLighting;
 
-   // finalColor = finalColor / (finalColor + vec3(1.0));
-
     outFragcolor = vec4(finalColor, 1.0);
 }

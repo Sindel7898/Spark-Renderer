@@ -92,7 +92,7 @@ float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceD
 
      const float max_dist = max(abs(dp2.x), abs(dp2.y));
 
-     float stepScale = 2; 
+     float stepScale = 2.5; 
      dp /= (max_dist / stepScale);
 
      vec4 rayPosInTS  = vec4(SamplePosInTS.xyz + dp, 0);
@@ -129,7 +129,7 @@ float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceD
 
 vec4 ComputeReflectedColor(float intensity, vec3 intersection)
 {
-    vec4 ssr_color = texture(ColorTexture, intersection.xy);
+    vec4 ssr_color = texture(ColorTexture, intersection.xy,5);
     return ssr_color;
 }
 

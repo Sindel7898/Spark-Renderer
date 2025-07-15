@@ -10,8 +10,8 @@ SkyBox::SkyBox(std::array<const char*, 6> filePaths, VulkanContext* vulkancontex
 	camera = cameraref;
 	bufferManager = buffermanger;
 
-	  MeshTextureData.ImageID = "skybox Cube Map Texture";
-	  bufferManager->CreateCubeMap (&MeshTextureData,filePaths, commandPool, vulkanContext->graphicsQueue);
+	SkyBoxTextureData.ImageID = "skybox Cube Map Texture";
+	bufferManager->CreateCubeMap (&SkyBoxTextureData,filePaths, commandPool, vulkanContext->graphicsQueue);
 
 	CreateUniformBuffer();
 	CreateVertexAndIndexBuffer();
@@ -96,8 +96,8 @@ void SkyBox::createDescriptorSets(vk::DescriptorPool descriptorpool)
 
 		vk::DescriptorImageInfo imageInfo{};
 		imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		imageInfo.imageView = MeshTextureData.imageView;
-		imageInfo.sampler = MeshTextureData.imageSampler;
+		imageInfo.imageView = SkyBoxTextureData.imageView;
+		imageInfo.sampler = SkyBoxTextureData.imageSampler;
 
 		vk::WriteDescriptorSet UniformdescriptorWrite{};
 		UniformdescriptorWrite.dstSet = DescriptorSets[i];
@@ -146,7 +146,7 @@ void SkyBox::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinel
 void SkyBox::CleanUp()
 {
 	
-    bufferManager->DestroyImage(MeshTextureData);
+    bufferManager->DestroyImage(SkyBoxTextureData);
 	Drawable::Destructor();
 }
 

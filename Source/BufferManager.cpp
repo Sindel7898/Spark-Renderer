@@ -435,15 +435,13 @@ void BufferManager::CreateCubeMap(ImageData* imageData,std::array<const char*, 6
 	// Create cube map view
 	vk::ImageViewCreateInfo viewInfo = {};
 	viewInfo.image = imageData->image;
-	viewInfo.viewType = vk::ImageViewType::eCube; // This makes it a cube map!
+	viewInfo.viewType = vk::ImageViewType::eCube; // This makes it a cube map
 	viewInfo.format = vk::Format::eR8G8B8A8Srgb;
 	viewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
 	viewInfo.subresourceRange.baseMipLevel = 0;
 	viewInfo.subresourceRange.levelCount = 1;
 	viewInfo.subresourceRange.baseArrayLayer = 0;
 	viewInfo.subresourceRange.layerCount = 6; // All six faces
-
-
 
 	imageData->imageView = logicalDevice.createImageView(viewInfo);
 	imageData->imageSampler = CreateImageSampler();
