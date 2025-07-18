@@ -86,24 +86,16 @@ void main() {
     float AO           = texture(samplerMaterials,inTexCoord).b;
     float ambientOcclusion = AO * SSAO;
 
+    vec3  ViewDir    = normalize(lights[0].CameraPositionAndLightIntensity.xyz -  WorldPos);
 
-     vec3  ViewDir    = normalize(lights[0].CameraPositionAndLightIntensity.xyz -  WorldPos);
+    //Reflection Calc
+    float mipLevel = Roughness * float(6);
+    vec3 cR = reflect (-ViewDir, normalize(Normal));
+    vec3 Reflection = texture(samplerReflectiveCubeMap, cR,mipLevel).rgb;
+    vec3 envReflection  = mix(Albedo,Reflection,Metallic);
 
-
-
-    vec3 cI = normalize(WorldPos - lights[0].CameraPositionAndLightIntensity.xyz); 
-    vec3 cR = reflect (cI, normalize(Normal));
-    vec3 Reflection = texture(samplerReflectiveCubeMap, cR).rgb;
-    vec3 AlbedoWithReflections = mix(Albedo,Reflection,Metallic);
-    Albedo = AlbedoWithReflections.rgb;
-
-
-
-
-
-     
-      vec3 ambientvalue = vec3(0.2);
-      vec3 Ambient = Albedo * ambientvalue * ambientOcclusion;
+    vec3 ambientvalue = vec3(0.15);
+    vec3 Ambient = Albedo * ambientvalue * ambientOcclusion;
 
   for (int i = 0; i < 3; i++) {
 
@@ -129,14 +121,13 @@ void main() {
                radiance          = light.colorAndAmbientStrength.rgb * Attenuation;
     }  
 
-    vec3  halfwayDir = normalize(LightDir + ViewDir);
-    vec3 F0 = vec3(0.04); 
-    F0      = mix(F0, Albedo, Metallic);
-    vec3 F  = fresnelSchlick(max(dot(halfwayDir, ViewDir), 0.0), F0);
-
-    float NDF = DistributionGGX(Normal, halfwayDir, Roughness);       
-    float G   = GeometrySmith(Normal, ViewDir, LightDir, Roughness);   
-
+    vec3 F0          = vec3(0.04); 
+         F0          = mix(F0, Albedo, Metallic);
+    vec3 halfwayDir  = normalize(LightDir + ViewDir);
+    
+    vec3 F    = fresnelSchlick(max(dot(halfwayDir, ViewDir), 0.0), F0);//Calculates how much light is reflected vs. refracted on a surface based on the view angle.
+    float NDF = DistributionGGX(Normal, halfwayDir, Roughness); //describes how microfacet normal are distributed on a rough surface       
+    float G   = GeometrySmith(Normal, ViewDir, LightDir, Roughness);// models shadowing and masking
 
     vec3 numerator    = NDF * G * F;
     float denominator = 4.0 * max(dot(Normal, ViewDir), 0.0) * max(dot(Normal, LightDir), 0.0)  + 0.0001;
@@ -154,6 +145,16 @@ void main() {
     totalLighting += Lo * light.CameraPositionAndLightIntensity.w;  
   }
   
-    vec3 finalColor = Ambient + totalLighting;
-    outFragcolor = vec4(finalColor, 1.0);
+     // Compute Fresnel for reflection
+   vec3 F0 = vec3(0.04);
+   F0 = mix(F0, Albedo, Metallic);
+   float NdotV = max(dot(Normal, ViewDir), 0.0);
+   vec3 F = fresnelSchlick(NdotV, F0);
+   
+   // Add environment reflection with Fresnel weighting
+   vec3 envSpecular = Reflection * F;
+   
+   vec3 finalColor = Ambient + totalLighting + envSpecular;
+   
+   outFragcolor = vec4(finalColor, 1.0);
 }

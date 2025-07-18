@@ -174,12 +174,26 @@ void VulkanContext::create_swapchain()
 	
 	auto imageVector = vkbswapChain.get_images().value(); 
 
-	swapchainImages = std::vector<vk::Image>(imageVector.begin(), imageVector.end());
+    for (auto& image : imageVector)
+    {
+	   vk::Image CastedImage = static_cast<vk::Image>(image);
+
+	   ImageData NewImageData;
+	   NewImageData.image = CastedImage;
+
+	   swapchainImageData.push_back(NewImageData);
+    }
+	
+	//swapchainImages = std::vector<vk::Image>(imageVector.begin(), imageVector.end());
 
 
 	auto imageViews = vkbswapChain.get_image_views().value();
 
-	swapchainImageViews = std::vector<vk::ImageView>(imageViews.begin(), imageViews.end());
+	for (int i = 0; i < swapchainImageData.size(); i++)
+	{
+		swapchainImageData[i].imageView = imageViews[i];
+	}
+	//swapchainImageViews = std::vector<vk::ImageView>(imageViews.begin(), imageViews.end());
 }
 
 vk::Pipeline VulkanContext::createGraphicsPipeline(vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo, vk::PipelineShaderStageCreateInfo ShaderStages[], vk::PipelineVertexInputStateCreateInfo* vertexInputInfo, vk::PipelineInputAssemblyStateCreateInfo* inputAssembleInfo, vk::PipelineViewportStateCreateInfo viewportState, vk::PipelineRasterizationStateCreateInfo rasterizerinfo, vk::PipelineMultisampleStateCreateInfo multisampling, vk::PipelineDepthStencilStateCreateInfo depthStencilState, vk::PipelineColorBlendStateCreateInfo colorBlend, vk::PipelineDynamicStateCreateInfo DynamicState, vk::PipelineLayout& pipelineLayout, int numOfShaderStages)
@@ -237,13 +251,13 @@ vk::Format VulkanContext::FindCompatableDepthFormat()
 void VulkanContext::destroy_swapchain()
 {
 
-	for (size_t i = 0; i <swapchainImageViews.size(); i++)
+	for (size_t i = 0; i < swapchainImageData.size(); i++)
 	{
-		LogicalDevice.destroyImageView(swapchainImageViews[i], nullptr);
+		LogicalDevice.destroyImageView(swapchainImageData[i].imageView, nullptr);
 	}
    
 	LogicalDevice.destroySwapchainKHR(swapChain, nullptr);
 
-	swapchainImageViews.clear();
+	swapchainImageData.clear();
 
 }

@@ -213,7 +213,7 @@ ImageData BufferManager::CreateTextureImage(const void* pixeldata, vk::DeviceSiz
 	DataToTransitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
 	DataToTransitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
 
-	TransitionImage(CommandBuffer, TextureImageData.image,DataToTransitionInfo);
+	TransitionImage(CommandBuffer, &TextureImageData,DataToTransitionInfo);
 
 	vk::BufferImageCopy copyRegion = {};
 	copyRegion.bufferOffset = 0;
@@ -237,13 +237,13 @@ ImageData BufferManager::CreateTextureImage(const void* pixeldata, vk::DeviceSiz
 	TransitionImageToShaderData.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
 	TransitionImageToShaderData.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 
-	TransitionImage(CommandBuffer, TextureImageData.image, TransitionImageToShaderData);
+	TransitionImage(CommandBuffer, &TextureImageData, TransitionImageToShaderData);
 
 	SubmitAndDestoyCommandBuffer(commandpool, CommandBuffer, Queue);
 
 	DestroyBuffer(StagineBuffer);
 
-	TextureImageData.imageView = CreateImageView(TextureImageData.image, ImageFormat, vk::ImageAspectFlagBits::eColor);
+	TextureImageData.imageView = CreateImageView(&TextureImageData, ImageFormat, vk::ImageAspectFlagBits::eColor);
 	TextureImageData.imageSampler = CreateImageSampler();
 
 	return TextureImageData;
@@ -318,18 +318,20 @@ void BufferManager::CreateCubeMap(ImageData* imageData,std::array<const char*, 6
 
 	// Create the cube map image (6 array layers)
 	vk::Extent3D imageExtent = { static_cast<uint32_t>(faceWidth),
-								static_cast<uint32_t>(faceHeight),
+								 static_cast<uint32_t>(faceHeight),
 								1 };
+
+	int mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(faceWidth, faceHeight)))) + 1;
 
 	vk::ImageCreateInfo imageInfo = {};
 	imageInfo.imageType = vk::ImageType::e2D;
 	imageInfo.extent = imageExtent;
-	imageInfo.mipLevels = 1;
+	imageInfo.mipLevels = mipLevels;
 	imageInfo.arrayLayers = 6;
 	imageInfo.format = vk::Format::eR8G8B8A8Srgb;
 	imageInfo.tiling = vk::ImageTiling::eOptimal;
 	imageInfo.initialLayout = vk::ImageLayout::eUndefined;
-	imageInfo.usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+	imageInfo.usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eSampled;
 	imageInfo.sharingMode = vk::SharingMode::eExclusive;
 	imageInfo.samples = vk::SampleCountFlagBits::e1;
 	imageInfo.flags = vk::ImageCreateFlagBits::eCubeCompatible; 
@@ -360,10 +362,10 @@ void BufferManager::CreateCubeMap(ImageData* imageData,std::array<const char*, 6
 	acquireBarrier.image = imageData->image;
 	acquireBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
 	acquireBarrier.subresourceRange.baseMipLevel = 0;
-	acquireBarrier.subresourceRange.levelCount = 1;
+	acquireBarrier.subresourceRange.levelCount = mipLevels;
 	acquireBarrier.subresourceRange.layerCount = 6;
 	acquireBarrier.subresourceRange.baseArrayLayer = 0;
-	acquireBarrier.srcAccessMask = vk::AccessFlagBits::eNone;
+	acquireBarrier.srcAccessMask = {};
 	acquireBarrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
 
 	cmdBuffer.pipelineBarrier(
@@ -403,31 +405,11 @@ void BufferManager::CreateCubeMap(ImageData* imageData,std::array<const char*, 6
 		copyRegions.data()
 	);
 
-	// Transition to shader read layout
-	vk::ImageMemoryBarrier releaseBarrier{};
-	releaseBarrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
-	releaseBarrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-	releaseBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	releaseBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	releaseBarrier.image = imageData->image;
-	releaseBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-	releaseBarrier.subresourceRange.baseMipLevel = 0;
-	releaseBarrier.subresourceRange.levelCount = 1;
-	releaseBarrier.subresourceRange.layerCount = 6;
-	releaseBarrier.subresourceRange.baseArrayLayer = 0;
-	releaseBarrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-	releaseBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-
-	cmdBuffer.pipelineBarrier(
-		vk::PipelineStageFlagBits::eTransfer,
-		vk::PipelineStageFlagBits::eFragmentShader,
-		vk::DependencyFlags(),
-		0, nullptr,
-		0, nullptr,
-		1, &releaseBarrier
-	);
 
 	SubmitAndDestoyCommandBuffer(commandpool, cmdBuffer, Queue);
+
+	GenerateMipMaps(imageData, commandpool, static_cast<float>(faceWidth), static_cast<float>(faceHeight), mipLevels, Queue);
+
 
 	// Clean up staging resources
 	vmaDestroyBuffer(allocator, cStagingBuffer, stagingAllocation);
@@ -439,13 +421,96 @@ void BufferManager::CreateCubeMap(ImageData* imageData,std::array<const char*, 6
 	viewInfo.format = vk::Format::eR8G8B8A8Srgb;
 	viewInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
 	viewInfo.subresourceRange.baseMipLevel = 0;
-	viewInfo.subresourceRange.levelCount = 1;
 	viewInfo.subresourceRange.baseArrayLayer = 0;
 	viewInfo.subresourceRange.layerCount = 6; // All six faces
+	viewInfo.subresourceRange.levelCount = mipLevels;
 
 	imageData->imageView = logicalDevice.createImageView(viewInfo);
 	imageData->imageSampler = CreateImageSampler();
 }
+void BufferManager::GenerateMipMaps(ImageData* imageData, vk::CommandPool commandpool, float width, float height, int mipLevels,vk::Queue graphicsqueue) {
+
+	vk::CommandBuffer cmdBuffer = CreateSingleUseCommandBuffer(commandpool);
+
+	float mipWidth = width;
+	float mipHeight = height;
+
+	for (uint32_t i = 1; i < mipLevels; ++i) {
+		// Transition (i - 1) mip level to TRANSFER_SRC_OPTIMAL
+		vk::ImageMemoryBarrier barrier{};
+		barrier.image = imageData->image;
+		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		barrier.subresourceRange.baseMipLevel = i - 1;
+		barrier.subresourceRange.levelCount = 1;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 6;
+		barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
+		barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
+		barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+		barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+
+		cmdBuffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer,
+			{}, 0, nullptr, 0, nullptr, 1, &barrier
+		);
+
+		// Blit from (i - 1) to i
+		vk::ImageBlit blit{};
+		blit.srcOffsets[0] = vk::Offset3D{ 0, 0, 0 };
+		blit.srcOffsets[1] = vk::Offset3D{ static_cast<int32_t>(mipWidth), static_cast<int32_t>(mipHeight), 1 };
+		blit.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+		blit.srcSubresource.mipLevel = i - 1;
+		blit.srcSubresource.baseArrayLayer = 0;
+		blit.srcSubresource.layerCount = 6;
+
+		float nextMipWidth = mipWidth > 1 ? mipWidth / 2 : 1;
+		float nextMipHeight = mipHeight > 1 ? mipHeight / 2 : 1;
+
+		blit.dstOffsets[0] = vk::Offset3D{ 0, 0, 0 };
+		blit.dstOffsets[1] = vk::Offset3D{ static_cast<int32_t>(nextMipWidth), static_cast<int32_t>(nextMipHeight), 1 };
+		blit.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+		blit.dstSubresource.mipLevel = i;
+		blit.dstSubresource.baseArrayLayer = 0;
+		blit.dstSubresource.layerCount = 6;
+
+		cmdBuffer.blitImage(
+			imageData->image, vk::ImageLayout::eTransferSrcOptimal,
+			imageData->image, vk::ImageLayout::eTransferDstOptimal,
+			1, &blit, vk::Filter::eLinear
+		);
+
+		barrier.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
+		barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
+		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+
+		cmdBuffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader,
+			{}, nullptr, nullptr, barrier);
+
+		mipWidth = nextMipWidth;
+		mipHeight = nextMipHeight;
+	}
+
+	vk::ImageMemoryBarrier lastBarrier{};
+	lastBarrier.image = imageData->image;
+	lastBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+	lastBarrier.subresourceRange.baseMipLevel = mipLevels - 1;
+	lastBarrier.subresourceRange.levelCount = 1;
+	lastBarrier.subresourceRange.baseArrayLayer = 0;
+	lastBarrier.subresourceRange.layerCount = 6;
+	lastBarrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
+	lastBarrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+	lastBarrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+	lastBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+
+	cmdBuffer.pipelineBarrier(
+		vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader,
+		{}, nullptr, nullptr, lastBarrier);
+
+	SubmitAndDestoyCommandBuffer(commandpool, cmdBuffer, graphicsqueue);
+}
+
 
 void BufferManager::CreateImage(ImageData* imageData,vk::Extent3D imageExtent, vk::Format imageFormat, vk::ImageUsageFlags UsageFlag) {
 
@@ -455,10 +520,14 @@ void BufferManager::CreateImage(ImageData* imageData,vk::Extent3D imageExtent, v
 		throw std::exception("An image you are trying to create does not have an ID");
 	}
 
+	imageData->miplevels = std::floor(std::log2(std::max(imageExtent.width, imageExtent.height))) + 1;
+
 	vk::ImageCreateInfo imagecreateinfo;
 	imagecreateinfo.imageType = vk::ImageType::e2D;
 	imagecreateinfo.extent = imageExtent;
 	imagecreateinfo.mipLevels = 1;
+	//imagecreateinfo.mipLevels = imageData->miplevels;
+
 	imagecreateinfo.arrayLayers = 1;
 	imagecreateinfo.format = imageFormat;
 	imagecreateinfo.tiling = vk::ImageTiling::eOptimal;
@@ -527,15 +596,17 @@ void BufferManager::RemoveImageLog(ImageData imageData)
 		imageLog.erase(FoundLog);
 	}
 }
-vk::ImageView BufferManager::CreateImageView(vk::Image Image, vk::Format ImageFormat = vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlags ImageAspectBits = vk::ImageAspectFlagBits::eColor) {
+vk::ImageView BufferManager::CreateImageView(ImageData* imageData, vk::Format ImageFormat = vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlags ImageAspectBits = vk::ImageAspectFlagBits::eColor) {
 
 	vk::ImageViewCreateInfo imageviewinfo{};
-	imageviewinfo.image = Image;
+	imageviewinfo.image = imageData->image;
 	imageviewinfo.viewType = vk::ImageViewType::e2D;
 	imageviewinfo.format = ImageFormat;
 	imageviewinfo.subresourceRange.aspectMask = ImageAspectBits;
 	imageviewinfo.subresourceRange.baseMipLevel = 0;
+	//imageviewinfo.subresourceRange.levelCount = imageData->miplevels;
 	imageviewinfo.subresourceRange.levelCount = 1;
+
 	imageviewinfo.subresourceRange.baseArrayLayer = 0;
 	imageviewinfo.subresourceRange.layerCount = 1;
 
@@ -559,12 +630,12 @@ vk::Sampler BufferManager::CreateImageSampler(vk::SamplerAddressMode addressMode
 	SamplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;
 	SamplerInfo.mipLodBias = 0.0f;
 	SamplerInfo.minLod = 0.0f;
-	SamplerInfo.maxLod = 0.0f;
+	SamplerInfo.maxLod = 10.0f;
 	
 	return logicalDevice.createSampler(SamplerInfo);
 }
 
-void BufferManager::TransitionImage(vk::CommandBuffer CommandBuffer, vk::Image image, ImageTransitionData& imagetransinotdata) {
+void BufferManager::TransitionImage(vk::CommandBuffer CommandBuffer, ImageData* imageData, ImageTransitionData& imagetransinotdata) {
 	
 
 	vk::ImageMemoryBarrier acquireBarrier{};
@@ -572,12 +643,14 @@ void BufferManager::TransitionImage(vk::CommandBuffer CommandBuffer, vk::Image i
 	acquireBarrier.newLayout = imagetransinotdata.newlayout;
 	acquireBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	acquireBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	acquireBarrier.image = image;
+	acquireBarrier.image = imageData->image;
 	acquireBarrier.subresourceRange.aspectMask = imagetransinotdata.AspectFlag;
 	acquireBarrier.subresourceRange.baseMipLevel = 0;
+	//acquireBarrier.subresourceRange.levelCount = imageData->miplevels;
 	acquireBarrier.subresourceRange.levelCount = 1;
+
 	acquireBarrier.subresourceRange.baseArrayLayer = 0;
-	acquireBarrier.subresourceRange.layerCount = 1;
+	acquireBarrier.subresourceRange.layerCount = imagetransinotdata.LevelCount;
 	acquireBarrier.srcAccessMask = imagetransinotdata.SourceAccessflag;
 	acquireBarrier.dstAccessMask = imagetransinotdata.DestinationAccessflag;
 	

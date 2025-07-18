@@ -37,7 +37,7 @@ void FXAA_FullScreenQuad::CreateImage(vk::Extent3D imageExtent)
 	   FxaaImage.ImageID = "Gbuffer FxaaImage Texture";
 	   bufferManager->CreateImage(&FxaaImage,imageExtent, vulkanContext->swapchainformat,vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 
-	   FxaaImage.imageView = bufferManager->CreateImageView(FxaaImage.image, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	   FxaaImage.imageView = bufferManager->CreateImageView(&FxaaImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
 	   FxaaImage.imageSampler = bufferManager->CreateImageSampler();
 	   vk::CommandBuffer commandBuffer = bufferManager->CreateSingleUseCommandBuffer(commandPool);
 
@@ -50,7 +50,7 @@ void FXAA_FullScreenQuad::CreateImage(vk::Extent3D imageExtent)
 	   transitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
 	   transitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 
-	   bufferManager->TransitionImage(commandBuffer, FxaaImage.image, transitionInfo);
+	   bufferManager->TransitionImage(commandBuffer, &FxaaImage, transitionInfo);
 
 	   bufferManager->SubmitAndDestoyCommandBuffer(commandPool, commandBuffer, vulkanContext->graphicsQueue);
 }

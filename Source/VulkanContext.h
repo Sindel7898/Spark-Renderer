@@ -4,6 +4,7 @@
 #include <iostream>
 #include <GLFW/glfw3.h>
 #include "../Source/Window.h"
+#include "BufferManager.h"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -47,8 +48,12 @@ public:
 	vk::Format                 swapchainformat;
 	vk::Extent2D               swapchainExtent = { 0, 0 };
 	vk::SwapchainKHR           swapChain = nullptr;
-	std::vector<vk::Image>       swapchainImages = {};
-	std::vector<vk::ImageView>   swapchainImageViews = {};
+	///std::vector<vk::Image>       swapchainImages = {};
+	//std::vector<vk::ImageView>   swapchainImageViews = {};
+
+	std::vector<ImageData>   swapchainImageData = {};
+
+
 	std::vector<vk::SurfaceFormatKHR> SurfaceFormat;
 
 	Window window; 
@@ -63,18 +68,10 @@ static inline void VulkanContextDeleter(VulkanContext* vulkanContext)
 {
 	if (vulkanContext)
 	{
-		for (auto& imageView : vulkanContext->swapchainImageViews) {
-			vulkanContext->LogicalDevice.destroyImageView(imageView);
+		for (auto& imagedata : vulkanContext->swapchainImageData) {
+			vulkanContext->LogicalDevice.destroyImageView(imagedata.imageView);
+
 		}
-
-		vulkanContext->swapchainImageViews.clear();
-
-	/*	for (auto& Image : vulkanContext->swapchainImages)
-		{
-			vulkanContext->LogicalDevice.destroyImage(Image);
-		}
-
-		vulkanContext->swapchainImages.clear();*/
 
 		if (vulkanContext->swapChain) {
 			vulkanContext->LogicalDevice.destroySwapchainKHR(vulkanContext->swapChain);
@@ -99,7 +96,7 @@ static inline void VulkanContextDeleter(VulkanContext* vulkanContext)
 		vulkanContext->PhysicalDevice = nullptr;
 		vulkanContext->graphicsQueue = nullptr;
 		vulkanContext->presentQueue = nullptr;
-		vulkanContext->swapchainImages.clear();
+		vulkanContext->swapchainImageData.clear();
 		vulkanContext->SurfaceFormat.clear();
 
 		delete vulkanContext;

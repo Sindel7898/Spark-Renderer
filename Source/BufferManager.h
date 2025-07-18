@@ -26,6 +26,7 @@ struct ImageData {
     vk::ImageView imageView{};
     vk::Sampler imageSampler{};
     VmaAllocation allocation{};
+    uint32_t  miplevels;
 };
 
 
@@ -37,6 +38,8 @@ struct ImageTransitionData {
     vk::PipelineStageFlags SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
     vk::PipelineStageFlags DestinationOnThePipeline = vk::PipelineStageFlagBits::eNone;
     vk::ImageAspectFlags AspectFlag = vk::ImageAspectFlagBits::eColor;
+    int LevelCount = 1;
+
 };
 
 class BufferManager
@@ -51,16 +54,21 @@ public:
     void AddImageLog(ImageData* imageData);
     void RemoveImageLog(ImageData imageData);
 
+
     ~BufferManager();
 
 
     void CreateCubeMap(ImageData*  imageData,std::array<const char*,6> FilePaths, vk::CommandPool commandpool, vk::Queue Queue);
 
+    void GenerateMipMaps(ImageData* imageData, vk::CommandPool commandpool, float width, float height, int mipLevels, vk::Queue graphicsqueue);
+
+
+
     void CreateImage(ImageData* imageData,vk::Extent3D imageExtent, vk::Format imageFormat, vk::ImageUsageFlags UsageFlag);
-    vk::ImageView CreateImageView(vk::Image ImageToConvert, vk::Format ImageFormat, vk::ImageAspectFlags ImageAspectBits);
+    vk::ImageView CreateImageView(ImageData* imageData, vk::Format ImageFormat, vk::ImageAspectFlags ImageAspectBits);
     vk::Sampler CreateImageSampler(vk::SamplerAddressMode addressMode = vk::SamplerAddressMode::eRepeat);
 
-    void TransitionImage(vk::CommandBuffer CommandBuffer, vk::Image image, ImageTransitionData& imagetransinotdata);
+    void TransitionImage(vk::CommandBuffer CommandBuffer, ImageData* imageData, ImageTransitionData& imagetransinotdata);
 
     vk::CommandBuffer CreateSingleUseCommandBuffer(vk::CommandPool commandpool);
     void SubmitAndDestoyCommandBuffer(vk::CommandPool commandpool, vk::CommandBuffer CommandBuffer, vk::Queue Queue);

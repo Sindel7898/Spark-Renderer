@@ -37,7 +37,7 @@ void SSR_FullScreenQuad::CreateImage(vk::Extent3D imageExtent)
 	  SSRImage.ImageID = "Gbuffer SSRImage Texture";
 	   bufferManager->CreateImage(&SSRImage,imageExtent, vulkanContext->swapchainformat,vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 
-	   SSRImage.imageView = bufferManager->CreateImageView(SSRImage.image, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	   SSRImage.imageView = bufferManager->CreateImageView(&SSRImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
 	   SSRImage.imageSampler = bufferManager->CreateImageSampler();
 	   vk::CommandBuffer commandBuffer = bufferManager->CreateSingleUseCommandBuffer(commandPool);
 
@@ -50,7 +50,7 @@ void SSR_FullScreenQuad::CreateImage(vk::Extent3D imageExtent)
 	   transitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
 	   transitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 
-	   bufferManager->TransitionImage(commandBuffer, SSRImage.image, transitionInfo);
+	   bufferManager->TransitionImage(commandBuffer, &SSRImage, transitionInfo);
 
 	   bufferManager->SubmitAndDestoyCommandBuffer(commandPool, commandBuffer, vulkanContext->graphicsQueue);
 }

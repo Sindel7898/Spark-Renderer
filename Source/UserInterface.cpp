@@ -123,7 +123,7 @@ void UserInterface::InitImgui()
 	init_info.Queue = vulkancontext->graphicsQueue;
 	init_info.DescriptorPool = ImGuiDescriptorPool;
 	init_info.MinImageCount = MAX_FRAMES_IN_FLIGHT;
-	init_info.ImageCount = vulkancontext->swapchainImages.size();
+	init_info.ImageCount = vulkancontext->swapchainImageData.size();
 	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 	init_info.UseDynamicRendering = true;
 	init_info.PipelineRenderingCreateInfo = pipeline_rendering_create_info;
@@ -210,7 +210,7 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex)
 	TransitionSwapchainToWriteData.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 	TransitionSwapchainToWriteData.AspectFlag = vk::ImageAspectFlagBits::eColor;
 
-	buffermanager->TransitionImage(CommandBuffer, vulkancontext->swapchainImages[imageIndex], TransitionSwapchainToWriteData);
+	buffermanager->TransitionImage(CommandBuffer, &vulkancontext->swapchainImageData[imageIndex], TransitionSwapchainToWriteData);
 
 	ImGui::Render();
 
@@ -221,7 +221,7 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex)
 		 }
 	//// Begin rendering for ImGui
 	vk::RenderingAttachmentInfo imguiColorAttachment{};
-	imguiColorAttachment.imageView = vulkancontext->swapchainImageViews[imageIndex];
+	imguiColorAttachment.imageView = vulkancontext->swapchainImageData[imageIndex].imageView;
 	imguiColorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 	imguiColorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
 	imguiColorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
@@ -267,7 +267,7 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex)
 	TransitionSwapchainToPresentData.DestinationOnThePipeline = vk::PipelineStageFlagBits::eBottomOfPipe;
 	TransitionSwapchainToPresentData.AspectFlag = vk::ImageAspectFlagBits::eColor;
 
-	buffermanager->TransitionImage(CommandBuffer, vulkancontext->swapchainImages[imageIndex], TransitionSwapchainToPresentData);
+	buffermanager->TransitionImage(CommandBuffer, &vulkancontext->swapchainImageData[imageIndex], TransitionSwapchainToPresentData);
 
 	CommandBuffer.end();
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////

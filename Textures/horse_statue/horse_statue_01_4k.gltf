@@ -30,7 +30,7 @@
           "index": 1
         },
         "metallicFactor": 0,
-        "metallicRoughnessTexture": {
+        "MetalRoughnessAOPack": {
           "index": 2
         }
       }
@@ -140,7 +140,7 @@
     {
       "mimeType": "image/jpeg",
       "name": "horse_statue_01_arm",
-      "uri": "textures/horse_statue_01_arm_4k.jpg"
+      "uri": "textures/MetalRoughnessAO.png"
     }
   ],
   "accessors": [
