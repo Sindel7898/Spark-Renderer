@@ -7,6 +7,7 @@ layout (binding = 2) uniform sampler2D samplerAlbedo;
 layout (binding = 3) uniform sampler2D samplerSSAO;
 layout (binding = 4) uniform sampler2D samplerMaterials;
 layout (binding = 5) uniform samplerCube samplerReflectiveCubeMap;
+layout (binding = 6) uniform sampler2D samplerReflectionMask;
 
 layout(location = 0) in vec2 inTexCoord;           
 
@@ -17,7 +18,7 @@ struct LightData{
     mat4    LightProjectionViewMatrix;
 
 };
-layout (binding = 6) uniform LightUniformBuffer {
+layout (binding = 7) uniform LightUniformBuffer {
    
    LightData lights[3];
 };
@@ -84,15 +85,17 @@ void main() {
     float Metallic     = texture(samplerMaterials,inTexCoord).r;
     float Roughness    = texture(samplerMaterials,inTexCoord).g;
     float AO           = texture(samplerMaterials,inTexCoord).b;
+    vec2  ReflectionMask     = texture(samplerReflectionMask,inTexCoord).rg;
+
     float ambientOcclusion = AO * SSAO;
 
     vec3  ViewDir    = normalize(lights[0].CameraPositionAndLightIntensity.xyz -  WorldPos);
+
 
     //Reflection Calc
     float mipLevel = Roughness * float(6);
     vec3 cR = reflect (-ViewDir, normalize(Normal));
     vec3 Reflection = texture(samplerReflectiveCubeMap, cR,mipLevel).rgb;
-    vec3 envReflection  = mix(Albedo,Reflection,Metallic);
 
     vec3 ambientvalue = vec3(0.15);
     vec3 Ambient = Albedo * ambientvalue * ambientOcclusion;
@@ -145,7 +148,11 @@ void main() {
     totalLighting += Lo * light.CameraPositionAndLightIntensity.w;  
   }
   
-     // Compute Fresnel for reflection
+  vec3 finalColor;
+
+  if(ReflectionMask.x == 1){
+
+    // Compute Fresnel for reflection
    vec3 F0 = vec3(0.04);
    F0 = mix(F0, Albedo, Metallic);
    float NdotV = max(dot(Normal, ViewDir), 0.0);
@@ -154,7 +161,12 @@ void main() {
    // Add environment reflection with Fresnel weighting
    vec3 envSpecular = Reflection * F;
    
-   vec3 finalColor = Ambient + totalLighting + envSpecular;
+    finalColor = Ambient + totalLighting + envSpecular;
+  }else{
+  
+     finalColor = Ambient + totalLighting;
+  }
+
    
    outFragcolor = vec4(finalColor, 1.0);
 }

@@ -11,7 +11,7 @@
 
 struct ModelData {
     TransformMatrices  transformMatrices;
-	glm::vec4 IsReflectiveWithPadding;
+	glm::vec4  bCubeMapReflection_bScreenSpaceReflectionWithPadding;
 
 };
 
@@ -27,7 +27,9 @@ public:
     void CreateUniformBuffer() override;
     void UpdateUniformBuffer(uint32_t currentImage);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
-    void ReflectiveSwitch(bool breflective);
+    void CubeMapReflectiveSwitch(bool breflective);
+    void ScreenSpaceReflectiveSwitch(bool breflective);
+
     void CleanUp() ;
 
 
@@ -37,9 +39,10 @@ public:
 
     VertexUniformData vertexdata{};
 
+    int bCubeMapReflection = 0;
+    int bScreenSpaceReflection = 0;
 private:
 
-	int IsReflective = 0;
 
     std::string FilePath;
     const StoredModelData* storedModelData = nullptr;

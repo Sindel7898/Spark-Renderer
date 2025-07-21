@@ -217,8 +217,6 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 			/////////////////////////////////////////////////////////////////////////////////////
 
 
-
-	     
 	     	std::array<vk::WriteDescriptorSet, 4> descriptorWrites{ VertexUniformdescriptorWrite,
 	     															SamplerdescriptorWrite,NormalSamplerdescriptorWrite,MetallicRoughnessSamplerdescriptorWrite };
 	     
@@ -239,7 +237,7 @@ void Model::UpdateUniformBuffer(uint32_t currentImage)
 	
 	ModelData modelData;
 	modelData.transformMatrices = transformMatrices;
-	modelData.IsReflectiveWithPadding = glm::vec4(IsReflective, 0.0f, 0.0f, 0.0f);
+	modelData.bCubeMapReflection_bScreenSpaceReflectionWithPadding = glm::vec4(bCubeMapReflection, bScreenSpaceReflection, 0.0f, 0.0f);
 
 	memcpy(VertexUniformBuffersMappedMem[currentImage], &modelData, sizeof(modelData));
 }
@@ -255,14 +253,25 @@ void Model::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinela
 	commandbuffer.drawIndexed(storedModelData->IndexData.size(), 1, 0, 0, 0);
 }
 
-void Model::ReflectiveSwitch(bool breflective)
+void Model::CubeMapReflectiveSwitch(bool breflective)
 {
 	if (breflective)
 	{
-		IsReflective = 1;
+		bCubeMapReflection = 1;
 	}
 	else {
-		IsReflective = 0;
+		bCubeMapReflection = 0;
+	}
+}
+
+void Model::ScreenSpaceReflectiveSwitch(bool breflective)
+{
+	if (breflective)
+	{
+		bScreenSpaceReflection = 1;
+	}
+	else {
+		bScreenSpaceReflection = 0;
 	}
 }
 

@@ -10,7 +10,7 @@ layout(set = 0,binding = 0) uniform UniformBufferObject {
     mat4 model;
     mat4 view;
     mat4 proj;
-    vec4 IsReflective;
+    vec4 bCubeMapReflection_bScreenSpaceReflection_Padding;
 } ubo;
 
 layout(location = 0) out vec4 WorldSpacPosition;   
@@ -18,7 +18,7 @@ layout(location = 1) out vec4 ViewSpacePosition;
 layout(location = 2) out vec2 fragTexCoord;           
 layout(location = 3) out mat3 WorldSpaceTBN; 
 layout(location = 6) out mat3 ViewSpaceTBN; 
-layout(location = 9) out vec4 IsReflective; 
+layout(location = 9) out vec4 bCubeMapReflection_bScreenSpaceReflection_Padding; 
 
 void main() {
     
@@ -48,5 +48,5 @@ void main() {
     ViewSpaceTBN = mat3(vT, vB, vN);
 
     fragTexCoord = inTexCoord;
-    IsReflective = ubo.IsReflective;
+    bCubeMapReflection_bScreenSpaceReflection_Padding = ubo.bCubeMapReflection_bScreenSpaceReflection_Padding;
 }

@@ -165,4 +165,5 @@ private:
 	GBuffer gbuffer;
 
 	ImageData LightingPassImageData;
+	ImageData ReflectionMaskImageData;
 };

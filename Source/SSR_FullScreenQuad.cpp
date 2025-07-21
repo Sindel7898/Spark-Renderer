@@ -89,9 +89,13 @@ void SSR_FullScreenQuad::createDescriptorSetLayout()
 		DepthSamplerBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		DepthSamplerBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
+		vk::DescriptorSetLayoutBinding ReflectionMapSamplerLayout{};
+		ReflectionMapSamplerLayout.binding = 4;
+		ReflectionMapSamplerLayout.descriptorCount = 1;
+		ReflectionMapSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		ReflectionMapSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-
-		std::array<vk::DescriptorSetLayoutBinding, 4> SSRPassBinding = { LightingSamplerBinding,NormalSamplerBinding,ViewSpacePositionSamplerBinding,DepthSamplerBinding };
+		std::array<vk::DescriptorSetLayoutBinding, 5> SSRPassBinding = { LightingSamplerBinding,NormalSamplerBinding,ViewSpacePositionSamplerBinding,DepthSamplerBinding,ReflectionMapSamplerLayout };
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.bindingCount = static_cast<uint32_t>(SSRPassBinding.size());
@@ -105,7 +109,7 @@ void SSR_FullScreenQuad::createDescriptorSetLayout()
 }
 
 
-void SSR_FullScreenQuad::createDescriptorSets(vk::DescriptorPool descriptorpool, ImageData LightingPass, ImageData NormalPass, ImageData ViewSpacePositionPass, ImageData DepthPass)
+void SSR_FullScreenQuad::createDescriptorSets(vk::DescriptorPool descriptorpool, ImageData LightingPass, ImageData NormalPass, ImageData ViewSpacePositionPass, ImageData DepthPass, ImageData ReflectionMask)
 {
 	// create sets from the pool based on the layout
 	std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
@@ -165,8 +169,6 @@ void SSR_FullScreenQuad::createDescriptorSets(vk::DescriptorPool descriptorpool,
 		ViewSpacePositionPassSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		ViewSpacePositionPassSamplerdescriptorWrite.pImageInfo = &ViewSpacePositionPassimageInfo;
 
-
-
 		vk::DescriptorImageInfo DepthPassimageInfo{};
 		DepthPassimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		DepthPassimageInfo.imageView   = DepthPass.imageView;
@@ -180,11 +182,26 @@ void SSR_FullScreenQuad::createDescriptorSets(vk::DescriptorPool descriptorpool,
 		DepthPassSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		DepthPassSamplerdescriptorWrite.pImageInfo = &DepthPassimageInfo;
 
-		std::array<vk::WriteDescriptorSet, 4> descriptorWrites = {
+
+		vk::DescriptorImageInfo ReflectionMaskimageInfo{};
+		ReflectionMaskimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		ReflectionMaskimageInfo.imageView = ReflectionMask.imageView;
+		ReflectionMaskimageInfo.sampler = ReflectionMask.imageSampler;
+
+		vk::WriteDescriptorSet ReflectionMaskSamplerdescriptorWrite{};
+		ReflectionMaskSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+		ReflectionMaskSamplerdescriptorWrite.dstBinding = 4;
+		ReflectionMaskSamplerdescriptorWrite.dstArrayElement = 0;
+		ReflectionMaskSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		ReflectionMaskSamplerdescriptorWrite.descriptorCount = 1;
+		ReflectionMaskSamplerdescriptorWrite.pImageInfo = &ReflectionMaskimageInfo;
+
+		std::array<vk::WriteDescriptorSet, 5> descriptorWrites = {
 																	LightingPassSamplerdescriptorWrite,  
 																	NormalPassSamplerdescriptorWrite,
 																	ViewSpacePositionPassSamplerdescriptorWrite,
-																	DepthPassSamplerdescriptorWrite
+																	DepthPassSamplerdescriptorWrite,
+																	ReflectionMaskSamplerdescriptorWrite
 		                                                         };
 
 		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);

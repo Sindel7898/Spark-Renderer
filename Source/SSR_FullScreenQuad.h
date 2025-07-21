@@ -16,7 +16,7 @@ public:
     void CreateImage(vk::Extent3D ImageEXtent);
     void DestroyImage();
     void createDescriptorSetLayout() override;
-    void createDescriptorSets(vk::DescriptorPool descriptorpool, ImageData LightingPass, ImageData NormalPass, ImageData ViewSpacePositionPass, ImageData DepthPass);
+    void createDescriptorSets(vk::DescriptorPool descriptorpool, ImageData LightingPass, ImageData NormalPass, ImageData ViewSpacePositionPass, ImageData DepthPass, ImageData ReflectionMask);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
     void CleanUp();
 

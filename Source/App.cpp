@@ -49,9 +49,15 @@
 	auto model3 = std::shared_ptr<Model>(new Model("../Textures/ScifiHelmet/SciFiHelmet.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	auto model4 = std::shared_ptr<Model>(new Model("../Textures/Floor/scene.gltf"            , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	
+	model.get()->CubeMapReflectiveSwitch(true);
+	model2.get()->CubeMapReflectiveSwitch(true);
+	model3.get()->CubeMapReflectiveSwitch(true);
+
 	model4.get()->SetScale(glm::vec3(0.100f, 0.100f, 0.050f));
 	model4.get()->SetPosition(glm::vec3(0, -20.0f, 0.0f));
-	model4.get()->ReflectiveSwitch(true);
+	model4.get()->ScreenSpaceReflectiveSwitch(true);
+	model4.get()->CubeMapReflectiveSwitch(true);
+
 
 
 	Models.push_back(std::move(model));
@@ -100,8 +106,6 @@
 	CreateGraphicsPipeline();
 	createDepthTextureImage();
 	createGBuffer();
-
-
 }
 
 
@@ -223,14 +227,19 @@ void App::createGBuffer()
 	LightingPassImageData.imageView = bufferManger->CreateImageView(&LightingPassImageData, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
 	LightingPassImageData.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
+	ReflectionMaskImageData.ImageID = "ReflectionMask Texture";
+	bufferManger->CreateImage(&ReflectionMaskImageData, swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	ReflectionMaskImageData.imageView = bufferManger->CreateImageView(&ReflectionMaskImageData, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
+	ReflectionMaskImageData.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+
 	fxaa_FullScreenQuad->CreateImage(swapchainextent);
 	ssr_FullScreenQuad->CreateImage(swapchainextent);
 
-	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
+	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer, ReflectionMaskImageData);
 	ssao_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
 	ssaoBlur_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
 	fxaa_FullScreenQuad->createDescriptorSets(DescriptorPool, LightingPassImageData);
-	ssr_FullScreenQuad->createDescriptorSets(DescriptorPool, LightingPassImageData, gbuffer.ViewSpaceNormal,gbuffer.ViewSpacePosition, DepthTextureData);
+	ssr_FullScreenQuad->createDescriptorSets(DescriptorPool, LightingPassImageData, gbuffer.ViewSpaceNormal,gbuffer.ViewSpacePosition, DepthTextureData, ReflectionMaskImageData);
 
 	vk::CommandBuffer commandBuffer = bufferManger->CreateSingleUseCommandBuffer(commandPool);
 
@@ -249,6 +258,7 @@ void App::createGBuffer()
 	bufferManger->TransitionImage(commandBuffer, &gbuffer.Normal, transitionInfo);
 	bufferManger->TransitionImage(commandBuffer, &gbuffer.Albedo, transitionInfo);
 	bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, transitionInfo);
+	bufferManger->TransitionImage(commandBuffer, &ReflectionMaskImageData, transitionInfo);
 
 	bufferManger->SubmitAndDestoyCommandBuffer(commandPool, commandBuffer, vulkanContext->graphicsQueue);
 
@@ -884,13 +894,14 @@ void App::CreateGraphicsPipeline()
 		vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
 		vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
 
-		std::array<vk::Format, 6> colorFormats = {
+		std::array<vk::Format, 7> colorFormats = {
 	                             vk::Format::eR16G16B16A16Sfloat, // Position
 								 vk::Format::eR16G16B16A16Sfloat, // ViewSpacePosition
 	                             vk::Format::eR16G16B16A16Sfloat, // Normal
 					             vk::Format::eR16G16B16A16Sfloat, // // ViewSpaceNormal
-	                             vk::Format::eR8G8B8A8Srgb,      // Albedo
-								 vk::Format::eR8G8B8A8Unorm,
+	                             vk::Format::eR8G8B8A8Srgb,       // Albedo
+								 vk::Format::eR8G8B8A8Unorm,      //Material
+								 vk::Format::eR8G8B8A8Unorm       //ReflectionMask
 	                             };
 
 
@@ -905,7 +916,7 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
 		pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
-		std::array<vk::PipelineColorBlendAttachmentState, 6> colorBlendAttachments = {
+		std::array<vk::PipelineColorBlendAttachmentState, 7> colorBlendAttachments = {
 			// Position attachment blend state
 			vk::PipelineColorBlendAttachmentState{}
 				.setColorWriteMask(vk::ColorComponentFlagBits::eR |
@@ -942,6 +953,13 @@ void App::CreateGraphicsPipeline()
 								  vk::ColorComponentFlagBits::eB |
 								  vk::ColorComponentFlagBits::eA)
 				.setBlendEnable(VK_FALSE),
+			// Albedo attachment blend state
+		vk::PipelineColorBlendAttachmentState{}
+			.setColorWriteMask(vk::ColorComponentFlagBits::eR |
+							  vk::ColorComponentFlagBits::eG |
+							  vk::ColorComponentFlagBits::eB |
+							  vk::ColorComponentFlagBits::eA)
+			.setBlendEnable(VK_FALSE),
 			// Albedo attachment blend state
 		vk::PipelineColorBlendAttachmentState{}
 			.setColorWriteMask(vk::ColorComponentFlagBits::eR |
@@ -1229,6 +1247,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		bufferManger->TransitionImage(commandBuffer, &gbuffer.Materials, TransitionColorAttachmentOptimal);
 		bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, TransitionColorAttachmentOptimal);
 		bufferManger->TransitionImage(commandBuffer, &ssr_FullScreenQuad->SSRImage, TransitionColorAttachmentOptimal);
+		bufferManger->TransitionImage(commandBuffer, &ReflectionMaskImageData, TransitionColorAttachmentOptimal);
 
 
 		vk::RenderingAttachmentInfo PositioncolorAttachmentInfo{};
@@ -1273,9 +1292,16 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		MaterialscolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
 		MaterialscolorAttachmentInfo.clearValue = clearColor;
 
-		std::array<vk::RenderingAttachmentInfo, 6> ColorAttachments{ PositioncolorAttachmentInfo,ViewSpacePositioncolorAttachmentInfo,
+		vk::RenderingAttachmentInfo ReflectionMaskcolorAttachmentInfo{};
+		ReflectionMaskcolorAttachmentInfo.imageView = ReflectionMaskImageData.imageView;
+		ReflectionMaskcolorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		ReflectionMaskcolorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
+		ReflectionMaskcolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		ReflectionMaskcolorAttachmentInfo.clearValue = clearColor;
+
+		std::array<vk::RenderingAttachmentInfo, 7> ColorAttachments{ PositioncolorAttachmentInfo,ViewSpacePositioncolorAttachmentInfo,
 			                                                         NormalcolorAttachmentInfo, ViewSpaceNormalcolorAttachmentInfo,
-			                                                         AlbedocolorAttachmentInfo,MaterialscolorAttachmentInfo };
+			                                                         AlbedocolorAttachmentInfo,MaterialscolorAttachmentInfo,ReflectionMaskcolorAttachmentInfo };
 
 		vk::RenderingAttachmentInfo depthStencilAttachment;
 		depthStencilAttachment.imageView = DepthTextureData.imageView;
@@ -1435,6 +1461,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		bufferManger->TransitionImage(commandBuffer, &gbuffer.Albedo  , gbufferTransition);
 		bufferManger->TransitionImage(commandBuffer, &gbuffer.SSAOBlured, gbufferTransition);
 		bufferManger->TransitionImage(commandBuffer, &gbuffer.Materials, gbufferTransition);
+		bufferManger->TransitionImage(commandBuffer, &ReflectionMaskImageData, gbufferTransition);
+
 
 		vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
 		LightPassColorAttachmentInfo.imageView = LightingPassImageData.imageView;
@@ -1478,6 +1506,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		bufferManger->TransitionImage(commandBuffer, &gbuffer.Albedo, TransitionBacktoColorOutput);
 		bufferManger->TransitionImage(commandBuffer, &gbuffer.SSAOBlured, TransitionBacktoColorOutput);
 		bufferManger->TransitionImage(commandBuffer, &gbuffer.Materials, TransitionBacktoColorOutput);
+		bufferManger->TransitionImage(commandBuffer, &ReflectionMaskImageData, TransitionBacktoColorOutput);
+
 
 	}
 	 /////////////////// LIGHTING PASS END ///////////////////////// 
@@ -1496,7 +1526,9 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpaceNormal, TransitionTOShaderOptimal);
 		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpacePosition, TransitionTOShaderOptimal);
 		bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, TransitionTOShaderOptimal);
+		bufferManger->TransitionImage(commandBuffer, &ReflectionMaskImageData, TransitionTOShaderOptimal);
 
+		
 		ImageTransitionData TransitionDepthtTOShaderOptimal{};
 		TransitionDepthtTOShaderOptimal.oldlayout = vk::ImageLayout::eDepthAttachmentOptimal;
 		TransitionDepthtTOShaderOptimal.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -1541,6 +1573,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpaceNormal, TransitionBacktoColorOutput);
 		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpacePosition, TransitionBacktoColorOutput);
 		bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, TransitionBacktoColorOutput);
+		bufferManger->TransitionImage(commandBuffer, &ReflectionMaskImageData, TransitionBacktoColorOutput);
 
 
 		ImageTransitionData TransitionDeptTODepthOptimal{};
@@ -1735,6 +1768,8 @@ void App::destroy_GbufferImages()
 	bufferManger->DestroyImage(gbuffer.Materials);
 	bufferManger->DestroyImage(gbuffer.Albedo);
 	bufferManger->DestroyImage(LightingPassImageData);
+	bufferManger->DestroyImage(ReflectionMaskImageData);
+
 
 	fxaa_FullScreenQuad->DestroyImage();
 	ssr_FullScreenQuad->DestroyImage();

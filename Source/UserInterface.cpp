@@ -324,6 +324,7 @@ void UserInterface::DrawUi(App* appref)
 		ImGui::InputFloat("radius", &appref->ssao_FullScreenQuad->Radius);
 		ImGui::InputFloat("Bias", &appref->ssao_FullScreenQuad->Bias);
 		ImGui::Checkbox("SSAO", (bool*)&appref->ssao_FullScreenQuad->bShouldSSAO);
+
 		ImGui::End();
 	}
 
@@ -409,30 +410,44 @@ void UserInterface::DrawUi(App* appref)
 		{
 			auto& item = appref->UserInterfaceItems[UserInterfaceItemsIndex];
 
-			glm::mat4 ItemsModelMatrix = item->GetModelMatrix();
-
-			ImGuizmo::Manipulate(glm::value_ptr(cameraview), glm::value_ptr(cameraprojection),
-				currentGizmoOperation, ImGuizmo::LOCAL, glm::value_ptr(ItemsModelMatrix));
-
-			float matrixTranslation[3], matrixRotation[3], matrixScale[3];
-			ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(ItemsModelMatrix), matrixTranslation, matrixRotation, matrixScale);
-			ImGui::Begin("Details Panel");
-
-			ImGui::Dummy(ImVec2(0.0f, 20.0f));
-			ImGui::Separator();
-
-			ImGui::InputFloat3("Position", matrixTranslation);
-			ImGui::InputFloat3("Rotation", matrixRotation);
-			ImGui::InputFloat3("Scale", matrixScale);
-
-			ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, glm::value_ptr(ItemsModelMatrix));
-			item->SetModelMatrix(ItemsModelMatrix);
-
-
-			if (ImGuizmo::IsUsing())
+			if (item)
 			{
+				glm::mat4 ItemsModelMatrix = item->GetModelMatrix();
+
+				ImGuizmo::Manipulate(glm::value_ptr(cameraview), glm::value_ptr(cameraprojection),
+					currentGizmoOperation, ImGuizmo::LOCAL, glm::value_ptr(ItemsModelMatrix));
+
+				float matrixTranslation[3], matrixRotation[3], matrixScale[3];
+				ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(ItemsModelMatrix), matrixTranslation, matrixRotation, matrixScale);
+				ImGui::Begin("Details Panel");
+
+				ImGui::Dummy(ImVec2(0.0f, 20.0f));
+				ImGui::Separator();
+
+				ImGui::InputFloat3("Position", matrixTranslation);
+				ImGui::InputFloat3("Rotation", matrixRotation);
+				ImGui::InputFloat3("Scale", matrixScale);
+
+				ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, glm::value_ptr(ItemsModelMatrix));
 				item->SetModelMatrix(ItemsModelMatrix);
+
+
+				if (ImGuizmo::IsUsing())
+				{
+					item->SetModelMatrix(ItemsModelMatrix);
+				}
+
+				Model* model =  dynamic_cast<Model*>(item);
+
+				if (model)
+				{
+					ImGui::Checkbox("Cube Map Reflections", (bool*)&model->bCubeMapReflection);
+					ImGui::Checkbox("Screen Space Reflections", (bool*)&model->bScreenSpaceReflection);
+
+				}
 			}
+		
+
 
 			Light* light = dynamic_cast<Light*>(item);
 

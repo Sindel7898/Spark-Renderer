@@ -9,11 +9,14 @@ layout (binding = 0) uniform sampler2D ColorTexture;
 layout (binding = 1) uniform sampler2D NormalTexture;
 layout (binding = 2) uniform sampler2D ViewSpacePositionTexture;
 layout (binding = 3) uniform sampler2D DepthTexture;
+layout (binding = 4) uniform sampler2D ReflectionMaskTexture;
+
 
 layout (location = 0) in vec2 inTexCoord;           
 layout (location = 0) out vec4 outFragcolor;
 
-const int MAX_ITERATION = 150;
+const int MAX_ITERATION = 250;
+const int NUM_BINARY_SEARCH_SAMPLES = 10;
 float MAX_THICKNESS = 0.0002;
 
 void ComputeReflection(vec4 ViewPosition,vec3 ViewNormal,
@@ -22,7 +25,7 @@ void ComputeReflection(vec4 ViewPosition,vec3 ViewNormal,
                                                         out vec3  outReflDirInTS ){
        
        //Get The Reflection Direction Of the Position And Normal In ViewSpace.
-       vec3 viewDir   = normalize(ViewPosition.xyz);
+       vec3 viewDir   = -normalize(ViewPosition.xyz);
   vec4 ReflectionInVS = vec4(reflect(viewDir, ViewNormal.xyz),0);
 
        //Get End Point Of Reflection In ViewSpace
@@ -48,30 +51,27 @@ void ComputeReflection(vec4 ViewPosition,vec3 ViewNormal,
        outSamplePosInTS = PositionInCS.xyz;
        outReflDirInTS   = ReflectionDir;
 
-    // Compute the maximum distance to trace before the ray goes outside of the visible area.
-    if (outReflDirInTS.x >= 0) {
-        outMaxDistance = (1 - outSamplePosInTS.x) / outReflDirInTS.x;
-    } else {
-        outMaxDistance = -outSamplePosInTS.x / outReflDirInTS.x;
-    }
-    
-    float tempMaxDistanceY;
+      outMaxDistance = 1;
+}
 
-    if (outReflDirInTS.y < 0) {
-        tempMaxDistanceY = -outSamplePosInTS.y / outReflDirInTS.y;
-    } else {
-        tempMaxDistanceY = (1 - outSamplePosInTS.y) / outReflDirInTS.y;
-    }
-    outMaxDistance = min(outMaxDistance, tempMaxDistanceY);
-    
-    float tempMaxDistanceZ;
+vec3 BinarySearch(vec3 PrevSamplePosition,vec3 SamplePosition)
+{
+    	vec3 MinRaySample = PrevSamplePosition;
+	    vec3 MaxRaySample = SamplePosition;
+        vec3 MidRaySample;
 
-    if (outReflDirInTS.z < 0) {
-        tempMaxDistanceZ = -outSamplePosInTS.z / outReflDirInTS.z;
-    } else {
-        tempMaxDistanceZ = (1 - outSamplePosInTS.z) / outReflDirInTS.z;
-    }
-    outMaxDistance = 20;
+        for (int i = 0; i < NUM_BINARY_SEARCH_SAMPLES; i++)
+	        {
+		              MidRaySample  = mix(MinRaySample,MaxRaySample,0.5);
+                float ZBufferVal    = texture(DepthTexture, MidRaySample.xy).x; 
+
+                if (MidRaySample.z > ZBufferVal)
+			        MaxRaySample = MidRaySample;
+		        else
+			        MinRaySample = MidRaySample;
+	        }
+
+       return MidRaySample;
 }
 
 
@@ -81,22 +81,22 @@ float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceD
      vec3 ReflectionEndPosInTS = SamplePosInTS + RefDirInTS * MaxTraceDistance; //Values Based On Outputs From Previous Functions
 
      //Direction To Travel In TexTure Space
-     vec3 dp                   = ReflectionEndPosInTS.xyz - SamplePosInTS.xyz; 
-     vec2 ScreenDimensions = textureSize(ColorTexture,0);
 
-     //Come back to this Section 
-     vec2 sampleScreenPos      = vec2(SamplePosInTS.xy        * ScreenDimensions.xy);
-     vec2 endPosScreenPos      = vec2(ReflectionEndPosInTS.xy * ScreenDimensions.xy);
+     //Convert to Screen Space
+     vec2 ScreenDimensions  = textureSize(ColorTexture,0);
+     vec2 sampleScreenPos   = vec2(SamplePosInTS.xy        * ScreenDimensions.xy);
+     vec2 endPosScreenPos   = vec2(ReflectionEndPosInTS.xy * ScreenDimensions.xy);
 
+     //Direction To Travel In Screen Space
      vec2 dp2 = endPosScreenPos - sampleScreenPos;
 
-     const float max_dist = max(abs(dp2.x), abs(dp2.y));
+     const float max_dist = max(abs(dp2.x), abs(dp2.y)); //get the maximum possible distance that will be traveled on the X or Y axis
 
-     float stepScale = 2.5; 
-     dp /= (max_dist / stepScale);
+     float stepScale = 1.5; 
+     vec3 Step       = (ReflectionEndPosInTS.xyz - SamplePosInTS.xyz) / (max_dist / stepScale); // scale down steps !! look into more
 
-     vec4 rayPosInTS  = vec4(SamplePosInTS.xyz + dp, 0);
-     vec4 RayDirInTS  = vec4(dp.xyz, 0);
+     vec4 rayPosInTS  = vec4(SamplePosInTS.xyz + Step, 0);
+     vec4 RayDirInTS  = vec4(Step.xyz, 0);
 	 vec4 rayStartPos = rayPosInTS;
 
      // Version 0.
@@ -104,23 +104,35 @@ float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceD
 
     for(int i = 0; i < max_dist && i < MAX_ITERATION; i++)
     {
-	    float depth = texture(DepthTexture, rayPosInTS.xy).x; // ray hit  current depth
-	    float thickness = rayPosInTS.z - depth; // rays current depth - hit depth
-        
 
+	    float depth = texture(DepthTexture, rayPosInTS.xy).x; // ray hit  current depth
+
+	    float thickness = rayPosInTS.z - depth; // rays current depth - hit depth 
+        
 	    if(thickness >= 0 && thickness < MAX_THICKNESS) // if we hit somthinging increase the index
 	    {
 	        hitIndex = i;
 	    }
 
-        if(hitIndex != -1) break;
+        if(hitIndex != -1) break; // if we have not hit anything Keep on Keeping on!!
 
          rayPosInTS += RayDirInTS; // move sampling point every itteration
     }
 
+        bool intersected;
+        
+        if(hitIndex >= 0){
+           intersected = true;
+        };
 
-        bool intersected = hitIndex >= 0;
-             Intersection = rayStartPos.xyz + RayDirInTS.xyz * hitIndex;
+        Intersection     = rayStartPos.xyz + RayDirInTS.xyz * hitIndex; //Get intersection point
+   vec3 PrevIntersection = rayStartPos.xyz + RayDirInTS.xyz * (hitIndex - 1); //Get Previous intersection point
+
+      if(intersected){
+          Intersection  =  BinarySearch(PrevIntersection,Intersection);
+      }
+
+
 
         float intensity = intersected ? 1 : 0;
 
@@ -129,9 +141,17 @@ float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceD
 
 vec4 ComputeReflectedColor(float intensity, vec3 intersection)
 {
-    vec4 ssr_color = texture(ColorTexture, intersection.xy);
-    return ssr_color;
+    vec2         uv = clamp(intersection.xy, vec2(0.0), vec2(1.0));
+    vec4 ssr_color  = texture(ColorTexture, uv);
+    vec4 SceneColor = texture(ColorTexture, inTexCoord);
+    vec4 FinalColor = mix(SceneColor, ssr_color, intensity);
+    return FinalColor;
 }
+
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}  
 
 void main() {
  
@@ -139,9 +159,10 @@ void main() {
   vec3  Normal             = normalize(texture(NormalTexture,inTexCoord).rgb);
   vec4  Depth              = texture(DepthTexture ,inTexCoord).rgba;
   vec4  ViewSpacePosition  = texture(ViewSpacePositionTexture ,inTexCoord).rgba;
-  float mask               = texture(NormalTexture,inTexCoord).a;
+  float mask               = texture(ReflectionMaskTexture,inTexCoord).g;
 
-   vec4 ReflectionColor = vec4(0,0,0,1);
+
+  vec4 ReflectionColor = vec4(0,0,0,0);
 
   if(mask != 0){
 
@@ -154,8 +175,11 @@ void main() {
         float Intensity = FindIntersection_Linear(SamplePosInTS_Result,ReflDirInTS_Result,MaxDistance_Result,Intersection_Result);
 
          ReflectionColor  = ComputeReflectedColor(Intensity,Intersection_Result);
-  
   }
 
-     outFragcolor  = vec4(Color,1.0f) + ReflectionColor;
+     if(ReflectionColor.rgb == vec3(0,0,0) ){
+        ReflectionColor.rgb =  Color;
+     };
+
+    outFragcolor = vec4(mix(Color, ReflectionColor.rgb, ReflectionColor.a), 1.0);
 }
