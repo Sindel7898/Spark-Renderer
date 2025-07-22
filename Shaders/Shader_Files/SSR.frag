@@ -10,6 +10,7 @@ layout (binding = 1) uniform sampler2D NormalTexture;
 layout (binding = 2) uniform sampler2D ViewSpacePositionTexture;
 layout (binding = 3) uniform sampler2D DepthTexture;
 layout (binding = 4) uniform sampler2D ReflectionMaskTexture;
+layout (binding = 5) uniform sampler2D MaterialTexture;
 
 
 layout (location = 0) in vec2 inTexCoord;           
@@ -18,6 +19,8 @@ layout (location = 0) out vec4 outFragcolor;
 const int MAX_ITERATION = 150;
 const int NUM_BINARY_SEARCH_SAMPLES = 5;
 float MAX_THICKNESS = 0.0002;
+#define Scale vec3(.8, .8, .8)
+#define K 19.19
 
 void ComputeReflection(vec4 ViewPosition,vec3 ViewNormal,
                                                         out float outMaxDistance,
@@ -141,7 +144,7 @@ float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceD
 vec4 ComputeReflectedColor(float intensity, vec3 intersection)
 {
     vec2         uv = clamp(intersection.xy, vec2(0.0), vec2(1.0));
-    vec4 ssr_color  = texture(ColorTexture, uv);
+    vec4 ssr_color  = texture(ColorTexture, uv,0);
     return ssr_color;
 }
 
@@ -156,6 +159,7 @@ void main() {
   vec3  Normal             = normalize(texture(NormalTexture,inTexCoord).rgb);
   vec4  ViewSpacePosition  = texture(ViewSpacePositionTexture ,inTexCoord).rgba;
   float mask               = texture(ReflectionMaskTexture,inTexCoord).g;
+  vec3  MetalicRoughnessAO    = texture(MaterialTexture,inTexCoord).rgb;
 
 
   vec4 ReflectionColor = vec4(0,0,0,0);
@@ -180,8 +184,8 @@ void main() {
 
      vec3 viewDir   = -normalize(ViewSpacePosition.xyz);
      vec3 normal    = normalize(texture(NormalTexture, inTexCoord).rgb);
-     float cosTheta = normalize(dot(viewDir, normal));
-     vec3 F0        = vec3(0.3);
+     float cosTheta = clamp(dot(viewDir, normal), 0.0, 1.0);
+     vec3 F0        = mix(vec3(0.08),Color,MetalicRoughnessAO.r);
      
      vec3 fresnel = fresnelSchlick(cosTheta, F0);
      vec3 SSR     = ReflectionColor.rgb * fresnel;

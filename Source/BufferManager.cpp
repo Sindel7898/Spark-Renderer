@@ -321,12 +321,12 @@ void BufferManager::CreateCubeMap(ImageData* imageData,std::array<const char*, 6
 								 static_cast<uint32_t>(faceHeight),
 								1 };
 
-	int mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(faceWidth, faceHeight)))) + 1;
+	imageData->miplevels = std::floor(std::log2(std::max(imageExtent.width, imageExtent.height))) + 1;
 
 	vk::ImageCreateInfo imageInfo = {};
 	imageInfo.imageType = vk::ImageType::e2D;
 	imageInfo.extent = imageExtent;
-	imageInfo.mipLevels = mipLevels;
+	imageInfo.mipLevels = imageData->miplevels; // set amount of mips image should have
 	imageInfo.arrayLayers = 6;
 	imageInfo.format = vk::Format::eR8G8B8A8Srgb;
 	imageInfo.tiling = vk::ImageTiling::eOptimal;
@@ -362,7 +362,7 @@ void BufferManager::CreateCubeMap(ImageData* imageData,std::array<const char*, 6
 	acquireBarrier.image = imageData->image;
 	acquireBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
 	acquireBarrier.subresourceRange.baseMipLevel = 0;
-	acquireBarrier.subresourceRange.levelCount = mipLevels;
+	acquireBarrier.subresourceRange.levelCount = imageData->miplevels; // set number of levels the image has (MIPMAP)
 	acquireBarrier.subresourceRange.layerCount = 6;
 	acquireBarrier.subresourceRange.baseArrayLayer = 0;
 	acquireBarrier.srcAccessMask = {};
@@ -377,7 +377,7 @@ void BufferManager::CreateCubeMap(ImageData* imageData,std::array<const char*, 6
 		1, &acquireBarrier
 	);
 
-	// Copy each face from the staging buffer
+	// Copy each face from the staging buffer into the image
 	std::vector<vk::BufferImageCopy> copyRegions;
 	offset = 0;
 
@@ -406,10 +406,10 @@ void BufferManager::CreateCubeMap(ImageData* imageData,std::array<const char*, 6
 	);
 
 
+
+	GenerateMipMaps(imageData, &cmdBuffer, static_cast<float>(faceWidth), static_cast<float>(faceHeight), Queue,6);
+
 	SubmitAndDestoyCommandBuffer(commandpool, cmdBuffer, Queue);
-
-	GenerateMipMaps(imageData, commandpool, static_cast<float>(faceWidth), static_cast<float>(faceHeight), mipLevels, Queue);
-
 
 	// Clean up staging resources
 	vmaDestroyBuffer(allocator, cStagingBuffer, stagingAllocation);
@@ -423,72 +423,78 @@ void BufferManager::CreateCubeMap(ImageData* imageData,std::array<const char*, 6
 	viewInfo.subresourceRange.baseMipLevel = 0;
 	viewInfo.subresourceRange.baseArrayLayer = 0;
 	viewInfo.subresourceRange.layerCount = 6; // All six faces
-	viewInfo.subresourceRange.levelCount = mipLevels;
+	viewInfo.subresourceRange.levelCount = imageData->miplevels;
 
 	imageData->imageView = logicalDevice.createImageView(viewInfo);
 	imageData->imageSampler = CreateImageSampler();
 }
-void BufferManager::GenerateMipMaps(ImageData* imageData, vk::CommandPool commandpool, float width, float height, int mipLevels,vk::Queue graphicsqueue) {
 
-	vk::CommandBuffer cmdBuffer = CreateSingleUseCommandBuffer(commandpool);
+void BufferManager::GenerateMipMaps(ImageData* imageData, vk::CommandBuffer* cmdBuffer, float width, float height, vk::Queue graphicsqueue, int layerCount) {
 
+	int mipLevels = imageData->miplevels;
 	float mipWidth = width;
 	float mipHeight = height;
 
 	for (uint32_t i = 1; i < mipLevels; ++i) {
-		// Transition (i - 1) mip level to TRANSFER_SRC_OPTIMAL
+
+		// Transition the previos mipmap so that it can be used as the base texture for the next mipmap
 		vk::ImageMemoryBarrier barrier{};
 		barrier.image = imageData->image;
 		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
 		barrier.subresourceRange.baseMipLevel = i - 1;
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 6;
+		barrier.subresourceRange.layerCount = layerCount;
 		barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
 		barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
 		barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
 		barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
 
-		cmdBuffer.pipelineBarrier(
+		cmdBuffer->pipelineBarrier(
 			vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer,
 			{}, 0, nullptr, 0, nullptr, 1, &barrier
 		);
 
-		// Blit from (i - 1) to i
+		// image data for previous mipmap
 		vk::ImageBlit blit{};
 		blit.srcOffsets[0] = vk::Offset3D{ 0, 0, 0 };
 		blit.srcOffsets[1] = vk::Offset3D{ static_cast<int32_t>(mipWidth), static_cast<int32_t>(mipHeight), 1 };
 		blit.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
 		blit.srcSubresource.mipLevel = i - 1;
 		blit.srcSubresource.baseArrayLayer = 0;
-		blit.srcSubresource.layerCount = 6;
+		blit.srcSubresource.layerCount = layerCount;
 
-		float nextMipWidth = mipWidth > 1 ? mipWidth / 2 : 1;
-		float nextMipHeight = mipHeight > 1 ? mipHeight / 2 : 1;
 
+		float nextMipWidth  = mipWidth  > 1 ? mipWidth  / 2 : 1; // image width division
+		float nextMipHeight = mipHeight > 1 ? mipHeight / 2 : 1; // image height division
+
+		// image data for new mipmap
 		blit.dstOffsets[0] = vk::Offset3D{ 0, 0, 0 };
 		blit.dstOffsets[1] = vk::Offset3D{ static_cast<int32_t>(nextMipWidth), static_cast<int32_t>(nextMipHeight), 1 };
 		blit.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
 		blit.dstSubresource.mipLevel = i;
 		blit.dstSubresource.baseArrayLayer = 0;
-		blit.dstSubresource.layerCount = 6;
+		blit.dstSubresource.layerCount = layerCount;
 
-		cmdBuffer.blitImage(
+		cmdBuffer->blitImage(
 			imageData->image, vk::ImageLayout::eTransferSrcOptimal,
 			imageData->image, vk::ImageLayout::eTransferDstOptimal,
 			1, &blit, vk::Filter::eLinear
 		);
 
+		//transition so it can be used in the shader
 		barrier.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
 		barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
 		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
 
-		cmdBuffer.pipelineBarrier(
+		cmdBuffer->pipelineBarrier(
 			vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader,
 			{}, nullptr, nullptr, barrier);
 
-		mipWidth = nextMipWidth;
+
+		//set new size mipmap we just created
+		mipWidth  = nextMipWidth;
 		mipHeight = nextMipHeight;
 	}
 
@@ -498,21 +504,19 @@ void BufferManager::GenerateMipMaps(ImageData* imageData, vk::CommandPool comman
 	lastBarrier.subresourceRange.baseMipLevel = mipLevels - 1;
 	lastBarrier.subresourceRange.levelCount = 1;
 	lastBarrier.subresourceRange.baseArrayLayer = 0;
-	lastBarrier.subresourceRange.layerCount = 6;
+	lastBarrier.subresourceRange.layerCount = layerCount;
 	lastBarrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
 	lastBarrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 	lastBarrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
 	lastBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
 
-	cmdBuffer.pipelineBarrier(
+	cmdBuffer->pipelineBarrier(
 		vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader,
 		{}, nullptr, nullptr, lastBarrier);
-
-	SubmitAndDestoyCommandBuffer(commandpool, cmdBuffer, graphicsqueue);
 }
 
 
-void BufferManager::CreateImage(ImageData* imageData,vk::Extent3D imageExtent, vk::Format imageFormat, vk::ImageUsageFlags UsageFlag) {
+void BufferManager::CreateImage(ImageData* imageData,vk::Extent3D imageExtent, vk::Format imageFormat, vk::ImageUsageFlags UsageFlag,bool bMipMaps) {
 
 
 	if (imageData->ImageID.empty())
@@ -520,14 +524,22 @@ void BufferManager::CreateImage(ImageData* imageData,vk::Extent3D imageExtent, v
 		throw std::exception("An image you are trying to create does not have an ID");
 	}
 
-	imageData->miplevels = std::floor(std::log2(std::max(imageExtent.width, imageExtent.height))) + 1;
 
 	vk::ImageCreateInfo imagecreateinfo;
 	imagecreateinfo.imageType = vk::ImageType::e2D;
 	imagecreateinfo.extent = imageExtent;
-	imagecreateinfo.mipLevels = 1;
-	//imagecreateinfo.mipLevels = imageData->miplevels;
 
+	if (bMipMaps)
+	{
+		imageData->miplevels = std::floor(std::log2(std::max(imageExtent.width, imageExtent.height))) + 1;
+		imagecreateinfo.mipLevels = imageData->miplevels;
+		std::cout << imageData->miplevels << std::endl;
+	}
+	else
+	{
+		imagecreateinfo.mipLevels = 1;
+
+	}
 	imagecreateinfo.arrayLayers = 1;
 	imagecreateinfo.format = imageFormat;
 	imagecreateinfo.tiling = vk::ImageTiling::eOptimal;
@@ -535,7 +547,7 @@ void BufferManager::CreateImage(ImageData* imageData,vk::Extent3D imageExtent, v
 	imagecreateinfo.usage = UsageFlag;
 	imagecreateinfo.samples = vk::SampleCountFlagBits::e1; 
 	imagecreateinfo.sharingMode = vk::SharingMode::eExclusive; 
-
+	
 	VkImageCreateInfo cimagecreateinfo = static_cast<VkImageCreateInfo> (imagecreateinfo);
 
 	VmaAllocationCreateInfo imageAllocInfo = {};
@@ -551,8 +563,7 @@ void BufferManager::CreateImage(ImageData* imageData,vk::Extent3D imageExtent, v
 
 	imageData->image = vk::Image(cTextureImage);
 	imageData->allocation = ImageAllocation;
-	//imageData.imageView = CreateImageView(imageData.image);
-	//imageData.imageSampler = CreateImageSampler();
+
 	AddImageLog(imageData);
 }
 
@@ -604,9 +615,7 @@ vk::ImageView BufferManager::CreateImageView(ImageData* imageData, vk::Format Im
 	imageviewinfo.format = ImageFormat;
 	imageviewinfo.subresourceRange.aspectMask = ImageAspectBits;
 	imageviewinfo.subresourceRange.baseMipLevel = 0;
-	//imageviewinfo.subresourceRange.levelCount = imageData->miplevels;
-	imageviewinfo.subresourceRange.levelCount = 1;
-
+	imageviewinfo.subresourceRange.levelCount = imageData->miplevels;
 	imageviewinfo.subresourceRange.baseArrayLayer = 0;
 	imageviewinfo.subresourceRange.layerCount = 1;
 
@@ -645,12 +654,10 @@ void BufferManager::TransitionImage(vk::CommandBuffer CommandBuffer, ImageData* 
 	acquireBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	acquireBarrier.image = imageData->image;
 	acquireBarrier.subresourceRange.aspectMask = imagetransinotdata.AspectFlag;
-	acquireBarrier.subresourceRange.baseMipLevel = 0;
-	//acquireBarrier.subresourceRange.levelCount = imageData->miplevels;
-	acquireBarrier.subresourceRange.levelCount = 1;
-
+	acquireBarrier.subresourceRange.baseMipLevel = imagetransinotdata.BaseMipLevel;
+	acquireBarrier.subresourceRange.levelCount = imagetransinotdata.LevelCount;
 	acquireBarrier.subresourceRange.baseArrayLayer = 0;
-	acquireBarrier.subresourceRange.layerCount = imagetransinotdata.LevelCount;
+	acquireBarrier.subresourceRange.layerCount = imagetransinotdata.LayerCount;
 	acquireBarrier.srcAccessMask = imagetransinotdata.SourceAccessflag;
 	acquireBarrier.dstAccessMask = imagetransinotdata.DestinationAccessflag;
 	

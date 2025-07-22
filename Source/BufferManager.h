@@ -26,7 +26,7 @@ struct ImageData {
     vk::ImageView imageView{};
     vk::Sampler imageSampler{};
     VmaAllocation allocation{};
-    uint32_t  miplevels;
+    uint32_t  miplevels = 1;
 };
 
 
@@ -38,7 +38,9 @@ struct ImageTransitionData {
     vk::PipelineStageFlags SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
     vk::PipelineStageFlags DestinationOnThePipeline = vk::PipelineStageFlagBits::eNone;
     vk::ImageAspectFlags AspectFlag = vk::ImageAspectFlagBits::eColor;
+    int BaseMipLevel = 0;
     int LevelCount = 1;
+    int LayerCount = 1;
 
 };
 
@@ -51,6 +53,8 @@ public:
     void AddBufferLog(BufferData* bufferdata);
     void RemoveBufferLog(BufferData bufferdata);
 
+    void CreateImage(ImageData* imageData, vk::Extent3D imageExtent, vk::Format imageFormat, vk::ImageUsageFlags UsageFlag, bool bMipMaps = false);
+
     void AddImageLog(ImageData* imageData);
     void RemoveImageLog(ImageData imageData);
 
@@ -60,11 +64,10 @@ public:
 
     void CreateCubeMap(ImageData*  imageData,std::array<const char*,6> FilePaths, vk::CommandPool commandpool, vk::Queue Queue);
 
-    void GenerateMipMaps(ImageData* imageData, vk::CommandPool commandpool, float width, float height, int mipLevels, vk::Queue graphicsqueue);
+    void GenerateMipMaps(ImageData* imageData, vk::CommandBuffer* cmdBuffer, float width, float height, vk::Queue graphicsqueue, int layerCount);
 
 
 
-    void CreateImage(ImageData* imageData,vk::Extent3D imageExtent, vk::Format imageFormat, vk::ImageUsageFlags UsageFlag);
     vk::ImageView CreateImageView(ImageData* imageData, vk::Format ImageFormat, vk::ImageAspectFlags ImageAspectBits);
     vk::Sampler CreateImageSampler(vk::SamplerAddressMode addressMode = vk::SamplerAddressMode::eRepeat);
 
