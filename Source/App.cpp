@@ -1528,7 +1528,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, TransitionTOShaderOptimal);
 		bufferManger->TransitionImage(commandBuffer, &ReflectionMaskImageData, TransitionTOShaderOptimal);
 
-		
+	
 		ImageTransitionData TransitionDepthtTOShaderOptimal{};
 		TransitionDepthtTOShaderOptimal.oldlayout = vk::ImageLayout::eDepthAttachmentOptimal;
 		TransitionDepthtTOShaderOptimal.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;

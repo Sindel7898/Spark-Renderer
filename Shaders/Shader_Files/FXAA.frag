@@ -13,9 +13,9 @@ layout(push_constant) uniform PushConstants {
     vec4 bFXAA;
 } pc;
 
-#define EDGE_THRESHOLD_MIN 0.0312
-#define EDGE_THRESHOLD_MAX 0.125
-#define ITERATIONS 12
+#define EDGE_THRESHOLD_MIN 0.015
+#define EDGE_THRESHOLD_MAX 0.06
+#define ITERATIONS 22
 #define SUBPIXEL_QUALITY 0.75
 
 float rgb2luma(vec3 rgb) {

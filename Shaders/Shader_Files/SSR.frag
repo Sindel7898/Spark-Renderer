@@ -15,8 +15,8 @@ layout (binding = 4) uniform sampler2D ReflectionMaskTexture;
 layout (location = 0) in vec2 inTexCoord;           
 layout (location = 0) out vec4 outFragcolor;
 
-const int MAX_ITERATION = 250;
-const int NUM_BINARY_SEARCH_SAMPLES = 10;
+const int MAX_ITERATION = 150;
+const int NUM_BINARY_SEARCH_SAMPLES = 5;
 float MAX_THICKNESS = 0.0002;
 
 void ComputeReflection(vec4 ViewPosition,vec3 ViewNormal,
@@ -74,7 +74,6 @@ vec3 BinarySearch(vec3 PrevSamplePosition,vec3 SamplePosition)
        return MidRaySample;
 }
 
-
 float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceDistance,out vec3 Intersection){
 
      //Claucluate The End Position Of The Reflection In TextureSpace
@@ -92,7 +91,7 @@ float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceD
 
      const float max_dist = max(abs(dp2.x), abs(dp2.y)); //get the maximum possible distance that will be traveled on the X or Y axis
 
-     float stepScale = 1.5; 
+     float stepScale = 2.4; 
      vec3 Step       = (ReflectionEndPosInTS.xyz - SamplePosInTS.xyz) / (max_dist / stepScale); // scale down steps !! look into more
 
      vec4 rayPosInTS  = vec4(SamplePosInTS.xyz + Step, 0);
@@ -143,9 +142,7 @@ vec4 ComputeReflectedColor(float intensity, vec3 intersection)
 {
     vec2         uv = clamp(intersection.xy, vec2(0.0), vec2(1.0));
     vec4 ssr_color  = texture(ColorTexture, uv);
-    vec4 SceneColor = texture(ColorTexture, inTexCoord);
-    vec4 FinalColor = mix(SceneColor, ssr_color, intensity);
-    return FinalColor;
+    return ssr_color;
 }
 
 vec3 fresnelSchlick(float cosTheta, vec3 F0)
@@ -157,7 +154,6 @@ void main() {
  
   vec3  Color              = texture(ColorTexture ,inTexCoord).rgb;
   vec3  Normal             = normalize(texture(NormalTexture,inTexCoord).rgb);
-  vec4  Depth              = texture(DepthTexture ,inTexCoord).rgba;
   vec4  ViewSpacePosition  = texture(ViewSpacePositionTexture ,inTexCoord).rgba;
   float mask               = texture(ReflectionMaskTexture,inTexCoord).g;
 
@@ -181,5 +177,16 @@ void main() {
         ReflectionColor.rgb =  Color;
      };
 
-    outFragcolor = vec4(mix(Color, ReflectionColor.rgb, ReflectionColor.a), 1.0);
+
+     vec3 viewDir   = -normalize(ViewSpacePosition.xyz);
+     vec3 normal    = normalize(texture(NormalTexture, inTexCoord).rgb);
+     float cosTheta = normalize(dot(viewDir, normal));
+     vec3 F0        = vec3(0.3);
+     
+     vec3 fresnel = fresnelSchlick(cosTheta, F0);
+     vec3 SSR     = ReflectionColor.rgb * fresnel;
+
+     vec3 finalColor = mix(Color, ReflectionColor.rgb, fresnel); 
+
+     outFragcolor = vec4(finalColor, 1.0);
 }

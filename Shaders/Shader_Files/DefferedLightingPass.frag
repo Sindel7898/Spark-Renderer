@@ -97,7 +97,7 @@ void main() {
     vec3 cR = reflect (-ViewDir, normalize(Normal));
     vec3 Reflection = texture(samplerReflectiveCubeMap, cR,mipLevel).rgb;
 
-    vec3 ambientvalue = vec3(0.15);
+    vec3 ambientvalue = vec3(0.25);
     vec3 Ambient = Albedo * ambientvalue * ambientOcclusion;
 
   for (int i = 0; i < 3; i++) {
@@ -167,6 +167,5 @@ void main() {
      finalColor = Ambient + totalLighting;
   }
 
-   
    outFragcolor = vec4(finalColor, 1.0);
 }
