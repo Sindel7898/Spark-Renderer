@@ -43,5 +43,5 @@ public:
     int numFrames = 0;
     double accumulatedTime = 0;
     float currentFps = 0.0f;
-    bool printFps = true;
+    bool printFps = false;
 };

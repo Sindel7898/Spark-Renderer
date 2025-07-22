@@ -1527,6 +1527,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpacePosition, TransitionTOShaderOptimal);
 		bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, TransitionTOShaderOptimal);
 		bufferManger->TransitionImage(commandBuffer, &ReflectionMaskImageData, TransitionTOShaderOptimal);
+		bufferManger->TransitionImage(commandBuffer, &gbuffer.Materials, TransitionTOShaderOptimal);
 
 	
 		ImageTransitionData TransitionDepthtTOShaderOptimal{};
@@ -1844,7 +1845,7 @@ void App::DestroyBuffers()
 	ssao_FullScreenQuad.reset();
 	ssaoBlur_FullScreenQuad.reset();
 	fxaa_FullScreenQuad.reset();
-
+	ssr_FullScreenQuad.reset();
 	bufferManger.reset();
 }
 
@@ -1857,6 +1858,7 @@ void App::destroyPipeline()
 	vulkanContext->LogicalDevice.destroyPipeline(geometryPassPipeline);
 	vulkanContext->LogicalDevice.destroyPipeline(SSAOPipeline);
 	vulkanContext->LogicalDevice.destroyPipeline(SSAOBlurPipeline);
+	vulkanContext->LogicalDevice.destroyPipeline(SSRPipeline);
 
 	vulkanContext->LogicalDevice.destroyPipelineLayout(DeferedLightingPassPipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(FXAAPassPipelineLayout);
@@ -1865,6 +1867,7 @@ void App::destroyPipeline()
 	vulkanContext->LogicalDevice.destroyPipelineLayout(geometryPassPipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(SSAOPipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(SSAOBlurPipelineLayout);
+	vulkanContext->LogicalDevice.destroyPipelineLayout(SSRPipelineLayout);
 
 }
 
