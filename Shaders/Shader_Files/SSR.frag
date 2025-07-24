@@ -94,7 +94,7 @@ float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceD
 
      const float max_dist = max(abs(dp2.x), abs(dp2.y)); //get the maximum possible distance that will be traveled on the X or Y axis
 
-     float stepScale = 2.4; 
+     float stepScale = 4.4; 
      vec3 Step       = (ReflectionEndPosInTS.xyz - SamplePosInTS.xyz) / (max_dist / stepScale); // scale down steps !! look into more
 
      vec4 rayPosInTS  = vec4(SamplePosInTS.xyz + Step, 0);

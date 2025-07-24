@@ -50,6 +50,7 @@ public:
 
     BufferManager(vk::Device& LogicalDevice, vk::PhysicalDevice& PhysicalDevice, vk::Instance& VulkanInstance);
     void CreateBuffer(BufferData* BufferData, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
+    void CreateDeviceBuffer(BufferData* bufferData, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
     void AddBufferLog(BufferData* bufferdata);
     void RemoveBufferLog(BufferData bufferdata);
 

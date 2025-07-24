@@ -49,6 +49,35 @@ void BufferManager::CreateBuffer(BufferData* bufferData,VkDeviceSize BufferSize,
 	AddBufferLog(bufferData);
 }
 
+void BufferManager::CreateDeviceBuffer(BufferData* bufferData, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue)
+{
+
+	VmaAllocationCreateInfo AllocationInfo = {};
+	AllocationInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+	AllocationInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+
+	vk::BufferCreateInfo StagingBufferCreateInfo = {};
+	StagingBufferCreateInfo.size = BufferSize;
+	StagingBufferCreateInfo.usage = BufferUse;
+	StagingBufferCreateInfo.sharingMode = vk::SharingMode::eExclusive;
+
+	VkBuffer Buffer;
+	VmaAllocation allocation;
+	VkBufferCreateInfo cBufferCreateInfo = StagingBufferCreateInfo;
+
+	if (vmaCreateBuffer(allocator, &cBufferCreateInfo, &AllocationInfo, &Buffer, &allocation, nullptr) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create buffer!");
+	}
+
+	bufferData->buffer = vk::Buffer(Buffer);
+	bufferData->size = cBufferCreateInfo.size;
+	bufferData->usage = BufferUse;
+	bufferData->allocation = allocation;
+
+	AddBufferLog(bufferData);
+}
+
+
 void BufferManager::AddBufferLog(BufferData* bufferData)
 {
 	if (bufferData->BufferID.empty())
@@ -129,6 +158,7 @@ void BufferManager::CreateGPUOptimisedBuffer(BufferData* bufferData,const void* 
 	VmaAllocationCreateInfo vertexAllocInfo = {};
 	vertexAllocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
 	vertexAllocInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+
 
 	VkBuffer cVertexbuffer;
 	VmaAllocation VertexBufferAllocation;

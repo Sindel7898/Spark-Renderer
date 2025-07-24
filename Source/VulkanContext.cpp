@@ -38,12 +38,16 @@ void VulkanContext::SelectGPU_CreateDevice()
 	deviceFeatures.samplerAnisotropy = VK_TRUE;
 	deviceFeatures.fillModeNonSolid = VK_TRUE;
 
+
 	std::vector<const char*> deviceExtensions = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 		VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME,
 	    VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME,
 		VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
-		VK_EXT_MESH_SHADER_EXTENSION_NAME
+		VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+		VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+		VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+		VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME
 	};
 
 	vkb::PhysicalDeviceSelector selector{ VKB_Instance };
@@ -62,20 +66,17 @@ void VulkanContext::SelectGPU_CreateDevice()
 
 	vkb::PhysicalDevice physicalDevice = physicalDeviceResult.value();
 
-	vk::PhysicalDeviceMultiviewFeaturesKHR multiviewFeatures;
-	multiviewFeatures.multiview = true;
-	multiviewFeatures.pNext = nullptr;
+	vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelerationFeatures{};
+	accelerationFeatures.accelerationStructure = true;
+	accelerationFeatures.pNext = nullptr;
 
-	vk::PhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures;
-	meshShaderFeatures.taskShader = vk::True;
-	meshShaderFeatures.meshShader = vk::True;
-	meshShaderFeatures.meshShaderQueries = vk::True;
-	meshShaderFeatures.multiviewMeshShader = vk::True;
-	meshShaderFeatures.pNext = &multiviewFeatures;
-	
+	vk::PhysicalDeviceRayTracingPipelineFeaturesKHR   rtPipeLineFeatures{};
+	rtPipeLineFeatures.rayTracingPipeline = true;
+	rtPipeLineFeatures.pNext = &accelerationFeatures;
+
 	vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT extendedDynamicState3Features{};
 	extendedDynamicState3Features.extendedDynamicState3PolygonMode = vk::True;
-	extendedDynamicState3Features.pNext = &meshShaderFeatures;
+	extendedDynamicState3Features.pNext = &rtPipeLineFeatures;
 
 	vk::PhysicalDeviceVulkan12Features features_1_2{};
 	features_1_2.sType = vk::StructureType::ePhysicalDeviceVulkan12Features;
@@ -113,6 +114,23 @@ void VulkanContext::SelectGPU_CreateDevice()
 	//Print out name of GPU being used
 	PhysicalDevice = physicalDevice.physical_device;
 	std::cout << "GPU: " << std::string_view(PhysicalDevice.getProperties().deviceName) << std::endl;
+	
+	///
+
+	vk::PhysicalDeviceAccelerationStructurePropertiesKHR AccelerationStructureProperties{};
+	AccelerationStructureProperties.pNext = nullptr;
+
+	vk::PhysicalDeviceRayTracingPipelinePropertiesKHR RayTracingPipelineProperties{};
+	RayTracingPipelineProperties.pNext = &AccelerationStructureProperties;
+
+	vk::PhysicalDeviceProperties2 prop2{};
+	prop2.pNext = &RayTracingPipelineProperties;
+
+	PhysicalDevice.getProperties2(&prop2);
+
+	std::cout << "Max Ray Recursion Depth: "  << RayTracingPipelineProperties.maxRayRecursionDepth << std::endl;
+	std::cout << "Shader Group Handle Size: " << RayTracingPipelineProperties.shaderGroupHandleSize << " bytes" << std::endl;
+	std::cout << "Acceleration Structure Max Instance Count " << AccelerationStructureProperties.maxInstanceCount << std::endl;
 
 
 	if (!PhysicalDevice.getFeatures().samplerAnisotropy) {
@@ -125,9 +143,12 @@ void VulkanContext::SelectGPU_CreateDevice()
 	graphicsQueueFamilyIndex = VKB_Device.get_queue_index(vkb::QueueType::graphics).value();
 
 
-	vkCmdSetPolygonModeEXT = (PFN_vkCmdSetPolygonModeEXT) vkGetDeviceProcAddr(LogicalDevice, "vkCmdSetPolygonModeEXT");
-	vkcmdDrawMeshTaskEXT   = (PFN_vkCmdDrawMeshTasksEXT)  vkGetDeviceProcAddr(LogicalDevice, "vkCmdDrawMeshTasksEXT");
-	
+	vkCmdSetPolygonModeEXT   = (PFN_vkCmdSetPolygonModeEXT) vkGetDeviceProcAddr(LogicalDevice, "vkCmdSetPolygonModeEXT");
+	vkCreateAccelerationStructureKHR = (PFN_vkCreateAccelerationStructureKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCreateAccelerationStructureKHR");
+	vkDestroyAccelerationStructureKHR = (PFN_vkDestroyAccelerationStructureKHR)vkGetDeviceProcAddr(LogicalDevice, "vkDestroyAccelerationStructureKHR");
+	vkCmdBuildAccelerationStructuresKHR = (PFN_vkCmdBuildAccelerationStructuresKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCmdBuildAccelerationStructuresKHR");
+	vkGetAccelerationStructureBuildSizesKHR = (PFN_vkGetAccelerationStructureBuildSizesKHR)vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureBuildSizesKHR");
+
 }
 
 void VulkanContext::createSurface()

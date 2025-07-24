@@ -29,6 +29,7 @@ public:
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
     void CubeMapReflectiveSwitch(bool breflective);
     void ScreenSpaceReflectiveSwitch(bool breflective);
+    void CreateBLAS();
 
     void CleanUp() ;
 
@@ -46,8 +47,10 @@ private:
 
     std::string FilePath;
     const StoredModelData* storedModelData = nullptr;
-    BufferData bottomLevelASBuffer;
-    BufferData scratchBuffer;
+    BufferData BLAS_Buffer;
+    BufferData BLAS_ScratchBuffer;
+    vk::AccelerationStructureKHR BLAS;
+
 };
 
 

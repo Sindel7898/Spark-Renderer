@@ -59,9 +59,14 @@ public:
 	Window window; 
 
 
-	///////EXTENSIONS
-	PFN_vkCmdSetPolygonModeEXT vkCmdSetPolygonModeEXT = nullptr;
-	PFN_vkCmdDrawMeshTasksEXT  vkcmdDrawMeshTaskEXT   = nullptr;
+	///////EXTENSIONS 
+	PFN_vkCmdSetPolygonModeEXT                   vkCmdSetPolygonModeEXT            = nullptr;
+	PFN_vkCreateAccelerationStructureKHR         vkCreateAccelerationStructureKHR  = nullptr;
+	PFN_vkDestroyAccelerationStructureKHR        vkDestroyAccelerationStructureKHR = nullptr;
+	PFN_vkCmdBuildAccelerationStructuresKHR      vkCmdBuildAccelerationStructuresKHR = nullptr;
+	PFN_vkGetAccelerationStructureBuildSizesKHR  vkGetAccelerationStructureBuildSizesKHR = nullptr;
+
+
 };
 
 static inline void VulkanContextDeleter(VulkanContext* vulkanContext)
