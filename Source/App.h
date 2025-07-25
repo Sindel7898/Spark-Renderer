@@ -39,6 +39,7 @@ public:
 	double LasttimeStamp = 0.0f;
 	
 	App();
+	void createTLAS();
 	~App();
 
 	

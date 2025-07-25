@@ -60,13 +60,12 @@ public:
 
 
 	///////EXTENSIONS 
-	PFN_vkCmdSetPolygonModeEXT                   vkCmdSetPolygonModeEXT            = nullptr;
-	PFN_vkCreateAccelerationStructureKHR         vkCreateAccelerationStructureKHR  = nullptr;
-	PFN_vkDestroyAccelerationStructureKHR        vkDestroyAccelerationStructureKHR = nullptr;
-	PFN_vkCmdBuildAccelerationStructuresKHR      vkCmdBuildAccelerationStructuresKHR = nullptr;
-	PFN_vkGetAccelerationStructureBuildSizesKHR  vkGetAccelerationStructureBuildSizesKHR = nullptr;
-
-
+	PFN_vkCmdSetPolygonModeEXT                         vkCmdSetPolygonModeEXT            = nullptr;
+	PFN_vkCreateAccelerationStructureKHR               vkCreateAccelerationStructureKHR  = nullptr;
+	PFN_vkDestroyAccelerationStructureKHR              vkDestroyAccelerationStructureKHR = nullptr;
+	PFN_vkCmdBuildAccelerationStructuresKHR            vkCmdBuildAccelerationStructuresKHR = nullptr;
+	PFN_vkGetAccelerationStructureBuildSizesKHR        vkGetAccelerationStructureBuildSizesKHR = nullptr;
+	PFN_vkGetAccelerationStructureDeviceAddressKHR     vkGetAccelerationStructureDeviceAddressKHR = nullptr;
 };
 
 static inline void VulkanContextDeleter(VulkanContext* vulkanContext)

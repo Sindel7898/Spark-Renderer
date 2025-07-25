@@ -148,6 +148,7 @@ void VulkanContext::SelectGPU_CreateDevice()
 	vkDestroyAccelerationStructureKHR = (PFN_vkDestroyAccelerationStructureKHR)vkGetDeviceProcAddr(LogicalDevice, "vkDestroyAccelerationStructureKHR");
 	vkCmdBuildAccelerationStructuresKHR = (PFN_vkCmdBuildAccelerationStructuresKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCmdBuildAccelerationStructuresKHR");
 	vkGetAccelerationStructureBuildSizesKHR = (PFN_vkGetAccelerationStructureBuildSizesKHR)vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureBuildSizesKHR");
+	vkGetAccelerationStructureDeviceAddressKHR = (PFN_vkGetAccelerationStructureDeviceAddressKHR)vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureDeviceAddressKHR");
 
 }
 

@@ -42,6 +42,9 @@ public:
 
     int bCubeMapReflection = 0;
     int bScreenSpaceReflection = 0;
+
+    vk::AccelerationStructureKHR BLAS;
+
 private:
 
 
@@ -49,7 +52,6 @@ private:
     const StoredModelData* storedModelData = nullptr;
     BufferData BLAS_Buffer;
     BufferData BLAS_ScratchBuffer;
-    vk::AccelerationStructureKHR BLAS;
 
 };
 
