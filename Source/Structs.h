@@ -1,4 +1,5 @@
 #pragma once
+#include "Drawable.h"
 
 struct Vertex {
     glm::vec2 position;

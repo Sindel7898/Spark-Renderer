@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(VulkanRenderer)
+project(Spark)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -50,13 +50,13 @@ file(GLOB SOURCES "Source/*.cpp" "Source/*.c")
 find_package(Vulkan REQUIRED)
 
 # Create the executable
-add_executable(VulkanRenderer ${SOURCES}
+add_executable(Spark ${SOURCES}
                               ${TRACY_SOURCES} 
                               ${IMGUI_SRC} 
                               ${IMGUI_BACKEND_SRC} 
                               ${ImGuizmo_SRC})
 
-target_include_directories(VulkanRenderer PRIVATE 
+target_include_directories(Spark PRIVATE 
     ${CMAKE_SOURCE_DIR}/src
     External/src/VulkanMemoryAllocator
     External/src/imgui
@@ -68,9 +68,9 @@ target_include_directories(VulkanRenderer PRIVATE
     ${CMAKE_SOURCE_DIR}/External/glfw/include
     ${CMAKE_SOURCE_DIR}/External/tracy/public/tracy
 )
-target_compile_definitions(VulkanRenderer PRIVATE TRACY_ENABLE)
+target_compile_definitions(Spark PRIVATE TRACY_ENABLE)
 
-target_link_libraries(VulkanRenderer PRIVATE 
+target_link_libraries(Spark PRIVATE 
     glfw 
     glm 
     vk-bootstrap 

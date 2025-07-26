@@ -40,6 +40,7 @@ public:
 	
 	App();
 	void createTLAS();
+	void createShaderBindingTables();
 	~App();
 
 	

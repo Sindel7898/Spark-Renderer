@@ -77,6 +77,7 @@ void Model::CreateVertexAndIndexBuffer()
 
 void Model::CreateBLAS()
 {
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	vk::BufferDeviceAddressInfo VertexBufferDeviceAdressesInfo;
 	VertexBufferDeviceAdressesInfo.buffer = vertexBufferData.buffer;
 
@@ -84,15 +85,16 @@ void Model::CreateBLAS()
 	IndexDeviceAdressesInfo.buffer = indexBufferData.buffer;
 
 	//Add an offset so we always point to the address of the verticies
-	auto verticiesAddress = vulkanContext->LogicalDevice.getBufferAddress(VertexBufferDeviceAdressesInfo);
-	
+	auto vertexBufferAddress = vulkanContext->LogicalDevice.getBufferAddress(VertexBufferDeviceAdressesInfo);
+	auto indexBufferAddress  = vulkanContext->LogicalDevice.getBufferAddress(IndexDeviceAdressesInfo);
+
 	//Triangle Data
 	vk::AccelerationStructureGeometryTrianglesDataKHR BLAS_TriangleData {};
 	BLAS_TriangleData.vertexFormat = vk::Format::eR32G32B32Sfloat;
-	BLAS_TriangleData.vertexData.deviceAddress = verticiesAddress;
+	BLAS_TriangleData.vertexData.deviceAddress = vertexBufferAddress;
 	BLAS_TriangleData.vertexStride = sizeof(ModelVertex);
 	BLAS_TriangleData.maxVertex    = storedModelData->VertexData.size() - 1;
-	BLAS_TriangleData.indexData.deviceAddress = vulkanContext->LogicalDevice.getBufferAddress(IndexDeviceAdressesInfo);
+	BLAS_TriangleData.indexData.deviceAddress = indexBufferAddress;
 	BLAS_TriangleData.indexType = vk::IndexType::eUint32;
 	BLAS_TriangleData.transformData.deviceAddress = 0;
 	BLAS_TriangleData.transformData.hostAddress = nullptr;
@@ -106,6 +108,7 @@ void Model::CreateBLAS()
 	AccelerationStructureGeometry.geometryType = vk::GeometryTypeKHR::eTriangles;
 	AccelerationStructureGeometry.flags = vk::GeometryFlagBitsKHR::eOpaque;
 	AccelerationStructureGeometry.geometry = AccelerationStructureGeometryData;
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 	uint32_t maxPrimitiveCount = storedModelData->IndexData.size() / 3;
@@ -132,6 +135,9 @@ void Model::CreateBLAS()
 	vulkanContext->vkGetAccelerationStructureBuildSizesKHR(vulkanContext->LogicalDevice, VkAccelerationStructureBuildTypeKHR::VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &TempGI, &maxPrimitiveCount, &TempASBuildSizeInfo);
 	vk::AccelerationStructureBuildSizesInfoKHR ASBuildSizeInfo = TempASBuildSizeInfo;
 
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// 
+	// 
 	// Create Scratch buffer and BLAS buffer based on the size calculated  
 	BLAS_ScratchBuffer.BufferID = "Model BLAS_ScratchBuffer Buffer";
 	bufferManager->CreateDeviceBuffer(&BLAS_ScratchBuffer,
@@ -142,16 +148,7 @@ void Model::CreateBLAS()
 		                               commandPool,
 		                               vulkanContext->graphicsQueue);
 
-	BLAS_Buffer.BufferID = "Model bottomLevelASBuffer Buffer";
-	bufferManager->CreateDeviceBuffer(&BLAS_Buffer,
-		                              ASBuildSizeInfo.accelerationStructureSize, 
-		                              vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
-		                              vk::BufferUsageFlagBits::eShaderDeviceAddress, 
-		                              commandPool,
-		                              vulkanContext->graphicsQueue);
 
-
-	
 	vk::AccelerationStructureCreateInfoKHR AccelerationStructureCreateInfo;
 	AccelerationStructureCreateInfo.buffer = BLAS_Buffer.buffer;
 	AccelerationStructureCreateInfo.offset = 0;
@@ -168,6 +165,14 @@ void Model::CreateBLAS()
 	AccelerationStructureCreateInfo = tempASCI;
 	BLAS = tempBLAS;
 
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	BLAS_Buffer.BufferID = "Model bottomLevelASBuffer Buffer";
+	bufferManager->CreateDeviceBuffer(&BLAS_Buffer,
+		ASBuildSizeInfo.accelerationStructureSize,
+		vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
+		vk::BufferUsageFlagBits::eShaderDeviceAddress,
+		commandPool,
+		vulkanContext->graphicsQueue);
 
 	vk::BufferDeviceAddressInfo BLAS_ScratchBufferAdress;
 	BLAS_ScratchBufferAdress.buffer = BLAS_ScratchBuffer.buffer;
@@ -175,6 +180,7 @@ void Model::CreateBLAS()
 
 	AccelerationStructureBuildGeometryInfo.dstAccelerationStructure  = BLAS;
 	AccelerationStructureBuildGeometryInfo.scratchData.deviceAddress = vulkanContext->LogicalDevice.getBufferAddress(BLAS_ScratchBufferAdress);
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	vk::CommandBuffer cmd =  bufferManager->CreateSingleUseCommandBuffer(commandPool);
 
@@ -188,6 +194,8 @@ void Model::CreateBLAS()
 		                                               accelerationBuildStructureRangeInfos.data());
 
 	bufferManager->SubmitAndDestoyCommandBuffer(commandPool, cmd, vulkanContext->graphicsQueue);
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 }
 
 void Model::CreateUniformBuffer()
@@ -253,6 +261,7 @@ void Model::createDescriptorSetLayout()
 	}
 
 }
+
 
 void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 {
@@ -341,7 +350,6 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 	}
 
 }
-
 
 void Model::UpdateUniformBuffer(uint32_t currentImage)
 {

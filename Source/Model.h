@@ -33,6 +33,7 @@ public:
 
     void CleanUp() ;
 
+    vk::DescriptorSetLayout  RayTracingDescriptorSetLayout;
 
     ImageData  albedoTextureData;
     ImageData  normalTextureData;
