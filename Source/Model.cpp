@@ -54,7 +54,7 @@ void Model::LoadTextures()
 
 	MetallicRoughnessTextureData = bufferManager->CreateTextureImage(MetallicRoughnessImageData.imageData, MetallicRoughnessImagesize, MetallicRoughnessImageData.imageWidth, MetallicRoughnessImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
 
-
+	
 }
 
 void Model::CreateVertexAndIndexBuffer()
@@ -149,22 +149,6 @@ void Model::CreateBLAS()
 		                               vulkanContext->graphicsQueue);
 
 
-	vk::AccelerationStructureCreateInfoKHR AccelerationStructureCreateInfo;
-	AccelerationStructureCreateInfo.buffer = BLAS_Buffer.buffer;
-	AccelerationStructureCreateInfo.offset = 0;
-	AccelerationStructureCreateInfo.size = ASBuildSizeInfo.accelerationStructureSize;
-	AccelerationStructureCreateInfo.type = vk::AccelerationStructureTypeKHR::eBottomLevel;
-
-	//Temp hold
-	VkAccelerationStructureCreateInfoKHR tempASCI = AccelerationStructureCreateInfo;
-	VkAccelerationStructureKHR tempBLAS           = BLAS;
-
-	vulkanContext->vkCreateAccelerationStructureKHR(vulkanContext->LogicalDevice,&tempASCI,nullptr, &tempBLAS);
-
-	//Reassighn vulkan hpp types
-	AccelerationStructureCreateInfo = tempASCI;
-	BLAS = tempBLAS;
-
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	BLAS_Buffer.BufferID = "Model bottomLevelASBuffer Buffer";
 	bufferManager->CreateDeviceBuffer(&BLAS_Buffer,
@@ -176,6 +160,23 @@ void Model::CreateBLAS()
 
 	vk::BufferDeviceAddressInfo BLAS_ScratchBufferAdress;
 	BLAS_ScratchBufferAdress.buffer = BLAS_ScratchBuffer.buffer;
+
+
+	vk::AccelerationStructureCreateInfoKHR AccelerationStructureCreateInfo;
+	AccelerationStructureCreateInfo.buffer = BLAS_Buffer.buffer;
+	AccelerationStructureCreateInfo.offset = 0;
+	AccelerationStructureCreateInfo.size = ASBuildSizeInfo.accelerationStructureSize;
+	AccelerationStructureCreateInfo.type = vk::AccelerationStructureTypeKHR::eBottomLevel;
+
+	//Temp hold
+	VkAccelerationStructureCreateInfoKHR tempASCI = AccelerationStructureCreateInfo;
+	VkAccelerationStructureKHR tempBLAS = BLAS;
+
+	vulkanContext->vkCreateAccelerationStructureKHR(vulkanContext->LogicalDevice, &tempASCI, nullptr, &tempBLAS);
+
+	//Reassighn vulkan hpp types
+	AccelerationStructureCreateInfo = tempASCI;
+	BLAS = tempBLAS;
 
 
 	AccelerationStructureBuildGeometryInfo.dstAccelerationStructure  = BLAS;

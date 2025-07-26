@@ -28,6 +28,7 @@ class VulkanContext;
 class FramesPerSecondCounter;
 class Light;
 class Grass;
+class RayTracing;
 struct GBuffer;
 
 class App
@@ -98,6 +99,8 @@ public:
 	std::shared_ptr<SSAOBlur_FullScreenQuad>     ssaoBlur_FullScreenQuad = nullptr;
 	std::shared_ptr<FXAA_FullScreenQuad>         fxaa_FullScreenQuad = nullptr;
 	std::shared_ptr<SSR_FullScreenQuad>          ssr_FullScreenQuad = nullptr;
+	std::shared_ptr<RayTracing>                  Raytracing_Shadows = nullptr;
+
 
 	VkDescriptorSet FinalRenderTextureId;
 	VkDescriptorSet SSRTextureId;
@@ -136,6 +139,7 @@ private:
 	vk::PipelineLayout         SSAOPipelineLayout = nullptr;
 	vk::PipelineLayout         SSAOBlurPipelineLayout = nullptr;
 	vk::PipelineLayout         SSRPipelineLayout = nullptr;
+	vk::PipelineLayout         RT_ShadowsPipelineLayout = nullptr;
 
 	vk::Pipeline               DeferedLightingPassPipeline = nullptr;
 	vk::Pipeline               FXAAPassPipeline = nullptr;
@@ -145,6 +149,7 @@ private:
 	vk::Pipeline               SSAOPipeline = nullptr;
 	vk::Pipeline               SSAOBlurPipeline = nullptr;
 	vk::Pipeline               SSRPipeline = nullptr;
+	vk::Pipeline               RT_ShadowsPassPipeline = nullptr;
 
 
 	vk::CommandPool            commandPool = nullptr;

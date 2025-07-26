@@ -149,6 +149,7 @@ void VulkanContext::SelectGPU_CreateDevice()
 	vkCmdBuildAccelerationStructuresKHR = (PFN_vkCmdBuildAccelerationStructuresKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCmdBuildAccelerationStructuresKHR");
 	vkGetAccelerationStructureBuildSizesKHR = (PFN_vkGetAccelerationStructureBuildSizesKHR)vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureBuildSizesKHR");
 	vkGetAccelerationStructureDeviceAddressKHR = (PFN_vkGetAccelerationStructureDeviceAddressKHR)vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureDeviceAddressKHR");
+	vkCreateRayTracingPipelinesKHR = (PFN_vkCreateRayTracingPipelinesKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCreateRayTracingPipelinesKHR");
 
 }
 
@@ -247,6 +248,33 @@ vk::Pipeline VulkanContext::createGraphicsPipeline(vk::PipelineRenderingCreateIn
 
 	return graphicsPipeline;
 }
+
+vk::Pipeline VulkanContext::createRayTracingGraphicsPipeline(vk::PipelineLayout pipelineLayout, std::vector<vk::PipelineShaderStageCreateInfo> ShaderStage, std::vector<vk::RayTracingShaderGroupCreateInfoKHR> RayTracingshaderGroups)
+{
+	vk::RayTracingPipelineCreateInfoKHR rtPipelineInfo{};
+	rtPipelineInfo.stageCount                   = ShaderStage.size();              
+	rtPipelineInfo.pStages                      = ShaderStage.data();
+	rtPipelineInfo.groupCount                   = RayTracingshaderGroups.size();           
+	rtPipelineInfo.pGroups                      = RayTracingshaderGroups.data();
+	rtPipelineInfo.maxPipelineRayRecursionDepth = 1;            // typical minimum  *******REMEMBER TO ASK GPU INSTEAD********
+	rtPipelineInfo.layout                       = pipelineLayout;
+
+	VkRayTracingPipelineCreateInfoKHR rtinfo = rtPipelineInfo;
+
+	VkPipeline TEMP_graphicsPipeline;
+		
+	VkResult result =  vkCreateRayTracingPipelinesKHR(LogicalDevice, nullptr, nullptr, 1, &rtinfo, nullptr, &TEMP_graphicsPipeline);
+
+	if (result != VkResult::VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create Ray traced graphics pipeline!");
+	}
+
+	vk::Pipeline graphicsPipeline = TEMP_graphicsPipeline;
+
+	return graphicsPipeline;
+}
+
 
 vk::Format VulkanContext::FindCompatableDepthFormat()
 {

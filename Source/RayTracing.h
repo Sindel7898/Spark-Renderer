@@ -24,12 +24,7 @@ public:
     void CleanUp() ;
 
     vk::DescriptorSetLayout  RayTracingDescriptorSetLayout;
-    std::vector<vk::DescriptorSet> DescriptorSets;
-
-    VertexUniformData vertexdata{};
-
-    int bCubeMapReflection = 0;
-    int bScreenSpaceReflection = 0;
+    std::vector<vk::DescriptorSet> RayTracingDescriptorSets;
 
     ImageData ShadowPassImage;
 private:

@@ -11,6 +11,7 @@ RayTracing::RayTracing( VulkanContext* vulkancontext, vk::CommandPool commandpoo
 	camera        = rcamera;
 	CreateUniformBuffer();
 	CreateStorageImage();
+	createRayTracingDescriptorSetLayout();
 }
 void RayTracing::CreateUniformBuffer() {
 
@@ -20,8 +21,9 @@ void RayTracing::CreateStorageImage() {
 
 	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
-	bufferManager->CreateImage(&ShadowPassImage, swapchainextent, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled);
-	ShadowPassImage.imageView = bufferManager->CreateImageView(&ShadowPassImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	ShadowPassImage.ImageID = "RT Shadow Pass Image";
+	bufferManager->CreateImage(&ShadowPassImage, swapchainextent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled);
+	ShadowPassImage.imageView = bufferManager->CreateImageView(&ShadowPassImage, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
 	ShadowPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 
@@ -81,9 +83,9 @@ void RayTracing::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool
 		allocinfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 		allocinfo.pSetLayouts = layouts.data();
 
-		DescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+		RayTracingDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
 
-		vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, DescriptorSets.data());
+		vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, RayTracingDescriptorSets.data());
 
 		////////////////////////////////////////////////////////////////////////////////////////////////
 		//specifies what exactly to send
@@ -94,7 +96,7 @@ void RayTracing::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool
 			descriptorAccelerationStructureInfo.pAccelerationStructures = &TLAS;
 
 			vk::WriteDescriptorSet TLAS_descriptorWrite{};
-			TLAS_descriptorWrite.dstSet = DescriptorSets[i];
+			TLAS_descriptorWrite.dstSet = RayTracingDescriptorSets[i];
 			TLAS_descriptorWrite.dstBinding = 0;
 			TLAS_descriptorWrite.dstArrayElement = 0;
 			TLAS_descriptorWrite.descriptorType = vk::DescriptorType::eAccelerationStructureKHR;
@@ -108,7 +110,7 @@ void RayTracing::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool
 			PositionImageInfo.sampler     = gbuffer.Position.imageSampler;
 
 			vk::WriteDescriptorSet PositionSamplerdescriptorWrite{};
-			PositionSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+			PositionSamplerdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
 			PositionSamplerdescriptorWrite.dstBinding = 1;
 			PositionSamplerdescriptorWrite.dstArrayElement = 0;
 			PositionSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -122,7 +124,7 @@ void RayTracing::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool
 			NormalimageInfo.sampler     = gbuffer.Normal.imageSampler;
 
 			vk::WriteDescriptorSet NormalSamplerdescriptorWrite{};
-			NormalSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+			NormalSamplerdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
 			NormalSamplerdescriptorWrite.dstBinding = 2;
 			NormalSamplerdescriptorWrite.dstArrayElement = 0;
 			NormalSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -136,7 +138,7 @@ void RayTracing::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool
 			StoreageImageInfo.sampler     = ShadowPassImage.imageSampler;
 
 			vk::WriteDescriptorSet StoreageImagSamplerdescriptorWrite{};
-			StoreageImagSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+			StoreageImagSamplerdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
 			StoreageImagSamplerdescriptorWrite.dstBinding = 3;
 			StoreageImagSamplerdescriptorWrite.dstArrayElement = 0;
 			StoreageImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;

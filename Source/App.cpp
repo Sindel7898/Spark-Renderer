@@ -10,9 +10,9 @@
 #include "FramesPerSecondCounter.h"
 #include "Light.h"
 #include "Grass.h"
+#include "RayTracing.h"
 
 #include <crtdbg.h>
-
 
 #define DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
 
@@ -76,6 +76,7 @@
 	ssaoBlur_FullScreenQuad = std::shared_ptr<SSAOBlur_FullScreenQuad>(new SSAOBlur_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSAOBlur_FullScreenQuadDeleter);
 	fxaa_FullScreenQuad     = std::shared_ptr<FXAA_FullScreenQuad>(new FXAA_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), FXAA_FullScreenQuadDeleter);
 	ssr_FullScreenQuad      = std::shared_ptr<SSR_FullScreenQuad>(new SSR_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSR_FullScreenQuadDeleter);
+	Raytracing_Shadows      = std::shared_ptr<RayTracing>(new RayTracing(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), RayTracingDeleter);
 
 	lights.reserve(2);
 
@@ -105,8 +106,8 @@
 	createCommandBuffer();
 	CreateGraphicsPipeline();
 	createDepthTextureImage();
-	createGBuffer();
 	createTLAS();
+	createGBuffer();
 }
 
  void App::createTLAS()
@@ -163,7 +164,7 @@
 	 accelerationStructureGeometry.geometryType = vk::GeometryTypeKHR::eInstances;
 	 accelerationStructureGeometry.flags = vk::GeometryFlagBitsKHR::eOpaque;
 	 accelerationStructureGeometry.geometry.instances.sType = vk::StructureType::eAccelerationStructureGeometryInstancesDataKHR;
-	 accelerationStructureGeometry.geometry.instances.arrayOfPointers = vk::True;
+	 accelerationStructureGeometry.geometry.instances.arrayOfPointers = vk::False;
 	 accelerationStructureGeometry.geometry.instances.data = instanceDataDeviceAddresstance;
 
 	 // Get size info
@@ -269,7 +270,16 @@ void App::createDescriptorPool()
 	Samplerpoolsize.type = vk::DescriptorType::eCombinedImageSampler;
 	Samplerpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 100;
 
-	std::array<	vk::DescriptorPoolSize, 2> poolSizes{ Uniformpoolsize ,Samplerpoolsize };
+	vk::DescriptorPoolSize AccelerationStructurepoolsize;
+	AccelerationStructurepoolsize.type = vk::DescriptorType::eAccelerationStructureKHR;
+	AccelerationStructurepoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 2;
+
+	vk::DescriptorPoolSize StorageImagepoolsize;
+	StorageImagepoolsize.type = vk::DescriptorType::eStorageImage;
+	StorageImagepoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 2;
+
+	std::array<	vk::DescriptorPoolSize, 4> poolSizes{ Uniformpoolsize ,Samplerpoolsize,
+		                                              AccelerationStructurepoolsize,StorageImagepoolsize };
 
 	vk::DescriptorPoolCreateInfo poolInfo{};
 	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
@@ -389,7 +399,7 @@ void App::createGBuffer()
 	ssaoBlur_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
 	fxaa_FullScreenQuad->createDescriptorSets(DescriptorPool, LightingPassImageData);
 	ssr_FullScreenQuad->createDescriptorSets(DescriptorPool, LightingPassImageData, gbuffer.ViewSpaceNormal,gbuffer.ViewSpacePosition, DepthTextureData, ReflectionMaskImageData,gbuffer.Materials);
-
+	Raytracing_Shadows->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
 	vk::CommandBuffer commandBuffer = bufferManger->CreateSingleUseCommandBuffer(commandPool);
 
 	ImageTransitionData transitionInfo{};
@@ -1130,6 +1140,84 @@ void App::CreateGraphicsPipeline()
 
 		vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
 		vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
+	}
+
+	///////////////////////////////////////////RAY TRACING PIPELINES////////////////////////////////////////////////////////////////
+
+	{
+		auto RayGen_ShaderCode        = readFile("../Shaders/Compiled_Shader_Files/raygen.rgen.spv");
+		auto RayMiss_ShaderCode       = readFile("../Shaders/Compiled_Shader_Files/shadow.rmiss.spv");
+		auto RayClosestHit_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/closesthit.rchit.spv");
+
+		VkShaderModule RayGen_ShaderModule        = createShaderModule(RayGen_ShaderCode);
+		VkShaderModule RayMiss_ShaderModule       = createShaderModule(RayMiss_ShaderCode);
+		VkShaderModule RayClosestHit_ShaderModule = createShaderModule(RayClosestHit_ShaderCode);
+
+		vk::PipelineShaderStageCreateInfo RayGen_ShaderStageInfo{};
+		RayGen_ShaderStageInfo.sType      = vk::StructureType::ePipelineShaderStageCreateInfo;
+		RayGen_ShaderStageInfo.stage      = vk::ShaderStageFlagBits::eRaygenKHR;
+		RayGen_ShaderStageInfo.module     = RayGen_ShaderModule;
+		RayGen_ShaderStageInfo.pName      = "main";
+
+		vk::PipelineShaderStageCreateInfo RayMiss_ShaderStageInfo{};
+		RayMiss_ShaderStageInfo.sType     = vk::StructureType::ePipelineShaderStageCreateInfo;
+		RayMiss_ShaderStageInfo.stage     = vk::ShaderStageFlagBits::eMissKHR;
+		RayMiss_ShaderStageInfo.module    = RayMiss_ShaderModule;
+		RayMiss_ShaderStageInfo.pName     = "main";
+
+		vk::PipelineShaderStageCreateInfo    RayClosestHit_ShaderStageInfo{};
+		RayClosestHit_ShaderStageInfo.sType  = vk::StructureType::ePipelineShaderStageCreateInfo;
+		RayClosestHit_ShaderStageInfo.stage  = vk::ShaderStageFlagBits::eClosestHitKHR;
+		RayClosestHit_ShaderStageInfo.module = RayClosestHit_ShaderModule;
+		RayClosestHit_ShaderStageInfo.pName  = "main";
+	
+
+	   std::vector<vk::PipelineShaderStageCreateInfo> ShaderStages = { RayGen_ShaderStageInfo ,
+			                                                           RayMiss_ShaderStageInfo,
+		                                                               RayClosestHit_ShaderStageInfo };
+
+
+	   vk::RayTracingShaderGroupCreateInfoKHR RayGen_GroupInfo{};
+	   RayGen_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
+	   RayGen_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
+	   RayGen_GroupInfo.generalShader = 0;
+	   RayGen_GroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
+	   RayGen_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
+	   RayGen_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+
+	   vk::RayTracingShaderGroupCreateInfoKHR Miss_GroupInfo{};
+	   Miss_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
+	   Miss_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
+	   Miss_GroupInfo.generalShader = 1;
+	   Miss_GroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
+	   Miss_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
+	   Miss_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+
+	   vk::RayTracingShaderGroupCreateInfoKHR Hit_GroupInfo{};
+	   Hit_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
+	   Hit_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup;
+	   Hit_GroupInfo.generalShader = VK_SHADER_UNUSED_KHR;
+	   Hit_GroupInfo.closestHitShader = 2;
+	   Hit_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
+	   Hit_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+
+	   std::vector<vk::RayTracingShaderGroupCreateInfoKHR> ShaderGroups = { RayGen_GroupInfo ,Miss_GroupInfo ,Hit_GroupInfo };
+
+
+	   vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+	   pipelineLayoutInfo.setLayoutCount = 1;
+	   pipelineLayoutInfo.setSetLayouts(Raytracing_Shadows->RayTracingDescriptorSetLayout);
+	   pipelineLayoutInfo.pushConstantRangeCount = 0;
+	   pipelineLayoutInfo.pPushConstantRanges = nullptr;
+
+	   RT_ShadowsPipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+	   
+	   RT_ShadowsPassPipeline = vulkanContext->createRayTracingGraphicsPipeline(RT_ShadowsPipelineLayout, ShaderStages, ShaderGroups);
+	   
+	   vulkanContext->LogicalDevice.destroyShaderModule(RayGen_ShaderModule);
+	   vulkanContext->LogicalDevice.destroyShaderModule(RayMiss_ShaderModule);
+	   vulkanContext->LogicalDevice.destroyShaderModule(RayClosestHit_ShaderModule);
+
 	}
 
 
