@@ -167,4 +167,10 @@ private:
 
 	ImageData LightingPassImageData;
 	ImageData ReflectionMaskImageData;
+
+	BufferData TLAS_Buffer;
+	BufferData TLAS_SCRATCH_Buffer;
+	BufferData TLAS_InstanceData;
+	vk::AccelerationStructureKHR TLAS;
+
 };

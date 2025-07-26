@@ -111,10 +111,6 @@
 
  void App::createTLAS()
  {
-	 BufferData TLAS_Buffer;
-	 BufferData TLAS_SCRATCH_Buffer;
-
-	 vk::AccelerationStructureKHR TLAS;
 
 	 vk::AccelerationStructureDeviceAddressInfoKHR blasinfo{};
 	 blasinfo.accelerationStructure = Models[0]->BLAS;
@@ -137,18 +133,17 @@
 	 instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
 	 instance.accelerationStructureReference = vulkanContext->vkGetAccelerationStructureDeviceAddressKHR(vulkanContext->LogicalDevice, &Temp);
 
-	 BufferData InstanceData;
-	 InstanceData.BufferID = "Scene TLAS InstanceData";
+	 TLAS_InstanceData.BufferID = "Scene TLAS InstanceData Buffer";
 
-	 bufferManger->CreateBuffer(&InstanceData, sizeof(vk::AccelerationStructureInstanceKHR),
+	 bufferManger->CreateBuffer(&TLAS_InstanceData, sizeof(vk::AccelerationStructureInstanceKHR),
 		                        vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR |
 		                        vk::BufferUsageFlagBits::eShaderDeviceAddress, commandPool, vulkanContext->graphicsQueue);
 
-	 bufferManger->CopyDataToBuffer(&instance,InstanceData);
+	 bufferManger->CopyDataToBuffer(&instance, TLAS_InstanceData);
 	
 
 	 vk::BufferDeviceAddressInfo InstanceInfo{};
-	 InstanceInfo.buffer = InstanceData.buffer;
+	 InstanceInfo.buffer = TLAS_InstanceData.buffer;
 
 	 vk::DeviceOrHostAddressConstKHR instanceDataDeviceAddresstance{};
 	 instanceDataDeviceAddresstance.deviceAddress = vulkanContext->LogicalDevice.getBufferAddress(InstanceInfo);
@@ -217,14 +212,9 @@
 	 vk::BufferDeviceAddressInfo TLAS_ScratchBufferAdress;
 	 TLAS_ScratchBufferAdress.buffer = TLAS_SCRATCH_Buffer.buffer;
 
-	 vk::AccelerationStructureBuildGeometryInfoKHR accelerationBuildGeometryInfo{};
-	 accelerationBuildGeometryInfo.type = vk::AccelerationStructureTypeKHR::eTopLevel;
-	 accelerationBuildGeometryInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
-	 accelerationBuildGeometryInfo.mode = vk::BuildAccelerationStructureModeKHR::eBuild;
-	 accelerationBuildGeometryInfo.dstAccelerationStructure = TLAS;
-	 accelerationBuildGeometryInfo.geometryCount = 1;
-	 accelerationBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
-	 accelerationBuildGeometryInfo.scratchData.deviceAddress = vulkanContext->LogicalDevice.getBufferAddress(TLAS_ScratchBufferAdress);
+
+	 accelerationStructureBuildGeometryInfo.dstAccelerationStructure = TLAS;
+	 accelerationStructureBuildGeometryInfo.scratchData.deviceAddress = vulkanContext->LogicalDevice.getBufferAddress(TLAS_ScratchBufferAdress);
 
 	 vk::CommandBuffer cmd = bufferManger->CreateSingleUseCommandBuffer(commandPool);
 
@@ -237,7 +227,7 @@
 	 VkAccelerationStructureBuildRangeInfoKHR tempRange = BuildRangeInfo;
 	 std::vector<VkAccelerationStructureBuildRangeInfoKHR*> accelerationBuildStructureRangeInfos = { &tempRange };
 
-	 VkAccelerationStructureBuildGeometryInfoKHR tempGeometryInfo = accelerationBuildGeometryInfo;
+	 VkAccelerationStructureBuildGeometryInfoKHR tempGeometryInfo = accelerationStructureBuildGeometryInfo;
 
 	 vulkanContext->vkCmdBuildAccelerationStructuresKHR(cmd, 1,
 		 &tempGeometryInfo,
@@ -1983,6 +1973,11 @@ void App::DestroyBuffers()
 	ssaoBlur_FullScreenQuad.reset();
 	fxaa_FullScreenQuad.reset();
 	ssr_FullScreenQuad.reset();
+
+	bufferManger->DestroyBuffer(TLAS_Buffer);
+	bufferManger->DestroyBuffer(TLAS_SCRATCH_Buffer);
+	bufferManger->DestroyBuffer(TLAS_InstanceData);
+	vulkanContext->vkDestroyAccelerationStructureKHR(vulkanContext->LogicalDevice, static_cast<VkAccelerationStructureKHR>(TLAS),nullptr);
 	bufferManger.reset();
 }
 
