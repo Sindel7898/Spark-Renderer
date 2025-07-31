@@ -2006,7 +2006,19 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, TransitionBacktoColorOutput);
 	}
 
+	{
+		
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_ShadowsPassPipeline);
 
+		Raytracing_Shadows->Draw(
+			raygenShaderBindingTableBuffer,
+			hitShaderBindingTableBuffer,
+			missShaderBindingTableBuffer, 
+			commandBuffer, 
+			RT_ShadowsPipelineLayout, 
+			currentFrame);
+
+	}
 
 
 	////////// Transition image in prep for GUI ////////////////////
@@ -2026,6 +2038,9 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, TransitiontoShader); 
 	bufferManger->TransitionImage(commandBuffer, &fxaa_FullScreenQuad->FxaaImage, TransitiontoShader);
 	bufferManger->TransitionImage(commandBuffer, &ssr_FullScreenQuad->SSRImage, TransitiontoShader);
+
+
+
 
 
 	userinterface->RenderUi(commandBuffer, imageIndex);

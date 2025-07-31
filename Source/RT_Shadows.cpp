@@ -165,10 +165,69 @@ void RayTracing::UpdateUniformBuffer(uint32_t currentImage)
 
 }
 
-
-void RayTracing::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)
+uint32_t RayTracing::alignedSize(uint32_t value, uint32_t alignment)
 {
+	return (value + alignment - 1) & ~(alignment - 1);
+}
 
+
+void RayTracing::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferData RayMisBuffer, vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
+{
+	vk::BufferDeviceAddressInfo raygenShaderBindingTableDeviceAdressesInfo;
+	raygenShaderBindingTableDeviceAdressesInfo.buffer = RayGenBuffer.buffer;
+
+	vk::BufferDeviceAddressInfo missShaderBindingTableDeviceAdressesInfo;
+	missShaderBindingTableDeviceAdressesInfo.buffer = RayHitBuffer.buffer;
+
+	vk::BufferDeviceAddressInfo hitShaderBindingTableDeviceAdressesInfo;
+	hitShaderBindingTableDeviceAdressesInfo.buffer = RayMisBuffer.buffer;
+
+	auto raygenShaderBindingTableAdress = vulkanContext->LogicalDevice.getBufferAddress(raygenShaderBindingTableDeviceAdressesInfo);
+	auto missShaderBindingTableAdress   = vulkanContext->LogicalDevice.getBufferAddress(missShaderBindingTableDeviceAdressesInfo);
+	auto hitShaderBindingTableAdress    = vulkanContext->LogicalDevice.getBufferAddress(hitShaderBindingTableDeviceAdressesInfo);
+
+
+	const uint32_t handleSizeAligned = alignedSize(
+		vulkanContext->RayTracingPipelineProperties.shaderGroupHandleSize,
+		vulkanContext->RayTracingPipelineProperties.shaderGroupHandleAlignment);
+
+	vk::StridedDeviceAddressRegionKHR    raygenShaderSbtEntry{};
+	raygenShaderSbtEntry.deviceAddress = raygenShaderBindingTableAdress;
+	raygenShaderSbtEntry.stride = handleSizeAligned;
+	raygenShaderSbtEntry.size = handleSizeAligned;
+
+
+	vk::StridedDeviceAddressRegionKHR  missShaderSbtEntry{};
+	missShaderSbtEntry.deviceAddress = missShaderBindingTableAdress;
+	missShaderSbtEntry.stride = handleSizeAligned;
+	missShaderSbtEntry.size = handleSizeAligned;
+
+	vk::StridedDeviceAddressRegionKHR hitShaderSbtEntry{};
+	hitShaderSbtEntry.deviceAddress = hitShaderBindingTableAdress;
+	hitShaderSbtEntry.stride = handleSizeAligned;
+	hitShaderSbtEntry.size = handleSizeAligned;
+
+	vk::StridedDeviceAddressRegionKHR callableShaderSbtEntry{};
+
+	VkStridedDeviceAddressRegionKHR  TEMP_raygenShaderSbtEntry   = static_cast<VkStridedDeviceAddressRegionKHR>(raygenShaderSbtEntry);
+	VkStridedDeviceAddressRegionKHR  TEMP_missShaderSbtEntry     = static_cast<VkStridedDeviceAddressRegionKHR>(missShaderSbtEntry);;
+	VkStridedDeviceAddressRegionKHR  TEMP_hitShaderSbtEntry      = static_cast<VkStridedDeviceAddressRegionKHR>(hitShaderSbtEntry);;
+	VkStridedDeviceAddressRegionKHR  TEMP_callableShaderSbtEntry = static_cast<VkStridedDeviceAddressRegionKHR>(callableShaderSbtEntry);;
+
+	int width  = vulkanContext->swapchainExtent.width;
+	int height = vulkanContext->swapchainExtent.height;
+	int depth  = 1;
+	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, pipelinelayout, 0, 1, &RayTracingDescriptorSets[imageIndex],0,nullptr);
+	
+	vulkanContext->vkCmdTraceRaysKHR(
+		commandbuffer,
+		&TEMP_raygenShaderSbtEntry,
+		&TEMP_missShaderSbtEntry,
+		&TEMP_hitShaderSbtEntry,
+		&TEMP_callableShaderSbtEntry,
+		width,
+		height,
+		depth);
 }
 
 

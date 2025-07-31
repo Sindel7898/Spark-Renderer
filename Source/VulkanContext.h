@@ -71,6 +71,7 @@ public:
 	PFN_vkGetAccelerationStructureDeviceAddressKHR     vkGetAccelerationStructureDeviceAddressKHR = nullptr;
 	PFN_vkCreateRayTracingPipelinesKHR                 vkCreateRayTracingPipelinesKHR = nullptr;
 	PFN_vkGetRayTracingShaderGroupHandlesKHR           vkGetRayTracingShaderGroupHandlesKHR = nullptr;
+	PFN_vkCmdTraceRaysKHR                              vkCmdTraceRaysKHR = nullptr;
 
 };
 

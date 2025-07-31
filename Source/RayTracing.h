@@ -19,7 +19,8 @@ public:
     void createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, GBuffer gbuffer);
     void CreateUniformBuffer();
     void UpdateUniformBuffer(uint32_t currentImage);
-    void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex);
+    uint32_t alignedSize(uint32_t value, uint32_t alignment);
+    void Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferData RayMisBuffer, vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
 
     void CleanUp() ;
 

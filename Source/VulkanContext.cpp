@@ -137,14 +137,15 @@ void VulkanContext::SelectGPU_CreateDevice()
 	graphicsQueueFamilyIndex = VKB_Device.get_queue_index(vkb::QueueType::graphics).value();
 
 
-	vkCmdSetPolygonModeEXT   = (PFN_vkCmdSetPolygonModeEXT) vkGetDeviceProcAddr(LogicalDevice, "vkCmdSetPolygonModeEXT");
-	vkCreateAccelerationStructureKHR = (PFN_vkCreateAccelerationStructureKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCreateAccelerationStructureKHR");
-	vkDestroyAccelerationStructureKHR = (PFN_vkDestroyAccelerationStructureKHR)vkGetDeviceProcAddr(LogicalDevice, "vkDestroyAccelerationStructureKHR");
-	vkCmdBuildAccelerationStructuresKHR = (PFN_vkCmdBuildAccelerationStructuresKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCmdBuildAccelerationStructuresKHR");
-	vkGetAccelerationStructureBuildSizesKHR = (PFN_vkGetAccelerationStructureBuildSizesKHR)vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureBuildSizesKHR");
-	vkGetAccelerationStructureDeviceAddressKHR = (PFN_vkGetAccelerationStructureDeviceAddressKHR)vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureDeviceAddressKHR");
-	vkCreateRayTracingPipelinesKHR = (PFN_vkCreateRayTracingPipelinesKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCreateRayTracingPipelinesKHR");
-	vkGetRayTracingShaderGroupHandlesKHR = (PFN_vkGetRayTracingShaderGroupHandlesKHR)vkGetDeviceProcAddr(LogicalDevice, "vkGetRayTracingShaderGroupHandlesKHR");
+	vkCmdSetPolygonModeEXT                      = (PFN_vkCmdSetPolygonModeEXT) vkGetDeviceProcAddr(LogicalDevice, "vkCmdSetPolygonModeEXT");
+	vkCreateAccelerationStructureKHR            = (PFN_vkCreateAccelerationStructureKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCreateAccelerationStructureKHR");
+	vkDestroyAccelerationStructureKHR           = (PFN_vkDestroyAccelerationStructureKHR)vkGetDeviceProcAddr(LogicalDevice, "vkDestroyAccelerationStructureKHR");
+	vkCmdBuildAccelerationStructuresKHR         = (PFN_vkCmdBuildAccelerationStructuresKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCmdBuildAccelerationStructuresKHR");
+	vkGetAccelerationStructureBuildSizesKHR     = (PFN_vkGetAccelerationStructureBuildSizesKHR)vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureBuildSizesKHR");
+	vkGetAccelerationStructureDeviceAddressKHR  = (PFN_vkGetAccelerationStructureDeviceAddressKHR)vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureDeviceAddressKHR");
+	vkCreateRayTracingPipelinesKHR              = (PFN_vkCreateRayTracingPipelinesKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCreateRayTracingPipelinesKHR");
+	vkGetRayTracingShaderGroupHandlesKHR        = (PFN_vkGetRayTracingShaderGroupHandlesKHR)vkGetDeviceProcAddr(LogicalDevice, "vkGetRayTracingShaderGroupHandlesKHR");
+	vkCmdTraceRaysKHR                           = (PFN_vkCmdTraceRaysKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCmdTraceRaysKHR");
 
 }
 
