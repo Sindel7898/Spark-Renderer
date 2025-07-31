@@ -29,6 +29,7 @@ void RayTracing::CreateStorageImage() {
 
 }
 
+
 void RayTracing::createRayTracingDescriptorSetLayout(){
 
 	vk::DescriptorSetLayoutBinding TLASLayout{};

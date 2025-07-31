@@ -59,6 +59,7 @@ public:
 	std::vector<vk::SurfaceFormatKHR> SurfaceFormat;
 
 	Window window; 
+	vk::PhysicalDeviceRayTracingPipelinePropertiesKHR RayTracingPipelineProperties{};
 
 
 	///////EXTENSIONS 
@@ -69,6 +70,8 @@ public:
 	PFN_vkGetAccelerationStructureBuildSizesKHR        vkGetAccelerationStructureBuildSizesKHR = nullptr;
 	PFN_vkGetAccelerationStructureDeviceAddressKHR     vkGetAccelerationStructureDeviceAddressKHR = nullptr;
 	PFN_vkCreateRayTracingPipelinesKHR                 vkCreateRayTracingPipelinesKHR = nullptr;
+	PFN_vkGetRayTracingShaderGroupHandlesKHR           vkGetRayTracingShaderGroupHandlesKHR = nullptr;
+
 };
 
 static inline void VulkanContextDeleter(VulkanContext* vulkanContext)

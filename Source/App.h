@@ -77,6 +77,10 @@ public:
 
 	void CreateGraphicsPipeline();
 
+	uint32_t alignedSize(uint32_t value, uint32_t alignment);
+
+	void createShaderBindingTable();
+
 	void createCommandBuffer();
 
 	void updateUniformBuffer(uint32_t currentImage);
@@ -180,4 +184,7 @@ private:
 	BufferData TLAS_InstanceData;
 	vk::AccelerationStructureKHR TLAS;
 
+	BufferData raygenShaderBindingTableBuffer;
+	BufferData missShaderBindingTableBuffer;
+	BufferData hitShaderBindingTableBuffer;
 };

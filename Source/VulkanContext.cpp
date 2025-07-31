@@ -120,18 +120,12 @@ void VulkanContext::SelectGPU_CreateDevice()
 	vk::PhysicalDeviceAccelerationStructurePropertiesKHR AccelerationStructureProperties{};
 	AccelerationStructureProperties.pNext = nullptr;
 
-	vk::PhysicalDeviceRayTracingPipelinePropertiesKHR RayTracingPipelineProperties{};
 	RayTracingPipelineProperties.pNext = &AccelerationStructureProperties;
 
 	vk::PhysicalDeviceProperties2 prop2{};
 	prop2.pNext = &RayTracingPipelineProperties;
 
 	PhysicalDevice.getProperties2(&prop2);
-
-	std::cout << "Max Ray Recursion Depth: "  << RayTracingPipelineProperties.maxRayRecursionDepth << std::endl;
-	std::cout << "Shader Group Handle Size: " << RayTracingPipelineProperties.shaderGroupHandleSize << " bytes" << std::endl;
-	std::cout << "Acceleration Structure Max Instance Count " << AccelerationStructureProperties.maxInstanceCount << std::endl;
-
 
 	if (!PhysicalDevice.getFeatures().samplerAnisotropy) {
 		throw std::runtime_error("Anisotropic filtering is not supported on this device!");
@@ -150,6 +144,7 @@ void VulkanContext::SelectGPU_CreateDevice()
 	vkGetAccelerationStructureBuildSizesKHR = (PFN_vkGetAccelerationStructureBuildSizesKHR)vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureBuildSizesKHR");
 	vkGetAccelerationStructureDeviceAddressKHR = (PFN_vkGetAccelerationStructureDeviceAddressKHR)vkGetDeviceProcAddr(LogicalDevice, "vkGetAccelerationStructureDeviceAddressKHR");
 	vkCreateRayTracingPipelinesKHR = (PFN_vkCreateRayTracingPipelinesKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCreateRayTracingPipelinesKHR");
+	vkGetRayTracingShaderGroupHandlesKHR = (PFN_vkGetRayTracingShaderGroupHandlesKHR)vkGetDeviceProcAddr(LogicalDevice, "vkGetRayTracingShaderGroupHandlesKHR");
 
 }
 

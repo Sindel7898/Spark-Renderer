@@ -105,6 +105,7 @@
 
 	createCommandBuffer();
 	CreateGraphicsPipeline();
+	createShaderBindingTable();
 	createDepthTextureImage();
 	createTLAS();
 	createGBuffer();
@@ -1223,6 +1224,42 @@ void App::CreateGraphicsPipeline()
 
 }
 
+uint32_t App::alignedSize(uint32_t value, uint32_t alignment)
+{
+	return (value + alignment - 1) & ~(alignment - 1);
+}
+
+void App::createShaderBindingTable() {
+
+	const size_t   handleSize        = vulkanContext->RayTracingPipelineProperties.shaderGroupHandleSize;
+	const size_t   handleSizeAligned = alignedSize(handleSize, vulkanContext->RayTracingPipelineProperties.shaderGroupHandleAlignment);
+	const uint32_t groupCount        = 3;  // Adjust based on your actual shader groups
+	const uint32_t sbtSize           = groupCount * handleSizeAligned;
+
+	// Get shader group handles
+	std::vector<uint8_t> shaderHandleStorage(sbtSize);
+
+	vulkanContext->vkGetRayTracingShaderGroupHandlesKHR(
+        static_cast<VkDevice>(vulkanContext->LogicalDevice), 
+		static_cast<VkPipeline>(RT_ShadowsPassPipeline),
+		0,  // First group
+		groupCount,
+		shaderHandleStorage.size(),
+		shaderHandleStorage.data());
+
+	raygenShaderBindingTableBuffer.BufferID = "raygen Shader Binding Table Buffer";
+	missShaderBindingTableBuffer.BufferID   = "miss Shader Binding Table Buffer";
+	hitShaderBindingTableBuffer.BufferID    = "hit Shader Binding Table Buffer";
+
+	bufferManger->CreateBuffer(&raygenShaderBindingTableBuffer, handleSize, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext->graphicsQueue);
+	bufferManger->CreateBuffer(&missShaderBindingTableBuffer  , handleSize, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext->graphicsQueue);
+	bufferManger->CreateBuffer(&hitShaderBindingTableBuffer   , handleSize, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext->graphicsQueue);
+
+	bufferManger->CopyDataToBuffer(shaderHandleStorage.data()                        , raygenShaderBindingTableBuffer);
+	bufferManger->CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned    , missShaderBindingTableBuffer);
+	bufferManger->CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned * 2, hitShaderBindingTableBuffer);
+
+}
 
 vk::ShaderModule App::createShaderModule(const std::vector<char>& code)
 {
@@ -1353,12 +1390,11 @@ void App::Draw()
 		);
 	}
 	catch (const std::exception& e) {
-		// Handle swapchain out-of-date or other errors
 		std::cerr << "Exception: " << e.what() << std::endl;
 		std::cerr << "Attempting to recreate swap chain..." << std::endl;
 		recreateSwapChain();
 		framebufferResized = false;
-		return; // Skip this frame since we're recreating the swapchain
+		return; 
 	}
 
 	// --- Frame Preparation ---
@@ -1382,7 +1418,7 @@ void App::Draw()
 	submitInfo.sType                = vk::StructureType::eSubmitInfo;
 	submitInfo.waitSemaphoreCount   = 1;
 	submitInfo.pWaitSemaphores      = waitSemaphores;  // Wait for image acquisition
-	submitInfo.pWaitDstStageMask    = waitStages;    // Wait at color attachment stage
+	submitInfo.pWaitDstStageMask    = waitStages;     // Wait at color attachment stage
 	submitInfo.commandBufferCount   = 1;
 	submitInfo.pCommandBuffers      = &commandBuffers[currentFrame];  // Frame-specific CB
 	submitInfo.signalSemaphoreCount = 1;
@@ -1396,12 +1432,13 @@ void App::Draw()
 
 	// --- Presentation ---
 	vk::SwapchainKHR swapChains[] = { vulkanContext->swapChain };
+
 	vk::PresentInfoKHR presentInfo{};
 	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = submitSemaphores;  // Wait for rendering completion
-	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = swapChains;
-	presentInfo.pImageIndices = &imageIndex;
+	presentInfo.pWaitSemaphores    =  submitSemaphores;  // Wait for rendering completion
+	presentInfo.swapchainCount     = 1;
+	presentInfo.pSwapchains        = swapChains;
+	presentInfo.pImageIndices      = &imageIndex;
 
 	try {
 		// Present the image - will wait on renderCompleteSemaphores[imageIndex]
