@@ -154,9 +154,10 @@ private:
 
 	vk::CommandPool            commandPool = nullptr;
 
-	std::vector< vk::Semaphore> imageAvailableSemaphores;
-	std::vector< vk::Semaphore> renderFinishedSemaphores;
-	std::vector< vk::Fence> inFlightFences;
+	std::vector< vk::Semaphore> presentCompleteSemaphores;
+	std::vector< vk::Semaphore> renderCompleteSemaphores;
+	std::vector< vk::Fence> waitFences;
+
 	std::vector< vk::CommandBuffer> commandBuffers;
 
 	uint32_t currentFrame = 0;

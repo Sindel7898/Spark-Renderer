@@ -133,7 +133,7 @@ void RayTracing::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool
 			/////////////////////////////////////////////////////////////////////////////////////
 
 			vk::DescriptorImageInfo StoreageImageInfo{};
-			StoreageImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			StoreageImageInfo.imageLayout = vk::ImageLayout::eGeneral;
 			StoreageImageInfo.imageView   = ShadowPassImage.imageView;
 			StoreageImageInfo.sampler     = ShadowPassImage.imageSampler;
 

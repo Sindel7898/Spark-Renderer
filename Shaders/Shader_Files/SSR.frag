@@ -16,7 +16,7 @@ layout (binding = 5) uniform sampler2D MaterialTexture;
 layout (location = 0) in vec2 inTexCoord;           
 layout (location = 0) out vec4 outFragcolor;
 
-const int MAX_ITERATION = 20;
+const int MAX_ITERATION = 150;
 const int NUM_BINARY_SEARCH_SAMPLES = 5;
 float MAX_THICKNESS = 0.0002;
 #define Scale vec3(.8, .8, .8)

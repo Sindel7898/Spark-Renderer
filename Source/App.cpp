@@ -1279,39 +1279,28 @@ void App::createCommandBuffer()
 
 
 }
-
-
 void App::createSyncObjects() {
+	// Present complete semaphores - one per swapchain image
+	presentCompleteSemaphores.resize(vulkanContext->swapchainImageData.size());
 
+	// Render complete semaphores 
+	renderCompleteSemaphores.resize(vulkanContext->swapchainImageData.size());
 
-	imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-	renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-	inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+	// Fences - one per frame in flight
+	waitFences.resize(MAX_FRAMES_IN_FLIGHT);
 
+	for (size_t i = 0; i < vulkanContext->swapchainImageData.size(); i++) {
+		vk::SemaphoreCreateInfo semaphoreInfo{};
+		vulkanContext->LogicalDevice.createSemaphore(&semaphoreInfo, nullptr, &presentCompleteSemaphores[i]);
+		vulkanContext->LogicalDevice.createSemaphore(&semaphoreInfo, nullptr, &renderCompleteSemaphores[i]);
+	}
 
-	vk::SemaphoreCreateInfo semaphoreInfo{};
-
-	vk::FenceCreateInfo fenceInfo{};
-	fenceInfo.flags = vk::FenceCreateFlagBits::eSignaled;
-
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-	{
-		if (vulkanContext->LogicalDevice.createSemaphore(&semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != vk::Result::eSuccess) {
-			throw std::runtime_error("failed to create image available semaphore!");
-		}
-
-
-		if (vulkanContext->LogicalDevice.createSemaphore(&semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != vk::Result::eSuccess) {
-			throw std::runtime_error("failed to create render finished semaphore!");
-		}
-
-		if (vulkanContext->LogicalDevice.createFence(&fenceInfo, nullptr, &inFlightFences[i]) != vk::Result::eSuccess) {
-			throw std::runtime_error("failed to create fence!");
-		}
-
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		vk::FenceCreateInfo fenceInfo{};
+		fenceInfo.flags = vk::FenceCreateFlagBits::eSignaled;
+		vulkanContext->LogicalDevice.createFence(&fenceInfo, nullptr, &waitFences[i]);
 	}
 }
-
 
 void App::Run()
 {
@@ -1339,80 +1328,95 @@ void App::CalculateFps(FramesPerSecondCounter& fpsCounter)
 		LasttimeStamp = newTimeStamp;
 		fpsCounter.tick(deltaTime);
 }
-
 void App::Draw()
 {
-	//ZoneScopedN("render");
-	if (vulkanContext->LogicalDevice.waitForFences(1, &inFlightFences[currentFrame], vk::True, UINT64_MAX) != vk::Result::eSuccess)
-	{
-		throw std::runtime_error("failed to wait for fence");
+	// ZoneScopedN("render"); // Tracy profiling marker (commented out)
 
-	}
+	// --- CPU-GPU Synchronization ---
+	// Wait for the fence associated with the current frame to ensure the command buffer 
+	// from this frame index is no longer in use before we reuse it.
+	// This prevents the CPU from getting too far ahead of the GPU (frames in flight control)
+	vulkanContext->LogicalDevice.waitForFences(1, &waitFences[currentFrame], vk::True, UINT64_MAX);
+	vulkanContext->LogicalDevice.resetFences(1, &waitFences[currentFrame]);
 
+	// --- Swapchain Acquisition ---
 	uint32_t imageIndex;
-
 	try {
-		vk::Result result = vulkanContext->LogicalDevice.acquireNextImageKHR(vulkanContext->swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], nullptr, &imageIndex);
-
+		// Request the next available swapchain image.
+		// presentCompleteSemaphores[currentFrame] will be signaled when the image is ready.
+		vulkanContext->LogicalDevice.acquireNextImageKHR(
+			vulkanContext->swapChain,
+			UINT64_MAX,
+			presentCompleteSemaphores[currentFrame],
+			nullptr,
+			&imageIndex
+		);
 	}
 	catch (const std::exception& e) {
-		recreateSwapChain();
+		// Handle swapchain out-of-date or other errors
 		std::cerr << "Exception: " << e.what() << std::endl;
+		std::cerr << "Attempting to recreate swap chain..." << std::endl;
+		recreateSwapChain();
+		framebufferResized = false;
+		return; // Skip this frame since we're recreating the swapchain
 	}
 
-	updateUniformBuffer(currentFrame);
-	recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
+	// --- Frame Preparation ---
+	updateUniformBuffer(currentFrame);  // Update uniform data for this frame
+	recordCommandBuffer(commandBuffers[currentFrame], imageIndex);  // Record commands using the acquired image
 
-	vulkanContext->LogicalDevice.resetFences(1, &inFlightFences[currentFrame]);
+	// --- GPU-GPU Synchronization ---
+	// The graphics queue will wait at the color attachment stage until the image is available
+	vk::Semaphore waitSemaphores[] = { presentCompleteSemaphores[currentFrame] };
 
-	 // Step 5: Set up synchronization for rendering
-     // The GPU will wait for the imageAvailableSemaphore to be signaled before starting rendering.
-    // It will wait at the eColorAttachmentOutput stage, which is where color attachment writes occur
-	vk::Semaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame]};
-	vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
+	vk::PipelineStageFlags waitStages[] = {
+		vk::PipelineStageFlagBits::eColorAttachmentOutput  // Where we'll wait
+	};
 
-	// The GPU will signal the renderFinishedSemaphore when rendering is complete.	
-	vk::Semaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame]};
+	// This semaphore will be signaled when rendering completes.
+	// CRITICAL: Uses imageIndex because presentation engine needs per-image synchronization.
+	// By the time we reuse this imageIndex, we know presentation is done with its semaphore.
+	vk::Semaphore submitSemaphores[] = { renderCompleteSemaphores[imageIndex] };
 
 	vk::SubmitInfo submitInfo{};
-	submitInfo.sType = vk::StructureType::eSubmitInfo;
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = waitSemaphores;
-	submitInfo.pWaitDstStageMask = waitStages;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
+	submitInfo.sType                = vk::StructureType::eSubmitInfo;
+	submitInfo.waitSemaphoreCount   = 1;
+	submitInfo.pWaitSemaphores      = waitSemaphores;  // Wait for image acquisition
+	submitInfo.pWaitDstStageMask    = waitStages;    // Wait at color attachment stage
+	submitInfo.commandBufferCount   = 1;
+	submitInfo.pCommandBuffers      = &commandBuffers[currentFrame];  // Frame-specific CB
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = signalSemaphores;
+	submitInfo.pSignalSemaphores    = submitSemaphores;  // Signal when rendering done
 
-
-	// The inFlightFence will be signaled when the GPU is done with the command buffer.
-		if (vulkanContext->graphicsQueue.submit(1, &submitInfo, inFlightFences[currentFrame]) != vk::Result::eSuccess)
+	// Submit to the graphics queue with the current frame's fence
+	if (vulkanContext->graphicsQueue.submit(1, &submitInfo, waitFences[currentFrame]) != vk::Result::eSuccess)
 	{
-		throw std::runtime_error("failed to submit info");
-
+		throw std::runtime_error("failed to submit draw commands");
 	}
 
+	// --- Presentation ---
 	vk::SwapchainKHR swapChains[] = { vulkanContext->swapChain };
 	vk::PresentInfoKHR presentInfo{};
 	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = signalSemaphores;
+	presentInfo.pWaitSemaphores = submitSemaphores;  // Wait for rendering completion
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapChains;
 	presentInfo.pImageIndices = &imageIndex;
 
-	
-	//wait on renderFinishedSemaphore before this is ran
-   try {
-	   vk::Result result = vulkanContext->presentQueue.presentKHR(presentInfo);
-   }
-   catch (const std::exception& e) {
-	   std::cerr << "Exception: " << e.what() << std::endl;
-	   std::cerr << "Attempting to recreate swap chain..." << std::endl;
-	   recreateSwapChain();
-	   framebufferResized = false;
+	try {
+		// Present the image - will wait on renderCompleteSemaphores[imageIndex]
+		vk::Result result = vulkanContext->presentQueue.presentKHR(presentInfo);
 
-   }
+	}
+	catch (const vk::OutOfDateKHRError& e) {
+		// Handle swapchain out-of-date or other errors
+		std::cerr << "Exception: " << e.what() << std::endl;
+		std::cerr << "Attempting to recreate swap chain..." << std::endl;
+		recreateSwapChain();
+		framebufferResized = false;
+	}
 
+	// Advance to the next frame index (wraps based on MAX_FRAMES_IN_FLIGHT)
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
@@ -2054,9 +2058,9 @@ void App::DestroySyncObjects()
 {
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		vulkanContext->LogicalDevice.destroySemaphore(imageAvailableSemaphores[i]);
-		vulkanContext->LogicalDevice.destroySemaphore(renderFinishedSemaphores[i]);
-		vulkanContext->LogicalDevice.destroyFence(inFlightFences[i]);
+		vulkanContext->LogicalDevice.destroySemaphore(presentCompleteSemaphores[i]);
+		vulkanContext->LogicalDevice.destroySemaphore(renderCompleteSemaphores[i]);
+		vulkanContext->LogicalDevice.destroyFence(waitFences[i]);
 	}
 }
 
