@@ -2,9 +2,13 @@
 #extension GL_EXT_ray_tracing : require
 
 layout(binding = 0, set = 0) uniform accelerationStructureEXT topLevelAS;
+layout(binding = 1, set = 0) uniform sampler2D  Position;
+layout(binding = 2, set = 0) uniform sampler2D  Normal;
+layout(binding = 3, set = 0, rgba8) uniform image2D    OutputImage;
 
 
 void main() 
 {
 
+   imageStore(OutputImage, ivec2(gl_LaunchIDEXT.xy), vec4(1.0,1.0,0.0,1.0));
 }

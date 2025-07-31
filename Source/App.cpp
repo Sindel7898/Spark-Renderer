@@ -427,8 +427,8 @@ void App::createGBuffer()
 		                                                  fxaa_FullScreenQuad->FxaaImage.imageView,
 		                                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-	SSRTextureId          = ImGui_ImplVulkan_AddTexture  (ssr_FullScreenQuad->SSRImage.imageSampler,
-		                                                  ssr_FullScreenQuad->SSRImage.imageView,
+	Shadow_TextureId       = ImGui_ImplVulkan_AddTexture (Raytracing_Shadows->ShadowPassImage.imageSampler,
+		                                                  Raytracing_Shadows->ShadowPassImage.imageView,
 		                                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 
@@ -2008,6 +2008,18 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	{
 		
+		ImageTransitionData TransitiontoGeneral{};
+		TransitiontoGeneral.oldlayout = vk::ImageLayout::eUndefined;
+		TransitiontoGeneral.newlayout = vk::ImageLayout::eGeneral;
+		TransitiontoGeneral.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitiontoGeneral.SourceAccessflag = vk::AccessFlagBits::eNone;
+		TransitiontoGeneral.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
+		TransitiontoGeneral.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
+		TransitiontoGeneral.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+
+		bufferManger->TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImage, TransitiontoGeneral);
+
+
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_ShadowsPassPipeline);
 
 		Raytracing_Shadows->Draw(
@@ -2018,7 +2030,21 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			RT_ShadowsPipelineLayout, 
 			currentFrame);
 
+
+
+		ImageTransitionData TransitiontoShaderOutput{};
+		TransitiontoShaderOutput.oldlayout = vk::ImageLayout::eGeneral;
+		TransitiontoShaderOutput.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		TransitiontoShaderOutput.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitiontoShaderOutput.SourceAccessflag = vk::AccessFlagBits::eShaderWrite;
+		TransitiontoShaderOutput.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentRead;
+		TransitiontoShaderOutput.SourceOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+		TransitiontoShaderOutput.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
+
+		bufferManger->TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImage, TransitiontoShaderOutput);
+
 	}
+
 
 
 	////////// Transition image in prep for GUI ////////////////////
@@ -2157,6 +2183,7 @@ void App::destroyPipeline()
 	vulkanContext->LogicalDevice.destroyPipeline(SSAOPipeline);
 	vulkanContext->LogicalDevice.destroyPipeline(SSAOBlurPipeline);
 	vulkanContext->LogicalDevice.destroyPipeline(SSRPipeline);
+	vulkanContext->LogicalDevice.destroyPipeline(RT_ShadowsPassPipeline);
 
 	vulkanContext->LogicalDevice.destroyPipelineLayout(DeferedLightingPassPipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(FXAAPassPipelineLayout);
@@ -2166,6 +2193,7 @@ void App::destroyPipeline()
 	vulkanContext->LogicalDevice.destroyPipelineLayout(SSAOPipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(SSAOBlurPipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(SSRPipelineLayout);
+	vulkanContext->LogicalDevice.destroyPipelineLayout(RT_ShadowsPipelineLayout);
 
 }
 

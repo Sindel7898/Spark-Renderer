@@ -107,7 +107,7 @@ public:
 
 
 	VkDescriptorSet FinalRenderTextureId;
-	VkDescriptorSet SSRTextureId;
+	VkDescriptorSet Shadow_TextureId;
 	VkDescriptorSet PositionRenderTextureId;
 	VkDescriptorSet NormalTextureId;
 	VkDescriptorSet AlbedoTextureId;

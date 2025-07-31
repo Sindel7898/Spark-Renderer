@@ -22,10 +22,9 @@ void RayTracing::CreateStorageImage() {
 	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
 	ShadowPassImage.ImageID = "RT Shadow Pass Image";
-	bufferManager->CreateImage(&ShadowPassImage, swapchainextent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled);
-	ShadowPassImage.imageView = bufferManager->CreateImageView(&ShadowPassImage, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
+	bufferManager->CreateImage(&ShadowPassImage, swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled);
+	ShadowPassImage.imageView = bufferManager->CreateImageView(&ShadowPassImage, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
 	ShadowPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
-
 
 }
 

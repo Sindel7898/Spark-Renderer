@@ -360,7 +360,7 @@ void UserInterface::DrawUi(App* appref)
 
 	if (appref->DefferedDecider == 4)
 	{
-		ImGui::Image((ImTextureID)appref->SSRTextureId, viewportSize);
+		ImGui::Image((ImTextureID)appref->Shadow_TextureId, viewportSize);
 
 	}
 
