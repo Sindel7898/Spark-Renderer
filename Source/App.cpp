@@ -144,7 +144,7 @@
 	 // Get size info
 	 vk::AccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo = {};
 	 accelerationStructureBuildGeometryInfo.type = vk::AccelerationStructureTypeKHR::eTopLevel;
-	 accelerationStructureBuildGeometryInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
+	 accelerationStructureBuildGeometryInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace | vk::BuildAccelerationStructureFlagBitsKHR::eAllowUpdate;
 	 accelerationStructureBuildGeometryInfo.geometryCount = 1;
 	 accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
 
@@ -202,7 +202,7 @@
 
 	 accelerationStructureBuildGeometryInfo.dstAccelerationStructure = TLAS;
 	 accelerationStructureBuildGeometryInfo.scratchData.deviceAddress = vulkanContext->LogicalDevice.getBufferAddress(TLAS_ScratchBufferAdress);
-
+	 accelerationStructureBuildGeometryInfo.mode = vk::BuildAccelerationStructureModeKHR::eBuild;
 	 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 												///////BUILD TLAS ON THE GPU ////////
@@ -227,6 +227,61 @@
 	 bufferManger->SubmitAndDestoyCommandBuffer(commandPool, cmd, vulkanContext->graphicsQueue);
 	 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
  }
+
+ void App::UpdateTLAS()
+ {
+	 // 1. Update instance data on the GPU
+	 UpdateTLASInstanceBuffer();
+
+	 // 2. Reuse instance buffer device address
+	 vk::BufferDeviceAddressInfo instanceInfo{};
+	 instanceInfo.buffer = TLAS_InstanceData.buffer;
+
+	 vk::DeviceOrHostAddressConstKHR instanceDeviceAddress{};
+	 instanceDeviceAddress.deviceAddress = vulkanContext->LogicalDevice.getBufferAddress(instanceInfo);
+
+	 // 3. Setup geometry
+	 vk::AccelerationStructureGeometryKHR geometry{};
+	 geometry.geometryType = vk::GeometryTypeKHR::eInstances;
+	 geometry.flags = vk::GeometryFlagBitsKHR::eOpaque;
+	 geometry.geometry.instances.sType = vk::StructureType::eAccelerationStructureGeometryInstancesDataKHR;
+	 geometry.geometry.instances.arrayOfPointers = VK_FALSE;
+	 geometry.geometry.instances.data = instanceDeviceAddress;
+
+	 // 4. Build geometry info with UPDATE mode
+	 vk::AccelerationStructureBuildGeometryInfoKHR buildInfo{};
+	 buildInfo.type = vk::AccelerationStructureTypeKHR::eTopLevel;
+	 buildInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace |
+		 vk::BuildAccelerationStructureFlagBitsKHR::eAllowUpdate; // Must match initial build flags
+	 buildInfo.geometryCount = 1;
+	 buildInfo.pGeometries = &geometry;
+	 buildInfo.mode = vk::BuildAccelerationStructureModeKHR::eUpdate;
+	 buildInfo.srcAccelerationStructure = TLAS;
+	 buildInfo.dstAccelerationStructure = TLAS;
+
+	 // 5. Scratch buffer address
+	 vk::BufferDeviceAddressInfo scratchAddrInfo{};
+	 scratchAddrInfo.buffer = TLAS_SCRATCH_Buffer.buffer;
+	 buildInfo.scratchData.deviceAddress = vulkanContext->LogicalDevice.getBufferAddress(scratchAddrInfo);
+
+	 // 6. Build range info
+	 vk::AccelerationStructureBuildRangeInfoKHR buildRange{};
+	 buildRange.primitiveCount = static_cast<uint32_t>(Models.size());
+	 buildRange.primitiveOffset = 0;
+	 buildRange.firstVertex = 0;
+	 buildRange.transformOffset = 0;
+
+	 VkAccelerationStructureBuildRangeInfoKHR tempRange = buildRange;
+	 std::vector<VkAccelerationStructureBuildRangeInfoKHR*> rangeInfos = { &tempRange };
+
+	 // 7. Record and submit command buffer
+	 vk::CommandBuffer cmd = bufferManger->CreateSingleUseCommandBuffer(commandPool);
+	 VkAccelerationStructureBuildGeometryInfoKHR tempBuildInfo = buildInfo;
+
+	 vulkanContext->vkCmdBuildAccelerationStructuresKHR(cmd, 1, &tempBuildInfo, rangeInfos.data());
+	 bufferManger->SubmitAndDestoyCommandBuffer(commandPool, cmd, vulkanContext->graphicsQueue);
+ }
+
 
  void App::UpdateTLASInstanceBuffer()
  {
@@ -1462,7 +1517,7 @@ void App::Draw()
 
 void App::updateUniformBuffer(uint32_t currentImage) {
 	
-	UpdateTLASInstanceBuffer();
+	UpdateTLAS();
 	for (auto& light : lights)
 	{
 		light->UpdateUniformBuffer(currentImage);

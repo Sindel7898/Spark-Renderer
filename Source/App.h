@@ -41,6 +41,7 @@ public:
 	
 	App();
 	void createTLAS();
+	void UpdateTLAS();
 	void UpdateTLASInstanceBuffer();
 	~App();
 
