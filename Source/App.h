@@ -41,7 +41,7 @@ public:
 	
 	App();
 	void createTLAS();
-	void createShaderBindingTables();
+	void UpdateTLASInstanceBuffer();
 	~App();
 
 	

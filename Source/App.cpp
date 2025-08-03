@@ -107,7 +107,9 @@
 	CreateGraphicsPipeline();
 	createShaderBindingTable();
 	createDepthTextureImage();
+
 	createTLAS();
+
 	createGBuffer();
 }
 
@@ -121,38 +123,8 @@
 		 vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR |
 		 vk::BufferUsageFlagBits::eShaderDeviceAddress, commandPool, vulkanContext->graphicsQueue);
 
+	 UpdateTLASInstanceBuffer();
 
-	 std::vector< vk::AccelerationStructureInstanceKHR> Instances; // array of instances
-
-	 // pupulate instance data into the array 
-	 for (int i = 0; i < Models.size(); i++)
-	 {
-		 vk::AccelerationStructureDeviceAddressInfoKHR blasinfo{};
-		 blasinfo.accelerationStructure = Models[i]->BLAS;
-
-		 VkAccelerationStructureDeviceAddressInfoKHR Temp = blasinfo;
-
-		 glm::mat ModelMatrix = Models[i]->GetModelMatrix();
-
-		 VkTransformMatrixKHR transformMatrix = {
-	            ModelMatrix[0][0], ModelMatrix[1][0], ModelMatrix[2][0], ModelMatrix[3][0], // Row 0
-	            ModelMatrix[0][1], ModelMatrix[1][1], ModelMatrix[2][1], ModelMatrix[3][1], // Row 1
-	            ModelMatrix[0][2], ModelMatrix[1][2], ModelMatrix[2][2], ModelMatrix[3][2], // Row 2
-		 };
-
-		 vk::AccelerationStructureInstanceKHR instance{};
-		 instance.transform = transformMatrix;
-		 instance.instanceCustomIndex = i;
-		 instance.mask = 0xFF;
-		 instance.instanceShaderBindingTableRecordOffset = 0;
-		 instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
-		 instance.accelerationStructureReference = vulkanContext->vkGetAccelerationStructureDeviceAddressKHR(vulkanContext->LogicalDevice, &Temp);
-
-		 Instances.push_back(instance);
-	 }
-	 // send all instance data into the buffer
-	 bufferManger->CopyDataToBuffer(Instances.data(), TLAS_InstanceData);
-	
 	 ////////////////////////////////////GEOMETRY INFO /////////////////////////////////////////////////////////////////////
 	 //get instance buffer adddress
 	 vk::BufferDeviceAddressInfo InstanceInfo{};
@@ -178,7 +150,7 @@
 
 
 
-	 uint32_t primitive_count = static_cast<uint32_t>(Instances.size());
+	 uint32_t primitive_count = static_cast<uint32_t>(Models.size());
 
 	 VkAccelerationStructureBuildGeometryInfoKHR TEMP_ACCELERATION_INFO = accelerationStructureBuildGeometryInfo;
 	 VkAccelerationStructureBuildSizesInfoKHR TEMP_ACCELERATION_STRUCTURE_BUILD_SIZE{};
@@ -256,9 +228,39 @@
 	 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
  }
 
- void App::createShaderBindingTables()
+ void App::UpdateTLASInstanceBuffer()
  {
 
+	 std::vector< vk::AccelerationStructureInstanceKHR> Instances; // array of instances
+
+	 // pupulate instance data into the array 
+	 for (int i = 0; i < Models.size(); i++)
+	 {
+		 vk::AccelerationStructureDeviceAddressInfoKHR blasinfo{};
+		 blasinfo.accelerationStructure = Models[i]->BLAS;
+
+		 VkAccelerationStructureDeviceAddressInfoKHR Temp = blasinfo;
+
+		 glm::mat ModelMatrix = Models[i]->GetModelMatrix();
+
+		 VkTransformMatrixKHR transformMatrix = {
+				ModelMatrix[0][0], ModelMatrix[1][0], ModelMatrix[2][0], ModelMatrix[3][0], // Row 0
+				ModelMatrix[0][1], ModelMatrix[1][1], ModelMatrix[2][1], ModelMatrix[3][1], // Row 1
+				ModelMatrix[0][2], ModelMatrix[1][2], ModelMatrix[2][2], ModelMatrix[3][2], // Row 2
+		 };
+
+		 vk::AccelerationStructureInstanceKHR instance{};
+		 instance.transform = transformMatrix;
+		 instance.instanceCustomIndex = i;
+		 instance.mask = 0xFF;
+		 instance.instanceShaderBindingTableRecordOffset = 0;
+		 instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+		 instance.accelerationStructureReference = vulkanContext->vkGetAccelerationStructureDeviceAddressKHR(vulkanContext->LogicalDevice, &Temp);
+
+		 Instances.push_back(instance);
+	 }
+	 // send all instance data into the buffer
+	 bufferManger->CopyDataToBuffer(Instances.data(), TLAS_InstanceData);
  }
 
 
@@ -1460,7 +1462,7 @@ void App::Draw()
 
 void App::updateUniformBuffer(uint32_t currentImage) {
 	
-
+	UpdateTLASInstanceBuffer();
 	for (auto& light : lights)
 	{
 		light->UpdateUniformBuffer(currentImage);
@@ -1476,6 +1478,8 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 
 	lighting_FullScreenQuad->UpdateUniformBuffer(currentImage, lights);
 	ssao_FullScreenQuad->UpdataeUniformBufferData();
+
+
 }
 
 void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) {
