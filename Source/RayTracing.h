@@ -21,6 +21,7 @@ public:
 
     RayTracing(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger);
     void CreateStorageImage();
+    void DestroyStorageImage();
     void createRayTracingDescriptorSetLayout();
     void createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, GBuffer gbuffer);
     void CreateUniformBuffer();

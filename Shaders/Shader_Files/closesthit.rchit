@@ -11,5 +11,5 @@ layout(location = 0) rayPayloadInEXT HitPayload inPayloadResults;
 
 void main()
 {
-  inPayloadResults.hitValue = vec3(0, 0, 0);
+inPayloadResults.hitValue = vec3(0, 1, 0); // GREEN = hit
 }

@@ -452,6 +452,7 @@ void App::createGBuffer()
 
 	fxaa_FullScreenQuad->CreateImage(swapchainextent);
 	ssr_FullScreenQuad->CreateImage(swapchainextent);
+	Raytracing_Shadows->CreateStorageImage();
 
 	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer, ReflectionMaskImageData);
 	ssao_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
@@ -1265,7 +1266,7 @@ void App::CreateGraphicsPipeline()
 
 	   vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
 	   pipelineLayoutInfo.setLayoutCount = 1;
-	   pipelineLayoutInfo.setSetLayouts(Raytracing_Shadows->RayTracingDescriptorSetLayout);
+	   pipelineLayoutInfo.pSetLayouts = &Raytracing_Shadows->RayTracingDescriptorSetLayout;
 	   pipelineLayoutInfo.pushConstantRangeCount = 0;
 	   pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
@@ -1309,9 +1310,9 @@ void App::createShaderBindingTable() {
 	missShaderBindingTableBuffer.BufferID   = "miss Shader Binding Table Buffer";
 	hitShaderBindingTableBuffer.BufferID    = "hit Shader Binding Table Buffer";
 
-	bufferManger->CreateBuffer(&raygenShaderBindingTableBuffer, handleSize, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext->graphicsQueue);
-	bufferManger->CreateBuffer(&missShaderBindingTableBuffer  , handleSize, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext->graphicsQueue);
-	bufferManger->CreateBuffer(&hitShaderBindingTableBuffer   , handleSize, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext->graphicsQueue);
+	bufferManger->CreateBuffer(&raygenShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext->graphicsQueue);
+	bufferManger->CreateBuffer(&missShaderBindingTableBuffer  , handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext->graphicsQueue);
+	bufferManger->CreateBuffer(&hitShaderBindingTableBuffer   , handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext->graphicsQueue);
 
 	bufferManger->CopyDataToBuffer(shaderHandleStorage.data()                        , raygenShaderBindingTableBuffer);
 	bufferManger->CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned    , missShaderBindingTableBuffer);
@@ -2173,7 +2174,7 @@ void App::destroy_GbufferImages()
 	bufferManger->DestroyImage(LightingPassImageData);
 	bufferManger->DestroyImage(ReflectionMaskImageData);
 
-
+	Raytracing_Shadows->DestroyStorageImage();
 	fxaa_FullScreenQuad->DestroyImage();
 	ssr_FullScreenQuad->DestroyImage();
 

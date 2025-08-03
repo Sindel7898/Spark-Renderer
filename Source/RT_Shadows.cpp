@@ -12,7 +12,6 @@ RayTracing::RayTracing( VulkanContext* vulkancontext, vk::CommandPool commandpoo
 	camera        = rcamera;
 	commandPool   = commandpool;
 	CreateUniformBuffer();
-	CreateStorageImage();
 	createRayTracingDescriptorSetLayout();
 }
 void RayTracing::CreateUniformBuffer() {
@@ -45,7 +44,12 @@ void RayTracing::CreateStorageImage() {
 	ShadowPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 }
+void RayTracing::DestroyStorageImage() {
 
+	bufferManager->DestroyImage(ShadowPassImage);
+
+
+}
 
 void RayTracing::createRayTracingDescriptorSetLayout(){
 
@@ -223,10 +227,10 @@ void RayTracing::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferDa
 	raygenShaderBindingTableDeviceAdressesInfo.buffer = RayGenBuffer.buffer;
 
 	vk::BufferDeviceAddressInfo missShaderBindingTableDeviceAdressesInfo;
-	missShaderBindingTableDeviceAdressesInfo.buffer = RayHitBuffer.buffer;
+	missShaderBindingTableDeviceAdressesInfo.buffer = RayMisBuffer.buffer;
 
 	vk::BufferDeviceAddressInfo hitShaderBindingTableDeviceAdressesInfo;
-	hitShaderBindingTableDeviceAdressesInfo.buffer = RayMisBuffer.buffer;
+	hitShaderBindingTableDeviceAdressesInfo.buffer = RayHitBuffer.buffer;
 
 	auto raygenShaderBindingTableAdress = vulkanContext->LogicalDevice.getBufferAddress(raygenShaderBindingTableDeviceAdressesInfo);
 	auto missShaderBindingTableAdress   = vulkanContext->LogicalDevice.getBufferAddress(missShaderBindingTableDeviceAdressesInfo);
