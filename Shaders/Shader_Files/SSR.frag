@@ -188,7 +188,7 @@ void main() {
      vec3 F0        = mix(vec3(0.08),Color,MetalicRoughnessAO.r);
      
      vec3 fresnel = fresnelSchlick(cosTheta, F0);
-     vec3 SSR     = ReflectionColor.rgb * fresnel;
+     vec3 SSR     = ReflectionColor.rgb;
 
      vec3 finalColor = mix(Color, ReflectionColor.rgb, fresnel); 
 

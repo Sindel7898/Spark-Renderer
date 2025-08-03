@@ -9,6 +9,12 @@ class  Camera;
 class  VulkanContext;
 class  BufferManager;
 
+struct RayUniformBufferData {
+    glm::mat4 ViewMatrix;
+    glm::mat4 ProjectionMatrix;
+    glm::vec4 DirectionalLightPosition_AndPadding;
+};
+
 class RayTracing
 {
 public:
@@ -23,6 +29,8 @@ public:
     void Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferData RayMisBuffer, vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
 
     void CleanUp() ;
+    std::vector<BufferData> UniformBuffers;
+    std::vector<void*> UniformBuffersMappedMem;
 
     vk::DescriptorSetLayout  RayTracingDescriptorSetLayout;
     std::vector<vk::DescriptorSet> RayTracingDescriptorSets;
@@ -33,7 +41,7 @@ private:
     VulkanContext*   vulkanContext = nullptr;
     BufferManager*   bufferManager = nullptr;
     Camera*          camera        = nullptr;
-    vk::CommandPool* commandPool = nullptr;
+    vk::CommandPool commandPool = nullptr;
 };
 
 

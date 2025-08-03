@@ -115,8 +115,9 @@
  {
 	 // Create instance Buffer
 	 TLAS_InstanceData.BufferID = "Scene TLAS InstanceData Buffer";
+	 size_t totalSize = sizeof(vk::AccelerationStructureInstanceKHR) * Models.size();
 
-	 bufferManger->CreateBuffer(&TLAS_InstanceData, sizeof(vk::AccelerationStructureInstanceKHR),
+	 bufferManger->CreateBuffer(&TLAS_InstanceData, totalSize,
 		 vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR |
 		 vk::BufferUsageFlagBits::eShaderDeviceAddress, commandPool, vulkanContext->graphicsQueue);
 
@@ -134,14 +135,14 @@
 		 glm::mat ModelMatrix = Models[i]->GetModelMatrix();
 
 		 VkTransformMatrixKHR transformMatrix = {
-				ModelMatrix[0][0], ModelMatrix[0][1], ModelMatrix[0][2], ModelMatrix[0][3], // Row 0
-				ModelMatrix[1][0], ModelMatrix[1][1], ModelMatrix[1][2], ModelMatrix[1][3], // Row 1
-				ModelMatrix[2][0], ModelMatrix[2][1], ModelMatrix[2][2], ModelMatrix[2][3], // Row 2
+	            ModelMatrix[0][0], ModelMatrix[1][0], ModelMatrix[2][0], ModelMatrix[3][0], // Row 0
+	            ModelMatrix[0][1], ModelMatrix[1][1], ModelMatrix[2][1], ModelMatrix[3][1], // Row 1
+	            ModelMatrix[0][2], ModelMatrix[1][2], ModelMatrix[2][2], ModelMatrix[3][2], // Row 2
 		 };
 
 		 vk::AccelerationStructureInstanceKHR instance{};
 		 instance.transform = transformMatrix;
-		 instance.instanceCustomIndex = 0;
+		 instance.instanceCustomIndex = i;
 		 instance.mask = 0xFF;
 		 instance.instanceShaderBindingTableRecordOffset = 0;
 		 instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
@@ -177,7 +178,7 @@
 
 
 
-	 uint32_t primitive_count = 1;
+	 uint32_t primitive_count = static_cast<uint32_t>(Instances.size());
 
 	 VkAccelerationStructureBuildGeometryInfoKHR TEMP_ACCELERATION_INFO = accelerationStructureBuildGeometryInfo;
 	 VkAccelerationStructureBuildSizesInfoKHR TEMP_ACCELERATION_STRUCTURE_BUILD_SIZE{};
@@ -238,7 +239,7 @@
 
 	 vk::AccelerationStructureBuildRangeInfoKHR BuildRangeInfo;
 	 BuildRangeInfo.firstVertex     = 0;
-	 BuildRangeInfo.primitiveCount  = 1;
+	 BuildRangeInfo.primitiveCount  = primitive_count;
 	 BuildRangeInfo.primitiveOffset = 0;
 	 BuildRangeInfo.transformOffset = 0;
 
@@ -1866,6 +1867,67 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		bufferManger->TransitionImage(commandBuffer, &DepthTextureData, TransitionDeptTODepthOptimal);
 	}
 
+	{
+		ImageTransitionData TransitionTOShaderOptimal{};
+		TransitionTOShaderOptimal.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
+		TransitionTOShaderOptimal.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		TransitionTOShaderOptimal.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitionTOShaderOptimal.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
+		TransitionTOShaderOptimal.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
+		TransitionTOShaderOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		TransitionTOShaderOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
+
+		bufferManger->TransitionImage(commandBuffer, &gbuffer.Position, TransitionTOShaderOptimal);
+		bufferManger->TransitionImage(commandBuffer, &gbuffer.Normal, TransitionTOShaderOptimal);
+
+		ImageTransitionData TransitiontoGeneral{};
+		TransitiontoGeneral.oldlayout = vk::ImageLayout::eUndefined;
+		TransitiontoGeneral.newlayout = vk::ImageLayout::eGeneral;
+		TransitiontoGeneral.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitiontoGeneral.SourceAccessflag = vk::AccessFlagBits::eNone;
+		TransitiontoGeneral.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
+		TransitiontoGeneral.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
+		TransitiontoGeneral.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+
+		bufferManger->TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImage, TransitiontoGeneral);
+
+
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_ShadowsPassPipeline);
+
+		Raytracing_Shadows->Draw(
+			raygenShaderBindingTableBuffer,
+			hitShaderBindingTableBuffer,
+			missShaderBindingTableBuffer,
+			commandBuffer,
+			RT_ShadowsPipelineLayout,
+			currentFrame);
+
+
+
+		ImageTransitionData TransitiontoShaderOutput{};
+		TransitiontoShaderOutput.oldlayout = vk::ImageLayout::eGeneral;
+		TransitiontoShaderOutput.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		TransitiontoShaderOutput.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitiontoShaderOutput.SourceAccessflag = vk::AccessFlagBits::eShaderWrite;
+		TransitiontoShaderOutput.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentRead;
+		TransitiontoShaderOutput.SourceOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+		TransitiontoShaderOutput.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
+
+		bufferManger->TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImage, TransitiontoShaderOutput);
+
+		ImageTransitionData TransitionBacktoColorOutput{};
+		TransitionBacktoColorOutput.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		TransitionBacktoColorOutput.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
+		TransitionBacktoColorOutput.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitionBacktoColorOutput.SourceAccessflag = vk::AccessFlagBits::eShaderRead;
+		TransitionBacktoColorOutput.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
+		TransitionBacktoColorOutput.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
+		TransitionBacktoColorOutput.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+
+		bufferManger->TransitionImage(commandBuffer, &gbuffer.Position, TransitionBacktoColorOutput);
+		bufferManger->TransitionImage(commandBuffer, &gbuffer.Normal, TransitionBacktoColorOutput);
+
+	}
 
 	{
 		vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
@@ -2006,45 +2068,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, TransitionBacktoColorOutput);
 	}
 
-	{
-		
-		ImageTransitionData TransitiontoGeneral{};
-		TransitiontoGeneral.oldlayout = vk::ImageLayout::eUndefined;
-		TransitiontoGeneral.newlayout = vk::ImageLayout::eGeneral;
-		TransitiontoGeneral.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitiontoGeneral.SourceAccessflag = vk::AccessFlagBits::eNone;
-		TransitiontoGeneral.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
-		TransitiontoGeneral.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
-		TransitiontoGeneral.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
-
-		bufferManger->TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImage, TransitiontoGeneral);
-
-
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_ShadowsPassPipeline);
-
-		Raytracing_Shadows->Draw(
-			raygenShaderBindingTableBuffer,
-			hitShaderBindingTableBuffer,
-			missShaderBindingTableBuffer, 
-			commandBuffer, 
-			RT_ShadowsPipelineLayout, 
-			currentFrame);
-
-
-
-		ImageTransitionData TransitiontoShaderOutput{};
-		TransitiontoShaderOutput.oldlayout = vk::ImageLayout::eGeneral;
-		TransitiontoShaderOutput.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitiontoShaderOutput.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitiontoShaderOutput.SourceAccessflag = vk::AccessFlagBits::eShaderWrite;
-		TransitiontoShaderOutput.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentRead;
-		TransitiontoShaderOutput.SourceOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
-		TransitiontoShaderOutput.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-
-		bufferManger->TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImage, TransitiontoShaderOutput);
-
-	}
-
+	
 
 
 	////////// Transition image in prep for GUI ////////////////////

@@ -1,6 +1,7 @@
 #include "RayTracing.h"
 #include "VulkanContext.h"
 #include "BufferManager.h"
+#include "Camera.h"
 
 #include <stdexcept>
 
@@ -9,12 +10,29 @@ RayTracing::RayTracing( VulkanContext* vulkancontext, vk::CommandPool commandpoo
 	bufferManager = buffermanger;
 	vulkanContext = vulkancontext;
 	camera        = rcamera;
+	commandPool   = commandpool;
 	CreateUniformBuffer();
 	CreateStorageImage();
 	createRayTracingDescriptorSetLayout();
 }
 void RayTracing::CreateUniformBuffer() {
 
+	{
+		UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+		UniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
+
+		VkDeviceSize	RayuniformBufferSize = sizeof(RayUniformBufferData);
+
+		for (size_t i = 0; i < UniformBuffers.size(); i++)
+		{
+			BufferData bufferdata;
+			bufferdata.BufferID = "Ray Uniform Buffer" + i;
+			bufferManager->CreateBuffer(&bufferdata, RayuniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
+			UniformBuffers[i] = bufferdata;
+
+			UniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
+		}
+	}
 
 }
 void RayTracing::CreateStorageImage() {
@@ -55,8 +73,16 @@ void RayTracing::createRayTracingDescriptorSetLayout(){
 	ShadowResultSamplerLayout.descriptorType = vk::DescriptorType::eStorageImage;
 	ShadowResultSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
-	std::array<vk::DescriptorSetLayoutBinding, 4> bindings = { TLASLayout,PositionSamplerLayout, 
-		                                                       NormalSamplerLayout,ShadowResultSamplerLayout };
+
+	vk::DescriptorSetLayoutBinding RayUniformBufferLayout{};
+	RayUniformBufferLayout.binding = 4;
+	RayUniformBufferLayout.descriptorCount = 1;
+	RayUniformBufferLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
+	RayUniformBufferLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+
+
+	std::array<vk::DescriptorSetLayoutBinding, 5> bindings = { TLASLayout,PositionSamplerLayout, 
+		                                                       NormalSamplerLayout,ShadowResultSamplerLayout,RayUniformBufferLayout };
 
 	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -147,11 +173,25 @@ void RayTracing::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool
 
 			/////////////////////////////////////////////////////////////////////////////////////
 
+			vk::DescriptorBufferInfo rayuniformbufferInfo{};
+			rayuniformbufferInfo.buffer = UniformBuffers[i].buffer;
+			rayuniformbufferInfo.offset = 0;
+			rayuniformbufferInfo.range = sizeof(RayUniformBufferData);
 
-			std::array<vk::WriteDescriptorSet, 4> descriptorWrites{ TLAS_descriptorWrite,
+			vk::WriteDescriptorSet RayUniformdescriptorWrite{};
+			RayUniformdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
+			RayUniformdescriptorWrite.dstBinding = 4;
+			RayUniformdescriptorWrite.dstArrayElement = 0;
+			RayUniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+			RayUniformdescriptorWrite.descriptorCount = 1;
+			RayUniformdescriptorWrite.pBufferInfo = &rayuniformbufferInfo;
+
+
+			std::array<vk::WriteDescriptorSet, 5> descriptorWrites{ TLAS_descriptorWrite,
 																	PositionSamplerdescriptorWrite,
 				                                                    NormalSamplerdescriptorWrite,
-				                                                    StoreageImagSamplerdescriptorWrite };
+				                                                    StoreageImagSamplerdescriptorWrite,
+			                                                        RayUniformdescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 		}
@@ -161,8 +201,15 @@ void RayTracing::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool
 
 void RayTracing::UpdateUniformBuffer(uint32_t currentImage)
 {
+	RayUniformBufferData RayData;
+	RayData.ViewMatrix = camera->GetViewMatrix();
+	RayData.ProjectionMatrix = camera->GetProjectionMatrix();
+	RayData.ProjectionMatrix[1][1] *= -1;
+	RayData.DirectionalLightPosition_AndPadding = glm::vec4(0, -1, 0,0);
 
+	memcpy(UniformBuffersMappedMem[currentImage], &RayData, sizeof(RayData));
 }
+
 
 uint32_t RayTracing::alignedSize(uint32_t value, uint32_t alignment)
 {
