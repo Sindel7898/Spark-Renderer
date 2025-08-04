@@ -25,9 +25,9 @@ void main()
    const vec2 inUV = pixelCenter/vec2(gl_LaunchSizeEXT.xy); // UV calculated by deviding the center of the pixel by the size of the image??
    vec2 d = inUV * 2.0 - 1.0; // conver to clipspace
    
-   vec4 origin = inverse(cam.ViewMatrix) * vec4(0,0,0,1);
-   vec4 target = inverse(cam.ProjectionMatrix) * vec4(d.x, d.y, 1, 1) ;
-   vec4 direction = inverse(cam.ViewMatrix) * vec4(normalize(target.xyz / target.w), 0) ;
+   vec4 origin = (cam.ViewMatrix) * vec4(0,0,0,1);
+   vec4 target = (cam.ProjectionMatrix) * vec4(d.x, d.y, 1, 1) ;
+   vec4 direction = (cam.ViewMatrix) * vec4(normalize(target.xyz / target.w), 0) ;
 
    uint rayFlags = gl_RayFlagsOpaqueEXT;
    uint cullMask = 0xff;
