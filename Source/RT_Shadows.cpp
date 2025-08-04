@@ -206,8 +206,8 @@ void RayTracing::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool
 void RayTracing::UpdateUniformBuffer(uint32_t currentImage)
 {
 	RayUniformBufferData RayData;
-	RayData.ViewMatrix = camera->GetViewMatrix();
-	RayData.ProjectionMatrix = camera->GetProjectionMatrix();
+	RayData.ViewMatrix = camera->GetInverseViewMatrix();
+	RayData.ProjectionMatrix = camera->GetInverseProjectionMatrix();
 	RayData.ProjectionMatrix[1][1] *= -1;
 	RayData.DirectionalLightPosition_AndPadding = glm::vec4(0, -1, 0,0);
 
