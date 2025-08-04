@@ -19,8 +19,6 @@ public:
     // Getters for the view and projection matrices
     const glm::mat4& GetViewMatrix() const;
     const glm::mat4& GetProjectionMatrix() const;
-    const glm::mat4& GetInverseViewMatrix() const;
-    const glm::mat4& GetInverseProjectionMatrix() const;
 
     // Get camera properties
     const glm::vec3& GetPosition() const;
@@ -56,9 +54,7 @@ private:
 
     // Camera matrices
     glm::mat4 viewMatrix;
-    glm::mat4 inverseviewMatrix;
     glm::mat4 projectionMatrix;
-    glm::mat4 inverseprojectionMatrix;
 
     /// WindowRef
     GLFWwindow* window;

@@ -230,14 +230,17 @@
 
  void App::UpdateTLAS()
  {
+	 // 1. Update instance data on the GPU
 	 UpdateTLASInstanceBuffer();
 
+	 // 2. Reuse instance buffer device address
 	 vk::BufferDeviceAddressInfo instanceInfo{};
 	 instanceInfo.buffer = TLAS_InstanceData.buffer;
 
 	 vk::DeviceOrHostAddressConstKHR instanceDeviceAddress{};
 	 instanceDeviceAddress.deviceAddress = vulkanContext->LogicalDevice.getBufferAddress(instanceInfo);
 
+	 // 3. Setup geometry
 	 vk::AccelerationStructureGeometryKHR geometry{};
 	 geometry.geometryType = vk::GeometryTypeKHR::eInstances;
 	 geometry.flags = vk::GeometryFlagBitsKHR::eOpaque;
@@ -245,6 +248,7 @@
 	 geometry.geometry.instances.arrayOfPointers = VK_FALSE;
 	 geometry.geometry.instances.data = instanceDeviceAddress;
 
+	 // 4. Build geometry info with UPDATE mode
 	 vk::AccelerationStructureBuildGeometryInfoKHR buildInfo{};
 	 buildInfo.type = vk::AccelerationStructureTypeKHR::eTopLevel;
 	 buildInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace |
@@ -255,12 +259,12 @@
 	 buildInfo.srcAccelerationStructure = TLAS;
 	 buildInfo.dstAccelerationStructure = TLAS;
 
-	 //Scratch buffer address
+	 // 5. Scratch buffer address
 	 vk::BufferDeviceAddressInfo scratchAddrInfo{};
 	 scratchAddrInfo.buffer = TLAS_SCRATCH_Buffer.buffer;
 	 buildInfo.scratchData.deviceAddress = vulkanContext->LogicalDevice.getBufferAddress(scratchAddrInfo);
 
-	 // Build range info
+	 // 6. Build range info
 	 vk::AccelerationStructureBuildRangeInfoKHR buildRange{};
 	 buildRange.primitiveCount = static_cast<uint32_t>(Models.size());
 	 buildRange.primitiveOffset = 0;
@@ -270,6 +274,7 @@
 	 VkAccelerationStructureBuildRangeInfoKHR tempRange = buildRange;
 	 std::vector<VkAccelerationStructureBuildRangeInfoKHR*> rangeInfos = { &tempRange };
 
+	 // 7. Record and submit command buffer
 	 vk::CommandBuffer cmd = bufferManger->CreateSingleUseCommandBuffer(commandPool);
 	 VkAccelerationStructureBuildGeometryInfoKHR tempBuildInfo = buildInfo;
 
@@ -280,6 +285,7 @@
 
  void App::UpdateTLASInstanceBuffer()
  {
+
 	 std::vector< vk::AccelerationStructureInstanceKHR> Instances; // array of instances
 
 	 // pupulate instance data into the array 

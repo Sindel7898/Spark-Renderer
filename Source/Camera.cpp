@@ -113,13 +113,11 @@ void Camera::UpdateCameraVectors() {
 void Camera::UpdateViewMatrix() {
 
     viewMatrix = glm::lookAt(position, position + forward, up);
-    inverseviewMatrix = glm::inverse(viewMatrix);
 }
 
 void Camera::UpdateProjectionMatrix() {
     float aspectRatio = static_cast<float>(swapChainWidth) / static_cast<float>(swapChainHeight);
     projectionMatrix = glm::perspective(glm::radians(fov), aspectRatio, nearClip, farClip);
-    inverseprojectionMatrix = glm::inverse(projectionMatrix);
 }
 
 const glm::mat4& Camera::GetViewMatrix() const {
@@ -129,15 +127,6 @@ const glm::mat4& Camera::GetViewMatrix() const {
 const glm::mat4& Camera::GetProjectionMatrix() const {
     return projectionMatrix;
 }
-
-const glm::mat4& Camera::GetInverseViewMatrix() const {
-    return inverseviewMatrix;
-}
-
-const glm::mat4& Camera::GetInverseProjectionMatrix() const {
-    return inverseprojectionMatrix;
-}
-
 
 const glm::vec3& Camera::GetPosition() const {
     return position;
