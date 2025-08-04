@@ -1519,6 +1519,7 @@ void App::Draw()
 void App::updateUniformBuffer(uint32_t currentImage) {
 	
 	UpdateTLAS();
+
 	for (auto& light : lights)
 	{
 		light->UpdateUniformBuffer(currentImage);
@@ -1534,7 +1535,7 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 
 	lighting_FullScreenQuad->UpdateUniformBuffer(currentImage, lights);
 	ssao_FullScreenQuad->UpdataeUniformBufferData();
-
+	Raytracing_Shadows->UpdateUniformBuffer(currentImage);
 
 }
 
