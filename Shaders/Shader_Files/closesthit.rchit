@@ -27,13 +27,14 @@ void main()
     vec3 hitPosition = texture(Position, UV).xyz;
 
     // Directional light casts rays in opposite direction
-    vec3 lightDir = normalize(vec3(0,1,0));
+    vec3 lightDir = -normalize(Light_UBO.LightDirection.xyz);
 
     inPayloadResults.hitValue = vec3(0.0);
 
     float tmin = 0.001;
     float tmax = 10000.0; // Infinite distance for directional light
     vec3 origin = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
+    origin += 0.001;
 
     traceRayEXT(
         topLevelAS,

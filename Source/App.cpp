@@ -1559,7 +1559,7 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 
 	lighting_FullScreenQuad->UpdateUniformBuffer(currentImage, lights);
 	ssao_FullScreenQuad->UpdataeUniformBufferData();
-	Raytracing_Shadows->UpdateUniformBuffer(currentImage);
+	Raytracing_Shadows->UpdateUniformBuffer(currentImage, lights);
 
 }
 

@@ -2,6 +2,7 @@
 #include "VulkanContext.h"
 #include "BufferManager.h"
 #include "Camera.h"
+#include "Light.h"
 
 #include <stdexcept>
 
@@ -245,7 +246,7 @@ void RayTracing::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool
 
 }
 
-void RayTracing::UpdateUniformBuffer(uint32_t currentImage)
+void RayTracing::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref)
 {
 	RayGen_UniformBufferData RayGent_UniformBufferData;
 	RayGent_UniformBufferData.ViewMatrix = glm::inverse(camera->GetViewMatrix());
@@ -254,9 +255,10 @@ void RayTracing::UpdateUniformBuffer(uint32_t currentImage)
 
 	memcpy(RayGen_UniformBuffersMappedMem[currentImage], &RayGent_UniformBufferData, sizeof(RayGent_UniformBufferData));
 
+	glm::vec3 lightPos = lightref[0]->position;
 
 	RayClosesetHit_UniformBufferData RayClosesetHit_UniformBufferData;
-	RayClosesetHit_UniformBufferData.LightPosition_Padding = glm::vec4(0, -1, 0, 1);
+	RayClosesetHit_UniformBufferData.LightPosition_Padding = glm::vec4(lightPos, 0.0f); // vec3 + padding
 
 	memcpy(RayClosestHit_UniformBuffersMappedMem[currentImage], &RayClosesetHit_UniformBufferData, sizeof(RayClosesetHit_UniformBufferData));
 
