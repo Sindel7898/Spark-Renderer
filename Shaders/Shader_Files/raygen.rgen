@@ -2,19 +2,17 @@
 #extension GL_EXT_ray_tracing : require
 
 layout(binding = 0) uniform accelerationStructureEXT topLevelAS;
-layout(binding = 1) uniform sampler2D  Position;
-layout(binding = 2) uniform sampler2D  Normal;
 layout(binding = 3, rgba8) uniform image2D    OutputImage;
 
-layout(binding = 4, set = 0) uniform CameraProperties{
+layout(binding = 4) uniform CameraProperties{
     mat4 ViewMatrix;
     mat4 ProjectionMatrix;
-    vec4 DirectionalLightPosition_AndPadding;
 }cam;
 
 struct HitPayload
 {
   vec3 hitValue;
+  vec2 UV;
 };
 
 layout(location = 0) rayPayloadEXT HitPayload PayloadResults;
@@ -22,19 +20,21 @@ layout(location = 0) rayPayloadEXT HitPayload PayloadResults;
 void main() 
 {
    const vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5); //center of pixel being rendered
-   const vec2 inUV = pixelCenter/vec2(gl_LaunchSizeEXT.xy); // UV calculated by deviding the center of the pixel by the size of the image??
-   vec2 d = inUV * 2.0 - 1.0; // conver to clipspace
+   const vec2 inUV        = pixelCenter/vec2(gl_LaunchSizeEXT.xy); // UV calculated by deviding the center of the pixel by the size of the image??
+   vec2 d                 = inUV * 2.0 - 1.0; // conver to clipspace
    
-   vec4 origin = (cam.ViewMatrix) * vec4(0,0,0,1);
-   vec4 target = (cam.ProjectionMatrix) * vec4(d.x, d.y, 1, 1) ;
-   vec4 direction = (cam.ViewMatrix) * vec4(normalize(target.xyz / target.w), 0) ;
+   PayloadResults.UV = inUV;
 
-   uint rayFlags = gl_RayFlagsOpaqueEXT;
-   uint cullMask = 0xff;
-   float tmin = 0.001;
-   float tmax = 10000.0;
+   vec4 origin    =    cam.ViewMatrix * vec4(0,0,0,1);
+   vec4 target    =    cam.ProjectionMatrix * vec4(d.x, d.y, 1, 1) ;
+   vec4 direction =    cam.ViewMatrix * vec4(normalize(target.xyz / target.w), 0) ;
 
-   	traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
+   uint rayFlags  = gl_RayFlagsOpaqueEXT;
+   uint cullMask  = 0xff;
+   float tmin     = 0.001;
+   float tmax     = 10000.0;
+
+   traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
 
    imageStore(OutputImage, ivec2(gl_LaunchIDEXT.xy), vec4(PayloadResults.hitValue,1.0));
 }

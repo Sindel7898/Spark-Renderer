@@ -252,7 +252,7 @@ vk::Pipeline VulkanContext::createRayTracingGraphicsPipeline(vk::PipelineLayout 
 	rtPipelineInfo.pStages                      = ShaderStage.data();
 	rtPipelineInfo.groupCount                   = RayTracingshaderGroups.size();           
 	rtPipelineInfo.pGroups                      = RayTracingshaderGroups.data();
-	rtPipelineInfo.maxPipelineRayRecursionDepth = 1;            // typical minimum  *******REMEMBER TO ASK GPU INSTEAD********
+	rtPipelineInfo.maxPipelineRayRecursionDepth = 3;            // typical minimum  *******REMEMBER TO ASK GPU INSTEAD********
 	rtPipelineInfo.layout                       = pipelineLayout;
 
 	VkRayTracingPipelineCreateInfoKHR rtinfo = rtPipelineInfo;
