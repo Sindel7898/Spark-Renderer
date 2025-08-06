@@ -40,7 +40,7 @@ void RayTracing::CreateUniformBuffer() {
 		RayClosestHit_UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		RayClosestHit_UniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
 
-		VkDeviceSize RayClosesetHitUniformBufferSize = sizeof(RayClosesetHit_UniformBufferData);
+		VkDeviceSize RayClosesetHitUniformBufferSize = sizeof(RayClosesetHit_UniformBufferData) * 100;
 
 		for (size_t i = 0; i < RayGen_UniformBuffers.size(); i++)
 		{
@@ -79,19 +79,19 @@ void RayTracing::createRayTracingDescriptorSetLayout(){
 	TLASLayout.binding = 0;
 	TLASLayout.descriptorCount = 1;
 	TLASLayout.descriptorType = vk::DescriptorType::eAccelerationStructureKHR;
-	TLASLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR;
+	TLASLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
 	vk::DescriptorSetLayoutBinding PositionSamplerLayout{};
 	PositionSamplerLayout.binding = 1;
 	PositionSamplerLayout.descriptorCount = 1;
 	PositionSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	PositionSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+	PositionSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
 	vk::DescriptorSetLayoutBinding NormalSamplerLayout{};
 	NormalSamplerLayout.binding = 2;
 	NormalSamplerLayout.descriptorCount = 1;
 	NormalSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	NormalSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+	NormalSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
 	vk::DescriptorSetLayoutBinding ShadowResultSamplerLayout{};
 	ShadowResultSamplerLayout.binding = 3;
@@ -109,7 +109,7 @@ void RayTracing::createRayTracingDescriptorSetLayout(){
 	RayClosestHitUniformBufferLayout.binding = 5;
 	RayClosestHitUniformBufferLayout.descriptorCount = 1;
 	RayClosestHitUniformBufferLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
-	RayClosestHitUniformBufferLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+	RayClosestHitUniformBufferLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
 
 	std::array<vk::DescriptorSetLayoutBinding, 6> bindings = { TLASLayout,PositionSamplerLayout, 
@@ -222,7 +222,7 @@ void RayTracing::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool
 			vk::DescriptorBufferInfo RayClosesetHit_UniformbufferInfo{};
 			RayClosesetHit_UniformbufferInfo.buffer = RayClosestHit_UniformBuffers[i].buffer;
 			RayClosesetHit_UniformbufferInfo.offset = 0;
-			RayClosesetHit_UniformbufferInfo.range = sizeof(RayClosesetHit_UniformBufferData);
+			RayClosesetHit_UniformbufferInfo.range = sizeof(RayClosesetHit_UniformBufferData) * 100;
 
 			vk::WriteDescriptorSet RayClosesetHit_UniformdescriptorWrite{};
 			RayClosesetHit_UniformdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
@@ -253,16 +253,23 @@ void RayTracing::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::sha
 	RayGent_UniformBufferData.ProjectionMatrix = glm::inverse(camera->GetProjectionMatrix());
 	RayGent_UniformBufferData.ProjectionMatrix[1][1] *= -1;
 
+	RayGent_UniformBufferData.LightCount_Padding = glm::vec4(lightref.size(), 0.0f, 0.0f, 0.0f);
+
 	memcpy(RayGen_UniformBuffersMappedMem[currentImage], &RayGent_UniformBufferData, sizeof(RayGent_UniformBufferData));
 
-	glm::vec3 lightPos = lightref[0]->position;
-	glm::vec3 lightPos2 = lightref[1]->position;
+	std::vector<RayClosesetHit_UniformBufferData> LightsData;
 
-	RayClosesetHit_UniformBufferData RayClosesetHit_UniformBufferData;
-	RayClosesetHit_UniformBufferData.LightPosition_Padding = glm::vec4(lightPos, 0.0f); 
-	RayClosesetHit_UniformBufferData.LightPosition2_Padding = glm::vec4(lightPos2, 0.0f); 
+	
+	for (size_t i = 0; i < lightref.size(); i++)
+	{
+		RayClosesetHit_UniformBufferData lightInstancedata;
+		lightInstancedata.LightPosition_Padding = glm::vec4(lightref[i]->position, 0.0f);
+		lightInstancedata.LightType_Padding = glm::vec4(lightref[i]->lightType, 0.0f, 0.0f, 0.0f);
 
-	memcpy(RayClosestHit_UniformBuffersMappedMem[currentImage], &RayClosesetHit_UniformBufferData, sizeof(RayClosesetHit_UniformBufferData));
+		LightsData.push_back(lightInstancedata);
+	}
+
+	memcpy(RayClosestHit_UniformBuffersMappedMem[currentImage], LightsData.data(), LightsData.size() * sizeof(RayClosesetHit_UniformBufferData));
 
 }
 
@@ -302,12 +309,14 @@ void RayTracing::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferDa
 	vk::StridedDeviceAddressRegionKHR  missShaderSbtEntry{};
 	missShaderSbtEntry.deviceAddress = missShaderBindingTableAdress;
 	missShaderSbtEntry.stride = handleSizeAligned;
-	missShaderSbtEntry.size = handleSizeAligned * 2;
+	missShaderSbtEntry.size = handleSizeAligned;
 
 	vk::StridedDeviceAddressRegionKHR hitShaderSbtEntry{};
 	hitShaderSbtEntry.deviceAddress = hitShaderBindingTableAdress;
 	hitShaderSbtEntry.stride = handleSizeAligned;
 	hitShaderSbtEntry.size = handleSizeAligned;
+
+	//vk::StridedDeviceAddressRegionKHR hitShaderSbtEntry{};
 
 	vk::StridedDeviceAddressRegionKHR callableShaderSbtEntry{};
 

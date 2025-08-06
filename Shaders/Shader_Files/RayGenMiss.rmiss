@@ -3,8 +3,8 @@
 
 struct HitPayload
 {
-  vec2 UV;
   bool Shadowed;
+  bool SkyBox;
 };
 
 layout(location = 0) rayPayloadInEXT HitPayload inPayloadResults;
@@ -12,4 +12,6 @@ layout(location = 0) rayPayloadInEXT HitPayload inPayloadResults;
 void main()
 {
   inPayloadResults.Shadowed = false;
+  inPayloadResults.SkyBox = true;
+
 }

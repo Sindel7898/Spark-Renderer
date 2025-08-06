@@ -33,7 +33,7 @@ void main()
 
     float tmin = 0.001;
     float tmax = 10000.0; // Infinite distance for directional light
-    vec3 origin = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
+    vec3 origin = hitPosition + lightDir * gl_HitTEXT;
     origin += 0.001;
 
     traceRayEXT(

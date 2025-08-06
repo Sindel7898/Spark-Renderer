@@ -12,12 +12,13 @@ class  BufferManager;
 struct RayGen_UniformBufferData {
     glm::mat4 ViewMatrix;
     glm::mat4 ProjectionMatrix;
+    glm::vec4 LightCount_Padding;
+
 };
 
 struct RayClosesetHit_UniformBufferData {
     glm::vec4 LightPosition_Padding;
-    glm::vec4 LightPosition2_Padding;
-
+    glm::vec4 LightType_Padding;
 };
 
 
