@@ -11,8 +11,8 @@ layout(binding = 4) uniform CameraProperties{
 
 struct HitPayload
 {
-  vec3 hitValue;
   vec2 UV;
+  bool Shadowed;
 };
 
 layout(location = 0) rayPayloadEXT HitPayload PayloadResults;
@@ -36,5 +36,9 @@ void main()
 
    traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, origin.xyz, tmin, direction.xyz, tmax, 0);
 
-   imageStore(OutputImage, ivec2(gl_LaunchIDEXT.xy), vec4(PayloadResults.hitValue,1.0));
+   vec3 OutputColor = vec3(1);
+   if(PayloadResults.Shadowed){
+      OutputColor = vec3(0);
+   }
+   imageStore(OutputImage, ivec2(gl_LaunchIDEXT.xy), vec4(OutputColor,1.0));
 }

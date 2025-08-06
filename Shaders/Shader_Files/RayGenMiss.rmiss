@@ -3,13 +3,13 @@
 
 struct HitPayload
 {
-  vec3 hitValue;
   vec2 UV;
+  bool Shadowed;
 };
 
 layout(location = 0) rayPayloadInEXT HitPayload inPayloadResults;
 
 void main()
 {
-  inPayloadResults.hitValue = vec3(0, 0, 1); // blue = miss
+  inPayloadResults.Shadowed = false;
 }

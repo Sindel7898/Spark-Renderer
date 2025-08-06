@@ -12,8 +12,8 @@ layout(binding = 5) uniform LightInformation{
 
 struct HitPayload
 {
-  vec3 hitValue;
   vec2 UV;
+  bool Shadowed;
 
 };
 
@@ -29,7 +29,7 @@ void main()
     // Directional light casts rays in opposite direction
     vec3 lightDir = -normalize(Light_UBO.LightDirection.xyz);
 
-    inPayloadResults.hitValue = vec3(0.0);
+    inPayloadResults.Shadowed = true;
 
     float tmin = 0.001;
     float tmax = 10000.0; // Infinite distance for directional light

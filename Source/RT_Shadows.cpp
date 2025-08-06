@@ -256,9 +256,11 @@ void RayTracing::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::sha
 	memcpy(RayGen_UniformBuffersMappedMem[currentImage], &RayGent_UniformBufferData, sizeof(RayGent_UniformBufferData));
 
 	glm::vec3 lightPos = lightref[0]->position;
+	glm::vec3 lightPos2 = lightref[1]->position;
 
 	RayClosesetHit_UniformBufferData RayClosesetHit_UniformBufferData;
-	RayClosesetHit_UniformBufferData.LightPosition_Padding = glm::vec4(lightPos, 0.0f); // vec3 + padding
+	RayClosesetHit_UniformBufferData.LightPosition_Padding = glm::vec4(lightPos, 0.0f); 
+	RayClosesetHit_UniformBufferData.LightPosition2_Padding = glm::vec4(lightPos2, 0.0f); 
 
 	memcpy(RayClosestHit_UniformBuffersMappedMem[currentImage], &RayClosesetHit_UniformBufferData, sizeof(RayClosesetHit_UniformBufferData));
 
