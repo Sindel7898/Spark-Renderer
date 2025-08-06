@@ -1,0 +1,182 @@
+#include "CombinedResult_FullScreenQuad.h"
+#include <stdexcept>
+#include <chrono>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/matrix_decompose.hpp>
+#include "Light.h"
+#include "Camera.h"
+#include <random>
+
+CombinedResult_FullScreenQuad::CombinedResult_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext,Camera* cameraref, vk::CommandPool commandpool): Drawable()
+{
+	camera = cameraref;
+	bufferManager = buffermanager;
+	vulkanContext = vulkancontext;
+	commandPool   = commandpool;
+	CreateVertexAndIndexBuffer();
+	CreateUniformBuffer();
+	createDescriptorSetLayout();
+
+}
+
+
+void CombinedResult_FullScreenQuad::CreateVertexAndIndexBuffer()
+{
+
+	VkDeviceSize VertexBufferSize = sizeof(quad[0]) * quad.size();
+	vertexBufferData.BufferID = "SSAO_BLUR Vertex Buffer";
+	bufferManager->CreateGPUOptimisedBuffer(&vertexBufferData,quad.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
+
+	VkDeviceSize indexBufferSize = sizeof(uint16_t) * quadIndices.size();
+	indexBufferData.BufferID = "SSAO_BLUR Index Buffer";
+	bufferManager->CreateGPUOptimisedBuffer(&indexBufferData,quadIndices.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
+
+}
+
+void CombinedResult_FullScreenQuad::CreateImage(vk::Extent3D imageExtent)
+{
+	FinalResultImage.ImageID = "FinalResult  Image  Texture";
+	bufferManager->CreateImage(&FinalResultImage, imageExtent, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+
+	FinalResultImage.imageView = bufferManager->CreateImageView(&FinalResultImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	FinalResultImage.imageSampler = bufferManager->CreateImageSampler();
+
+	//vk::CommandBuffer commandBuffer = bufferManager->CreateSingleUseCommandBuffer(commandPool);
+
+	//ImageTransitionData transitionInfo{};
+	//transitionInfo.oldlayout = vk::ImageLayout::eUndefined;
+	//transitionInfo.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+	//transitionInfo.AspectFlag = vk::ImageAspectFlagBits::eColor;
+	//transitionInfo.SourceAccessflag = vk::AccessFlagBits::eNone;
+	//transitionInfo.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
+	//transitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
+	//transitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
+
+	//bufferManager->TransitionImage(commandBuffer, &FinalResultImage, transitionInfo);
+
+	//bufferManager->SubmitAndDestoyCommandBuffer(commandPool, commandBuffer, vulkanContext->graphicsQueue);
+}
+
+void CombinedResult_FullScreenQuad::DestroyImage()
+{
+
+	bufferManager->DestroyImage(FinalResultImage);
+}
+
+
+
+void CombinedResult_FullScreenQuad::CreateUniformBuffer()
+{
+
+}
+
+void CombinedResult_FullScreenQuad::createDescriptorSetLayout()
+{
+	{
+		//////// Create set for SSAO Pass ////////////
+		vk::DescriptorSetLayoutBinding LightingResultDescriptorBinding{};
+		LightingResultDescriptorBinding.binding = 0;
+		LightingResultDescriptorBinding.descriptorCount = 1;
+		LightingResultDescriptorBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		LightingResultDescriptorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+		vk::DescriptorSetLayoutBinding ShadowResultDescriptorBinding{};
+		ShadowResultDescriptorBinding.binding = 1;
+		ShadowResultDescriptorBinding.descriptorCount = 1;
+		ShadowResultDescriptorBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		ShadowResultDescriptorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+
+
+		std::array<vk::DescriptorSetLayoutBinding, 2> ImageResultPassBinding = { LightingResultDescriptorBinding,ShadowResultDescriptorBinding };
+
+		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.bindingCount = static_cast<uint32_t>(ImageResultPassBinding.size());
+		layoutInfo.pBindings = ImageResultPassBinding.data();
+
+		if (vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &descriptorSetLayout) != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("Failed to create descriptorset layout!");
+		}
+	}
+}
+
+
+void CombinedResult_FullScreenQuad::UpdataeUniformBufferData()
+{
+}
+
+
+void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData ShadowResultImage)
+{
+	// create sets from the pool based on the layout
+	std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
+
+	vk::DescriptorSetAllocateInfo allocinfo;
+	allocinfo.descriptorPool = descriptorpool;
+	allocinfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	allocinfo.pSetLayouts = layouts.data();
+	 
+	DescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+
+	vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, DescriptorSets.data());
+
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	//specifies what exactly to send
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+
+		/////////////////////////////////////////////////////////////////////////////////////
+		vk::DescriptorImageInfo LightingResultimageInfo{};
+		LightingResultimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		LightingResultimageInfo.imageView   = LightingResultImage.imageView;
+		LightingResultimageInfo.sampler    = LightingResultImage.imageSampler;
+
+		vk::WriteDescriptorSet LightingResultSamplerdescriptorWrite{};
+		LightingResultSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+		LightingResultSamplerdescriptorWrite.dstBinding = 0;
+		LightingResultSamplerdescriptorWrite.descriptorCount = 1;
+		LightingResultSamplerdescriptorWrite.dstArrayElement = 0;
+		LightingResultSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		LightingResultSamplerdescriptorWrite.pImageInfo = &LightingResultimageInfo;
+		/////////////////////////////////////////////////////////////////////////////////////
+;
+        vk::DescriptorImageInfo ShadowResultimageInfo{};
+		ShadowResultimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		ShadowResultimageInfo.imageView   = ShadowResultImage.imageView;
+		ShadowResultimageInfo.sampler     = ShadowResultImage.imageSampler;
+        
+        vk::WriteDescriptorSet ShadowResultSamplerdescriptorWrite{};
+		ShadowResultSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+		ShadowResultSamplerdescriptorWrite.dstBinding = 1;
+		ShadowResultSamplerdescriptorWrite.descriptorCount = 1;
+		ShadowResultSamplerdescriptorWrite.dstArrayElement = 0;
+		ShadowResultSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		ShadowResultSamplerdescriptorWrite.pImageInfo = &ShadowResultimageInfo;
+        /////////////////////////////////////////////////////////////////////////////////////
+
+		std::array<vk::WriteDescriptorSet, 2> descriptorWrites = { LightingResultSamplerdescriptorWrite,
+																	ShadowResultSamplerdescriptorWrite,        
+		                                                         };
+
+		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+	}
+}
+
+
+void CombinedResult_FullScreenQuad::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)
+{
+	vk::DeviceSize offsets[] = { 0 };
+	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+
+	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
+	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
+	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+}
+
+void CombinedResult_FullScreenQuad::CleanUp()
+{
+
+	Drawable::Destructor();
+}
+

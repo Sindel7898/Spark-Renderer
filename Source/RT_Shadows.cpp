@@ -53,9 +53,8 @@ void RayTracing::CreateUniformBuffer() {
 		}
 	}
 
-
-
 }
+
 void RayTracing::CreateStorageImage() {
 
 	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);

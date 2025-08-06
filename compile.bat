@@ -16,7 +16,8 @@ C:\VulkanSDK\1.4.321.1\Bin\glslc.exe Shaders\Shader_Files\FXAA.frag             
 C:\VulkanSDK\1.4.321.1\Bin\glslc.exe Shaders\Shader_Files\Terrain_GeometryPass.frag  -o  Shaders\Compiled_Shader_Files\Terrain_GeometryPass.frag.spv
 C:\VulkanSDK\1.4.321.1\Bin\glslc.exe Shaders\Shader_Files\Grass.frag                 -o  Shaders\Compiled_Shader_Files\Grass.frag.spv
 C:\VulkanSDK\1.4.321.1\Bin\glslc.exe Shaders\Shader_Files\SSR.frag                   -o  Shaders\Compiled_Shader_Files\SSR.frag.spv
-		
+C:\VulkanSDK\1.4.321.1\Bin\glslc.exe Shaders\Shader_Files\CombinedImage.frag                   -o  Shaders\Compiled_Shader_Files\CombinedImage.frag.spv
+
 glslc.exe Shaders/Shader_Files/raygen.rgen          -o Shaders/Compiled_Shader_Files/raygen.rgen.spv          --target-env=vulkan1.4
 glslc.exe Shaders/Shader_Files/closesthit.rchit     -o Shaders/Compiled_Shader_Files/closesthit.rchit.spv     --target-env=vulkan1.4
 glslc.exe Shaders/Shader_Files/ShadowMiss.rmiss     -o Shaders/Compiled_Shader_Files/ShadowMiss.rmiss.spv     --target-env=vulkan1.4

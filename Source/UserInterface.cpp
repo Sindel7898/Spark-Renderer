@@ -366,6 +366,12 @@ void UserInterface::DrawUi(App* appref)
 
 	if (appref->DefferedDecider == 5)
 	{
+		ImGui::Image((ImTextureID)appref->LightingAndReflectionsRenderTextureId, viewportSize);
+
+	}
+
+	if (appref->DefferedDecider == 6)
+	{
 		ImGui::Image((ImTextureID)appref->FinalRenderTextureId, viewportSize);
 
 	}
