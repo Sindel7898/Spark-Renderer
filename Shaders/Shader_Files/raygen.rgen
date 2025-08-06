@@ -18,8 +18,8 @@ layout(binding = 4) uniform CameraProperties {
 
 struct LightStruct {
 
-    vec4 LightDirection;
-    vec4 LightType_WithPadding;
+    vec4 LightPositions;
+    vec4 LightType_CastShadow_Padding;
 
 };
 
@@ -38,7 +38,7 @@ struct HitPayload {
 
 layout(location = 0) rayPayloadEXT HitPayload PayloadResults;
 
-bool TraceShadow(vec3 origin, vec3 direction) {
+bool TraceShadow(vec3 origin, vec3 direction,float MaxDistance) {
 
     PayloadResults.Shadowed = true;
     PayloadResults.SkyBox = false;
@@ -46,7 +46,7 @@ bool TraceShadow(vec3 origin, vec3 direction) {
     const uint rayFlags = gl_RayFlagsOpaqueEXT;
     const uint cullMask = 0xff;
     const float tMin = 0.001;
-    const float tMax = 10000.0;
+    const float tMax = MaxDistance;
 
     traceRayEXT(
         topLevelAS,
@@ -110,14 +110,29 @@ void main() {
             origin  += 0.01;
        
        
-       
+       float lightContribution = 0.0;
+
        for(int i = 0; i < LightCount; ++i){
           
-            if(Light_UBO.LightData[i].LightType_WithPadding.x == 0.0){
-                BShadows[i] = TraceShadow(origin,-Light_UBO.LightData[i].LightDirection.xyz);
-            }       
+          if(Light_UBO.LightData[i].LightType_CastShadow_Padding.y == 1.0){
+          
+             if(Light_UBO.LightData[i].LightType_CastShadow_Padding.x == 0.0){
+            
+                vec3 lightDir    = normalize(-Light_UBO.LightData[i].LightPositions.xyz);
+                     BShadows[i] = TraceShadow(origin,lightDir,10000.0);
+            
+            }else if (Light_UBO.LightData[i].LightType_CastShadow_Padding.x == 1.0){
+                  
+                  float Distance = length(Light_UBO.LightData[i].LightPositions.xyz - hitPosition);
+                   vec3 lightDir = normalize(Light_UBO.LightData[i].LightPositions.xyz - hitPosition);
+                     BShadows[i] = TraceShadow(origin,lightDir,Distance);
+            }      
+          
+          }
        };
        
+
+
        // Combine shadows from both lights
        vec3 totalShadowColor;
        

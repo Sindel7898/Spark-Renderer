@@ -471,6 +471,9 @@ void UserInterface::DrawUi(App* appref)
 					}
 					ImGui::EndCombo();
 				}
+
+				ImGui::Checkbox("Cast Shadow", (bool*)&light->CastShadow);
+
 			}
 			ImGui::End();
 		};

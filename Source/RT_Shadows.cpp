@@ -264,7 +264,7 @@ void RayTracing::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::sha
 	{
 		RayClosesetHit_UniformBufferData lightInstancedata;
 		lightInstancedata.LightPosition_Padding = glm::vec4(lightref[i]->position, 0.0f);
-		lightInstancedata.LightType_Padding = glm::vec4(lightref[i]->lightType, 0.0f, 0.0f, 0.0f);
+		lightInstancedata.LightType_CastShadow_Padding = glm::vec4(lightref[i]->lightType, lightref[i]->CastShadow, 0.0f, 0.0f);
 
 		LightsData.push_back(lightInstancedata);
 	}

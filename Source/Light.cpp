@@ -24,7 +24,7 @@ Light::Light(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* 
 	color           = glm::vec3(1.0f, 1.0f, 1.0f);
 	ambientStrength = 0.5f;
 	lightIntensity  = 4.0f;
-
+	CastShadow      = 1;
 
 	transformMatrices.modelMatrix = glm::mat4(1.0f);
 	transformMatrices.modelMatrix = glm::translate(transformMatrices.modelMatrix, position);

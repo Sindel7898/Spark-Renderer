@@ -18,7 +18,7 @@ struct RayGen_UniformBufferData {
 
 struct RayClosesetHit_UniformBufferData {
     glm::vec4 LightPosition_Padding;
-    glm::vec4 LightType_Padding;
+    glm::vec4 LightType_CastShadow_Padding;
 };
 
 

@@ -30,6 +30,7 @@ public:
     float      lightIntensity;
 
     int        lightType;
+    int        CastShadow;
 
 private:
 
