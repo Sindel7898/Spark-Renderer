@@ -97,14 +97,15 @@ void main() {
     vec3 cR = reflect (-ViewDir, normalize(Normal));
     vec3 Reflection = texture(samplerReflectiveCubeMap, cR,mipLevel).rgb;
 
-    vec3 ambientvalue = vec3(0.15);
-    vec3 Ambient = Albedo * ambientvalue * ambientOcclusion;
 
   for (int i = 0; i < 3; i++) {
 
-     float Attenuation = 1.0;
+    LightData light = lights[i];
 
-     LightData light = lights[i];
+    float Attenuation = 1.0;
+    vec3 ambientvalue = vec3(0.15);
+    vec3 Ambient = Albedo * ambientvalue * ambientOcclusion ;
+     Ambient *= 0.3;
 
      vec3 Lo      = vec3(0.0);
 
@@ -146,6 +147,7 @@ void main() {
 
 
     totalLighting += Lo * light.CameraPositionAndLightIntensity.w;  
+    totalLighting += Ambient;
   }
   
   vec3 finalColor;
@@ -161,10 +163,10 @@ void main() {
    // Add environment reflection with Fresnel weighting
    vec3 envSpecular = Reflection * F;
    
-    finalColor = Ambient + totalLighting + envSpecular;
+    finalColor =  totalLighting + envSpecular;
   }else{
   
-     finalColor = Ambient + totalLighting;
+     finalColor = totalLighting;
   }
 
    outFragcolor = vec4(finalColor, 1.0);

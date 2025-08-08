@@ -95,6 +95,7 @@ void main() {
    }
 
    ////////////////////////////////////////////////////////////////////////////////////////////
+   float shadowFactor = 1.0; // Start fully lit
 
    if(PayloadResults.SkyBox == false){
    
@@ -107,7 +108,7 @@ void main() {
        
        
        vec3 origin  = hitPosition;
-            origin  += 0.01;
+            origin  += 0.21;
        
        
        float lightContribution = 0.0;
@@ -127,25 +128,15 @@ void main() {
                    vec3 lightDir = normalize(Light_UBO.LightData[i].LightPositions.xyz - hitPosition);
                      BShadows[i] = TraceShadow(origin,lightDir,Distance);
             }      
-          
+         
+            if(BShadows[i]) {
+                  shadowFactor *= Light_UBO.LightData[i].LightType_CastShadow_Padding.z / float(2);
+              }
           }
        };
        
 
-
-       // Combine shadows from both lights
-       vec3 totalShadowColor;
-       
-       if (BShadows[0] && BShadows[1] && BShadows[2]) {
-           totalShadowColor = vec3(0.0); // fully in shadow
-       } else if (BShadows[0] || BShadows[1] || BShadows[2]) {
-           totalShadowColor = vec3(0.2); // partial light
-       } else {
-           totalShadowColor = vec3(1.0); // fully lit
-       
-       }
-       
-       FinalColor = totalShadowColor;       
+       FinalColor =  vec3(max(shadowFactor, 0.0));     
   }
 
     imageStore(OutputImage, ivec2(gl_LaunchIDEXT.xy), vec4(FinalColor, 1.0));

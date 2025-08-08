@@ -123,6 +123,8 @@ void Light::createDescriptorSets(vk::DescriptorPool descriptorpool)
 
 void Light::UpdateUniformBuffer(uint32_t currentImage)
 {
+	//ambientStrength = std::clamp(ambientStrength, 0.0f, 1.0f); //Clamp AmbientStrength
+
 	Drawable::UpdateUniformBuffer(currentImage);
 
 	transformMatrices.viewMatrix = camera->GetViewMatrix();
