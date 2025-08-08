@@ -91,6 +91,7 @@
 	lights[0]->SetPosition(glm::vec3(-1.225f, -1.002f, -0.951));
 	lights[0]->lightType = 0;
 	lights[0]->lightIntensity = 20;
+	lights[0]->CastShadowsSwitch(true);
 
 	lights[1]->SetPosition(glm::vec3(0.0f, 10.0f, 0.0f));
 	lights[2]->SetPosition(glm::vec3(-20.0f, 0.0f, 0.0f));

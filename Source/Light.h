@@ -16,6 +16,7 @@ public:
 
     void CreateVertexAndIndexBuffer() override;
     void CreateUniformBuffer() override;
+    void CastShadowsSwitch(bool bCastShadow);
     void createDescriptorSets(vk::DescriptorPool descriptorpool) override;
     void UpdateUniformBuffer(uint32_t currentImage) override;
     void createDescriptorSetLayout() override;
