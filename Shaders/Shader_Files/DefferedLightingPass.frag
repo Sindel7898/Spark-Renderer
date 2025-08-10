@@ -102,10 +102,8 @@ void main() {
 
     LightData light = lights[i];
 
-    float Attenuation = 1.0;
-    vec3 ambientvalue = vec3(0.15);
-    vec3 Ambient = Albedo * ambientvalue * ambientOcclusion ;
-     Ambient *= 0.3;
+    float ambientStrength = 0.03;
+    vec3 Ambient = Albedo * ambientOcclusion * ambientStrength;
 
      vec3 Lo      = vec3(0.0);
 
@@ -121,7 +119,7 @@ void main() {
                vec3 LightPos     = light.positionAndLightType.xyz;
                LightDir          = normalize(LightPos - WorldPos);
                float Distance    = length(LightPos -  WorldPos);
-               Attenuation       = 1.0 / (Constant + Linear * Distance + Quadratic * (Distance * Distance));
+             float Attenuation       = 1.0 / (Constant + Linear * Distance + Quadratic * (Distance * Distance));
                radiance          = light.colorAndAmbientStrength.rgb * Attenuation;
     }  
 

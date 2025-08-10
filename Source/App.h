@@ -30,6 +30,8 @@ class Light;
 class Grass;
 class RayTracing;
 class CombinedResult_FullScreenQuad;
+class SSGI;
+
 struct GBuffer;
 
 class App
@@ -96,7 +98,7 @@ public:
 	void destroy_GbufferImages();
 
 	bool framebufferResized = false;
-	int DefferedDecider = 6;
+	int DefferedDecider = 7;
 
 	bool bWireFrame = false;
 	//Drawables
@@ -106,6 +108,7 @@ public:
 	std::shared_ptr<FXAA_FullScreenQuad>         fxaa_FullScreenQuad = nullptr;
 	std::shared_ptr<SSR_FullScreenQuad>          ssr_FullScreenQuad = nullptr;
 	std::shared_ptr<RayTracing>                  Raytracing_Shadows = nullptr;
+	std::shared_ptr<SSGI>                        SSGI_FullScreenQuad = nullptr;
 	std::shared_ptr<CombinedResult_FullScreenQuad>     Combined_FullScreenQuad = nullptr;
 
 	VkDescriptorSet FinalRenderTextureId;
@@ -115,6 +118,8 @@ public:
 	VkDescriptorSet NormalTextureId;
 	VkDescriptorSet AlbedoTextureId;
 	VkDescriptorSet SSAOTextureId;
+	VkDescriptorSet SSGITextureId;
+
 
 	std::shared_ptr<Camera>             camera = nullptr;
 	std::vector<std::shared_ptr<Model>> Models;
@@ -147,6 +152,8 @@ private:
 	vk::PipelineLayout         SSAOBlurPipelineLayout = nullptr;
 	vk::PipelineLayout         SSRPipelineLayout = nullptr;
 	vk::PipelineLayout         RT_ShadowsPipelineLayout = nullptr;
+	vk::PipelineLayout         SSGIPipelineLayout = nullptr;
+
 	vk::PipelineLayout         CombinedImagePipelineLayout = nullptr;
 
 	vk::Pipeline               DeferedLightingPassPipeline = nullptr;
@@ -158,6 +165,7 @@ private:
 	vk::Pipeline               SSAOBlurPipeline = nullptr;
 	vk::Pipeline               SSRPipeline = nullptr;
 	vk::Pipeline               RT_ShadowsPassPipeline = nullptr;
+	vk::Pipeline               SSGIPipeline = nullptr;
 	vk::Pipeline               CombinedImagePassPipeline = nullptr;
 
 

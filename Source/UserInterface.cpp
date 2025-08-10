@@ -372,6 +372,12 @@ void UserInterface::DrawUi(App* appref)
 
 	if (appref->DefferedDecider == 6)
 	{
+		ImGui::Image((ImTextureID)appref->SSGITextureId, viewportSize);
+
+	}
+
+	if (appref->DefferedDecider == 7)
+	{
 		ImGui::Image((ImTextureID)appref->FinalRenderTextureId, viewportSize);
 
 	}

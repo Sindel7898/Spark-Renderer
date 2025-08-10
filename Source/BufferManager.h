@@ -83,6 +83,8 @@ public:
 
     ImageData CreateTextureImage(const void* pixeldata, vk::DeviceSize imagesize, int texWidth, int textHeight, vk::Format ImageFormat, vk::CommandPool commandpool, vk::Queue Queue);
 
+    ImageData LoadTextureImage(std::string FilePath,vk::Format ImageFormat, vk::CommandPool commandpool, vk::Queue Queue);
+
 
     void DestroyBuffer(BufferData& buffer);
 

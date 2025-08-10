@@ -245,21 +245,37 @@ void RayTracing::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool
 
 }
 
+void RayTracing::ActiveLightsCastingShadows(std::vector<std::shared_ptr<Light>>& lightref)
+{
+	NumOfShadowCasters = 0;
+
+	for (int i = 0; i < lightref.size(); i++)
+	{
+		if (lightref[i]->CastShadow)
+		{
+			NumOfShadowCasters++;
+		}
+	}
+
+}
+
 void RayTracing::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref)
 {
+	ActiveLightsCastingShadows(lightref);
+
 	RayGen_UniformBufferData RayGent_UniformBufferData;
 	RayGent_UniformBufferData.ViewMatrix = glm::inverse(camera->GetViewMatrix());
 	RayGent_UniformBufferData.ProjectionMatrix = glm::inverse(camera->GetProjectionMatrix());
 	RayGent_UniformBufferData.ProjectionMatrix[1][1] *= -1;
 
-	RayGent_UniformBufferData.LightCount_Padding = glm::vec4(lightref.size(), 0.0f, 0.0f, 0.0f);
+	RayGent_UniformBufferData.LightCount_NumOfLightCasters_Padding = glm::vec4(lightref.size(), NumOfShadowCasters, 0.0f, 0.0f);
 
 	memcpy(RayGen_UniformBuffersMappedMem[currentImage], &RayGent_UniformBufferData, sizeof(RayGent_UniformBufferData));
 
 	std::vector<RayClosesetHit_UniformBufferData> LightsData;
 
 	
-	for (size_t i = 0; i < lightref.size(); i++)
+	for (int i = 0; i < lightref.size(); i++)
 	{
 		RayClosesetHit_UniformBufferData lightInstancedata;
 		lightInstancedata.LightPosition_Padding = glm::vec4(lightref[i]->position, 0.0f);

@@ -12,7 +12,7 @@ layout(binding = 4) uniform CameraProperties {
 
     mat4 ViewMatrix;
     mat4 ProjectionMatrix;
-    vec4 LightCount_WithPadding;
+    vec4 LightCount_NumOfLightCasters_Padding;
 
 } cam;
 
@@ -102,7 +102,7 @@ void main() {
        FinalColor = vec3(1);
        bool BShadows[MAX_LIGHTS];
        
-       const int LightCount   = int(floor(cam.LightCount_WithPadding.x));
+       const int LightCount   = int(floor(cam.LightCount_NumOfLightCasters_Padding.x));
        
        vec3 hitPosition = texture(Position, inUV).xyz;
        
@@ -130,7 +130,8 @@ void main() {
             }      
          
             if(BShadows[i]) {
-                  shadowFactor *= Light_UBO.LightData[i].LightType_CastShadow_Padding.z / float(2);
+                   const int NumOfLightCasters   = int(floor(cam.LightCount_NumOfLightCasters_Padding.y));
+                  shadowFactor *= Light_UBO.LightData[i].LightType_CastShadow_Padding.z / NumOfLightCasters;
               }
           }
        };

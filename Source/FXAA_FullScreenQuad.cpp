@@ -39,6 +39,7 @@ void FXAA_FullScreenQuad::CreateImage(vk::Extent3D imageExtent)
 
 	   FxaaImage.imageView = bufferManager->CreateImageView(&FxaaImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
 	   FxaaImage.imageSampler = bufferManager->CreateImageSampler();
+
 	   vk::CommandBuffer commandBuffer = bufferManager->CreateSingleUseCommandBuffer(commandPool);
 
 	   ImageTransitionData transitionInfo{};

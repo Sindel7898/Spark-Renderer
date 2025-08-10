@@ -12,7 +12,7 @@ class  BufferManager;
 struct RayGen_UniformBufferData {
     glm::mat4 ViewMatrix;
     glm::mat4 ProjectionMatrix;
-    glm::vec4 LightCount_Padding;
+    glm::vec4 LightCount_NumOfLightCasters_Padding;
 
 };
 
@@ -31,6 +31,7 @@ public:
     void DestroyStorageImage();
     void createRayTracingDescriptorSetLayout();
     void createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, GBuffer gbuffer);
+    void ActiveLightsCastingShadows(std::vector<std::shared_ptr<Light>>& lightref);
     void UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref);
     void CreateUniformBuffer();
     uint32_t alignedSize(uint32_t value, uint32_t alignment);
@@ -47,6 +48,8 @@ public:
     std::vector<vk::DescriptorSet> RayTracingDescriptorSets;
 
     ImageData ShadowPassImage;
+    int NumOfShadowCasters;
+
 private:
 
     VulkanContext*   vulkanContext = nullptr;

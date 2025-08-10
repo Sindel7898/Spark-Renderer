@@ -22,7 +22,7 @@ Light::Light(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* 
 	rotation        = glm::vec3(1.0f, 1.0f, 1.0f);
 	scale           = glm::vec3(0.5f, 0.5f, 0.5f);
 	color           = glm::vec3(1.0f, 1.0f, 1.0f);
-	ambientStrength = 0.5f;
+	ambientStrength = 0.9f;
 	lightIntensity  = 4.0f;
 	CastShadow      = 0;
 
