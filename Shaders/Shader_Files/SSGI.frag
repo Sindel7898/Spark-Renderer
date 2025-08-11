@@ -88,8 +88,9 @@ vec3 FindIntersectionPoint(vec3 SamplePosInVS, vec3 DirInVS, float MaxTraceDista
     return intersected ? hitPoint : SamplePosInVS;
 }
 
-float randf(int x, int y) {
-    return mod(52.9829189 * mod(0.06711056 * float(x) + 0.00583715 * float(y), 1.0), 1.0);
+vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal)
+{
+    return ViewPosition + 0.0001 * normal;
 }
 
 void main() {
@@ -109,7 +110,7 @@ void main() {
     vec3 stochasticNormal = GetHemisphereSample(noise, Normal);
     
     // Find intersection point in view space
-    vec3 IntersectionPoint = FindIntersectionPoint(VSposition, stochasticNormal, 10.0);
+    vec3 IntersectionPoint = FindIntersectionPoint(offsetPositionAlongNormal(VSposition,stochasticNormal), stochasticNormal, 10.0);
     
     // Project intersection point to screen space
     vec4 RayPositionPS = ubo.ProjectionMatrix * vec4(IntersectionPoint, 1.0);

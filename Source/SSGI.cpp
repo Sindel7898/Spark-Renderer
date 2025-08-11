@@ -30,7 +30,7 @@ void SSGI::CreateVertexAndIndexBuffer()
 
 	//////// Load Blue Noise
 
-	BlueNoise =  bufferManager->LoadTextureImage("../Textures/BlueNoise64Tiled.png",vk::Format::eR8G8B8A8Snorm,commandPool, vulkanContext->graphicsQueue);
+	BlueNoise =  bufferManager->LoadTextureImage("../Textures/LDR_RG01_0.png",vk::Format::eR8G8B8A8Snorm,commandPool, vulkanContext->graphicsQueue);
 }
 
 void SSGI::CreateUniformBuffer() {
@@ -59,10 +59,16 @@ void SSGI::CreateGIImage() {
 
 	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
-	SSGIPassImage.ImageID = "RT Shadow Pass Image";
+	SSGIPassImage.ImageID = "SSGI Pass Image";
 	bufferManager->CreateImage(&SSGIPassImage, swapchainextent, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	SSGIPassImage.imageView = bufferManager->CreateImageView(&SSGIPassImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
 	SSGIPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+
+
+	SSGIBlurPassImage.ImageID = "SSGI Blure Pass Image";
+	bufferManager->CreateImage(&SSGIBlurPassImage, swapchainextent, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	SSGIBlurPassImage.imageView = bufferManager->CreateImageView(&SSGIBlurPassImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	SSGIBlurPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	vk::CommandBuffer commandBuffer = bufferManager->CreateSingleUseCommandBuffer(commandPool);
 
@@ -76,6 +82,7 @@ void SSGI::CreateGIImage() {
 	transitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 
 	bufferManager->TransitionImage(commandBuffer, &SSGIPassImage, transitionInfo);
+	bufferManager->TransitionImage(commandBuffer, &SSGIBlurPassImage, transitionInfo);
 
 	bufferManager->SubmitAndDestoyCommandBuffer(commandPool, commandBuffer, vulkanContext->graphicsQueue);
 
@@ -84,6 +91,7 @@ void SSGI::CreateGIImage() {
 void SSGI::DestroyImage() {
 
 	bufferManager->DestroyImage(SSGIPassImage);
+	bufferManager->DestroyImage(SSGIBlurPassImage);
 
 
 }
@@ -144,6 +152,26 @@ void SSGI::createDescriptorSetLayout(){
 		throw std::runtime_error("Failed to create descriptorset layout!");
 	}
 
+	{
+		vk::DescriptorSetLayoutBinding NoiseSSGISamplerLayout{};
+		NoiseSSGISamplerLayout.binding = 0;
+		NoiseSSGISamplerLayout.descriptorCount = 1;
+		NoiseSSGISamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		NoiseSSGISamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+
+		std::array<vk::DescriptorSetLayoutBinding, 1> bindings = { NoiseSSGISamplerLayout };
+
+		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+		layoutInfo.pBindings = bindings.data();
+
+
+		if (vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &BilateralFilterDescriptorSetLayout) != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("Failed to create descriptorset layout!");
+		}
+	}
 }
 
 void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffer,ImageData LightingPass, ImageData DepthImage)
@@ -263,6 +291,50 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 		}
 	}
+
+
+
+	{
+		// create sets from the pool based on the layout
+		// 	     
+		std::vector<vk::DescriptorSetLayout> BIlateriallayouts(MAX_FRAMES_IN_FLIGHT, BilateralFilterDescriptorSetLayout);
+
+
+		vk::DescriptorSetAllocateInfo allocinfo;
+		allocinfo.descriptorPool = descriptorpool;
+		allocinfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		allocinfo.pSetLayouts = BIlateriallayouts.data();
+
+		BilateralFilterDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+
+		vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, BilateralFilterDescriptorSets.data());
+
+		////////////////////////////////////////////////////////////////////////////////////////////////
+		//specifies what exactly to send
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+
+			/////////////////////////////////////////////////////////////////////////////////////
+
+			vk::DescriptorImageInfo NoisyGIimageInfo{};
+			NoisyGIimageInfo.imageLayout  = vk::ImageLayout::eShaderReadOnlyOptimal;
+			NoisyGIimageInfo.imageView    = SSGIPassImage.imageView;
+			NoisyGIimageInfo.sampler      = SSGIPassImage.imageSampler;
+
+			vk::WriteDescriptorSet NoisyGISamplerdescriptorWrite{};
+			NoisyGISamplerdescriptorWrite.dstSet = BilateralFilterDescriptorSets[i];
+			NoisyGISamplerdescriptorWrite.dstBinding = 0;
+			NoisyGISamplerdescriptorWrite.dstArrayElement = 0;
+			NoisyGISamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			NoisyGISamplerdescriptorWrite.descriptorCount = 1;
+			NoisyGISamplerdescriptorWrite.pImageInfo = &NoisyGIimageInfo;
+
+			
+
+			std::array<vk::WriteDescriptorSet, 1> NoisyGIdescriptorWrites{ NoisyGISamplerdescriptorWrite };
+
+			vulkanContext->LogicalDevice.updateDescriptorSets(NoisyGIdescriptorWrites.size(), NoisyGIdescriptorWrites.data(), 0, nullptr);
+		}
+	}
 }
 
 void SSGI::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref)
@@ -280,10 +352,20 @@ void SSGI::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayo
 	vk::DeviceSize offsets[] = { 0 };
 	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
 
-	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(camera->GetProjectionMatrix()), &camera->GetProjectionMatrix());
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
 	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
+	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+}
+
+void SSGI::DrawBilateralFilter(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
+{
+	vk::DeviceSize offsets[] = { 0 };
+	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+
+	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
+	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &BilateralFilterDescriptorSets[imageIndex], 0, nullptr);
 	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
 }
 

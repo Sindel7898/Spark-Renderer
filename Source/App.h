@@ -153,6 +153,7 @@ private:
 	vk::PipelineLayout         SSRPipelineLayout = nullptr;
 	vk::PipelineLayout         RT_ShadowsPipelineLayout = nullptr;
 	vk::PipelineLayout         SSGIPipelineLayout = nullptr;
+	vk::PipelineLayout         BluredSSGIPipelineLayout = nullptr;
 
 	vk::PipelineLayout         CombinedImagePipelineLayout = nullptr;
 
@@ -166,6 +167,7 @@ private:
 	vk::Pipeline               SSRPipeline = nullptr;
 	vk::Pipeline               RT_ShadowsPassPipeline = nullptr;
 	vk::Pipeline               SSGIPipeline = nullptr;
+	vk::Pipeline               BluredSSGIPipeline = nullptr;
 	vk::Pipeline               CombinedImagePassPipeline = nullptr;
 
 

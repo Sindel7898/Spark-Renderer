@@ -29,12 +29,18 @@ public:
     void CreateUniformBuffer();
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
 
+    void DrawBilateralFilter(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
+
     void CleanUp() ;
     std::vector<BufferData> SSGI_UniformBuffers;
 
     std::vector<void*> SSGI_UniformBuffersMappedMem;
 
+    std::vector<vk::DescriptorSet> BilateralFilterDescriptorSets;
+    vk::DescriptorSetLayout  BilateralFilterDescriptorSetLayout;
+
     ImageData SSGIPassImage;
+    ImageData SSGIBlurPassImage;
     ImageData BlueNoise;
 private:
     std::vector<Vertex> quad = {
