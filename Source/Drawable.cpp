@@ -89,24 +89,37 @@ glm::mat4 Drawable::GetModelMatrix()
 
 void Drawable::SetPosition(glm::vec3 newposition)
 {
-	transformMatrices.modelMatrix = glm::translate(transformMatrices.modelMatrix, newposition);
+	position = newposition;
+	UpdateModelMatrix();
 }
 
-void Drawable::SetRotation(glm::vec3 rotationAxis, float radians)
+void Drawable::SetRotation(glm::vec3 rotationAxis)
 {
-	transformMatrices.modelMatrix = glm::rotate(transformMatrices.modelMatrix, glm::radians(radians), rotationAxis);
+	rotation = rotationAxis;
+	UpdateModelMatrix();
 }
 
 
 void Drawable::SetScale(glm::vec3 newscale)
 {
-	transformMatrices.modelMatrix = glm::scale(transformMatrices.modelMatrix, newscale);
+	scale = newscale;
+	UpdateModelMatrix();
 }
 
 
 void Drawable::SetModelMatrix(glm::mat4 newModelMatrix)
 {
     transformMatrices.modelMatrix = newModelMatrix;
+}
+
+void Drawable::UpdateModelMatrix()
+{
+	transformMatrices.modelMatrix = glm::mat4(1.0f);
+	transformMatrices.modelMatrix = glm::translate(transformMatrices.modelMatrix, position);
+	transformMatrices.modelMatrix = glm::rotate(transformMatrices.modelMatrix, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+	transformMatrices.modelMatrix = glm::rotate(transformMatrices.modelMatrix, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+	transformMatrices.modelMatrix = glm::rotate(transformMatrices.modelMatrix, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+	transformMatrices.modelMatrix = glm::scale(transformMatrices.modelMatrix, scale);
 }
 
 void Drawable::BreakDownAndUpdateModelMatrix()

@@ -12,6 +12,7 @@
 struct ModelData {
     TransformMatrices  transformMatrices;
 	glm::vec4  bCubeMapReflection_bScreenSpaceReflectionWithPadding;
+    glm::vec4  TextureColor_WithPadding;
 
 };
 

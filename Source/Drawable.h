@@ -69,9 +69,11 @@ protected:
 public:
 	glm::mat4 GetModelMatrix();
 	void SetPosition(glm::vec3 newposition);
-	void SetRotation(glm::vec3 newrotation, float radians);
+	void SetRotation(glm::vec3 rotationAxis);
 	void SetScale(glm::vec3 newscale);
 	void SetModelMatrix(glm::mat4 newModelMatrix);
+
+	void UpdateModelMatrix();
 
 	vk::DescriptorSetLayout  descriptorSetLayout;
 

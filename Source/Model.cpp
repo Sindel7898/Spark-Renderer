@@ -53,8 +53,6 @@ void Model::LoadTextures()
 	vk::DeviceSize  MetallicRoughnessImagesize = MetallicRoughnessImageData.imageWidth * MetallicRoughnessImageData.imageHeight * 4;
 
 	MetallicRoughnessTextureData = bufferManager->CreateTextureImage(MetallicRoughnessImageData.imageData, MetallicRoughnessImagesize, MetallicRoughnessImageData.imageWidth, MetallicRoughnessImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
-
-	
 }
 
 void Model::CreateVertexAndIndexBuffer()

@@ -49,29 +49,56 @@
 	auto model  = std::shared_ptr<Model>(new Model("../Textures/Helmet/DamagedHelmet.gltf"   , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	auto model2 = std::shared_ptr<Model>(new Model("../Textures/WaterBottle/WaterBottle.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	auto model3 = std::shared_ptr<Model>(new Model("../Textures/ScifiHelmet/SciFiHelmet.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model4 = std::shared_ptr<Model>(new Model("../Textures/Floor/scene.gltf"            , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	
+	auto model4 = std::shared_ptr<Model>(new Model("../Textures/Wall/Cube.gltf"            , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model5 = std::shared_ptr<Model>(new Model("../Textures/Wall2/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model6 = std::shared_ptr<Model>(new Model("../Textures/Wall3/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model7 = std::shared_ptr<Model>(new Model("../Textures/Wall4/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+
 	model.get()->CubeMapReflectiveSwitch(true);
 	model2.get()->CubeMapReflectiveSwitch(true);
 	model3.get()->CubeMapReflectiveSwitch(true);
 
-	model4.get()->SetScale(glm::vec3(0.100f, 0.100f, 0.050f));
-	model4.get()->SetPosition(glm::vec3(0, -20.0f, 0.0f));
-	model4.get()->ScreenSpaceReflectiveSwitch(true);
-	model4.get()->CubeMapReflectiveSwitch(true);
+	model4.get()->SetPosition(glm::vec3(7.091, 1.704, 0.472));
+	model4.get()->SetRotation(glm::vec3(90.000, 90.000, 0.00));
+	model4.get()->SetScale(glm::vec3(7.000, 0.200, 5.000));
+	model4.get()->ScreenSpaceReflectiveSwitch(false);
+	model4.get()->CubeMapReflectiveSwitch(false);
 
+	model5.get()->SetPosition(glm::vec3(-6.656, 1.672, 0.485));
+	model5.get()->SetRotation(glm::vec3(-90.000, -90.000, 180.000));
+	model5.get()->SetScale(glm::vec3(6.996, 0.200, 5.000));
+	model5.get()->ScreenSpaceReflectiveSwitch(false);
+	model5.get()->CubeMapReflectiveSwitch(false);
+
+	model6.get()->SetPosition(glm::vec3(0.287, -3.114, 0.467));
+	model6.get()->SetRotation(glm::vec3(0.000, 180.000, 0.00));
+	model6.get()->SetScale(glm::vec3(7.000, 0.200, 7.000));
+	model6.get()->ScreenSpaceReflectiveSwitch(false);
+	model6.get()->CubeMapReflectiveSwitch(false);
+
+	model7.get()->SetPosition(glm::vec3(-0.000, 1.741, -6.425));
+	model7.get()->SetRotation(glm::vec3(0.000, 90.000, 0.000));
+	model7.get()->SetScale(glm::vec3(0.100, 5.000, 7.500));
+	model7.get()->ScreenSpaceReflectiveSwitch(false);
+	model7.get()->CubeMapReflectiveSwitch(false);
 
 
 	Models.push_back(std::move(model));
 	Models.push_back(std::move(model2));
 	Models.push_back(std::move(model3));
 	Models.push_back(std::move(model4));
+	Models.push_back(std::move(model5));
+	Models.push_back(std::move(model6));
+	Models.push_back(std::move(model7));
 
 	UserInterfaceItems.push_back(Models[0].get());
 	UserInterfaceItems.push_back(Models[1].get());
 	UserInterfaceItems.push_back(Models[2].get());
 	UserInterfaceItems.push_back(Models[3].get());
-		
+	UserInterfaceItems.push_back(Models[4].get());
+	UserInterfaceItems.push_back(Models[5].get());
+	UserInterfaceItems.push_back(Models[6].get());
+
 
 	lighting_FullScreenQuad = std::shared_ptr<Lighting_FullScreenQuad>(new Lighting_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool, skyBox.get()), Lighting_FullScreenQuadDeleter);
 	ssao_FullScreenQuad     = std::shared_ptr<SSA0_FullScreenQuad>(new SSA0_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSA0_FullScreenQuadDeleter);
