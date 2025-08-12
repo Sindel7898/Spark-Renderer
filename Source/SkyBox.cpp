@@ -3,15 +3,63 @@
 #include <memory>
 #include <chrono>
 
-SkyBox::SkyBox(std::array<const char*, 6> filePaths, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* cameraref, BufferManager* buffermanger)
+SkyBox::SkyBox(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* cameraref, BufferManager* buffermanger)
 {
 	vulkanContext = vulkancontext;
 	commandPool = commandpool;
 	camera = cameraref;
 	bufferManager = buffermanger;
+	SkyBoxIndex = 0;
+	LastSkyBoxIndex = 0;
+	bSkyBoxUpdate = false;
 
-	SkyBoxTextureData.ImageID = "skybox Cube Map Texture";
-	bufferManager->CreateCubeMap (&SkyBoxTextureData,filePaths, commandPool, vulkanContext->graphicsQueue);
+	{
+		std::array<const char*, 6> filePaths{
+		"../Textures/Skybox/DaySky/px.png",  // +X (Right)
+		"../Textures/Skybox/DaySky/nx.png",  // -X (Left)
+		"../Textures/Skybox/DaySky/py.png",  // +Y (Top)
+		"../Textures/Skybox/DaySky/ny.png",  // -Y (Bottom)
+		"../Textures/Skybox/DaySky/pz.png",  // +Z (Front)
+		"../Textures/Skybox/DaySky/nz.png"   // -Z (Back)
+		};
+
+		ImageData SkyBox1;
+		SkyBox1.ImageID = "skybox 1 Cube Map Texture";
+		bufferManager->CreateCubeMap(&SkyBox1, filePaths, commandPool, vulkanContext->graphicsQueue);
+		SkyBoxImages.push_back(SkyBox1);
+	}
+
+	{
+		std::array<const char*, 6> filePaths{
+		"../Textures/Skybox/Church/px.jpg",  // +X (Right)
+		"../Textures/Skybox/Church/nx.jpg",  // -X (Left)
+		"../Textures/Skybox/Church/py.jpg",  // +Y (Top)
+		"../Textures/Skybox/Church/ny.jpg",  // -Y (Bottom)
+		"../Textures/Skybox/Church/pz.jpg",  // +Z (Front)
+		"../Textures/Skybox/Church/nz.jpg"   // -Z (Back)
+		};
+
+		ImageData SkyBox2;
+		SkyBox2.ImageID = "skybox 2 Cube Map Texture";
+		bufferManager->CreateCubeMap(&SkyBox2, filePaths, commandPool, vulkanContext->graphicsQueue);
+		SkyBoxImages.push_back(SkyBox2);
+	}
+
+	{
+		std::array<const char*, 6> filePaths{
+		"../Textures/Skybox/Room/px.jpg",  // +X (Right)
+		"../Textures/Skybox/Room/nx.jpg",  // -X (Left)
+		"../Textures/Skybox/Room/py.jpg",  // +Y (Top)
+		"../Textures/Skybox/Room/ny.jpg",  // -Y (Bottom)
+		"../Textures/Skybox/Room/pz.jpg",  // +Z (Front)
+		"../Textures/Skybox/Room/nz.jpg"   // -Z (Back)
+		};
+
+		ImageData SkyBox3;
+		SkyBox3.ImageID = "skybox 3 Cube Map Texture";
+		bufferManager->CreateCubeMap(&SkyBox3, filePaths, commandPool, vulkanContext->graphicsQueue);
+		SkyBoxImages.push_back(SkyBox3);
+	}
 
 	CreateUniformBuffer();
 	CreateVertexAndIndexBuffer();
@@ -87,6 +135,13 @@ void SkyBox::createDescriptorSets(vk::DescriptorPool descriptorpool)
 
 	vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, DescriptorSets.data());
 
+	UpdateDescriptorSets();
+}
+
+void SkyBox::UpdateDescriptorSets()
+{
+
+
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
 		vk::DescriptorBufferInfo bufferInfo{};
@@ -96,8 +151,8 @@ void SkyBox::createDescriptorSets(vk::DescriptorPool descriptorpool)
 
 		vk::DescriptorImageInfo imageInfo{};
 		imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		imageInfo.imageView = SkyBoxTextureData.imageView;
-		imageInfo.sampler = SkyBoxTextureData.imageSampler;
+		imageInfo.imageView = SkyBoxImages[SkyBoxIndex].imageView;
+		imageInfo.sampler = SkyBoxImages[SkyBoxIndex].imageSampler;
 
 		vk::WriteDescriptorSet UniformdescriptorWrite{};
 		UniformdescriptorWrite.dstSet = DescriptorSets[i];
@@ -123,6 +178,12 @@ void SkyBox::createDescriptorSets(vk::DescriptorPool descriptorpool)
 
 void SkyBox::UpdateUniformBuffer(uint32_t currentImage)
 {
+	if (SkyBoxIndex != LastSkyBoxIndex)
+	{
+		UpdateDescriptorSets();
+		LastSkyBoxIndex = SkyBoxIndex;
+		bSkyBoxUpdate = true;
+	}
 
 	Drawable::UpdateUniformBuffer(currentImage);
 
@@ -146,7 +207,8 @@ void SkyBox::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinel
 void SkyBox::CleanUp()
 {
 	
-    bufferManager->DestroyImage(SkyBoxTextureData);
+    bufferManager->DestroyImage(SkyBoxImages[0]);
+	bufferManager->DestroyImage(SkyBoxImages[1]);
 	Drawable::Destructor();
 }
 

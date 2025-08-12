@@ -12,7 +12,7 @@ Lighting_FullScreenQuad::Lighting_FullScreenQuad(BufferManager* buffermanager, V
 	bufferManager = buffermanager;
 	vulkanContext = vulkancontext;
 	commandPool   = commandpool;
-	ReflectiveCubeMapData = &skyboxref->SkyBoxTextureData;
+	SkyBoxRef = skyboxref;
 
 	CreateVertexAndIndexBuffer();
 	CreateUniformBuffer();
@@ -99,20 +99,27 @@ void Lighting_FullScreenQuad::createDescriptorSetLayout()
 		ReflectionMaskSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		ReflectionMaskSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
+		vk::DescriptorSetLayoutBinding ShadowMapSamplerLayout{};
+		ShadowMapSamplerLayout.binding = 7;
+		ShadowMapSamplerLayout.descriptorCount = 1;
+		ShadowMapSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		ShadowMapSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
 		vk::DescriptorSetLayoutBinding LightUniformBufferLayout{};
-		LightUniformBufferLayout.binding = 7;
+		LightUniformBufferLayout.binding = 8;
 		LightUniformBufferLayout.descriptorCount = 1;
 		LightUniformBufferLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
 		LightUniformBufferLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 
-		std::array<vk::DescriptorSetLayoutBinding, 8> bindings = { PositionSampleryLayout,        // binding 0
+		std::array<vk::DescriptorSetLayoutBinding, 9> bindings = { PositionSampleryLayout,        // binding 0
 																   NormalSamplerLayout,           // binding 1
 																   AlbedoSamplerLayout,           // binding 2
 			                                                       SSAOSamplerLayout,
 			                                                       MaterialsSamplerLayout,
 																   ReflectiveCubeSamplerLayout,
 																   ReflectionMaskSamplerLayout,
+			                                                       ShadowMapSamplerLayout,
 																   LightUniformBufferLayout       // binding 3
 		};
 
@@ -129,8 +136,13 @@ void Lighting_FullScreenQuad::createDescriptorSetLayout()
 
 }
 
-void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer Gbuffer,ImageData ReflectionMask)
+void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer* Gbuffer, ImageData* ReflectionMask, ImageData* ShadowPass)
 {
+
+	GbufferRef = Gbuffer;
+	ReflectionMaskRef = ReflectionMask;
+	ShadowPassRef = ShadowPass;
+
 	// create sets from the pool based on the layout
 	std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
 
@@ -143,15 +155,19 @@ void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorP
 
 	vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, DescriptorSets.data());
 
-	////////////////////////////////////////////////////////////////////////////////////////////////
+	UpdateDescrptorSets();
+}
+
+void Lighting_FullScreenQuad::UpdateDescrptorSets()
+{
 	//specifies what exactly to send
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
 		/////////////////////////////////////////////////////////////////////////////////////
 		vk::DescriptorImageInfo PositionimageInfo{};
 		PositionimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		PositionimageInfo.imageView = Gbuffer.Position.imageView;
-		PositionimageInfo.sampler = Gbuffer.Position.imageSampler;
+		PositionimageInfo.imageView = GbufferRef->Position.imageView;
+		PositionimageInfo.sampler = GbufferRef->Position.imageSampler;
 
 		vk::WriteDescriptorSet PositionSamplerdescriptorWrite{};
 		PositionSamplerdescriptorWrite.dstSet = DescriptorSets[i];
@@ -161,25 +177,25 @@ void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorP
 		PositionSamplerdescriptorWrite.descriptorCount = 1;
 		PositionSamplerdescriptorWrite.pImageInfo = &PositionimageInfo;
 		/////////////////////////////////////////////////////////////////////////////////////
-;
-        vk::DescriptorImageInfo NormalimageInfo{};
-        NormalimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-        NormalimageInfo.imageView = Gbuffer.Normal.imageView;
-        NormalimageInfo.sampler = Gbuffer.Normal.imageSampler;
-        
-        vk::WriteDescriptorSet NormalSamplerdescriptorWrite{};
-        NormalSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-        NormalSamplerdescriptorWrite.dstBinding = 1;
-        NormalSamplerdescriptorWrite.dstArrayElement = 0;
-        NormalSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-        NormalSamplerdescriptorWrite.descriptorCount = 1;
-        NormalSamplerdescriptorWrite.pImageInfo = &NormalimageInfo;
+		;
+		vk::DescriptorImageInfo NormalimageInfo{};
+		NormalimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		NormalimageInfo.imageView = GbufferRef->Normal.imageView;
+		NormalimageInfo.sampler = GbufferRef->Normal.imageSampler;
+
+		vk::WriteDescriptorSet NormalSamplerdescriptorWrite{};
+		NormalSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+		NormalSamplerdescriptorWrite.dstBinding = 1;
+		NormalSamplerdescriptorWrite.dstArrayElement = 0;
+		NormalSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		NormalSamplerdescriptorWrite.descriptorCount = 1;
+		NormalSamplerdescriptorWrite.pImageInfo = &NormalimageInfo;
 		/////////////////////////////////////////////////////////////////////////////////////
 
 		vk::DescriptorImageInfo AlbedoimageInfo{};
 		AlbedoimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		AlbedoimageInfo.imageView = Gbuffer.Albedo.imageView;
-		AlbedoimageInfo.sampler = Gbuffer.Albedo.imageSampler;
+		AlbedoimageInfo.imageView = GbufferRef->Albedo.imageView;
+		AlbedoimageInfo.sampler = GbufferRef->Albedo.imageSampler;
 
 		vk::WriteDescriptorSet  AlbedoSamplerdescriptorWrite{};
 		AlbedoSamplerdescriptorWrite.dstSet = DescriptorSets[i];
@@ -192,8 +208,8 @@ void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorP
 
 		vk::DescriptorImageInfo SSAOimageInfo{};
 		SSAOimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		SSAOimageInfo.imageView = Gbuffer.SSAOBlured.imageView;
-		SSAOimageInfo.sampler = Gbuffer.SSAOBlured.imageSampler;
+		SSAOimageInfo.imageView = GbufferRef->SSAOBlured.imageView;
+		SSAOimageInfo.sampler = GbufferRef->SSAOBlured.imageSampler;
 
 		vk::WriteDescriptorSet SSAOSamplerdescriptorWrite{};
 		SSAOSamplerdescriptorWrite.dstSet = DescriptorSets[i];
@@ -206,8 +222,8 @@ void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorP
 
 		vk::DescriptorImageInfo MaterialsimageInfo{};
 		MaterialsimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		MaterialsimageInfo.imageView = Gbuffer.Materials.imageView;
-		MaterialsimageInfo.sampler = Gbuffer.Materials.imageSampler;
+		MaterialsimageInfo.imageView = GbufferRef->Materials.imageView;
+		MaterialsimageInfo.sampler = GbufferRef->Materials.imageSampler;
 
 		vk::WriteDescriptorSet MaterialsSamplerdescriptorWrite{};
 		MaterialsSamplerdescriptorWrite.dstSet = DescriptorSets[i];
@@ -220,8 +236,8 @@ void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorP
 
 		vk::DescriptorImageInfo ReflectiveCubeimageInfo{};
 		ReflectiveCubeimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		ReflectiveCubeimageInfo.imageView = ReflectiveCubeMapData->imageView;
-		ReflectiveCubeimageInfo.sampler = ReflectiveCubeMapData->imageSampler;
+		ReflectiveCubeimageInfo.imageView = SkyBoxRef->SkyBoxImages[SkyBoxRef->SkyBoxIndex].imageView;
+		ReflectiveCubeimageInfo.sampler   = SkyBoxRef->SkyBoxImages[SkyBoxRef->SkyBoxIndex].imageSampler;
 
 		vk::WriteDescriptorSet ReflectiveCubeSamplerdescriptorWrite{};
 		ReflectiveCubeSamplerdescriptorWrite.dstSet = DescriptorSets[i];
@@ -234,8 +250,8 @@ void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorP
 
 		vk::DescriptorImageInfo ReflectionMaskimageInfo{};
 		ReflectionMaskimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		ReflectionMaskimageInfo.imageView = ReflectionMask.imageView;
-		ReflectionMaskimageInfo.sampler = ReflectionMask.imageSampler;
+		ReflectionMaskimageInfo.imageView = ReflectionMaskRef->imageView;
+		ReflectionMaskimageInfo.sampler = ReflectionMaskRef->imageSampler;
 
 		vk::WriteDescriptorSet ReflectionMaskSamplerdescriptorWrite{};
 		ReflectionMaskSamplerdescriptorWrite.dstSet = DescriptorSets[i];
@@ -244,6 +260,22 @@ void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorP
 		ReflectionMaskSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		ReflectionMaskSamplerdescriptorWrite.descriptorCount = 1;
 		ReflectionMaskSamplerdescriptorWrite.pImageInfo = &ReflectionMaskimageInfo;
+
+
+
+		vk::DescriptorImageInfo ShadowPassimageInfo{};
+		ShadowPassimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		ShadowPassimageInfo.imageView = ShadowPassRef->imageView;
+		ShadowPassimageInfo.sampler = ShadowPassRef->imageSampler;
+
+		vk::WriteDescriptorSet ShadowPassSamplerdescriptorWrite{};
+		ShadowPassSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+		ShadowPassSamplerdescriptorWrite.dstBinding = 7;
+		ShadowPassSamplerdescriptorWrite.dstArrayElement = 0;
+		ShadowPassSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		ShadowPassSamplerdescriptorWrite.descriptorCount = 1;
+		ShadowPassSamplerdescriptorWrite.pImageInfo = &ShadowPassimageInfo;
+
 
 		/////////////////////////////////////////////////////////////////////////////////////
 
@@ -254,33 +286,36 @@ void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorP
 
 		vk::WriteDescriptorSet LightUniformBufferDescriptorWrite{};
 		LightUniformBufferDescriptorWrite.dstSet = DescriptorSets[i];
-		LightUniformBufferDescriptorWrite.dstBinding = 7;
+		LightUniformBufferDescriptorWrite.dstBinding = 8;
 		LightUniformBufferDescriptorWrite.dstArrayElement = 0;
 		LightUniformBufferDescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
 		LightUniformBufferDescriptorWrite.descriptorCount = 1;
 		LightUniformBufferDescriptorWrite.pBufferInfo = &LightUniformBufferInfo;
 
-		std::array<vk::WriteDescriptorSet, 8> descriptorWrites = {
-	                                                                PositionSamplerdescriptorWrite,        // binding 0
-	                                                                NormalSamplerdescriptorWrite,          // binding 1
-	                                                                AlbedoSamplerdescriptorWrite,          // binding 2
+		std::array<vk::WriteDescriptorSet, 9> descriptorWrites = {
+																	PositionSamplerdescriptorWrite,        // binding 0
+																	NormalSamplerdescriptorWrite,          // binding 1
+																	AlbedoSamplerdescriptorWrite,          // binding 2
 																	SSAOSamplerdescriptorWrite,
 																	MaterialsSamplerdescriptorWrite,
 																	ReflectiveCubeSamplerdescriptorWrite,
 																	ReflectionMaskSamplerdescriptorWrite,
-	                                                                LightUniformBufferDescriptorWrite      // binding 3
-		                                                         };
+																	ShadowPassSamplerdescriptorWrite,
+																	LightUniformBufferDescriptorWrite      // binding 3
+		};
 
 		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	}
-
-
-
-
 }
 
 void Lighting_FullScreenQuad::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref)
 {
+	if (SkyBoxRef->bSkyBoxUpdate)
+	{
+		UpdateDescrptorSets();
+		SkyBoxRef->bSkyBoxUpdate = false;
+	}
+
 	std::vector<LightUniformData> lightDataspack;
 	lightDataspack.reserve(lightref.size());
 

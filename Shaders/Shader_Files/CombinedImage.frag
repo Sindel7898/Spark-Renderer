@@ -10,7 +10,7 @@ void main() {
     vec3 litImage = texture(Lighting_ReflectionTexture, inTexCoord).rgb;
     float shadowFactor = texture(ShadowTexture, inTexCoord).r;
 
-    vec3 finalImage = litImage * shadowFactor;
+    //vec3 finalImage = litImage * shadowFactor;
 
-    outFragColor = vec4(finalImage, 1.0);
+    outFragColor = vec4(litImage, 1.0);
 }

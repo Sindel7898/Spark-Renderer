@@ -8,6 +8,7 @@ layout (binding = 3) uniform sampler2D samplerSSAO;
 layout (binding = 4) uniform sampler2D samplerMaterials;
 layout (binding = 5) uniform samplerCube samplerReflectiveCubeMap;
 layout (binding = 6) uniform sampler2D samplerReflectionMask;
+layout (binding = 7) uniform sampler2D samplerShadowMap;
 
 layout(location = 0) in vec2 inTexCoord;           
 
@@ -18,7 +19,7 @@ struct LightData{
     mat4    LightProjectionViewMatrix;
 
 };
-layout (binding = 7) uniform LightUniformBuffer {
+layout (binding = 8) uniform LightUniformBuffer {
    
    LightData lights[3];
 };
@@ -98,12 +99,13 @@ void main() {
     vec3 Reflection = texture(samplerReflectiveCubeMap, cR,mipLevel).rgb;
 
 
+    float ambientStrength = 0.03;
+    vec3 Ambient = Albedo * ambientOcclusion * ambientStrength;
+
   for (int i = 0; i < 3; i++) {
 
     LightData light = lights[i];
 
-    float ambientStrength = 0.03;
-    vec3 Ambient = Albedo * ambientOcclusion * ambientStrength;
 
      vec3 Lo      = vec3(0.0);
 
@@ -144,13 +146,15 @@ void main() {
      Lo += (kD * Albedo / PI + specular) * radiance * NdotL;
 
 
-    totalLighting += Lo * light.CameraPositionAndLightIntensity.w;  
-    totalLighting += Ambient;
+   float shadow = texture(samplerShadowMap, inTexCoord).r;
+   totalLighting += shadow * Lo * light.CameraPositionAndLightIntensity.w;
+   totalLighting += Ambient;
   }
+
   
   vec3 finalColor;
 
-  if(ReflectionMask.x == 1){
+  if(ReflectionMask.x > 0.5){
 
     // Compute Fresnel for reflection
    vec3 F0 = vec3(0.04);

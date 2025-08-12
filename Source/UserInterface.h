@@ -18,6 +18,7 @@ class Model;
 class Light;
 class SSA0_FullScreenQuad;
 class App;
+class SkyBox;
 
 class UserInterface
 {
@@ -25,7 +26,7 @@ class UserInterface
     UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef, BufferManager* Buffermanager);
 
     void RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex);
-    void DrawUi(App* appref);
+    void DrawUi(App* appref, SkyBox* skyBox);
     float CalculateDistanceInScreenSpace(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position);
   
     
@@ -60,6 +61,10 @@ class UserInterface
 
      std::vector<std::string> items{ "Directional", "Point", "Spot" };
      std::string currentItem = "Point";
+
+
+     std::vector<std::string> SkyBoxs{ "Day Sky", "Church", "Night Sky" };
+     std::string currentSkyBox = "Day Sky";
 
      ImVec2 viewportSize;
 

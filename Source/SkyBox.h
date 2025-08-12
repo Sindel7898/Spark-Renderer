@@ -13,11 +13,12 @@
 class SkyBox : public Drawable
 {
 public:
-    SkyBox(std::array<const char*, 6> filePaths, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* camera, BufferManager* buffermanger);
+    SkyBox(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* camera, BufferManager* buffermanger);
 
     void CreateVertexAndIndexBuffer() override;
     void CreateUniformBuffer() override;
     void createDescriptorSets(vk::DescriptorPool descriptorpool) override;
+    void UpdateDescriptorSets();
     void UpdateUniformBuffer(uint32_t currentImage) override;
     void createDescriptorSetLayout() override;
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
@@ -25,7 +26,10 @@ public:
     void CleanUp();
 
 
-    ImageData SkyBoxTextureData;
+    std::vector<ImageData> SkyBoxImages;
+    int SkyBoxIndex;
+    int LastSkyBoxIndex;
+    bool bSkyBoxUpdate;
     TransformMatrices  transformMatrices;
 
 private:

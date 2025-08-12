@@ -273,7 +273,7 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex)
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 
-void UserInterface::DrawUi(App* appref)
+void UserInterface::DrawUi(App* appref,SkyBox* skyBox)
 {
 	SetupDockingEnvironment();
 
@@ -324,6 +324,23 @@ void UserInterface::DrawUi(App* appref)
 		ImGui::InputFloat("radius", &appref->ssao_FullScreenQuad->Radius);
 		ImGui::InputFloat("Bias", &appref->ssao_FullScreenQuad->Bias);
 		ImGui::Checkbox("SSAO", (bool*)&appref->ssao_FullScreenQuad->bShouldSSAO);
+
+		ImGui::Dummy(ImVec2(0.0f, 20.0f));
+
+		if (ImGui::BeginCombo("SkyBox", currentSkyBox.c_str()))
+		{
+			for (int i = 0; i < SkyBoxs.size(); i++) {
+
+				bool is_selected = (currentSkyBox == SkyBoxs[i]);
+
+				if (ImGui::Selectable(SkyBoxs[i].c_str(), is_selected)) {
+					currentSkyBox = SkyBoxs[i];
+
+					skyBox->SkyBoxIndex = i;
+				}
+			}
+			ImGui::EndCombo();
+		}
 
 		ImGui::End();
 	}

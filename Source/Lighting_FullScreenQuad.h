@@ -23,11 +23,17 @@ public:
     void CreateVertexAndIndexBuffer() override;
     void CreateUniformBuffer() override;
     void createDescriptorSetLayout() override;
-    void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer Gbuffer, ImageData ReflectionMask);
+    void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer* Gbuffer, ImageData* ReflectionMask, ImageData* ShadowPass);
+    void UpdateDescrptorSets();
     void UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
 
     void CleanUp() ;
+
+    GBuffer*   GbufferRef = nullptr;
+    ImageData* ReflectionMaskRef = nullptr;
+    ImageData* ShadowPassRef = nullptr;
+    SkyBox* SkyBoxRef = nullptr;
 
    private:
 
@@ -44,7 +50,6 @@ public:
         };
 
 
-        ImageData* ReflectiveCubeMapData;
         Camera* camera = nullptr;
 };
 
