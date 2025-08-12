@@ -11,6 +11,7 @@ class  BufferManager;
 
 struct SSGI_UniformBufferData {
     glm::mat4 ProjectionMatrix;
+    glm::vec4 BlueNoiseImageIndex_WithPadding;
 
 };
 
@@ -42,6 +43,9 @@ public:
     ImageData SSGIPassImage;
     ImageData SSGIBlurPassImage;
     ImageData BlueNoise;
+
+    std::vector<ImageData> BlueNoiseTextures;
+    int NoiseIndex;
 private:
     std::vector<Vertex> quad = {
      {{-1.0f, -1.0f}, {0.0f, 0.0f}}, // Bottom-left

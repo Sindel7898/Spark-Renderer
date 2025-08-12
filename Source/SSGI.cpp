@@ -30,7 +30,16 @@ void SSGI::CreateVertexAndIndexBuffer()
 
 	//////// Load Blue Noise
 
-	BlueNoise =  bufferManager->LoadTextureImage("../Textures/LDR_RG01_0.png",vk::Format::eR8G8B8A8Snorm,commandPool, vulkanContext->graphicsQueue);
+	//BlueNoise =  bufferManager->LoadTextureImage("../Textures/LDR_RG01_0.png",vk::Format::eR8G8B8A8Snorm,commandPool, vulkanContext->graphicsQueue);
+
+	for (int i = 0; i < 14; i++)
+	{
+		ImageData Noise;
+		std::string TextureType = ".png";
+		std::string NoisePath = "../Textures/BlueNoise/Noise" + std::to_string(i) + TextureType;
+		Noise = bufferManager->LoadTextureImage(NoisePath, vk::Format::eR8G8B8A8Snorm, commandPool, vulkanContext->graphicsQueue);
+		BlueNoiseTextures.push_back(Noise);
+	}
 }
 
 void SSGI::CreateUniformBuffer() {
@@ -127,7 +136,7 @@ void SSGI::createDescriptorSetLayout(){
 
 	vk::DescriptorSetLayoutBinding BlueNoiseSamplerLayout{};
 	BlueNoiseSamplerLayout.binding = 4;
-	BlueNoiseSamplerLayout.descriptorCount = 1;
+	BlueNoiseSamplerLayout.descriptorCount = BlueNoiseTextures.size();
 	BlueNoiseSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	BlueNoiseSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
@@ -253,19 +262,25 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			LightingPassSamplerdescriptorWrite.descriptorCount = 1;
 			LightingPassSamplerdescriptorWrite.pImageInfo = &LightingPassimageInfo;
 
+			std::vector<vk::DescriptorImageInfo>BlueNoiseImagesInfos;
 
-			vk::DescriptorImageInfo BlueNoiseimageInfo{};
-			BlueNoiseimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			BlueNoiseimageInfo.imageView = BlueNoise.imageView;
-			BlueNoiseimageInfo.sampler = BlueNoise.imageSampler;
+			for (int i = 0; i < BlueNoiseTextures.size(); i++)
+			{
+				vk::DescriptorImageInfo BlueNoiseimageInfo{};
+				BlueNoiseimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+				BlueNoiseimageInfo.imageView = BlueNoiseTextures[i].imageView;
+				BlueNoiseimageInfo.sampler = BlueNoiseTextures[i].imageSampler;
+
+				BlueNoiseImagesInfos.push_back(BlueNoiseimageInfo);
+			};
 
 			vk::WriteDescriptorSet BlueNoiseSamplerdescriptorWrite{};
 			BlueNoiseSamplerdescriptorWrite.dstSet = DescriptorSets[i];
 			BlueNoiseSamplerdescriptorWrite.dstBinding = 4;
 			BlueNoiseSamplerdescriptorWrite.dstArrayElement = 0;
 			BlueNoiseSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-			BlueNoiseSamplerdescriptorWrite.descriptorCount = 1;
-			BlueNoiseSamplerdescriptorWrite.pImageInfo = &BlueNoiseimageInfo;
+			BlueNoiseSamplerdescriptorWrite.descriptorCount = BlueNoiseImagesInfos.size();
+			BlueNoiseSamplerdescriptorWrite.pImageInfo = BlueNoiseImagesInfos.data();
 
 
 			/////////////////////////////////////////////////////////////////////////////////////
@@ -339,9 +354,12 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 
 void SSGI::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref)
 {
+	 NoiseIndex = (NoiseIndex + 1)  % BlueNoiseTextures.size();
+
 	SSGI_UniformBufferData SSGI_UniformBufferData;
  	SSGI_UniformBufferData.ProjectionMatrix = camera->GetProjectionMatrix();
 	SSGI_UniformBufferData.ProjectionMatrix[1][1] *= -1;
+	SSGI_UniformBufferData.BlueNoiseImageIndex_WithPadding = glm::vec4(NoiseIndex,0,0,0);
 
 	memcpy(SSGI_UniformBuffersMappedMem[currentImage], &SSGI_UniformBufferData, sizeof(SSGI_UniformBufferData));
 }

@@ -4,10 +4,11 @@ layout (binding = 0) uniform sampler2D NormalTexture;
 layout (binding = 1) uniform sampler2D ViewSpacePosition;
 layout (binding = 2) uniform sampler2D DepthTexture;
 layout (binding = 3) uniform sampler2D ColorTexture;
-layout (binding = 4) uniform sampler2D BlueNoise;
+layout (binding = 4) uniform sampler2D BlueNoise[14];
 
 layout (binding = 5) uniform SSGIUniformBuffer {
     mat4 ProjectionMatrix;
+    vec4 BlueNoiseImageIndex_WithPadding;
 } ubo;
 
 layout (location = 0) in vec2 inTexCoord;
@@ -94,17 +95,20 @@ vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal)
 }
 
 void main() {
+
+    int NoiseImageIndex = int(ubo.BlueNoiseImageIndex_WithPadding.x);
+
     vec3 Color = texture(ColorTexture, inTexCoord).rgb;
     vec3 VSposition = texture(ViewSpacePosition, inTexCoord).rgb;
     vec3 Normal = normalize(texture(NormalTexture, inTexCoord).xyz);
     
     // Get blue noise sample
     ivec2 colorTexSize = textureSize(ColorTexture, 0);
-    ivec2 noiseTexSize = colorTexSize/ textureSize(BlueNoise, 0);
+    ivec2 noiseTexSize = colorTexSize / textureSize(BlueNoise[NoiseImageIndex], 0);
     vec2 tiledUV = inTexCoord * vec2(noiseTexSize);
     //vec2 noise = texture(BlueNoise, tiledUV).rg;
     
-     vec2 noise = texture(BlueNoise, tiledUV).rg;
+     vec2 noise = texture(BlueNoise[NoiseImageIndex], tiledUV).rg;
 
     // Get random direction in hemisphere
     vec3 stochasticNormal = GetHemisphereSample(noise, Normal);
@@ -119,7 +123,7 @@ void main() {
     
      vec3 hitColor = texture(ColorTexture, uv).rgb;
      float NdotL = max(dot(Normal, normalize(IntersectionPoint - VSposition)), 0.0);
-     vec3 giContribution = hitColor * NdotL * 1.5; // 0.5 = arbitrary bounce strength
+     vec3 giContribution = hitColor * NdotL * 1.5;
      
      vec3 finalColor = giContribution;
     
