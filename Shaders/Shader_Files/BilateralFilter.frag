@@ -8,5 +8,5 @@ layout (location = 0) out vec4 outFragcolor;
 void main() {
    
 
-    outFragcolor = vec4(texture(SSGIImage, inTexCoord).rgb, 1.0);
+    outFragcolor = vec4(texture(SSGIImage, inTexCoord,2).rgb, 1.0);
 }

@@ -24,25 +24,36 @@ public:
     void CreateVertexAndIndexBuffer() override;
     void CreateGIImage();
     void DestroyImage();
+    void DownSampleToQuaterResolution(vk::CommandBuffer commandbuffer);
+    void GenerateMipMaps(vk::CommandBuffer commandbuffer);
     void createDescriptorSetLayout() override;
     void createDescriptorSets(vk::DescriptorPool descriptorpool, GBuffer gbuffer, ImageData LightingPass, ImageData DepthImage);
     void UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref);
     void CreateUniformBuffer();
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
 
-    void DrawBilateralFilter(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
+    void DrawBilateralFilterQuater(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
+    void DrawBilateralFilterHalf(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
+    void DrawBilateralFilterFull(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
 
     void CleanUp() ;
     std::vector<BufferData> SSGI_UniformBuffers;
 
     std::vector<void*> SSGI_UniformBuffersMappedMem;
 
-    std::vector<vk::DescriptorSet> BilateralFilterDescriptorSets;
+    std::vector<vk::DescriptorSet> BilateralFilterQuaterDescriptorSets;
+    std::vector<vk::DescriptorSet> BilateralFilterHalfDescriptorSets;
+    std::vector<vk::DescriptorSet> BilateralFilterFullDescriptorSets;
+
     vk::DescriptorSetLayout  BilateralFilterDescriptorSetLayout;
 
     ImageData SSGIPassImage;
-    ImageData SSGIBlurPassImage;
-    ImageData BlueNoise;
+    ImageData SSGIQuaterResBlurPassImage;
+    ImageData SSGIHalfResBlurPassImage;
+    ImageData SSGIFullResBlurPassImage;
+
+    vk::Extent3D Swapchainextent_Half_Res;
+    vk::Extent3D Swapchainextent_Quater_Res;
 
     std::vector<ImageData> BlueNoiseTextures;
     int NoiseIndex;
