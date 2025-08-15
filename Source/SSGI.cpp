@@ -36,7 +36,7 @@ void SSGI::CreateVertexAndIndexBuffer()
 	{
 		ImageData Noise;
 		std::string TextureType = ".png";
-		std::string NoisePath = "../Textures/BlueNoise/stbn_vec2_2Dx1D_128x128x64_" + std::to_string(i) + TextureType;
+		std::string NoisePath = "../Textures/BlueNoise/stbn_unitvec3_cosine_2Dx1D_128x128x64_" + std::to_string(i) + TextureType;
 		Noise = bufferManager->LoadTextureImage(NoisePath, vk::Format::eR8G8B8A8Snorm, commandPool, vulkanContext->graphicsQueue);
 		BlueNoiseTextures.push_back(Noise);
 	}

@@ -37,13 +37,6 @@ vec3 GetHemisphereSample(vec2 randVal, vec3 HitNormal) {
     return tangent * (r * cos(phi)) + bitangent * (r * sin(phi)) + HitNormal.xyz * sqrt(max(0.0, 1.0 - randVal.x));
 }
 
-float LinearizeDepth(float depth) {
-    float near = 0.1; 
-    float far = 200.0; 
-    float z = depth * 2.0 - 1.0; // back to NDC 
-    return (2.0 * near * far) / (far + near - z * (far - near));    
-}
-
 vec3 FindIntersectionPoint(vec3 SamplePosInVS, vec3 DirInVS, float MaxTraceDistance) {
     vec3 EndPosInVS = SamplePosInVS + DirInVS * MaxTraceDistance;
     
@@ -103,10 +96,9 @@ void main() {
     vec3 Normal = normalize(texture(NormalTexture, inTexCoord).xyz);
     
     // Get blue noise sample
-    ivec2 colorTexSize = textureSize(ColorTexture, 0);
+    ivec2 BluenoiseTextureSize = textureSize(BlueNoise[NoiseImageIndex], 0);
 
-    float noiseScale = float(colorTexSize.x) / 20;
-    vec2 tiledUV = (inTexCoord * noiseScale);
+    vec2 tiledUV = (inTexCoord * BluenoiseTextureSize);
     
     vec2 frameJitter = vec2(
          fract(ubo.BlueNoiseImageIndex_DeltaTime_Padding.y * 0.618034), 
