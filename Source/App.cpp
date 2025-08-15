@@ -573,8 +573,8 @@ void App::createGBuffer()
 		                                                  gbuffer.Albedo.imageView,
 		                                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-	SSGITextureId            = ImGui_ImplVulkan_AddTexture(SSGI_FullScreenQuad->SSGIFullResBlurPassImage.imageSampler,
-		                                                   SSGI_FullScreenQuad->SSGIFullResBlurPassImage.imageView,
+	SSGITextureId            = ImGui_ImplVulkan_AddTexture(SSGI_FullScreenQuad->SSGIAccumilationImage.imageSampler,
+		                                                   SSGI_FullScreenQuad->SSGIAccumilationImage.imageView,
 		                                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 
@@ -1504,7 +1504,7 @@ void App::CreateGraphicsPipeline()
 
 		vk::PushConstantRange range{};
 		range.setOffset(0);
-		range.setSize(sizeof(glm::mat4));
+		range.setSize(sizeof(int));
 		range.setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -1548,7 +1548,7 @@ void App::CreateGraphicsPipeline()
 
 	{
 		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/FullScreenQuad.vert.spv");
-		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/BilateralFilter.frag.spv");
+		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/TemporalAccumulation.frag.spv");
 
 		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
 		VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
@@ -1588,7 +1588,7 @@ void App::CreateGraphicsPipeline()
 
 		vk::PushConstantRange range{};
 		range.setOffset(0);
-		range.setSize(sizeof(glm::mat4));
+		range.setSize(sizeof(int));
 		range.setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -1884,7 +1884,7 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 	lighting_FullScreenQuad->UpdateUniformBuffer(currentImage, lights);
 	ssao_FullScreenQuad->UpdataeUniformBufferData();
 	Raytracing_Shadows->UpdateUniformBuffer(currentImage, lights);
-    SSGI_FullScreenQuad->UpdateUniformBuffer(currentImage, lights);
+    SSGI_FullScreenQuad->UpdateUniformBuffer(currentImage, lights,deltaTime);
 
 }
 
@@ -1939,9 +1939,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		bufferManger->TransitionImage(commandBuffer, &ReflectionMaskImageData, TransitionColorAttachmentOptimal);
 		bufferManger->TransitionImage(commandBuffer, &Combined_FullScreenQuad->FinalResultImage, TransitionColorAttachmentOptimal);
 		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassImage, TransitionColorAttachmentOptimal);
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIQuaterResBlurPassImage, TransitionColorAttachmentOptimal);
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIHalfResBlurPassImage, TransitionColorAttachmentOptimal);
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIFullResBlurPassImage,TransitionColorAttachmentOptimal);
+		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionColorAttachmentOptimal);
 
 
 		vk::RenderingAttachmentInfo PositioncolorAttachmentInfo{};
@@ -2450,55 +2448,113 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	}
 
+	{
+		ImageTransitionData TransitionTOSrc{};
+		TransitionTOSrc.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
+		TransitionTOSrc.newlayout = vk::ImageLayout::eTransferSrcOptimal;
+		TransitionTOSrc.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitionTOSrc.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
+		TransitionTOSrc.DestinationAccessflag = vk::AccessFlagBits::eTransferRead;
+		TransitionTOSrc.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		TransitionTOSrc.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
+
+		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionTOSrc);
+
+		ImageTransitionData TransitionTODst{};
+		TransitionTODst.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		TransitionTODst.newlayout = vk::ImageLayout::eTransferDstOptimal;
+		TransitionTODst.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitionTODst.SourceAccessflag = vk::AccessFlagBits::eShaderRead;
+		TransitionTODst.DestinationAccessflag = vk::AccessFlagBits::eTransferWrite;
+		TransitionTODst.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
+		TransitionTODst.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
+
+
+		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionTODst);
+
+
+		vk::ImageSubresourceLayers SrcSubresourceLayers;
+		SrcSubresourceLayers.mipLevel = 0;
+		SrcSubresourceLayers.baseArrayLayer = 0;
+	    SrcSubresourceLayers.layerCount = 1;
+		SrcSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
+
+		vk::ImageSubresourceLayers DstSubresourceLayers;
+		DstSubresourceLayers.mipLevel = 0;
+		DstSubresourceLayers.baseArrayLayer = 0;
+		DstSubresourceLayers.layerCount = 1;
+		DstSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
+
+		vk::Extent3D  swapchainExtent = { vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height,1};
+
+		bufferManger->CopyImageToAnotherImage(commandBuffer,
+			                                  SSGI_FullScreenQuad->SSGIAccumilationImage, vk::ImageLayout::eTransferSrcOptimal, SrcSubresourceLayers,
+			                                  SSGI_FullScreenQuad->SSGIPassLastFrameImage, vk::ImageLayout::eTransferDstOptimal, DstSubresourceLayers,
+			                                  swapchainExtent, vulkanContext->graphicsQueue);
+
+
+		ImageTransitionData TransitionSrcBack{};
+		TransitionSrcBack.oldlayout = vk::ImageLayout::eTransferSrcOptimal;
+		TransitionSrcBack.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
+		TransitionSrcBack.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitionSrcBack.SourceAccessflag = vk::AccessFlagBits::eTransferRead;
+		TransitionSrcBack.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
+		TransitionSrcBack.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
+		TransitionSrcBack.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+
+
+		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionSrcBack);
+
+
+		ImageTransitionData TransitionDstToSample{};
+		TransitionDstToSample.oldlayout = vk::ImageLayout::eTransferDstOptimal;
+		TransitionDstToSample.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		TransitionDstToSample.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitionDstToSample.SourceAccessflag = vk::AccessFlagBits::eTransferWrite;
+		TransitionDstToSample.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
+		TransitionDstToSample.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
+		TransitionDstToSample.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
+
+
+		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionDstToSample);
+
+
+
+	}
 
 	{
-	    ImageTransitionData TransitionTODestination{};
-		TransitionTODestination.oldlayout = vk::ImageLayout::eUndefined;
-		TransitionTODestination.newlayout = vk::ImageLayout::eTransferDstOptimal;
-		TransitionTODestination.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionTODestination.SourceAccessflag = vk::AccessFlagBits::eNone;
-		TransitionTODestination.DestinationAccessflag = vk::AccessFlagBits::eTransferWrite;
-		TransitionTODestination.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
-		TransitionTODestination.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
-		TransitionTODestination.LevelCount = SSGI_FullScreenQuad->SSGIPassImage.miplevels;
+		ImageTransitionData TransitionTOShaderOptimal{};
+		TransitionTOShaderOptimal.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
+		TransitionTOShaderOptimal.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		TransitionTOShaderOptimal.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitionTOShaderOptimal.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
+		TransitionTOShaderOptimal.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
+		TransitionTOShaderOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		TransitionTOShaderOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassImage, TransitionTODestination);
+		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassImage, TransitionTOShaderOptimal);
 
-		SSGI_FullScreenQuad->GenerateMipMaps(commandBuffer);
 
 
 		vk::RenderingAttachmentInfo BluredImageAttachInfo;
 		BluredImageAttachInfo.clearValue = clearColor;
 		BluredImageAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		BluredImageAttachInfo.imageView = SSGI_FullScreenQuad->SSGIQuaterResBlurPassImage.imageView;
-		BluredImageAttachInfo.loadOp = vk::AttachmentLoadOp::eClear;
+		BluredImageAttachInfo.imageView = SSGI_FullScreenQuad->SSGIAccumilationImage.imageView;
+		BluredImageAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
 		BluredImageAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
 
 		vk::RenderingInfo SSGIImageInfo{};
 		SSGIImageInfo.layerCount = 1;
 		SSGIImageInfo.colorAttachmentCount = 1;
 		SSGIImageInfo.pColorAttachments = &BluredImageAttachInfo;
-		SSGIImageInfo.renderArea.extent.width  = SSGI_FullScreenQuad->Swapchainextent_Quater_Res.width;
-		SSGIImageInfo.renderArea.extent.height = SSGI_FullScreenQuad->Swapchainextent_Quater_Res.height;
-
-		vk::Viewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = SSGI_FullScreenQuad->Swapchainextent_Quater_Res.width;
-		viewport.height = SSGI_FullScreenQuad->Swapchainextent_Quater_Res.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		vk::Rect2D scissor{};
-		scissor.offset = imageoffset;
-		scissor.extent.width = SSGI_FullScreenQuad->Swapchainextent_Quater_Res.width;
-		scissor.extent.height = SSGI_FullScreenQuad->Swapchainextent_Quater_Res.height;
+		SSGIImageInfo.renderArea.extent.width  = vulkanContext->swapchainExtent.width;
+		SSGIImageInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
 
 		commandBuffer.setViewport(0, 1, &viewport);
 		commandBuffer.setScissor(0, 1, &scissor);
 		commandBuffer.beginRendering(SSGIImageInfo);
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, BluredSSGIPipeline);
-		SSGI_FullScreenQuad->DrawBilateralFilterQuater(commandBuffer, BluredSSGIPipelineLayout, currentFrame);
+		SSGI_FullScreenQuad->DrawTA(commandBuffer, BluredSSGIPipelineLayout, currentFrame);
 		commandBuffer.endRendering();
 
 		ImageTransitionData TransitionBacktoColorOutput{};
@@ -2514,91 +2570,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassImage, TransitionBacktoColorOutput);
 	}
 
-	{
-		ImageTransitionData TransitionTOShaderOptimal{};
-		TransitionTOShaderOptimal.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionTOShaderOptimal.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionTOShaderOptimal.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionTOShaderOptimal.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionTOShaderOptimal.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionTOShaderOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		TransitionTOShaderOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIQuaterResBlurPassImage, TransitionTOShaderOptimal);
-
-
-		vk::RenderingAttachmentInfo BluredImageAttachInfo;
-		BluredImageAttachInfo.clearValue = clearColor;
-		BluredImageAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		BluredImageAttachInfo.imageView = SSGI_FullScreenQuad->SSGIHalfResBlurPassImage.imageView;
-		BluredImageAttachInfo.loadOp = vk::AttachmentLoadOp::eClear;
-		BluredImageAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
-
-		vk::RenderingInfo SSGIImageInfo{};
-		SSGIImageInfo.layerCount = 1;
-		SSGIImageInfo.colorAttachmentCount = 1;
-		SSGIImageInfo.pColorAttachments = &BluredImageAttachInfo;
-		SSGIImageInfo.renderArea.extent.width = SSGI_FullScreenQuad->Swapchainextent_Half_Res.width;
-		SSGIImageInfo.renderArea.extent.height = SSGI_FullScreenQuad->Swapchainextent_Half_Res.height;
-
-		vk::Viewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = SSGI_FullScreenQuad->Swapchainextent_Half_Res.width;
-		viewport.height = SSGI_FullScreenQuad->Swapchainextent_Half_Res.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		vk::Rect2D scissor{};
-		scissor.offset = imageoffset;
-		scissor.extent.width = SSGI_FullScreenQuad->Swapchainextent_Half_Res.width;
-		scissor.extent.height = SSGI_FullScreenQuad->Swapchainextent_Half_Res.height;
-
-		commandBuffer.setViewport(0, 1, &viewport);
-		commandBuffer.setScissor(0, 1, &scissor);
-		commandBuffer.beginRendering(SSGIImageInfo);
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, BluredSSGIPipeline);
-		SSGI_FullScreenQuad->DrawBilateralFilterHalf(commandBuffer, BluredSSGIPipelineLayout, currentFrame);
-		commandBuffer.endRendering();
-
-	}
-
-	{
-	
-		ImageTransitionData TransitionTOShaderOptimal{};
-		TransitionTOShaderOptimal.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionTOShaderOptimal.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionTOShaderOptimal.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionTOShaderOptimal.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionTOShaderOptimal.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionTOShaderOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		TransitionTOShaderOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIHalfResBlurPassImage, TransitionTOShaderOptimal);
-
-
-		vk::RenderingAttachmentInfo BluredImageAttachInfo;
-		BluredImageAttachInfo.clearValue = clearColor;
-		BluredImageAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		BluredImageAttachInfo.imageView = SSGI_FullScreenQuad->SSGIFullResBlurPassImage.imageView;
-		BluredImageAttachInfo.loadOp = vk::AttachmentLoadOp::eClear;
-		BluredImageAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
-
-		vk::RenderingInfo SSGIImageInfo{};
-		SSGIImageInfo.layerCount = 1;
-		SSGIImageInfo.colorAttachmentCount = 1;
-		SSGIImageInfo.pColorAttachments = &BluredImageAttachInfo;
-		SSGIImageInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
-		SSGIImageInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
-
-		commandBuffer.setViewport(0, 1, &viewport);
-		commandBuffer.setScissor(0, 1, &scissor);
-		commandBuffer.beginRendering(SSGIImageInfo);
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, BluredSSGIPipeline);
-		SSGI_FullScreenQuad->DrawBilateralFilterFull(commandBuffer, BluredSSGIPipelineLayout, currentFrame);
-		commandBuffer.endRendering();
-
-	}
 
 
 	{
@@ -2768,7 +2739,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	bufferManger->TransitionImage(commandBuffer, &ssr_FullScreenQuad->SSRImage, TransitiontoShader);
 	bufferManger->TransitionImage(commandBuffer, &Combined_FullScreenQuad->FinalResultImage, TransitiontoShader);
 	bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassImage, TransitiontoShader);
-	bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIFullResBlurPassImage, TransitiontoShader);
+	bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitiontoShader);
 
 
 
@@ -2825,6 +2796,8 @@ void App::recreateSwapChain() {
 
 	camera->SetSwapChainHeight(vulkanContext->swapchainExtent.height);
 	camera->SetSwapChainWidth(vulkanContext->swapchainExtent.width);
+
+	vulkanContext->ResetTemporalAccumilation();
 }
 
 void App::recreatePipeline()

@@ -32,11 +32,11 @@ void SSGI::CreateVertexAndIndexBuffer()
 
 	//BlueNoise =  bufferManager->LoadTextureImage("../Textures/LDR_RG01_0.png",vk::Format::eR8G8B8A8Snorm,commandPool, vulkanContext->graphicsQueue);
 
-	for (int i = 0; i < 14; i++)
+	for (int i = 0; i < 63; i++)
 	{
 		ImageData Noise;
 		std::string TextureType = ".png";
-		std::string NoisePath = "../Textures/BlueNoise/Noise" + std::to_string(i) + TextureType;
+		std::string NoisePath = "../Textures/BlueNoise/stbn_vec2_2Dx1D_128x128x64_" + std::to_string(i) + TextureType;
 		Noise = bufferManager->LoadTextureImage(NoisePath, vk::Format::eR8G8B8A8Snorm, commandPool, vulkanContext->graphicsQueue);
 		BlueNoiseTextures.push_back(Noise);
 	}
@@ -67,30 +67,24 @@ void SSGI::CreateUniformBuffer() {
 void SSGI::CreateGIImage() {
 
 	vk::Extent3D Swapchainextent_Full_Res   = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
-	             Swapchainextent_Half_Res   = vk::Extent3D(vulkanContext->swapchainExtent.width / 2, vulkanContext->swapchainExtent.height / 2, 1);
-	             Swapchainextent_Quater_Res = vk::Extent3D(Swapchainextent_Half_Res.width / 2, Swapchainextent_Half_Res.height / 2, 1);
 
 
 	SSGIPassImage.ImageID = "SSGI Pass Image";
-	bufferManager->CreateImage(&SSGIPassImage, Swapchainextent_Full_Res, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc,true);
+	bufferManager->CreateImage(&SSGIPassImage, Swapchainextent_Full_Res, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc,false);
 	SSGIPassImage.imageView = bufferManager->CreateImageView(&SSGIPassImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
 	SSGIPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
-	SSGIQuaterResBlurPassImage.ImageID = "SSGI Half-Res UpSample Blur Pass Image";
-	bufferManager->CreateImage(&SSGIQuaterResBlurPassImage, Swapchainextent_Quater_Res, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	SSGIQuaterResBlurPassImage.imageView = bufferManager->CreateImageView(&SSGIQuaterResBlurPassImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
-	SSGIQuaterResBlurPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	SSGIAccumilationImage.ImageID = "SSGI Accumilation Image Blur Pass Image";
+	bufferManager->CreateImage(&SSGIAccumilationImage, Swapchainextent_Full_Res, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled| vk::ImageUsageFlagBits::eTransferSrc);
+	SSGIAccumilationImage.imageView = bufferManager->CreateImageView(&SSGIAccumilationImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	SSGIAccumilationImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
-	SSGIHalfResBlurPassImage.ImageID = "SSGI Half-Res UpSample Blur Pass Image";
-	bufferManager->CreateImage(&SSGIHalfResBlurPassImage, Swapchainextent_Half_Res, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	SSGIHalfResBlurPassImage.imageView = bufferManager->CreateImageView(&SSGIHalfResBlurPassImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
-	SSGIHalfResBlurPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	SSGIPassLastFrameImage.ImageID = "Last SSGI Frame Image";
+	bufferManager->CreateImage(&SSGIPassLastFrameImage, Swapchainextent_Full_Res, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, false);
+	SSGIPassLastFrameImage.imageView = bufferManager->CreateImageView(&SSGIPassLastFrameImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	SSGIPassLastFrameImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
-	SSGIFullResBlurPassImage.ImageID = "SSGI Full-Res UpSample Blur Pass Image";
-	bufferManager->CreateImage(&SSGIFullResBlurPassImage, Swapchainextent_Full_Res, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	SSGIFullResBlurPassImage.imageView = bufferManager->CreateImageView(&SSGIFullResBlurPassImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
-	SSGIFullResBlurPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
-
+	
 
 	vk::CommandBuffer commandBuffer = bufferManager->CreateSingleUseCommandBuffer(commandPool);
 
@@ -104,8 +98,7 @@ void SSGI::CreateGIImage() {
 	transitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 
 	bufferManager->TransitionImage(commandBuffer, &SSGIPassImage, transitionInfo);
-	bufferManager->TransitionImage(commandBuffer, &SSGIHalfResBlurPassImage, transitionInfo);
-	bufferManager->TransitionImage(commandBuffer, &SSGIFullResBlurPassImage, transitionInfo);
+
 
 	bufferManager->SubmitAndDestoyCommandBuffer(commandPool, commandBuffer, vulkanContext->graphicsQueue);
 
@@ -114,9 +107,7 @@ void SSGI::CreateGIImage() {
 void SSGI::DestroyImage() {
 
 	bufferManager->DestroyImage(SSGIPassImage);
-	bufferManager->DestroyImage(SSGIHalfResBlurPassImage);
-	bufferManager->DestroyImage(SSGIFullResBlurPassImage);
-
+	bufferManager->DestroyImage(SSGIAccumilationImage);
 
 }
 
@@ -190,8 +181,13 @@ void SSGI::createDescriptorSetLayout(){
 		NoiseSSGISamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		NoiseSSGISamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
+		vk::DescriptorSetLayoutBinding LastFrameSSGISamplerLayout{};
+		LastFrameSSGISamplerLayout.binding = 1;
+		LastFrameSSGISamplerLayout.descriptorCount = 1;
+		LastFrameSSGISamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		LastFrameSSGISamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-		std::array<vk::DescriptorSetLayoutBinding, 1> bindings = { NoiseSSGISamplerLayout };
+		std::array<vk::DescriptorSetLayoutBinding, 2> bindings = { NoiseSSGISamplerLayout,LastFrameSSGISamplerLayout };
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -341,51 +337,9 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 		allocinfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 		allocinfo.pSetLayouts = BIlateriallayouts.data();
 
-		BilateralFilterQuaterDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+		TemporalAccumilationFullDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
 
-		vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, BilateralFilterQuaterDescriptorSets.data());
-
-		////////////////////////////////////////////////////////////////////////////////////////////////
-		//specifies what exactly to send
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-
-			/////////////////////////////////////////////////////////////////////////////////////
-
-			vk::DescriptorImageInfo NoisyGIimageInfo{};
-			NoisyGIimageInfo.imageLayout  = vk::ImageLayout::eShaderReadOnlyOptimal;
-			NoisyGIimageInfo.imageView    = SSGIPassImage.imageView;
-			NoisyGIimageInfo.sampler      = SSGIPassImage.imageSampler;
-
-			vk::WriteDescriptorSet NoisyGISamplerdescriptorWrite{};
-			NoisyGISamplerdescriptorWrite.dstSet = BilateralFilterQuaterDescriptorSets[i];
-			NoisyGISamplerdescriptorWrite.dstBinding = 0;
-			NoisyGISamplerdescriptorWrite.dstArrayElement = 0;
-			NoisyGISamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-			NoisyGISamplerdescriptorWrite.descriptorCount = 1;
-			NoisyGISamplerdescriptorWrite.pImageInfo = &NoisyGIimageInfo;
-
-			
-
-			std::array<vk::WriteDescriptorSet, 1> NoisyGIdescriptorWrites{ NoisyGISamplerdescriptorWrite };
-
-			vulkanContext->LogicalDevice.updateDescriptorSets(NoisyGIdescriptorWrites.size(), NoisyGIdescriptorWrites.data(), 0, nullptr);
-		}
-	}
-
-	{
-		// create sets from the pool based on the layout
-		// 	     
-		std::vector<vk::DescriptorSetLayout> BIlateriallayouts(MAX_FRAMES_IN_FLIGHT, BilateralFilterDescriptorSetLayout);
-
-
-		vk::DescriptorSetAllocateInfo allocinfo;
-		allocinfo.descriptorPool = descriptorpool;
-		allocinfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-		allocinfo.pSetLayouts = BIlateriallayouts.data();
-
-		BilateralFilterHalfDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-
-		vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, BilateralFilterHalfDescriptorSets.data());
+		vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, TemporalAccumilationFullDescriptorSets.data());
 
 		////////////////////////////////////////////////////////////////////////////////////////////////
 		//specifies what exactly to send
@@ -395,11 +349,11 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 
 			vk::DescriptorImageInfo NoisyGIimageInfo{};
 			NoisyGIimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			NoisyGIimageInfo.imageView = SSGIQuaterResBlurPassImage.imageView;
-			NoisyGIimageInfo.sampler = SSGIQuaterResBlurPassImage.imageSampler;
+			NoisyGIimageInfo.imageView = SSGIPassImage.imageView;
+			NoisyGIimageInfo.sampler = SSGIPassImage.imageSampler;
 
 			vk::WriteDescriptorSet NoisyGISamplerdescriptorWrite{};
-			NoisyGISamplerdescriptorWrite.dstSet = BilateralFilterHalfDescriptorSets[i];
+			NoisyGISamplerdescriptorWrite.dstSet = TemporalAccumilationFullDescriptorSets[i];
 			NoisyGISamplerdescriptorWrite.dstBinding = 0;
 			NoisyGISamplerdescriptorWrite.dstArrayElement = 0;
 			NoisyGISamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -407,67 +361,48 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			NoisyGISamplerdescriptorWrite.pImageInfo = &NoisyGIimageInfo;
 
 
+			vk::DescriptorImageInfo LastFrameGIimageInfo{};
+			LastFrameGIimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			LastFrameGIimageInfo.imageView = SSGIPassLastFrameImage.imageView;
+			LastFrameGIimageInfo.sampler = SSGIPassLastFrameImage.imageSampler;
 
-			std::array<vk::WriteDescriptorSet, 1> NoisyGIdescriptorWrites{ NoisyGISamplerdescriptorWrite };
-
-			vulkanContext->LogicalDevice.updateDescriptorSets(NoisyGIdescriptorWrites.size(), NoisyGIdescriptorWrites.data(), 0, nullptr);
-		}
-	}
-
-	{
-		// create sets from the pool based on the layout
-		// 	     
-		std::vector<vk::DescriptorSetLayout> BIlateriallayouts(MAX_FRAMES_IN_FLIGHT, BilateralFilterDescriptorSetLayout);
-
-
-		vk::DescriptorSetAllocateInfo allocinfo;
-		allocinfo.descriptorPool = descriptorpool;
-		allocinfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-		allocinfo.pSetLayouts = BIlateriallayouts.data();
-
-		BilateralFilterFullDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-
-		vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, BilateralFilterFullDescriptorSets.data());
-
-		////////////////////////////////////////////////////////////////////////////////////////////////
-		//specifies what exactly to send
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-
-			/////////////////////////////////////////////////////////////////////////////////////
-
-			vk::DescriptorImageInfo NoisyGIimageInfo{};
-			NoisyGIimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			NoisyGIimageInfo.imageView = SSGIHalfResBlurPassImage.imageView;
-			NoisyGIimageInfo.sampler   = SSGIHalfResBlurPassImage.imageSampler;
-
-			vk::WriteDescriptorSet NoisyGISamplerdescriptorWrite{};
-			NoisyGISamplerdescriptorWrite.dstSet = BilateralFilterFullDescriptorSets[i];
-			NoisyGISamplerdescriptorWrite.dstBinding = 0;
-			NoisyGISamplerdescriptorWrite.dstArrayElement = 0;
-			NoisyGISamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-			NoisyGISamplerdescriptorWrite.descriptorCount = 1;
-			NoisyGISamplerdescriptorWrite.pImageInfo = &NoisyGIimageInfo;
+			vk::WriteDescriptorSet LastFrameGISamplerdescriptorWrite{};
+			LastFrameGISamplerdescriptorWrite.dstSet = TemporalAccumilationFullDescriptorSets[i];
+			LastFrameGISamplerdescriptorWrite.dstBinding = 1;
+			LastFrameGISamplerdescriptorWrite.dstArrayElement = 0;
+			LastFrameGISamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			LastFrameGISamplerdescriptorWrite.descriptorCount = 1;
+			LastFrameGISamplerdescriptorWrite.pImageInfo = &LastFrameGIimageInfo;
 
 
 
-			std::array<vk::WriteDescriptorSet, 1> NoisyGIdescriptorWrites{ NoisyGISamplerdescriptorWrite };
+			std::array<vk::WriteDescriptorSet, 2> TAGIdescriptorWrites{ NoisyGISamplerdescriptorWrite ,LastFrameGISamplerdescriptorWrite };
 
-			vulkanContext->LogicalDevice.updateDescriptorSets(NoisyGIdescriptorWrites.size(), NoisyGIdescriptorWrites.data(), 0, nullptr);
+			vulkanContext->LogicalDevice.updateDescriptorSets(TAGIdescriptorWrites.size(), TAGIdescriptorWrites.data(), 0, nullptr);
 		}
 	}
 
 }
 
-void SSGI::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref)
+void SSGI::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref, float DeltaTime)
 {
 	 NoiseIndex = (NoiseIndex + 1)  % BlueNoiseTextures.size();
 
 	SSGI_UniformBufferData SSGI_UniformBufferData;
  	SSGI_UniformBufferData.ProjectionMatrix = camera->GetProjectionMatrix();
 	SSGI_UniformBufferData.ProjectionMatrix[1][1] *= -1;
-	SSGI_UniformBufferData.BlueNoiseImageIndex_WithPadding = glm::vec4(NoiseIndex,0,0,0);
+	SSGI_UniformBufferData.BlueNoiseImageIndex_WithPadding = glm::vec4(NoiseIndex, DeltaTime,0,0);
 
 	memcpy(SSGI_UniformBuffersMappedMem[currentImage], &SSGI_UniformBufferData, sizeof(SSGI_UniformBufferData));
+
+	if (LastCameraMatrix != camera->GetViewMatrix())
+	{
+		vulkanContext->ResetTemporalAccumilation();
+
+		LastCameraMatrix = camera->GetViewMatrix();
+	}
+
+	vulkanContext->AccumilationCount++;
 }
 
 
@@ -480,40 +415,23 @@ void SSGI::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayo
 	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
 	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+
 }
 
-void SSGI::DrawBilateralFilterQuater(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
+void SSGI::DrawTA(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
 {
+
 	vk::DeviceSize offsets[] = { 0 };
 	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
 
-	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
-	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &BilateralFilterQuaterDescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
-}
-
-void SSGI::DrawBilateralFilterHalf(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
-{
-	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(vulkanContext->AccumilationCount), &vulkanContext->AccumilationCount);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
 	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
-	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &BilateralFilterHalfDescriptorSets[imageIndex], 0, nullptr);
+	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &TemporalAccumilationFullDescriptorSets[imageIndex], 0, nullptr);
 	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
 }
 
-void SSGI::DrawBilateralFilterFull(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
-{
-	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
-
-	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
-	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &BilateralFilterFullDescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
-}
 
 void SSGI::CleanUp()
 {

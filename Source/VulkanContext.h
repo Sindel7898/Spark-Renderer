@@ -53,6 +53,9 @@ public:
 	///std::vector<vk::Image>       swapchainImages = {};
 	//std::vector<vk::ImageView>   swapchainImageViews = {};
 
+	void ResetTemporalAccumilation();
+	int AccumilationCount = 0;
+
 	std::vector<ImageData>   swapchainImageData = {};
 
 

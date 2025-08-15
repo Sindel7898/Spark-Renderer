@@ -18,7 +18,7 @@ C:\VulkanSDK\1.4.321.1\Bin\glslc.exe Shaders\Shader_Files\Grass.frag            
 C:\VulkanSDK\1.4.321.1\Bin\glslc.exe Shaders\Shader_Files\SSR.frag                   -o  Shaders\Compiled_Shader_Files\SSR.frag.spv
 C:\VulkanSDK\1.4.321.1\Bin\glslc.exe Shaders\Shader_Files\CombinedImage.frag         -o  Shaders\Compiled_Shader_Files\CombinedImage.frag.spv
 C:\VulkanSDK\1.4.321.1\Bin\glslc.exe Shaders\Shader_Files\SSGI.frag                  -o  Shaders\Compiled_Shader_Files\SSGI.frag.spv
-C:\VulkanSDK\1.4.321.1\Bin\glslc.exe Shaders\Shader_Files\BilateralFilter.frag                  -o  Shaders\Compiled_Shader_Files\BilateralFilter.frag.spv
+C:\VulkanSDK\1.4.321.1\Bin\glslc.exe Shaders\Shader_Files\TemporalAccumulation.frag                  -o  Shaders\Compiled_Shader_Files\TemporalAccumulation.frag.spv
 
 glslc.exe Shaders/Shader_Files/raygen.rgen          -o Shaders/Compiled_Shader_Files/raygen.rgen.spv          --target-env=vulkan1.4
 glslc.exe Shaders/Shader_Files/closesthit.rchit     -o Shaders/Compiled_Shader_Files/closesthit.rchit.spv     --target-env=vulkan1.4

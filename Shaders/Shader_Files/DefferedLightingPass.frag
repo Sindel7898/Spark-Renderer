@@ -99,8 +99,8 @@ void main() {
     vec3 Reflection = texture(samplerReflectiveCubeMap, cR,mipLevel).rgb;
 
 
-    float ambientStrength = 0.03;
-    vec3 Ambient = Albedo * ambientOcclusion * ambientStrength;
+    float ambientStrength = 0.0;
+     vec3 Ambient = Albedo  * ambientStrength;
 
   for (int i = 0; i < 3; i++) {
 
@@ -147,8 +147,8 @@ void main() {
 
 
    float shadow = texture(samplerShadowMap, inTexCoord).r;
-   totalLighting += shadow * Lo * light.CameraPositionAndLightIntensity.w;
-   totalLighting += Ambient;
+   totalLighting += shadow * Lo * light.CameraPositionAndLightIntensity.a;
+  // totalLighting += Ambient;
   }
 
   

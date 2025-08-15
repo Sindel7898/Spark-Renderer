@@ -293,6 +293,10 @@ vk::Format VulkanContext::FindCompatableDepthFormat()
 	}
 }
 
+void VulkanContext::ResetTemporalAccumilation()
+{
+	AccumilationCount = 0;
+}
 
 void VulkanContext::destroy_swapchain()
 {

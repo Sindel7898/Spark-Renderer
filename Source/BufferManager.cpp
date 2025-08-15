@@ -849,8 +849,24 @@ void BufferManager::CopyBufferToAnotherBuffer(vk::CommandPool commandpool , Buff
 	copyregion.size = Buffer1.size;
 
 	commandBuffer.copyBuffer(Buffer1.buffer, Buffer2.buffer, copyregion);
-
+	
 	SubmitAndDestoyCommandBuffer(commandpool, commandBuffer, Queue);
+}
+
+void BufferManager::CopyImageToAnotherImage(vk::CommandBuffer commandbuffer,
+	                                        ImageData SrcImage, vk::ImageLayout SrcImageLayout, vk::ImageSubresourceLayers SrcSubresourceLayers, 
+	                                        ImageData DstImage, vk::ImageLayout DstImageLayout, vk::ImageSubresourceLayers DstSubresourceLayers, 
+	                                        vk::Extent3D ImageExtent, vk::Queue Queue) {
+
+
+	vk::ImageCopy copyregion{};
+	copyregion.srcOffset = 0;
+	copyregion.dstOffset = 0;
+	copyregion.extent = ImageExtent;
+	copyregion.srcSubresource = SrcSubresourceLayers;
+	copyregion.dstSubresource = DstSubresourceLayers;
+
+	commandbuffer.copyImage(SrcImage.image, SrcImageLayout, DstImage.image, DstImageLayout, copyregion);
 }
 
 void* BufferManager::MapMemory(const BufferData& buffer) {

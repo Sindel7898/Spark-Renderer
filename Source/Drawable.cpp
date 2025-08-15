@@ -110,6 +110,8 @@ void Drawable::SetScale(glm::vec3 newscale)
 void Drawable::SetModelMatrix(glm::mat4 newModelMatrix)
 {
     transformMatrices.modelMatrix = newModelMatrix;
+	vulkanContext->ResetTemporalAccumilation();
+
 }
 
 void Drawable::UpdateModelMatrix()
@@ -120,6 +122,9 @@ void Drawable::UpdateModelMatrix()
 	transformMatrices.modelMatrix = glm::rotate(transformMatrices.modelMatrix, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
 	transformMatrices.modelMatrix = glm::rotate(transformMatrices.modelMatrix, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
 	transformMatrices.modelMatrix = glm::scale(transformMatrices.modelMatrix, scale);
+
+	vulkanContext->ResetTemporalAccumilation();
+
 }
 
 void Drawable::BreakDownAndUpdateModelMatrix()

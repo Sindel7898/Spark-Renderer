@@ -93,6 +93,10 @@ public:
     void CopyDataToBuffer(const void* data, BufferData Buffer);
     void CopyBufferToAnotherBuffer(vk::CommandPool commandpool, BufferData Buffer1, BufferData Buffer2, vk::Queue Queue);
 
+    void CopyImageToAnotherImage(vk::CommandBuffer commandbuffer, ImageData SrcImage, vk::ImageLayout SrcImageLayout, vk::ImageSubresourceLayers SrcSubresourceLayers, ImageData DstImage, vk::ImageLayout DstImageLayout, vk::ImageSubresourceLayers DstSubresourceLayers, vk::Extent3D ImageExtent, vk::Queue Queue);
+
+
+
     void* MapMemory(const BufferData& buffer);
     void UnmapMemory(const BufferData& buffer);
   

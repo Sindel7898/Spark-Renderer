@@ -28,35 +28,29 @@ public:
     void GenerateMipMaps(vk::CommandBuffer commandbuffer);
     void createDescriptorSetLayout() override;
     void createDescriptorSets(vk::DescriptorPool descriptorpool, GBuffer gbuffer, ImageData LightingPass, ImageData DepthImage);
-    void UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref);
+    void UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref,float DeltaTime);
     void CreateUniformBuffer();
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
 
-    void DrawBilateralFilterQuater(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
-    void DrawBilateralFilterHalf(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
-    void DrawBilateralFilterFull(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
+    void DrawTA(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
 
     void CleanUp() ;
     std::vector<BufferData> SSGI_UniformBuffers;
 
     std::vector<void*> SSGI_UniformBuffersMappedMem;
-
-    std::vector<vk::DescriptorSet> BilateralFilterQuaterDescriptorSets;
-    std::vector<vk::DescriptorSet> BilateralFilterHalfDescriptorSets;
-    std::vector<vk::DescriptorSet> BilateralFilterFullDescriptorSets;
+    std::vector<vk::DescriptorSet> TemporalAccumilationFullDescriptorSets;
 
     vk::DescriptorSetLayout  BilateralFilterDescriptorSetLayout;
 
     ImageData SSGIPassImage;
-    ImageData SSGIQuaterResBlurPassImage;
-    ImageData SSGIHalfResBlurPassImage;
-    ImageData SSGIFullResBlurPassImage;
+    ImageData SSGIPassLastFrameImage;
+    ImageData SSGIAccumilationImage;
 
-    vk::Extent3D Swapchainextent_Half_Res;
-    vk::Extent3D Swapchainextent_Quater_Res;
 
     std::vector<ImageData> BlueNoiseTextures;
     int NoiseIndex;
+
+    glm::mat4 LastCameraMatrix;
 private:
     std::vector<Vertex> quad = {
      {{-1.0f, -1.0f}, {0.0f, 0.0f}}, // Bottom-left
