@@ -516,7 +516,7 @@ void App::createGBuffer()
 	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, LightingPassImageData, Raytracing_Shadows->ShadowPassImage);
 	fxaa_FullScreenQuad->createDescriptorSets(DescriptorPool, Combined_FullScreenQuad->FinalResultImage);
 	Raytracing_Shadows->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
-	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, LightingPassImageData,DepthTextureData);
+	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, gbuffer.Albedo,DepthTextureData);
 
 
 	vk::CommandBuffer commandBuffer = bufferManger->CreateSingleUseCommandBuffer(commandPool);

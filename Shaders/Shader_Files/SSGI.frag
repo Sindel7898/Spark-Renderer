@@ -98,7 +98,7 @@ void main() {
     // Get blue noise sample
     ivec2 BluenoiseTextureSize = textureSize(BlueNoise[NoiseImageIndex], 0);
 
-    vec2 tiledUV = (inTexCoord * BluenoiseTextureSize);
+    vec2 tiledUV = (inTexCoord * BluenoiseTextureSize / 30);
     
     vec2 frameJitter = vec2(
          fract(ubo.BlueNoiseImageIndex_DeltaTime_Padding.y * 0.618034), 
@@ -125,7 +125,5 @@ void main() {
      float NdotL = max(dot(Normal, normalize(IntersectionPoint - VSposition)), 0.0);
      vec3 giContribution = hitColor * NdotL;
      
-     vec3 finalColor = mix(Color, giContribution, 0.5);
-
-    outFragcolor = vec4(finalColor, 1.0);
+    outFragcolor = vec4(giContribution, 1.0);
 }
