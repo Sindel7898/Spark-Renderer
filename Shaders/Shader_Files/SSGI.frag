@@ -125,7 +125,7 @@ void main() {
      float NdotL = max(dot(Normal, normalize(IntersectionPoint - VSposition)), 0.0);
      vec3 giContribution = hitColor * NdotL;
      
-     vec3 finalColor = giContribution;
+     vec3 finalColor = mix(Color, giContribution, 0.5);
 
     outFragcolor = vec4(finalColor, 1.0);
 }

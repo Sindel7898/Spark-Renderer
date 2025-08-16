@@ -147,8 +147,7 @@ void main() {
 
 
    float shadow = texture(samplerShadowMap, inTexCoord).r;
-   totalLighting += shadow * Lo * light.CameraPositionAndLightIntensity.a;
-  // totalLighting += Ambient;
+   totalLighting += (shadow -= 0.4) * Lo * light.CameraPositionAndLightIntensity.a;
   }
 
   
