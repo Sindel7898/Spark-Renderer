@@ -1,14 +1,13 @@
-# Spark Renderer 🔥
-
+# Spark Renderer
 
 **Spark** is an experimental 3D renderer built with **Vulkan**, aimed at finding a balance between **real-time performance** and **high-quality rendering**.  
 It serves as a **flexible platform** for experimenting with modern rendering techniques.  
 
-### 🧪 Purpose
+### Purpose
 Spark is not just a renderer, but also a **testbed**:  
 a place to prototype and implement new graphics techniques without rebuilding core systems from scratch.  
 
-## ✨ Core Features
+## Core Features
 
 ### Hybrid Rendering Pipeline
 - **Ray tracing** for accurate Shadows
