@@ -24,7 +24,7 @@
 ## 📸 Media
 
 *(Development previews - more coming soon)*  
-![Scene 1]([media/scene1.jpg](https://github.com/Sindel7898/Spark-Renderer/blob/main/GitHub%20Doc/GI.png)) *Early hybrid rendering test*  
+![Spark Renderer Screenshot](https://github.com/Sindel7898/Spark-Renderer/blob/043bf2b9ea08c4e9b5168333ebf42298c2016de3/GitHub%20Doc/GI.png)
 ![Scene 2](media/scene2.jpg) *PBR materials demonstration*
 
 ## 🚀 Getting Started (Developers)
