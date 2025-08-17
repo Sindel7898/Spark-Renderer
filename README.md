@@ -39,8 +39,8 @@ a place to prototype and implement new graphics techniques without rebuilding co
 
 ### Building
 ```bash
-git clone https://github.com/yourusername/spark-renderer.git
-cd spark-renderer
+git clone https://github.com/Sindel7898/Spark-Renderer.git
+cd Spark-Renderer
 mkdir build && cd build
 cmake ..
 make -j8
