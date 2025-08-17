@@ -189,9 +189,8 @@ void main() {
      vec3 fresnel = fresnelSchlick(cosTheta, F0);
      vec3 SSR     = ReflectionColor.rgb;
 
-     ReflectionColor.rgb *= fresnel;
-     Color += ReflectionColor.rgb;
-     vec3 finalColor = mix(Color, ReflectionColor.rgb, fresnel); 
+     ReflectionColor.rgb;
+     vec3 finalColor = mix(Color, ReflectionColor.rgb, fresnel * 0.7); 
 
-     outFragcolor = vec4(Color, 1.0);
+     outFragcolor = vec4(finalColor.rgb, 1.0);
 }
