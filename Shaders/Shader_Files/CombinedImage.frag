@@ -1,16 +1,17 @@
 #version 450
 
-layout (binding = 0) uniform sampler2D Lighting_ReflectionTexture;
-layout (binding = 1) uniform sampler2D ShadowTexture;
+layout (binding = 0) uniform sampler2D LightingReflectionTexture;
+layout (binding = 1) uniform sampler2D GITexture;                
 
 layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragColor;
 
+
 void main() {
-    vec3 litImage = texture(Lighting_ReflectionTexture, inTexCoord).rgb;
-    float shadowFactor = texture(ShadowTexture, inTexCoord).r;
+    vec3 directLight = texture(LightingReflectionTexture, inTexCoord).rgb;
+    vec3 gi = texture(GITexture, inTexCoord).rgb;
 
-    //vec3 finalImage = litImage * shadowFactor;
+    vec3 hdrColor = directLight + gi;
 
-    outFragColor = vec4(litImage, 1.0);
+    outFragColor = vec4(hdrColor, 1.0); 
 }

@@ -141,27 +141,35 @@ void SSGI::createDescriptorSetLayout(){
 	DepthTextureSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	DepthTextureSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
+
+	vk::DescriptorSetLayoutBinding AlbedoPassSamplerLayout{};
+	AlbedoPassSamplerLayout.binding = 3;
+	AlbedoPassSamplerLayout.descriptorCount = 1;
+	AlbedoPassSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	AlbedoPassSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+
 	vk::DescriptorSetLayoutBinding LightingPassSamplerLayout{};
-	LightingPassSamplerLayout.binding = 3;
+	LightingPassSamplerLayout.binding = 4;
 	LightingPassSamplerLayout.descriptorCount = 1;
 	LightingPassSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	LightingPassSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 	vk::DescriptorSetLayoutBinding BlueNoiseSamplerLayout{};
-	BlueNoiseSamplerLayout.binding = 4;
+	BlueNoiseSamplerLayout.binding = 5;
 	BlueNoiseSamplerLayout.descriptorCount = BlueNoiseTextures.size();
 	BlueNoiseSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	BlueNoiseSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 	vk::DescriptorSetLayoutBinding  SSGIUniformBufferLayout{};
-	SSGIUniformBufferLayout.binding = 5;
+	SSGIUniformBufferLayout.binding = 6;
 	SSGIUniformBufferLayout.descriptorCount = 1;
 	SSGIUniformBufferLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
 	SSGIUniformBufferLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 
-	std::array<vk::DescriptorSetLayoutBinding, 6> bindings = { NormalsSamplerLayout,ViewSpacePositionsSamplerLayout,
-												                DepthTextureSamplerLayout,  LightingPassSamplerLayout,
+	std::array<vk::DescriptorSetLayoutBinding, 7> bindings = { NormalsSamplerLayout,ViewSpacePositionsSamplerLayout,
+												                DepthTextureSamplerLayout, AlbedoPassSamplerLayout, LightingPassSamplerLayout,
 		                                                        BlueNoiseSamplerLayout,  SSGIUniformBufferLayout };
 
 	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
@@ -266,6 +274,19 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 
 
 			/////////////////////////////////////////////////////////////////////////////////////
+			vk::DescriptorImageInfo AlbedoPassimageInfo{};
+			AlbedoPassimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			AlbedoPassimageInfo.imageView = gbuffer.Albedo.imageView;
+			AlbedoPassimageInfo.sampler =  gbuffer.Albedo.imageSampler;
+
+			vk::WriteDescriptorSet AlbedoPassSamplerdescriptorWrite{};
+			AlbedoPassSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+			AlbedoPassSamplerdescriptorWrite.dstBinding = 3;
+			AlbedoPassSamplerdescriptorWrite.dstArrayElement = 0;
+			AlbedoPassSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			AlbedoPassSamplerdescriptorWrite.descriptorCount = 1;
+			AlbedoPassSamplerdescriptorWrite.pImageInfo = &AlbedoPassimageInfo;
+
 
 			vk::DescriptorImageInfo LightingPassimageInfo{};
 			LightingPassimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -274,11 +295,12 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 
 			vk::WriteDescriptorSet LightingPassSamplerdescriptorWrite{};
 			LightingPassSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-			LightingPassSamplerdescriptorWrite.dstBinding = 3;
+			LightingPassSamplerdescriptorWrite.dstBinding = 4;
 			LightingPassSamplerdescriptorWrite.dstArrayElement = 0;
 			LightingPassSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 			LightingPassSamplerdescriptorWrite.descriptorCount = 1;
 			LightingPassSamplerdescriptorWrite.pImageInfo = &LightingPassimageInfo;
+
 
 			std::vector<vk::DescriptorImageInfo>BlueNoiseImagesInfos;
 
@@ -294,7 +316,7 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 
 			vk::WriteDescriptorSet BlueNoiseSamplerdescriptorWrite{};
 			BlueNoiseSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-			BlueNoiseSamplerdescriptorWrite.dstBinding = 4;
+			BlueNoiseSamplerdescriptorWrite.dstBinding = 5;
 			BlueNoiseSamplerdescriptorWrite.dstArrayElement = 0;
 			BlueNoiseSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 			BlueNoiseSamplerdescriptorWrite.descriptorCount = BlueNoiseImagesInfos.size();
@@ -310,15 +332,15 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 
 			vk::WriteDescriptorSet fragmentUniformdescriptorWrite{};
 			fragmentUniformdescriptorWrite.dstSet = DescriptorSets[i];
-			fragmentUniformdescriptorWrite.dstBinding = 5;
+			fragmentUniformdescriptorWrite.dstBinding = 6;
 			fragmentUniformdescriptorWrite.dstArrayElement = 0;
 			fragmentUniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
 			fragmentUniformdescriptorWrite.descriptorCount = 1;
 			fragmentUniformdescriptorWrite.pBufferInfo = &fragmentuniformbufferInfo;
 
 
-			std::array<vk::WriteDescriptorSet, 6> descriptorWrites{ NormalSamplerdescriptorWrite,ViewSpacePositionSamplerdescriptorWrite,DepthimageSamplerdescriptorWrite,
-																	LightingPassSamplerdescriptorWrite,BlueNoiseSamplerdescriptorWrite,
+			std::array<vk::WriteDescriptorSet, 7> descriptorWrites{ NormalSamplerdescriptorWrite,ViewSpacePositionSamplerdescriptorWrite,DepthimageSamplerdescriptorWrite,
+																	AlbedoPassSamplerdescriptorWrite,LightingPassSamplerdescriptorWrite,BlueNoiseSamplerdescriptorWrite,
 																	fragmentUniformdescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);

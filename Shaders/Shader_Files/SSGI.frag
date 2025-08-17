@@ -3,10 +3,11 @@
 layout (binding = 0) uniform sampler2D NormalTexture;
 layout (binding = 1) uniform sampler2D ViewSpacePosition;
 layout (binding = 2) uniform sampler2D DepthTexture;
-layout (binding = 3) uniform sampler2D ColorTexture;
-layout (binding = 4) uniform sampler2D BlueNoise[63];
+layout (binding = 3) uniform sampler2D AlbedoTexture;
+layout (binding = 4) uniform sampler2D DirectLigtingTexture;
+layout (binding = 5) uniform sampler2D BlueNoise[63];
 
-layout (binding = 5) uniform SSGIUniformBuffer {
+layout (binding = 6) uniform SSGIUniformBuffer {
     mat4 ProjectionMatrix;
     vec4 BlueNoiseImageIndex_DeltaTime_Padding;
 } ubo;
@@ -91,14 +92,15 @@ void main() {
 
     int NoiseImageIndex = int(ubo.BlueNoiseImageIndex_DeltaTime_Padding.x);
 
-    vec3 Color = texture(ColorTexture, inTexCoord).rgb;
+    vec3 Color = texture(DirectLigtingTexture, inTexCoord).rgb;
+    vec3 Albedo = texture(AlbedoTexture, inTexCoord).rgb;
     vec3 VSposition = texture(ViewSpacePosition, inTexCoord).rgb;
     vec3 Normal = normalize(texture(NormalTexture, inTexCoord).xyz);
     
     // Get blue noise sample
     ivec2 BluenoiseTextureSize = textureSize(BlueNoise[NoiseImageIndex], 0);
 
-    vec2 tiledUV = (inTexCoord * BluenoiseTextureSize / 30);
+    vec2 tiledUV = (inTexCoord * BluenoiseTextureSize);
     
     vec2 frameJitter = vec2(
          fract(ubo.BlueNoiseImageIndex_DeltaTime_Padding.y * 0.618034), 
@@ -120,10 +122,11 @@ void main() {
     RayPositionPS.xyz /= RayPositionPS.w;
     vec2 uv = RayPositionPS.xy * 0.5 + 0.5;
     
-     vec3 hitColor = texture(ColorTexture, uv).rgb;
+     vec3 hitColor = texture(DirectLigtingTexture, uv).rgb;
 
      float NdotL = max(dot(Normal, normalize(IntersectionPoint - VSposition)), 0.0);
      vec3 giContribution = hitColor * NdotL;
      
+     giContribution *= Albedo;
     outFragcolor = vec4(giContribution, 1.0);
 }
