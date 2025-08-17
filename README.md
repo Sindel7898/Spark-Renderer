@@ -4,9 +4,6 @@
 
 *⚠️ Note: This project is under active development - APIs may change and features are being rapidly iterated on.*
 
-
-![Renderer Screenshot]([GitHub Doc/GI.png](https://github.com/Sindel7898/Spark-Renderer/blob/main/GitHub%20Doc/GI.png))
-
 ## ✨ Core Features
 
 ### Hybrid Rendering Pipeline
@@ -27,7 +24,7 @@
 ## 📸 Media
 
 *(Development previews - more coming soon)*  
-![Scene 1](media/scene1.jpg) *Early hybrid rendering test*  
+![Scene 1]([media/scene1.jpg](https://github.com/Sindel7898/Spark-Renderer/blob/main/GitHub%20Doc/GI.png)) *Early hybrid rendering test*  
 ![Scene 2](media/scene2.jpg) *PBR materials demonstration*
 
 ## 🚀 Getting Started (Developers)
