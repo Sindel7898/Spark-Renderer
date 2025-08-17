@@ -1,13 +1,17 @@
 # Spark Renderer 🔥
 
-**Spark** is an experimental 3D renderer in heavy development, designed to bridge the gap between **real-time performance** and **high-quality rendering**. Built with games in mind, it combines modern graphics techniques while prioritizing flexibility for future innovation.
 
-*⚠️ Note: This project is under active development - APIs may change and features are being rapidly iterated on.*
+**Spark** is an experimental 3D renderer built with **Vulkan**, aimed at finding a balance between **real-time performance** and **high-quality rendering**.  
+It serves as a **flexible platform** for experimenting with modern rendering techniques.  
+
+### 🧪 Purpose
+Spark is not just a renderer, but also a **testbed**:  
+a place to prototype and implement new graphics techniques without rebuilding core systems from scratch.  
 
 ## ✨ Core Features
 
 ### Hybrid Rendering Pipeline
-- **Ray tracing** for accurate lighting and reflections
+- **Ray tracing** for accurate Shadows
 - **Rasterization** for high-performance rendering
 - Adaptive quality system that balances visual fidelity and frame rate
 
@@ -19,17 +23,15 @@
 ### Material System
 - Physically-based rendering (PBR) workflow
 - Metallic-roughness material model
-- HDR environment lighting
 
-## 📸 Media
+## Media
 
 *(Development previews - more coming soon)*  
-![Spark Renderer Screenshot](https://github.com/Sindel7898/Spark-Renderer/blob/043bf2b9ea08c4e9b5168333ebf42298c2016de3/GitHub%20Doc/GI.png)
-![Scene 2](media/scene2.jpg) *PBR materials demonstration*
+![Spark Renderer Screenshot](https://github.com/Sindel7898/Spark-Renderer/blob/dd422d41c6359996a35a17531d0eea607e59cab5/GitHub%20Doc/GI.png)
 
-## 🚀 Getting Started (Developers)
+## Getting Started (Developers)
 
-*Early access for contributors - expect breaking changes*
+*Early access - expect breaking changes*
 
 ### Prerequisites
 - CMake 3.20+
