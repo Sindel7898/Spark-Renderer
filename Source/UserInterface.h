@@ -48,6 +48,7 @@ class UserInterface
 
     int UserInterfaceItemsIndex = -1;
     int selectedLightIndex = -1;
+    int SelectedInstanceIndex = -1;
 
 
     bool useSnap = false;

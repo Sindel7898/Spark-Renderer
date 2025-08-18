@@ -22,6 +22,7 @@ struct InstanceData{
 layout(set = 0,binding = 1) readonly buffer  GrassData {
   InstanceData GrassInstanceData[20000];
 };
+
 layout(binding = 2) uniform sampler2D TerrainHeightMap;
 
 vec3 Cubic_Bezier(vec3 Point0, vec3 Point1, vec3 Point2, vec3 Point3, float t) {

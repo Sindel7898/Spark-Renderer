@@ -53,7 +53,6 @@ protected:
 	
 
 	 TransformMatrices  transformMatrices;
-	 TransformMatrices  ShadowPasstransformMatrices;
 	 InstanceTransformMatrices InstancetransformMatrices;
 
 

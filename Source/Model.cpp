@@ -14,22 +14,12 @@ Model::Model(const std::string filepath, VulkanContext* vulkancontext, vk::Comma
 	camera = rcamera;
 	bufferManager = buffermanger;
 
-	position = glm::vec3(1.0f,1.0f,1.0f);
-	rotation = glm::vec3(90.0f,0.0f,0.0f);
-	scale =    glm::vec3(2.0f, 2.0f, 2.0f);
-
-	transformMatrices.modelMatrix = glm::mat4(1.0f);
-	transformMatrices.modelMatrix = glm::translate(transformMatrices.modelMatrix, position);
-	transformMatrices.modelMatrix = glm::rotate(transformMatrices.modelMatrix, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-	transformMatrices.modelMatrix = glm::rotate(transformMatrices.modelMatrix, glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-	transformMatrices.modelMatrix = glm::rotate(transformMatrices.modelMatrix, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
-	transformMatrices.modelMatrix = glm::scale(transformMatrices.modelMatrix, scale);
-
 	CreateVertexAndIndexBuffer();
 	CreateBLAS();
 	LoadTextures();
 	CreateUniformBuffer();
 	createDescriptorSetLayout();
+	Instantiate();
 }
 
 void Model::LoadTextures()
@@ -60,7 +50,6 @@ void Model::CreateVertexAndIndexBuffer()
 
 	storedModelData = &AssetManager::GetInstance().GetStoredModelData(FilePath);
 
-	transformMatrices.modelMatrix = storedModelData->modelMatrix;
 
 	VkDeviceSize VertexBufferSize = sizeof(storedModelData->VertexData[0]) * storedModelData->VertexData.size();
 	vertexBufferData.BufferID = "Model Vertex Buffer";
@@ -203,21 +192,62 @@ void Model::CreateUniformBuffer()
 		vertexUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		VertexUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
 
-		VkDeviceSize VertexuniformBufferSize = sizeof(ModelData);
+		VkDeviceSize VertexuniformBufferSize = sizeof(VertexData);
 
 		for (size_t i = 0; i < vertexUniformBuffers.size(); i++)
 		{
 			BufferData bufferdata;
-			bufferdata.BufferID = "Model Vertex Uniform Buffer" + i;
+			bufferdata.BufferID = "Vertex Uniform Buffer" + i;
 			bufferManager->CreateBuffer(&bufferdata,VertexuniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
 			vertexUniformBuffers[i] = bufferdata;
 
 			VertexUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
 		}
 	}
+
+	{
+		Model_GPU_DataUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+		Model_GPU_DataUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
+
+		VkDeviceSize ModeluniformBufferSize = sizeof(GPU_InstanceData) * 5;
+
+		for (size_t i = 0; i < Model_GPU_DataUniformBuffers.size(); i++)
+		{
+			BufferData bufferdata;
+			bufferdata.BufferID = "Model Vertex Uniform Buffer" + i;
+			bufferManager->CreateBuffer(&bufferdata, ModeluniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
+			Model_GPU_DataUniformBuffers[i] = bufferdata;
+
+			Model_GPU_DataUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
+		}
+	}
+
 }
 
+void Model::Instantiate()
+{
+	
+	if (!Instances.empty())
+	{
+		int LastIndex = Instances.size() - 1;
 
+		InstanceData* NewInstance = new InstanceData(Instances[LastIndex]);
+
+		Instances.push_back(NewInstance);
+		GPU_InstancesData.push_back(NewInstance->gpu_InstanceData);
+
+	}
+	else
+	{
+		InstanceData* NewInstance = new InstanceData(nullptr);
+		NewInstance->SetModelMatrix(storedModelData->modelMatrix);
+
+		Instances.push_back(NewInstance);
+		GPU_InstancesData.push_back(NewInstance->gpu_InstanceData);
+	}
+
+
+}
 
 void Model::createDescriptorSetLayout()
 {
@@ -227,26 +257,32 @@ void Model::createDescriptorSetLayout()
 	VertexUniformBufferBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
 	VertexUniformBufferBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
 
+	vk::DescriptorSetLayoutBinding ModelUniformBufferBinding{};
+	ModelUniformBufferBinding.binding = 1;
+	ModelUniformBufferBinding.descriptorCount = 1;
+	ModelUniformBufferBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
+	ModelUniformBufferBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
+
 	vk::DescriptorSetLayoutBinding AlbedoSamplerLayout{};
-	AlbedoSamplerLayout.binding = 1;
+	AlbedoSamplerLayout.binding = 2;
 	AlbedoSamplerLayout.descriptorCount = 1;
 	AlbedoSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	AlbedoSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 	vk::DescriptorSetLayoutBinding NormalSamplerLayout{};
-	NormalSamplerLayout.binding = 2;
+	NormalSamplerLayout.binding = 3;
 	NormalSamplerLayout.descriptorCount = 1;
 	NormalSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	NormalSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 	vk::DescriptorSetLayoutBinding MetallicRoughnessSamplerLayout{};
-	MetallicRoughnessSamplerLayout.binding = 3;
+	MetallicRoughnessSamplerLayout.binding = 4;
 	MetallicRoughnessSamplerLayout.descriptorCount = 1;
 	MetallicRoughnessSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	MetallicRoughnessSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-	std::array<vk::DescriptorSetLayoutBinding, 4> bindings = { VertexUniformBufferBinding,
-															   AlbedoSamplerLayout,NormalSamplerLayout,MetallicRoughnessSamplerLayout,
+	std::array<vk::DescriptorSetLayoutBinding, 5> bindings = { VertexUniformBufferBinding,
+																ModelUniformBufferBinding,AlbedoSamplerLayout,NormalSamplerLayout,MetallicRoughnessSamplerLayout,
 	                                                            };
 
 	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
@@ -286,7 +322,7 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 	     	vk::DescriptorBufferInfo vertexbufferInfo{};
 	     	vertexbufferInfo.buffer = vertexUniformBuffers[i].buffer;
 	     	vertexbufferInfo.offset = 0;
-	     	vertexbufferInfo.range = sizeof(ModelData);
+	     	vertexbufferInfo.range = sizeof(VertexData);
 	     
 	     	vk::WriteDescriptorSet VertexUniformdescriptorWrite{};
 	     	VertexUniformdescriptorWrite.dstSet = DescriptorSets[i];
@@ -295,7 +331,21 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 	     	VertexUniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
 	     	VertexUniformdescriptorWrite.descriptorCount = 1;
 	     	VertexUniformdescriptorWrite.pBufferInfo = &vertexbufferInfo;
-	     	;
+			
+
+			vk::DescriptorBufferInfo ModelbufferInfo{};
+			ModelbufferInfo.buffer = Model_GPU_DataUniformBuffers[i].buffer;
+			ModelbufferInfo.offset = 0;
+			ModelbufferInfo.range = sizeof(GPU_InstanceData) * 5;
+
+			vk::WriteDescriptorSet ModelUniformdescriptorWrite{};
+			ModelUniformdescriptorWrite.dstSet = DescriptorSets[i];
+			ModelUniformdescriptorWrite.dstBinding = 1;
+			ModelUniformdescriptorWrite.dstArrayElement = 0;
+			ModelUniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+			ModelUniformdescriptorWrite.descriptorCount = 1;
+			ModelUniformdescriptorWrite.pBufferInfo = &ModelbufferInfo;
+	     	
 	     	/////////////////////////////////////////////////////////////////////////////////////
 	     	vk::DescriptorImageInfo imageInfo{};
 	     	imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -304,7 +354,7 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 	     
 	     	vk::WriteDescriptorSet SamplerdescriptorWrite{};
 	     	SamplerdescriptorWrite.dstSet = DescriptorSets[i];
-	     	SamplerdescriptorWrite.dstBinding = 1;
+	     	SamplerdescriptorWrite.dstBinding = 2;
 	     	SamplerdescriptorWrite.dstArrayElement = 0;
 	     	SamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	     	SamplerdescriptorWrite.descriptorCount = 1;
@@ -318,7 +368,7 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 	     
 	     	vk::WriteDescriptorSet NormalSamplerdescriptorWrite{};
 	     	NormalSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-	     	NormalSamplerdescriptorWrite.dstBinding = 2;
+	     	NormalSamplerdescriptorWrite.dstBinding = 3;
 	     	NormalSamplerdescriptorWrite.dstArrayElement = 0;
 	     	NormalSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	     	NormalSamplerdescriptorWrite.descriptorCount = 1;
@@ -332,7 +382,7 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 
 			vk::WriteDescriptorSet MetallicRoughnessSamplerdescriptorWrite{};
 			MetallicRoughnessSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-			MetallicRoughnessSamplerdescriptorWrite.dstBinding = 3;
+			MetallicRoughnessSamplerdescriptorWrite.dstBinding = 4;
 			MetallicRoughnessSamplerdescriptorWrite.dstArrayElement = 0;
 			MetallicRoughnessSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 			MetallicRoughnessSamplerdescriptorWrite.descriptorCount = 1;
@@ -341,8 +391,8 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 			/////////////////////////////////////////////////////////////////////////////////////
 
 
-	     	std::array<vk::WriteDescriptorSet, 4> descriptorWrites{ VertexUniformdescriptorWrite,
-	     															SamplerdescriptorWrite,NormalSamplerdescriptorWrite,MetallicRoughnessSamplerdescriptorWrite };
+	     	std::array<vk::WriteDescriptorSet, 5> descriptorWrites{ VertexUniformdescriptorWrite,
+																	ModelUniformdescriptorWrite,SamplerdescriptorWrite,NormalSamplerdescriptorWrite,MetallicRoughnessSamplerdescriptorWrite };
 	     
 	     	vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	     }
@@ -352,50 +402,31 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 
 void Model::UpdateUniformBuffer(uint32_t currentImage)
 {
-	Drawable::UpdateUniformBuffer(currentImage);
-	
-	transformMatrices.viewMatrix = camera->GetViewMatrix();
-	transformMatrices.projectionMatrix = camera->GetProjectionMatrix();
-	transformMatrices.projectionMatrix[1][1] *= -1;
-	
-	ModelData modelData;
-	modelData.transformMatrices = transformMatrices;
-	modelData.bCubeMapReflection_bScreenSpaceReflectionWithPadding = glm::vec4(bCubeMapReflection, bScreenSpaceReflection, 0.0f, 0.0f);
+	VertexData VertexData;
+	VertexData.ViewMatrix = camera->GetViewMatrix();
+	VertexData.ProjectionMatrix = camera->GetProjectionMatrix();
+	VertexData.ProjectionMatrix[1][1] *= -1;
 
-	memcpy(VertexUniformBuffersMappedMem[currentImage], &modelData, sizeof(modelData));
+	memcpy(VertexUniformBuffersMappedMem[currentImage], &VertexData, sizeof(VertexData));
+
+	for (size_t i = 0; i < GPU_InstancesData.size(); i++) {
+		GPU_InstanceData* instanceData = GPU_InstancesData[i].get();
+		memcpy((char*)Model_GPU_DataUniformBuffersMappedMem[currentImage] + i * sizeof(GPU_InstanceData), instanceData, sizeof(GPU_InstanceData));
+	}
 }
 
 
 void Model::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)
 {
+
+
 	vk::DeviceSize offsets[] = { 0 };
 	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
 	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint32);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(storedModelData->IndexData.size(), 1, 0, 0, 0);
-}
-
-void Model::CubeMapReflectiveSwitch(bool breflective)
-{
-	if (breflective)
-	{
-		bCubeMapReflection = 1;
-	}
-	else {
-		bCubeMapReflection = 0;
-	}
-}
-
-void Model::ScreenSpaceReflectiveSwitch(bool breflective)
-{
-	if (breflective)
-	{
-		bScreenSpaceReflection = 1;
-	}
-	else {
-		bScreenSpaceReflection = 0;
-	}
+	commandbuffer.drawIndexed(storedModelData->IndexData.size(), 3, 0, 0, 0);
 }
 
 void Model::CleanUp()

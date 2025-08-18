@@ -272,9 +272,7 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex)
 	CommandBuffer.end();
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
-
-void UserInterface::DrawUi(App* appref,SkyBox* skyBox)
-{
+void UserInterface::DrawUi(App* appref, SkyBox* skyBox) {
 	SetupDockingEnvironment();
 
 	// Handle gizmo mode changes
@@ -288,7 +286,7 @@ void UserInterface::DrawUi(App* appref,SkyBox* skyBox)
 		currentGizmoOperation = ImGuizmo::SCALE;
 	}
 
-
+	// Global Settings Window
 	{
 		ImGui::Begin("Global Settings");
 
@@ -299,16 +297,11 @@ void UserInterface::DrawUi(App* appref,SkyBox* skyBox)
 		ImGuiIO& io = ImGui::GetIO();
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 
-		if (ImGui::BeginCombo("Render Passes", currentPass.c_str()))
-		{
+		if (ImGui::BeginCombo("Render Passes", currentPass.c_str())) {
 			for (int i = 0; i < Passes.size(); i++) {
-
 				bool is_selected = (currentPass == Passes[i]);
-
 				if (ImGui::Selectable(Passes[i].c_str(), is_selected)) {
-
 					currentPass = Passes[i];
-
 					appref->DefferedDecider = i;
 				}
 			}
@@ -318,7 +311,6 @@ void UserInterface::DrawUi(App* appref,SkyBox* skyBox)
 		ImGui::Checkbox("FXAA", (bool*)&appref->fxaa_FullScreenQuad->bFXAA);
 		ImGui::Checkbox("Wire Frame", &appref->bWireFrame);
 
-
 		ImGui::Text("SSAO Settings");
 		ImGui::InputInt("Kernel Size", &appref->ssao_FullScreenQuad->KernelSize);
 		ImGui::InputFloat("radius", &appref->ssao_FullScreenQuad->Radius);
@@ -327,15 +319,11 @@ void UserInterface::DrawUi(App* appref,SkyBox* skyBox)
 
 		ImGui::Dummy(ImVec2(0.0f, 20.0f));
 
-		if (ImGui::BeginCombo("SkyBox", currentSkyBox.c_str()))
-		{
+		if (ImGui::BeginCombo("SkyBox", currentSkyBox.c_str())) {
 			for (int i = 0; i < SkyBoxs.size(); i++) {
-
 				bool is_selected = (currentSkyBox == SkyBoxs[i]);
-
 				if (ImGui::Selectable(SkyBoxs[i].c_str(), is_selected)) {
 					currentSkyBox = SkyBoxs[i];
-
 					skyBox->SkyBoxIndex = i;
 				}
 			}
@@ -348,153 +336,147 @@ void UserInterface::DrawUi(App* appref,SkyBox* skyBox)
 	// Main viewport with gizmos
 	ImGui::Begin("Main Viewport");
 
-	if (ImGui::GetMainViewport())
-	{
+	if (ImGui::GetMainViewport()) {
 		viewportSize = ImGui::GetContentRegionAvail();
 	}
 
-	if (appref->DefferedDecider == 0)
-	{
-		ImGui::Image((ImTextureID)appref->PositionRenderTextureId, viewportSize);
-
+	// Display the appropriate texture based on current render pass
+	switch (appref->DefferedDecider) {
+	case 0: ImGui::Image((ImTextureID)appref->PositionRenderTextureId, viewportSize); break;
+	case 1: ImGui::Image((ImTextureID)appref->NormalTextureId, viewportSize); break;
+	case 2: ImGui::Image((ImTextureID)appref->AlbedoTextureId, viewportSize); break;
+	case 3: ImGui::Image((ImTextureID)appref->SSAOTextureId, viewportSize); break;
+	case 4: ImGui::Image((ImTextureID)appref->Shadow_TextureId, viewportSize); break;
+	case 5: ImGui::Image((ImTextureID)appref->LightingAndReflectionsRenderTextureId, viewportSize); break;
+	case 6: ImGui::Image((ImTextureID)appref->SSGITextureId, viewportSize); break;
+	case 7: ImGui::Image((ImTextureID)appref->FinalRenderTextureId, viewportSize); break;
 	}
-
-	if (appref->DefferedDecider == 1)
-	{
-		ImGui::Image((ImTextureID)appref->NormalTextureId, viewportSize);
-	}
-
-	if (appref->DefferedDecider == 2)
-	{
-		ImGui::Image((ImTextureID)appref->AlbedoTextureId, viewportSize);
-	}
-
-	if (appref->DefferedDecider == 3)
-	{
-		ImGui::Image((ImTextureID)appref->SSAOTextureId, viewportSize);
-
-	}
-
-	if (appref->DefferedDecider == 4)
-	{
-		ImGui::Image((ImTextureID)appref->Shadow_TextureId, viewportSize);
-
-	}
-
-	if (appref->DefferedDecider == 5)
-	{
-		ImGui::Image((ImTextureID)appref->LightingAndReflectionsRenderTextureId, viewportSize);
-
-	}
-
-	if (appref->DefferedDecider == 6)
-	{
-		ImGui::Image((ImTextureID)appref->SSGITextureId, viewportSize);
-
-	}
-
-	if (appref->DefferedDecider == 7)
-	{
-		ImGui::Image((ImTextureID)appref->FinalRenderTextureId, viewportSize);
-
-	}
-
-
 
 	ImGuizmo::SetOrthographic(false);
 	ImGuizmo::SetDrawlist();
 
+	if (!appref->camera || appref->UserInterfaceItems.empty()) {
+		ImGui::End();
+		return;
+	}
 
-	if (appref->camera && !appref->UserInterfaceItems.empty())
-	{
-		glm::mat4 cameraprojection = appref->camera->GetProjectionMatrix();
-		glm::mat4 cameraview = appref->camera->GetViewMatrix();
+	glm::mat4 cameraprojection = appref->camera->GetProjectionMatrix();
+	glm::mat4 cameraview = appref->camera->GetViewMatrix();
 
+	// Handle selection
+	if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0) && !ImGuizmo::IsOver()) {
+		SelectedInstanceIndex = -1;
+		UserInterfaceItemsIndex = -1;
 
-		if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0) && !ImGuizmo::IsOver())
-		{
-			for (int i = 0; i < appref->UserInterfaceItems.size(); i++)
-			{
-				if (appref->UserInterfaceItems[i])
-				{
-					glm::vec3 UserInterfaceItemsPosition = appref->UserInterfaceItems[i]->position;
+		// Check for model instance selection first
+		for (auto& item : appref->UserInterfaceItems) {
+			Model* model = dynamic_cast<Model*>(item);
+			if (model) {
+				for (size_t i = 0; i < model->Instances.size(); i++) {
+					if (!model->Instances[i]) continue;
 
-					float distance = CalculateDistanceInScreenSpace(cameraprojection, cameraview, UserInterfaceItemsPosition);
+					glm::vec3 ModelInstancePosition = model->Instances[i]->GetPostion();
+					float distance = CalculateDistanceInScreenSpace(cameraprojection, cameraview, ModelInstancePosition);
 
-					if (distance < 100.0f)
-					{
-						UserInterfaceItemsIndex = i;
+					if (distance < 100.0f) {
+						SelectedInstanceIndex = i;
+						UserInterfaceItemsIndex = &item - &appref->UserInterfaceItems[0];
 						break;
 					}
-					else
-					{
-						UserInterfaceItemsIndex = -1;
-					}
 				}
+				if (SelectedInstanceIndex != -1) break;
 			}
-
 		}
 
-		if (UserInterfaceItemsIndex >= 0 && UserInterfaceItemsIndex < appref->UserInterfaceItems.size())
-		{
-			auto& item = appref->UserInterfaceItems[UserInterfaceItemsIndex];
+		// If no model instance selected, check for regular item selection
+		if (SelectedInstanceIndex == -1) {
+			for (size_t i = 0; i < appref->UserInterfaceItems.size(); i++) {
+				if (!appref->UserInterfaceItems[i]) continue;
 
-			if (item)
-			{
-				glm::mat4 ItemsModelMatrix = item->GetModelMatrix();
+				glm::vec3 itemPosition = appref->UserInterfaceItems[i]->position;
+				float distance = CalculateDistanceInScreenSpace(cameraprojection, cameraview, itemPosition);
 
-				ImGuizmo::Manipulate(glm::value_ptr(cameraview), glm::value_ptr(cameraprojection),
-					currentGizmoOperation, ImGuizmo::LOCAL, glm::value_ptr(ItemsModelMatrix));
-
-				float matrixTranslation[3], matrixRotation[3], matrixScale[3];
-				ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(ItemsModelMatrix), matrixTranslation, matrixRotation, matrixScale);
-				ImGui::Begin("Details Panel");
-
-				ImGui::Dummy(ImVec2(0.0f, 20.0f));
-				ImGui::Separator();
-
-				ImGui::InputFloat3("Position", matrixTranslation);
-				ImGui::InputFloat3("Rotation", matrixRotation);
-				ImGui::InputFloat3("Scale", matrixScale);
-
-				ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, glm::value_ptr(ItemsModelMatrix));
-				item->SetModelMatrix(ItemsModelMatrix);
-
-
-				if (ImGuizmo::IsUsing())
-				{
-					item->SetModelMatrix(ItemsModelMatrix);
-				}
-
-				Model* model =  dynamic_cast<Model*>(item);
-
-				if (model)
-				{
-					ImGui::Checkbox("Cube Map Reflections", (bool*)&model->bCubeMapReflection);
-					ImGui::Checkbox("Screen Space Reflections", (bool*)&model->bScreenSpaceReflection);
-
+				if (distance < 100.0f) {
+					UserInterfaceItemsIndex = i;
+					break;
 				}
 			}
-		
+		}
+	}
 
+	// Handle gizmo manipulation
+	if (UserInterfaceItemsIndex >= 0 && UserInterfaceItemsIndex < appref->UserInterfaceItems.size()) {
+		auto& item = appref->UserInterfaceItems[UserInterfaceItemsIndex];
+		if (!item) {
+			ImGui::End();
+			return;
+		}
+
+		glm::mat4 modelMatrix;
+		if (SelectedInstanceIndex != -1) {
+			Model* model = dynamic_cast<Model*>(item);
+			if (model && SelectedInstanceIndex < model->Instances.size() && model->Instances[SelectedInstanceIndex]) {
+				modelMatrix = model->Instances[SelectedInstanceIndex]->GetModelMatrix();
+			}
+		}
+		else {
+			modelMatrix = item->GetModelMatrix();
+		}
+
+		ImGuizmo::Manipulate(glm::value_ptr(cameraview), glm::value_ptr(cameraprojection),
+			currentGizmoOperation, ImGuizmo::LOCAL, glm::value_ptr(modelMatrix));
+
+		if (ImGuizmo::IsUsing()) {
+			float matrixTranslation[3], matrixRotation[3], matrixScale[3];
+			ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(modelMatrix), matrixTranslation, matrixRotation, matrixScale);
+
+			if (SelectedInstanceIndex != -1) {
+				Model* model = dynamic_cast<Model*>(item);
+				if (model && SelectedInstanceIndex < model->Instances.size() && model->Instances[SelectedInstanceIndex]) {
+					model->Instances[SelectedInstanceIndex]->SetModelMatrix(modelMatrix);
+				}
+			}
+			else {
+				item->SetModelMatrix(modelMatrix);
+			}
+		}
+
+		// Details Panel
+		ImGui::Begin("Details Panel");
+		ImGui::Dummy(ImVec2(0.0f, 20.0f));
+		ImGui::Separator();
+
+		float matrixTranslation[3], matrixRotation[3], matrixScale[3];
+		ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(modelMatrix), matrixTranslation, matrixRotation, matrixScale);
+
+		ImGui::InputFloat3("Position", matrixTranslation);
+		ImGui::InputFloat3("Rotation", matrixRotation);
+		ImGui::InputFloat3("Scale", matrixScale);
+
+		ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, glm::value_ptr(modelMatrix));
+
+		if (SelectedInstanceIndex != -1) {
+			Model* model = dynamic_cast<Model*>(item);
+			if (model && SelectedInstanceIndex < model->Instances.size() && model->Instances[SelectedInstanceIndex]) {
+				model->Instances[SelectedInstanceIndex]->SetModelMatrix(modelMatrix);
+				ImGui::Checkbox("Cube Map Reflections", (bool*)&model->Instances[SelectedInstanceIndex]->bCubeMapReflection);
+				ImGui::Checkbox("Screen Space Reflections", (bool*)&model->Instances[SelectedInstanceIndex]->bScreenSpaceReflection);
+			}
+		}
+		else {
+			item->SetModelMatrix(modelMatrix);
 
 			Light* light = dynamic_cast<Light*>(item);
-
-			if (light)
-			{
+			if (light) {
 				ImGui::ColorEdit3("Color", glm::value_ptr(light->color));
 				ImGui::InputFloat("Light Intensity", &light->lightIntensity);
 				ImGui::InputFloat("Ambience Value", &light->ambientStrength);
 
-				if (ImGui::BeginCombo("Light Type", currentItem.c_str()))
-				{
+				if (ImGui::BeginCombo("Light Type", currentItem.c_str())) {
 					for (int i = 0; i < items.size(); i++) {
-
 						bool is_selected = (currentItem == items[i]);
-
 						if (ImGui::Selectable(items[i].c_str(), is_selected)) {
 							currentItem = items[i];
-
 							light->lightType = i;
 						}
 					}
@@ -502,13 +484,12 @@ void UserInterface::DrawUi(App* appref,SkyBox* skyBox)
 				}
 
 				ImGui::Checkbox("Cast Shadow", (bool*)&light->CastShadow);
-
 			}
-			ImGui::End();
-		};
+		}
+		ImGui::End();
 	}
-	ImGui::End();
 
+	ImGui::End();
 }
 
 float UserInterface::CalculateDistanceInScreenSpace(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position)

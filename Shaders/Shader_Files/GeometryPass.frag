@@ -1,8 +1,8 @@
 #version 450
 
-layout (binding = 1) uniform sampler2D   samplerColor;
-layout (binding = 2) uniform sampler2D   samplerNormalMap;
-layout (binding = 3) uniform sampler2D   samplerMetallicRoughnessMapAO;
+layout (binding = 2) uniform sampler2D   samplerColor;
+layout (binding = 3) uniform sampler2D   samplerNormalMap;
+layout (binding = 4) uniform sampler2D   samplerMetallicRoughnessMapAO;
 
 layout(location = 0) in vec4 WorldSpacePosition;   
 layout(location = 1) in vec4 ViewSpacePosition;        
