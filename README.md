@@ -4,8 +4,7 @@
 It serves as a **flexible platform** for experimenting with modern rendering techniques.  
 
 ### Purpose
-Spark is not just a renderer, but also a **testbed**:  
-a place to prototype and implement new graphics techniques without rebuilding core systems from scratch.  
+Spark is a renderer And **testbed** for prototype and implement new graphics techniques without rebuilding core systems from scratch.  
 
 ## Core Features
 
