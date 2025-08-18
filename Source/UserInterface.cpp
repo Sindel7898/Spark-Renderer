@@ -273,7 +273,8 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex)
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 
-void UserInterface::DrawUi(App* appref, SkyBox* skyBox) {
+void UserInterface::DrawUi(App* appref, SkyBox* skyBox) 
+{
 	SetupDockingEnvironment();
 
 	// Handle gizmo mode changes
@@ -463,11 +464,19 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox) {
 			Model* model = dynamic_cast<Model*>(item);
 
 			if (model && SelectedInstanceIndex < model->Instances.size() && model->Instances[SelectedInstanceIndex]) {
-				model->Instances[SelectedInstanceIndex]->SetModelMatrix(modelMatrix);
+
+				if (LastModelMatrix != model->Instances[SelectedInstanceIndex]->GetModelMatrix())
+				{
+					model->Instances[SelectedInstanceIndex]->SetModelMatrix(modelMatrix);
+
+					LastModelMatrix = model->Instances[SelectedInstanceIndex]->GetModelMatrix();
+				}
 				
 				ImGui::Checkbox("Cube Map Reflections", (bool*)&model->Instances[SelectedInstanceIndex]->bCubeMapReflection);
 				ImGui::Checkbox("Screen Space Reflections", (bool*)&model->Instances[SelectedInstanceIndex]->bScreenSpaceReflection);
-			   
+				
+				model->Instances[SelectedInstanceIndex]->UpdateGPU_ReflectionFlags();
+
 				if (ImGui::Button("Instantiate"))
 			     {
 					model->Instantiate();
@@ -480,7 +489,12 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox) {
 			}
 		}
 		else {
-			item->SetModelMatrix(modelMatrix);
+			if (LastModelMatrix != item->GetModelMatrix())
+			{
+				item->SetModelMatrix(modelMatrix);
+
+				LastModelMatrix = item->GetModelMatrix();
+			}
 
 			Light* light = dynamic_cast<Light*>(item);
 

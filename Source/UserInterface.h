@@ -69,6 +69,7 @@ class UserInterface
 
      ImVec2 viewportSize;
 
+     glm::mat4 LastModelMatrix;
 };
 
 static inline void UserInterfaceDeleter(UserInterface* userInterface) {
