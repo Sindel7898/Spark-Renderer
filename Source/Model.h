@@ -24,9 +24,12 @@ struct InstanceData {
     bool bScreenSpaceReflection = false;
 
     std::shared_ptr<GPU_InstanceData> gpu_InstanceData  = std::make_shared<GPU_InstanceData>();
+    VulkanContext* vulkanContext = nullptr;
 
-    InstanceData(InstanceData* LastInstanceData)
+    InstanceData(InstanceData* LastInstanceData,VulkanContext* vulkanRef)
     {
+        vulkanContext = vulkanRef;
+
         if (LastInstanceData)
         {
             glm::vec3 PositionOffset = glm::vec3(2, 0, 0);
@@ -99,6 +102,7 @@ struct InstanceData {
         gpu_InstanceData->modelMatrix = glm::rotate(gpu_InstanceData->modelMatrix, glm::radians(Rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
         gpu_InstanceData->modelMatrix = glm::scale(gpu_InstanceData->modelMatrix, Scale);
 
+        vulkanContext->ResetTemporalAccumilation();
     }
 
 
@@ -115,6 +119,7 @@ struct InstanceData {
         Position = Newtranslation;
         Rotation = glm::degrees(glm::eulerAngles(glm::conjugate(Newrotation)));
         Scale = Newscale;
+        vulkanContext->ResetTemporalAccumilation();
 
     }
     private:

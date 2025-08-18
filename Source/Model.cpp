@@ -231,7 +231,7 @@ void Model::Instantiate()
 	{
 		int LastIndex = Instances.size() - 1;
 
-		InstanceData* NewInstance = new InstanceData(Instances[LastIndex]);
+		InstanceData* NewInstance = new InstanceData(Instances[LastIndex],vulkanContext);
 
 		Instances.push_back(NewInstance);
 		GPU_InstancesData.push_back(NewInstance->gpu_InstanceData);
@@ -239,7 +239,7 @@ void Model::Instantiate()
 	}
 	else
 	{
-		InstanceData* NewInstance = new InstanceData(nullptr);
+		InstanceData* NewInstance = new InstanceData(nullptr, vulkanContext);
 		NewInstance->SetModelMatrix(storedModelData->modelMatrix);
 
 		Instances.push_back(NewInstance);

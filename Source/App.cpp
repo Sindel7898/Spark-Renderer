@@ -53,7 +53,7 @@
 
 	model.get()->Instances[0]->SetPostion(glm::vec3(5.000, -1.202, 5.798));
 	model.get()->Instances[0]->SetScale(glm::vec3(1.100, 1.000, 1.050));
-	model.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
+	model.get()->Instances[0]->SetRotation(glm::vec3(90.000, 0.000, 0.00));
 
 	model2.get()->Instances[0]->SetPostion(glm::vec3(-5.329, 0.265, -4.715));
 	model2.get()->Instances[0]->SetScale(glm::vec3(8.000, 8.000, 8.000));
@@ -349,7 +349,7 @@
 
 		 VkAccelerationStructureDeviceAddressInfoKHR Temp = blasinfo;
 
-		 glm::mat ModelMatrix = Models[i]->GetModelMatrix();
+		 glm::mat ModelMatrix = Models[i]->Instances[0]->GetModelMatrix();
 
 		 VkTransformMatrixKHR transformMatrix = {
 				ModelMatrix[0][0], ModelMatrix[1][0], ModelMatrix[2][0], ModelMatrix[3][0], // Row 0

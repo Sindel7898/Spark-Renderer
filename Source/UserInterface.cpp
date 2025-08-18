@@ -272,6 +272,7 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex)
 	CommandBuffer.end();
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
+
 void UserInterface::DrawUi(App* appref, SkyBox* skyBox) {
 	SetupDockingEnvironment();
 
@@ -371,8 +372,11 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox) {
 		// Check for model instance selection first
 		for (auto& item : appref->UserInterfaceItems) {
 			Model* model = dynamic_cast<Model*>(item);
+
 			if (model) {
+
 				for (size_t i = 0; i < model->Instances.size(); i++) {
+
 					if (!model->Instances[i]) continue;
 
 					glm::vec3 ModelInstancePosition = model->Instances[i]->GetPostion();
@@ -467,6 +471,7 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox) {
 			item->SetModelMatrix(modelMatrix);
 
 			Light* light = dynamic_cast<Light*>(item);
+
 			if (light) {
 				ImGui::ColorEdit3("Color", glm::value_ptr(light->color));
 				ImGui::InputFloat("Light Intensity", &light->lightIntensity);
