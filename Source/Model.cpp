@@ -209,7 +209,7 @@ void Model::CreateUniformBuffer()
 		Model_GPU_DataUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		Model_GPU_DataUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
 
-		VkDeviceSize ModeluniformBufferSize = sizeof(GPU_InstanceData) * 5;
+		VkDeviceSize ModeluniformBufferSize = sizeof(GPU_InstanceData) * 300;
 
 		for (size_t i = 0; i < Model_GPU_DataUniformBuffers.size(); i++)
 		{
@@ -226,7 +226,8 @@ void Model::CreateUniformBuffer()
 
 void Model::Instantiate()
 {
-	
+	vulkanContext->ResetTemporalAccumilation();
+
 	if (!Instances.empty())
 	{
 		int LastIndex = Instances.size() - 1;
@@ -245,8 +246,17 @@ void Model::Instantiate()
 		Instances.push_back(NewInstance);
 		GPU_InstancesData.push_back(NewInstance->gpu_InstanceData);
 	}
+}
 
+void Model::Destroy(int instanceIndex)
+{
+	vulkanContext->ResetTemporalAccumilation();
 
+	if (!Instances.empty() && Instances[instanceIndex] && GPU_InstancesData[instanceIndex])
+	{
+		Instances.erase(Instances.begin() + instanceIndex);
+		GPU_InstancesData.erase(GPU_InstancesData.begin() + instanceIndex);
+	}
 }
 
 void Model::createDescriptorSetLayout()
@@ -336,7 +346,7 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 			vk::DescriptorBufferInfo ModelbufferInfo{};
 			ModelbufferInfo.buffer = Model_GPU_DataUniformBuffers[i].buffer;
 			ModelbufferInfo.offset = 0;
-			ModelbufferInfo.range = sizeof(GPU_InstanceData) * 5;
+			ModelbufferInfo.range = sizeof(GPU_InstanceData) * 300;
 
 			vk::WriteDescriptorSet ModelUniformdescriptorWrite{};
 			ModelUniformdescriptorWrite.dstSet = DescriptorSets[i];
@@ -426,7 +436,7 @@ void Model::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinela
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
 	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint32);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(storedModelData->IndexData.size(), 3, 0, 0, 0);
+	commandbuffer.drawIndexed(storedModelData->IndexData.size(), Instances.size(), 0, 0, 0);
 }
 
 void Model::CleanUp()

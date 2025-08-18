@@ -18,7 +18,7 @@ struct InstanceData{
 };
 
 layout(set = 0,binding = 1) uniform UniformBufferObject {
-     InstanceData ModelInstance[2];
+     InstanceData ModelInstance[300];
 };
 
 

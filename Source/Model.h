@@ -141,6 +141,7 @@ public:
     void createDescriptorSets(vk::DescriptorPool descriptorpool) override;
     void CreateUniformBuffer() override;
     void Instantiate();
+    void Destroy(int instanceIndex);
     void UpdateUniformBuffer(uint32_t currentImage);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
     void CreateBLAS();

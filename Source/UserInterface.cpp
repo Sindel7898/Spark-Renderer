@@ -461,10 +461,22 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox) {
 
 		if (SelectedInstanceIndex != -1) {
 			Model* model = dynamic_cast<Model*>(item);
+
 			if (model && SelectedInstanceIndex < model->Instances.size() && model->Instances[SelectedInstanceIndex]) {
 				model->Instances[SelectedInstanceIndex]->SetModelMatrix(modelMatrix);
+				
 				ImGui::Checkbox("Cube Map Reflections", (bool*)&model->Instances[SelectedInstanceIndex]->bCubeMapReflection);
 				ImGui::Checkbox("Screen Space Reflections", (bool*)&model->Instances[SelectedInstanceIndex]->bScreenSpaceReflection);
+			   
+				if (ImGui::Button("Instantiate"))
+			     {
+					model->Instantiate();
+			     }
+
+				if (ImGui::Button("Destroy"))
+				{
+					model->Destroy(SelectedInstanceIndex);
+				}
 			}
 		}
 		else {
