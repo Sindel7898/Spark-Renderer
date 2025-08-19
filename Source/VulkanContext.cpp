@@ -37,8 +37,7 @@ void VulkanContext::SelectGPU_CreateDevice()
 	vk::PhysicalDeviceFeatures deviceFeatures{};
 	deviceFeatures.samplerAnisotropy = VK_TRUE;
 	deviceFeatures.fillModeNonSolid = VK_TRUE;
-
-
+	
 	std::vector<const char*> deviceExtensions = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 		VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME,
@@ -47,17 +46,18 @@ void VulkanContext::SelectGPU_CreateDevice()
 		VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
 		VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
 		VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
-		VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME
+		VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
 	};
 
 	vkb::PhysicalDeviceSelector selector{ VKB_Instance };
 
 	   auto physicalDeviceResult = selector
-		.set_minimum_version(1, 3)
+		.set_minimum_version(1, 4)
 		.set_required_features(deviceFeatures)
 		.add_required_extensions(deviceExtensions)
 		.set_surface(surface)
 		.select();
+
 
 	if (!physicalDeviceResult)
 	{

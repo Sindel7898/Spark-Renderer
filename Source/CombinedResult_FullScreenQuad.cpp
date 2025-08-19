@@ -59,15 +59,15 @@ void CombinedResult_FullScreenQuad::createDescriptorSetLayout()
 		LightingResultDescriptorBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		LightingResultDescriptorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-		vk::DescriptorSetLayoutBinding ShadowResultDescriptorBinding{};
-		ShadowResultDescriptorBinding.binding = 1;
-		ShadowResultDescriptorBinding.descriptorCount = 1;
-		ShadowResultDescriptorBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		ShadowResultDescriptorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+		vk::DescriptorSetLayoutBinding SSGIDescriptorBinding{};
+		SSGIDescriptorBinding.binding = 1;
+		SSGIDescriptorBinding.descriptorCount = 1;
+		SSGIDescriptorBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		SSGIDescriptorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 
 
-		std::array<vk::DescriptorSetLayoutBinding, 2> ImageResultPassBinding = { LightingResultDescriptorBinding,ShadowResultDescriptorBinding };
+		std::array<vk::DescriptorSetLayoutBinding, 2> ImageResultPassBinding = { LightingResultDescriptorBinding,SSGIDescriptorBinding };
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.bindingCount = static_cast<uint32_t>(ImageResultPassBinding.size());
@@ -86,7 +86,7 @@ void CombinedResult_FullScreenQuad::UpdataeUniformBufferData()
 }
 
 
-void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData ShadowResultImage)
+void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData SSGIImage)
 {
 	// create sets from the pool based on the layout
 	std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
@@ -119,22 +119,22 @@ void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::Descr
 		LightingResultSamplerdescriptorWrite.pImageInfo = &LightingResultimageInfo;
 		/////////////////////////////////////////////////////////////////////////////////////
 ;
-        vk::DescriptorImageInfo ShadowResultimageInfo{};
-		ShadowResultimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		ShadowResultimageInfo.imageView   = ShadowResultImage.imageView;
-		ShadowResultimageInfo.sampler     = ShadowResultImage.imageSampler;
+        vk::DescriptorImageInfo SSGIImageResultimageInfo{};
+		SSGIImageResultimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		SSGIImageResultimageInfo.imageView   = SSGIImage.imageView;
+		SSGIImageResultimageInfo.sampler     = SSGIImage.imageSampler;
         
-        vk::WriteDescriptorSet ShadowResultSamplerdescriptorWrite{};
-		ShadowResultSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		ShadowResultSamplerdescriptorWrite.dstBinding = 1;
-		ShadowResultSamplerdescriptorWrite.descriptorCount = 1;
-		ShadowResultSamplerdescriptorWrite.dstArrayElement = 0;
-		ShadowResultSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		ShadowResultSamplerdescriptorWrite.pImageInfo = &ShadowResultimageInfo;
+        vk::WriteDescriptorSet SSGISamplerdescriptorWrite{};
+		SSGISamplerdescriptorWrite.dstSet = DescriptorSets[i];
+		SSGISamplerdescriptorWrite.dstBinding = 1;
+		SSGISamplerdescriptorWrite.descriptorCount = 1;
+		SSGISamplerdescriptorWrite.dstArrayElement = 0;
+		SSGISamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		SSGISamplerdescriptorWrite.pImageInfo = &SSGIImageResultimageInfo;
         /////////////////////////////////////////////////////////////////////////////////////
 
 		std::array<vk::WriteDescriptorSet, 2> descriptorWrites = { LightingResultSamplerdescriptorWrite,
-																	ShadowResultSamplerdescriptorWrite,        
+																	SSGISamplerdescriptorWrite,
 		                                                         };
 
 		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);

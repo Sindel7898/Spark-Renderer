@@ -111,7 +111,7 @@ public:
 	std::shared_ptr<SSR_FullScreenQuad>                 ssr_FullScreenQuad = nullptr;
 	std::shared_ptr<RayTracing>                         Raytracing_Shadows = nullptr;
 	std::shared_ptr<SSGI>                               SSGI_FullScreenQuad = nullptr;
-	std::shared_ptr<CombinedResult_FullScreenQuad>     Combined_FullScreenQuad = nullptr;
+	std::shared_ptr<CombinedResult_FullScreenQuad>      Combined_FullScreenQuad = nullptr;
 
 	VkDescriptorSet FinalRenderTextureId;
 	VkDescriptorSet LightingAndReflectionsRenderTextureId;
