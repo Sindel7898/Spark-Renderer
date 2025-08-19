@@ -40,21 +40,6 @@ void CombinedResult_FullScreenQuad::CreateImage(vk::Extent3D imageExtent)
 
 	FinalResultImage.imageView = bufferManager->CreateImageView(&FinalResultImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
 	FinalResultImage.imageSampler = bufferManager->CreateImageSampler();
-
-	//vk::CommandBuffer commandBuffer = bufferManager->CreateSingleUseCommandBuffer(commandPool);
-
-	//ImageTransitionData transitionInfo{};
-	//transitionInfo.oldlayout = vk::ImageLayout::eUndefined;
-	//transitionInfo.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-	//transitionInfo.AspectFlag = vk::ImageAspectFlagBits::eColor;
-	//transitionInfo.SourceAccessflag = vk::AccessFlagBits::eNone;
-	//transitionInfo.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
-	//transitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
-	//transitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-
-	//bufferManager->TransitionImage(commandBuffer, &FinalResultImage, transitionInfo);
-
-	//bufferManager->SubmitAndDestoyCommandBuffer(commandPool, commandBuffer, vulkanContext->graphicsQueue);
 }
 
 void CombinedResult_FullScreenQuad::DestroyImage()
@@ -63,12 +48,6 @@ void CombinedResult_FullScreenQuad::DestroyImage()
 	bufferManager->DestroyImage(FinalResultImage);
 }
 
-
-
-void CombinedResult_FullScreenQuad::CreateUniformBuffer()
-{
-
-}
 
 void CombinedResult_FullScreenQuad::createDescriptorSetLayout()
 {

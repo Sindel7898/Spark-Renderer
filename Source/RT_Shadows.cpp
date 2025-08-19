@@ -361,9 +361,32 @@ void RayTracing::CleanUp()
 {
 	if (bufferManager)
 	{
-		bufferManager->DestroyImage(ShadowPassImage);
+		for (auto& RayGen_Buffer : RayGen_UniformBuffers)
+		{
+			if (RayGen_Buffer.buffer)
+			{
+				bufferManager->UnmapMemory(RayGen_Buffer);
+				bufferManager->DestroyBuffer(RayGen_Buffer);
+			}
+		}
+
+		for (auto& RayClosestHitBuffer : RayClosestHit_UniformBuffers)
+		{
+			if (RayClosestHitBuffer.buffer)
+			{
+				bufferManager->UnmapMemory(RayClosestHitBuffer);
+				bufferManager->DestroyBuffer(RayClosestHitBuffer);
+			}
+		}
+
+		vulkanContext->LogicalDevice.destroyDescriptorSetLayout(RayTracingDescriptorSetLayout);
+		RayGen_UniformBuffers.clear();
+		RayClosestHit_UniformBuffers.clear();
+		RayGen_UniformBuffersMappedMem.clear();
+		RayClosestHit_UniformBuffersMappedMem.clear();
 
 	}
+
 }
 
 

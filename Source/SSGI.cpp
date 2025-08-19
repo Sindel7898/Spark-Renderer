@@ -28,9 +28,6 @@ void SSGI::CreateVertexAndIndexBuffer()
 	indexBufferData.BufferID = "SSGI Index Buffer";
 	bufferManager->CreateGPUOptimisedBuffer(&indexBufferData, quadIndices.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
 
-	//////// Load Blue Noise
-
-	//BlueNoise =  bufferManager->LoadTextureImage("../Textures/LDR_RG01_0.png",vk::Format::eR8G8B8A8Snorm,commandPool, vulkanContext->graphicsQueue);
 
 	for (int i = 0; i < 63; i++)
 	{
@@ -39,25 +36,26 @@ void SSGI::CreateVertexAndIndexBuffer()
 		std::string NoisePath = "../Textures/BlueNoise/stbn_unitvec3_cosine_2Dx1D_128x128x64_" + std::to_string(i) + TextureType;
 		Noise = bufferManager->LoadTextureImage(NoisePath, vk::Format::eR8G8B8A8Snorm, commandPool, vulkanContext->graphicsQueue);
 		BlueNoiseTextures.push_back(Noise);
+
 	}
 }
 
 void SSGI::CreateUniformBuffer() {
 
 	{
-		SSGI_UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-		SSGI_UniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
+		fragmentUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+		FragmentUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
 
 		VkDeviceSize	RayGenuniformBufferSize = sizeof(SSGI_UniformBufferData);
 
-		for (size_t i = 0; i < SSGI_UniformBuffers.size(); i++)
+		for (size_t i = 0; i < fragmentUniformBuffers.size(); i++)
 		{
 			BufferData bufferdata;
-			bufferdata.BufferID = "RayGen Uniform Buffer" + i;
+			bufferdata.BufferID = "SSGI Uniform Buffer" + i;
 			bufferManager->CreateBuffer(&bufferdata, RayGenuniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
-			SSGI_UniformBuffers[i] = bufferdata;
+			fragmentUniformBuffers[i] = bufferdata;
 
-			SSGI_UniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
+			FragmentUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
 		}
 	}
 
@@ -67,7 +65,6 @@ void SSGI::CreateUniformBuffer() {
 void SSGI::CreateGIImage() {
 
 	vk::Extent3D Swapchainextent_Full_Res   = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
-
 
 	SSGIPassImage.ImageID = "SSGI Pass Image";
 	bufferManager->CreateImage(&SSGIPassImage, Swapchainextent_Full_Res, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc,false);
@@ -108,8 +105,10 @@ void SSGI::DestroyImage() {
 
 	bufferManager->DestroyImage(SSGIPassImage);
 	bufferManager->DestroyImage(SSGIAccumilationImage);
+	bufferManager->DestroyImage(SSGIPassLastFrameImage);
 
 }
+
 
 void SSGI::GenerateMipMaps(vk::CommandBuffer commandbuffer) {
 
@@ -202,7 +201,7 @@ void SSGI::createDescriptorSetLayout(){
 		layoutInfo.pBindings = bindings.data();
 
 
-		if (vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &BilateralFilterDescriptorSetLayout) != vk::Result::eSuccess)
+		if (vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &TemporalAccumilationDescriptorSetLayout) != vk::Result::eSuccess)
 		{
 			throw std::runtime_error("Failed to create descriptorset layout!");
 		}
@@ -326,7 +325,7 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			/////////////////////////////////////////////////////////////////////////////////////
 
 			vk::DescriptorBufferInfo  fragmentuniformbufferInfo{};
-			fragmentuniformbufferInfo.buffer = SSGI_UniformBuffers[i].buffer;
+			fragmentuniformbufferInfo.buffer = fragmentUniformBuffers[i].buffer;
 			fragmentuniformbufferInfo.offset = 0;
 			fragmentuniformbufferInfo.range = sizeof(SSGI_UniformBufferData);
 
@@ -351,7 +350,7 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 	{
 		// create sets from the pool based on the layout
 		// 	     
-		std::vector<vk::DescriptorSetLayout> BIlateriallayouts(MAX_FRAMES_IN_FLIGHT, BilateralFilterDescriptorSetLayout);
+		std::vector<vk::DescriptorSetLayout> BIlateriallayouts(MAX_FRAMES_IN_FLIGHT, TemporalAccumilationDescriptorSetLayout);
 
 
 		vk::DescriptorSetAllocateInfo allocinfo;
@@ -415,7 +414,7 @@ void SSGI::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_pt
 	SSGI_UniformBufferData.ProjectionMatrix[1][1] *= -1;
 	SSGI_UniformBufferData.BlueNoiseImageIndex_WithPadding = glm::vec4(NoiseIndex, DeltaTime,0,0);
 
-	memcpy(SSGI_UniformBuffersMappedMem[currentImage], &SSGI_UniformBufferData, sizeof(SSGI_UniformBufferData));
+	memcpy(FragmentUniformBuffersMappedMem[currentImage], &SSGI_UniformBufferData, sizeof(SSGI_UniformBufferData));
 
 	if (LastCameraMatrix != camera->GetViewMatrix())
 	{
@@ -459,9 +458,18 @@ void SSGI::CleanUp()
 {
 	if (bufferManager)
 	{
-		bufferManager->DestroyImage(SSGIPassImage);
 
+		for (ImageData noise : BlueNoiseTextures)
+		{
+			bufferManager->DestroyImage(noise);
+		}
+		
+		BlueNoiseTextures.clear();
+
+		vulkanContext->LogicalDevice.destroyDescriptorSetLayout(TemporalAccumilationDescriptorSetLayout);
 	}
+	Drawable::Destructor();
+
 }
 
 

@@ -21,6 +21,7 @@ void Drawable::Destructor()
 		{
 			vulkanContext->LogicalDevice.destroyDescriptorSetLayout(descriptorSetLayout);
 		}
+		
 	}
 
 	if (bufferManager)

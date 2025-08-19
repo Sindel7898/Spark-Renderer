@@ -85,6 +85,8 @@ public:
 
 	void createShaderBindingTable();
 
+	void DestroyShaderBindingTable();
+
 	void createCommandBuffer();
 
 	void updateUniformBuffer(uint32_t currentImage);
@@ -102,13 +104,13 @@ public:
 
 	bool bWireFrame = false;
 	//Drawables
-	std::shared_ptr<Lighting_FullScreenQuad>     lighting_FullScreenQuad = nullptr;
-	std::shared_ptr<SSA0_FullScreenQuad>         ssao_FullScreenQuad = nullptr;
-	std::shared_ptr<SSAOBlur_FullScreenQuad>     ssaoBlur_FullScreenQuad = nullptr;
-	std::shared_ptr<FXAA_FullScreenQuad>         fxaa_FullScreenQuad = nullptr;
-	std::shared_ptr<SSR_FullScreenQuad>          ssr_FullScreenQuad = nullptr;
-	std::shared_ptr<RayTracing>                  Raytracing_Shadows = nullptr;
-	std::shared_ptr<SSGI>                        SSGI_FullScreenQuad = nullptr;
+	std::shared_ptr<Lighting_FullScreenQuad>            lighting_FullScreenQuad = nullptr;
+	std::shared_ptr<SSA0_FullScreenQuad>                ssao_FullScreenQuad = nullptr;
+	std::shared_ptr<SSAOBlur_FullScreenQuad>            ssaoBlur_FullScreenQuad = nullptr;
+	std::shared_ptr<FXAA_FullScreenQuad>                fxaa_FullScreenQuad = nullptr;
+	std::shared_ptr<SSR_FullScreenQuad>                 ssr_FullScreenQuad = nullptr;
+	std::shared_ptr<RayTracing>                         Raytracing_Shadows = nullptr;
+	std::shared_ptr<SSGI>                               SSGI_FullScreenQuad = nullptr;
 	std::shared_ptr<CombinedResult_FullScreenQuad>     Combined_FullScreenQuad = nullptr;
 
 	VkDescriptorSet FinalRenderTextureId;
@@ -154,7 +156,6 @@ private:
 	vk::PipelineLayout         RT_ShadowsPipelineLayout = nullptr;
 	vk::PipelineLayout         SSGIPipelineLayout = nullptr;
 	vk::PipelineLayout         BluredSSGIPipelineLayout = nullptr;
-
 	vk::PipelineLayout         CombinedImagePipelineLayout = nullptr;
 
 	vk::Pipeline               DeferedLightingPassPipeline = nullptr;

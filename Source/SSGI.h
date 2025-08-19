@@ -24,7 +24,6 @@ public:
     void CreateVertexAndIndexBuffer() override;
     void CreateGIImage();
     void DestroyImage();
-    void DownSampleToQuaterResolution(vk::CommandBuffer commandbuffer);
     void GenerateMipMaps(vk::CommandBuffer commandbuffer);
     void createDescriptorSetLayout() override;
     void createDescriptorSets(vk::DescriptorPool descriptorpool, GBuffer gbuffer, ImageData LightingPass, ImageData DepthImage);
@@ -35,22 +34,20 @@ public:
     void DrawTA(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
 
     void CleanUp() ;
-    std::vector<BufferData> SSGI_UniformBuffers;
 
-    std::vector<void*> SSGI_UniformBuffersMappedMem;
     std::vector<vk::DescriptorSet> TemporalAccumilationFullDescriptorSets;
+    vk::DescriptorSetLayout TemporalAccumilationDescriptorSetLayout;
 
-    vk::DescriptorSetLayout  BilateralFilterDescriptorSetLayout;
+    std::vector<ImageData> BlueNoiseTextures;
 
     ImageData SSGIPassImage;
     ImageData SSGIPassLastFrameImage;
     ImageData SSGIAccumilationImage;
 
-
-    std::vector<ImageData> BlueNoiseTextures;
     int NoiseIndex;
 
     glm::mat4 LastCameraMatrix;
+
 private:
     std::vector<Vertex> quad = {
      {{-1.0f, -1.0f}, {0.0f, 0.0f}}, // Bottom-left
@@ -63,11 +60,6 @@ private:
            0, 1, 2,
            2, 1, 3
     };
-
-    VulkanContext*   vulkanContext = nullptr;
-    BufferManager*   bufferManager = nullptr;
-    Camera*          camera        = nullptr;
-    vk::CommandPool commandPool = nullptr;
 };
 
 

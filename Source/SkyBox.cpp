@@ -207,8 +207,12 @@ void SkyBox::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinel
 void SkyBox::CleanUp()
 {
 	
-    bufferManager->DestroyImage(SkyBoxImages[0]);
-	bufferManager->DestroyImage(SkyBoxImages[1]);
+	for (ImageData SkyBox : SkyBoxImages)
+	{
+		bufferManager->DestroyImage(SkyBox);
+
+	}
+
 	Drawable::Destructor();
 }
 

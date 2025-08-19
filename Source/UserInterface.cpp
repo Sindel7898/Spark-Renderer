@@ -367,11 +367,13 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 
 	// Handle selection
 	if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0) && !ImGuizmo::IsOver()) {
+
 		SelectedInstanceIndex = -1;
 		UserInterfaceItemsIndex = -1;
 
 		// Check for model instance selection first
 		for (auto& item : appref->UserInterfaceItems) {
+
 			Model* model = dynamic_cast<Model*>(item);
 
 			if (model) {
@@ -381,28 +383,36 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 					if (!model->Instances[i]) continue;
 
 					glm::vec3 ModelInstancePosition = model->Instances[i]->GetPostion();
+
 					float distance = CalculateDistanceInScreenSpace(cameraprojection, cameraview, ModelInstancePosition);
 
-					if (distance < 100.0f) {
+					if (distance < 100) {
+
 						SelectedInstanceIndex = i;
 						UserInterfaceItemsIndex = &item - &appref->UserInterfaceItems[0];
 						break;
+
 					}
 				}
+
 				if (SelectedInstanceIndex != -1) break;
 			}
 		}
 
 		// If no model instance selected, check for regular item selection
 		if (SelectedInstanceIndex == -1) {
+
 			for (size_t i = 0; i < appref->UserInterfaceItems.size(); i++) {
+
 				if (!appref->UserInterfaceItems[i]) continue;
 
 				glm::vec3 itemPosition = appref->UserInterfaceItems[i]->position;
 				float distance = CalculateDistanceInScreenSpace(cameraprojection, cameraview, itemPosition);
 
 				if (distance < 100.0f) {
+
 					UserInterfaceItemsIndex = i;
+
 					break;
 				}
 			}
@@ -411,7 +421,9 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 
 	// Handle gizmo manipulation
 	if (UserInterfaceItemsIndex >= 0 && UserInterfaceItemsIndex < appref->UserInterfaceItems.size()) {
+
 		auto& item = appref->UserInterfaceItems[UserInterfaceItemsIndex];
+
 		if (!item) {
 			ImGui::End();
 			return;

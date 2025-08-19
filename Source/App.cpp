@@ -25,7 +25,6 @@
 	bufferManger  = std::shared_ptr<BufferManager>(new BufferManager (vulkanContext->LogicalDevice, vulkanContext->PhysicalDevice, vulkanContext->VulkanInstance), BufferManagerDeleter);
   	camera        = std::shared_ptr<Camera>(new Camera (vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, window->GetWindow()));
 	userinterface = std::shared_ptr<UserInterface>(new UserInterface(vulkanContext.get(), window.get(), bufferManger.get()),UserInterfaceDeleter);
-	//glfwSetFramebufferSizeCallback(window->GetWindow(),);
 	glfwSetWindowUserPointer(window->GetWindow(), this);
 
 	createSyncObjects();	
@@ -121,7 +120,6 @@
 	ssr_FullScreenQuad      = std::shared_ptr<SSR_FullScreenQuad>(new SSR_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSR_FullScreenQuadDeleter);
 	Combined_FullScreenQuad = std::shared_ptr<CombinedResult_FullScreenQuad>(new CombinedResult_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), CombinedResult_FullScreenQuadDeleter);
 	SSGI_FullScreenQuad     = std::shared_ptr<SSGI>(new SSGI(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSGIDeleter);
-
 	Raytracing_Shadows      = std::shared_ptr<RayTracing>(new RayTracing(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), RayTracingDeleter);
 
 	lights.reserve(2);
@@ -1597,7 +1595,7 @@ void App::CreateGraphicsPipeline()
 
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.setSetLayouts(SSGI_FullScreenQuad->BilateralFilterDescriptorSetLayout);
+		pipelineLayoutInfo.setSetLayouts(SSGI_FullScreenQuad->TemporalAccumilationDescriptorSetLayout);
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges = &range;
 
@@ -1669,6 +1667,14 @@ void App::createShaderBindingTable() {
 	bufferManger->CopyDataToBuffer(shaderHandleStorage.data()                        , raygenShaderBindingTableBuffer);
 	bufferManger->CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned    , missShaderBindingTableBuffer);
 	bufferManger->CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned * 2, hitShaderBindingTableBuffer);
+
+}
+
+void App::DestroyShaderBindingTable() {
+
+	bufferManger->DestroyBuffer(raygenShaderBindingTableBuffer);
+	bufferManger->DestroyBuffer(missShaderBindingTableBuffer);
+	bufferManger->DestroyBuffer(hitShaderBindingTableBuffer);
 
 }
 
@@ -2773,6 +2779,7 @@ void App::destroy_GbufferImages()
 	fxaa_FullScreenQuad->DestroyImage();
 	ssr_FullScreenQuad->DestroyImage();
 	SSGI_FullScreenQuad->DestroyImage();
+	Combined_FullScreenQuad->DestroyImage();
 }
 
 void App::recreateSwapChain() {
@@ -2815,11 +2822,19 @@ void App::recreatePipeline()
 
 void App::DestroySyncObjects()
 {
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	for (auto& presentSemaphores : presentCompleteSemaphores)
 	{
-		vulkanContext->LogicalDevice.destroySemaphore(presentCompleteSemaphores[i]);
-		vulkanContext->LogicalDevice.destroySemaphore(renderCompleteSemaphores[i]);
-		vulkanContext->LogicalDevice.destroyFence(waitFences[i]);
+		vulkanContext->LogicalDevice.destroySemaphore(presentSemaphores);
+	}
+
+	for (auto& renderSemaphores : renderCompleteSemaphores)
+	{
+		vulkanContext->LogicalDevice.destroySemaphore(renderSemaphores);
+	}
+
+	for (auto& Fences : waitFences)
+	{
+		vulkanContext->LogicalDevice.destroyFence(Fences);
 	}
 }
 
@@ -2846,11 +2861,15 @@ void App::DestroyBuffers()
 	ssaoBlur_FullScreenQuad.reset();
 	fxaa_FullScreenQuad.reset();
 	ssr_FullScreenQuad.reset();
+	Raytracing_Shadows.reset();
+	SSGI_FullScreenQuad.reset();
+	Combined_FullScreenQuad.reset();
 
 	bufferManger->DestroyBuffer(TLAS_Buffer);
 	bufferManger->DestroyBuffer(TLAS_SCRATCH_Buffer);
 	bufferManger->DestroyBuffer(TLAS_InstanceData);
 	vulkanContext->vkDestroyAccelerationStructureKHR(vulkanContext->LogicalDevice, static_cast<VkAccelerationStructureKHR>(TLAS),nullptr);
+	DestroyShaderBindingTable();
 	bufferManger.reset();
 }
 
@@ -2867,6 +2886,7 @@ void App::destroyPipeline()
 	vulkanContext->LogicalDevice.destroyPipeline(RT_ShadowsPassPipeline);
 	vulkanContext->LogicalDevice.destroyPipeline(SSGIPipeline);
 	vulkanContext->LogicalDevice.destroyPipeline(BluredSSGIPipeline);
+	vulkanContext->LogicalDevice.destroyPipeline(CombinedImagePassPipeline);
 
 	vulkanContext->LogicalDevice.destroyPipelineLayout(DeferedLightingPassPipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(FXAAPassPipelineLayout);
@@ -2879,6 +2899,7 @@ void App::destroyPipeline()
 	vulkanContext->LogicalDevice.destroyPipelineLayout(RT_ShadowsPipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(SSGIPipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(BluredSSGIPipelineLayout);
+	vulkanContext->LogicalDevice.destroyPipelineLayout(CombinedImagePipelineLayout);
 
 }
 

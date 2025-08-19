@@ -154,16 +154,14 @@ public:
     ImageData  normalTextureData;
     ImageData  MetallicRoughnessTextureData;
 
-    VertexUniformData vertexdata{};
-
     vk::AccelerationStructureKHR BLAS;
-
 
     std::vector<InstanceData*>     Instances;
     std::vector<std::shared_ptr<GPU_InstanceData>> GPU_InstancesData;
 
     std::vector<BufferData> Model_GPU_DataUniformBuffers;
     std::vector<void*>      Model_GPU_DataUniformBuffersMappedMem;
+
 private:
 
 

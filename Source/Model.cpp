@@ -452,8 +452,24 @@ void Model::CleanUp()
 		bufferManager->DestroyBuffer(BLAS_ScratchBuffer);
 
 		vulkanContext->vkDestroyAccelerationStructureKHR(vulkanContext->LogicalDevice, static_cast<VkAccelerationStructureKHR>(BLAS), nullptr);
+
+		for (auto& uniformBuffer : Model_GPU_DataUniformBuffers)
+		{
+			if (uniformBuffer.buffer)
+			{
+				bufferManager->UnmapMemory(uniformBuffer);
+				bufferManager->DestroyBuffer(uniformBuffer);
+			}
+		}
+
+		Model_GPU_DataUniformBuffers.clear();
+		Model_GPU_DataUniformBuffersMappedMem.clear();
+		Instances.clear();
+		GPU_InstancesData.clear();
 	}
 	
+	vulkanContext->LogicalDevice.destroyDescriptorSetLayout(RayTracingDescriptorSetLayout);
+
 	Drawable::Destructor();
 }
 
