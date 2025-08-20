@@ -2,7 +2,7 @@
 #include <GLFW/glfw3.h>
 
 Camera::Camera(uint32_t SwapChainHeight, uint32_t SwapChainWidth, GLFWwindow* Window) :
-    position(0.0f, 0.0f, 4.0f),
+    position(0.0f, 1.0f, 15),
     worldUp(0.0f, 1.0f, 0.0f),
     pitch(0.0f),
     yaw(-90.0f),
@@ -51,7 +51,7 @@ void Camera::Update(float deltaTime) {
             lastMouseX = mouseX;
             lastMouseY = mouseY;
             firstMouse = false;
-        }
+        } 
 
         float xOffset = static_cast<float>(mouseX - lastMouseX);
         float yOffset = static_cast<float>(lastMouseY - mouseY);

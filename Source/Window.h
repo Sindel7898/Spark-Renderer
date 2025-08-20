@@ -17,10 +17,12 @@ public:
     GLFWwindow* GetWindow() { return window; };
 
      void CleanUp();
+     int GetWindowWidth()  { return Width; };
+     int GetWindowHeight() { return Height; };
 
 private:
-    const int Width;
-    const int Height;
+    int Width;
+    int Height;
     std::string WindowName;
     GLFWwindow* window;
 };

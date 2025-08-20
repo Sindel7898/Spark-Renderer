@@ -6,7 +6,6 @@
 #define TINYGLTF_NOEXCEPTION
 #define JSON_NOEXCEPTION
 #include "tiny_gltf.h"
-#include "mikktspace.h"
 #include "AssetManager.h"
 #include <glm/gtc/type_ptr.hpp>
 
@@ -70,8 +69,11 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
                    const tinygltf::Image& image = model.images[colortex.source];
                
                    size_t colorimageSize = image.width * image.height * 4;
-                   TextureData.imageData = new stbi_uc[colorimageSize];
+
+                   TextureData.imageData = static_cast<stbi_uc*>(malloc(colorimageSize));
+
                    std::memcpy(TextureData.imageData, image.image.data(), colorimageSize);
+
                    TextureData.imageHeight = image.height;
                    TextureData.imageWidth = image.width;
                
@@ -90,7 +92,7 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
                    const tinygltf::Image& image = model.images[normaltex.source];
                
                    size_t normalimageSize = image.width * image.height * 4;
-                   TextureData.imageData = new stbi_uc[normalimageSize];
+                   TextureData.imageData = static_cast<stbi_uc*>(malloc(normalimageSize));
                    std::memcpy(TextureData.imageData, image.image.data(), normalimageSize);
                    TextureData.imageHeight = image.height;
                    TextureData.imageWidth = image.width;
@@ -110,7 +112,7 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
                     const tinygltf::Image& image = model.images[metalicroughnesstex.source];
 
                     size_t metalicroughnessimageSize = image.width * image.height * 4;
-                    TextureData.imageData = new stbi_uc[metalicroughnessimageSize];
+                    TextureData.imageData = static_cast<stbi_uc*>(malloc(metalicroughnessimageSize));
                     std::memcpy(TextureData.imageData, image.image.data(), metalicroughnessimageSize);
                     TextureData.imageHeight = image.height;
                     TextureData.imageWidth = image.width;
@@ -131,7 +133,7 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
                     const tinygltf::Image& image = model.images[HeightMaptex.source];
 
                     size_t HeightMapteximageSize = image.width * image.height * 4;
-                    TextureData.imageData = new stbi_uc[HeightMapteximageSize];
+                    TextureData.imageData = static_cast<stbi_uc*>(malloc(HeightMapteximageSize));
                     std::memcpy(TextureData.imageData, image.image.data(), HeightMapteximageSize);
                     TextureData.imageHeight = image.height;
                     TextureData.imageWidth = image.width;
@@ -208,6 +210,8 @@ void MeshLoader::ProcessMesh(const tinygltf::Node& inputNode, const tinygltf::Mo
             const float* positions = nullptr;
             const float* normals = nullptr;
             const float* texcoords = nullptr;
+            const float* tangents = nullptr;
+
             size_t vertexCount;
 
 
@@ -230,6 +234,13 @@ void MeshLoader::ProcessMesh(const tinygltf::Node& inputNode, const tinygltf::Mo
                 texcoords = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
             }
 
+            if (glTFPrimitive.attributes.find("TANGENT") != glTFPrimitive.attributes.end()) {
+                const tinygltf::Accessor& accessor = model.accessors[glTFPrimitive.attributes.find("TANGENT")->second];
+                const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
+
+                tangents = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
+            }
+
             for (size_t i = 0; i < vertexCount; ++i) {
                 ModelVertex vertex;
 
@@ -242,6 +253,10 @@ void MeshLoader::ProcessMesh(const tinygltf::Node& inputNode, const tinygltf::Mo
                 }
                 if (texcoords) {
                     vertex.text = { texcoords[i * 2 + 0], texcoords[i * 2 + 1] };
+                }
+
+                if (tangents) {
+                    vertex.tangent = { tangents[i * 3 + 0], tangents[i * 3 + 1],tangents[i * 3 + 2] };
                 }
 
                 vertices.push_back(vertex);
@@ -290,76 +305,4 @@ void MeshLoader::ProcessMesh(const tinygltf::Node& inputNode, const tinygltf::Mo
 
         AssetManager::GetInstance().ParseModelData(FilePath, modeldata);
     }
-    
-    
-
-
-    // Generate tangents and bitangents using MikkTSpace
-    MikkTSpaceUserData userData(vertices, indices);
-    SMikkTSpaceInterface iface = {};
-    iface.m_getNumFaces = GetNumFaces;
-    iface.m_getNumVerticesOfFace = GetNumVerticesOfFace;
-    iface.m_getPosition = GetPosition;
-    iface.m_getNormal = GetNormal;
-    iface.m_getTexCoord = GetTexCoord;
-    iface.m_setTSpaceBasic = SetTangent;
-
-    SMikkTSpaceContext context = {};
-    context.m_pInterface = &iface;
-    context.m_pUserData = &userData;
-
-    genTangSpaceDefault(&context);
-
-
-}
-
-
-//const std::vector<ModelVertex>& MeshLoader::GetVertices() {
-//    return vertices;
-//}
-//
-//const std::vector<uint32_t >& MeshLoader::GetIndices() {
-//    return indices;
-//}
-
-
-int GetNumFaces(const SMikkTSpaceContext* context) {
-    auto* data = static_cast<MikkTSpaceUserData*>(context->m_pUserData);
-    return static_cast<int>(data->indices.size()) / 3;
-}
-
-int GetNumVerticesOfFace(const SMikkTSpaceContext*, int) {
-    return 3;
-}
-
-void GetPosition(const SMikkTSpaceContext* context, float pos[3], int faceIdx, int vertIdx) {
-    auto* data = static_cast<MikkTSpaceUserData*>(context->m_pUserData);
-    int idx = data->indices[faceIdx * 3 + vertIdx];
-    ////////////////////////////////////////////////
-    const auto& v = data->vertices[idx].vert;
-    pos[0] = v.x; pos[1] = v.y; pos[2] = v.z;
-}
-
-void GetNormal(const SMikkTSpaceContext* context, float norm[3], int faceIdx, int vertIdx) {
-    auto* data = static_cast<MikkTSpaceUserData*>(context->m_pUserData);
-    int idx = data->indices[faceIdx * 3 + vertIdx];
-    ////////////////////////////////////////////////
-    const auto& n = data->vertices[idx].normal;
-    norm[0] = n.x; norm[1] = n.y; norm[2] = n.z;
-}
-
-void GetTexCoord(const SMikkTSpaceContext* context, float uv[2], int faceIdx, int vertIdx) {
-    auto* data = static_cast<MikkTSpaceUserData*>(context->m_pUserData);
-    int idx = data->indices[faceIdx * 3 + vertIdx];
-    ////////////////////////////////////////////////
-    const auto& t = data->vertices[idx].text;
-    uv[0] = t.x; uv[1] = t.y;
-}
-
-void SetTangent(const SMikkTSpaceContext* context, const float tangent[3], float sign, int faceIdx, int vertIdx) {
-    auto* data = static_cast<MikkTSpaceUserData*>(context->m_pUserData);
-    int idx = data->indices[faceIdx * 3 + vertIdx];
-
-    data->vertices[idx].tangent = { tangent[0], tangent[1], tangent[2] };
-    data->vertices[idx].bitangent = sign * glm::cross(data->vertices[idx].normal, data->vertices[idx].tangent);
 }

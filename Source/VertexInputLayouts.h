@@ -9,7 +9,6 @@ struct alignas(16)  ModelVertex {
 	alignas(16) glm::vec2 text;
 	alignas(16) glm::vec3 normal;
 	alignas(16) glm::vec3 tangent;
-	alignas(16) glm::vec3 bitangent;
 
 	static vk::VertexInputBindingDescription GetBindingDescription() {
 		vk::VertexInputBindingDescription  bindingdescription{};
@@ -21,9 +20,9 @@ struct alignas(16)  ModelVertex {
 		return bindingdescription;
 	}
 
-	static std::array< vk::VertexInputAttributeDescription, 5> GetAttributeDescription() {
+	static std::array< vk::VertexInputAttributeDescription, 4> GetAttributeDescription() {
 
-		std::array<vk::VertexInputAttributeDescription, 5> attributeDescriptions{};
+		std::array<vk::VertexInputAttributeDescription, 4> attributeDescriptions{};
 
 		attributeDescriptions[0].binding = 0;
 		attributeDescriptions[0].location = 0;
@@ -44,11 +43,6 @@ struct alignas(16)  ModelVertex {
 		attributeDescriptions[3].location = 3;
 		attributeDescriptions[3].format = vk::Format::eR32G32B32Sfloat;
 		attributeDescriptions[3].offset = offsetof(ModelVertex, tangent);
-
-		attributeDescriptions[4].binding = 0;
-		attributeDescriptions[4].location = 4;
-		attributeDescriptions[4].format = vk::Format::eR32G32B32Sfloat;
-		attributeDescriptions[4].offset = offsetof(ModelVertex, bitangent);
 
 		return attributeDescriptions;
 	}

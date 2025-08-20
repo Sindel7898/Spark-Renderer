@@ -23,21 +23,11 @@ typedef unsigned char stbi_uc;
 
 struct StoredImageData
 {
-	stbi_uc* imageData;
-	int      imageHeight;
-	int      imageWidth;
+	stbi_uc* imageData = nullptr;
+	int      imageHeight= 0;
+	int      imageWidth = 0 ;
 
 };
-struct MikkTSpaceUserData {
-	std::vector<ModelVertex>& vertices;
-	const std::vector<uint32_t>& indices;
-
-	MikkTSpaceUserData(std::vector<ModelVertex>& v, const std::vector<uint32_t>& i)
-		: vertices(v), indices(i) {
-	}
-};
-
-class SMikkTSpaceContext;
 
 class MeshLoader
 {
@@ -57,13 +47,5 @@ private:
 	std::string err;
 	std::string warn;
 };
-
-
-int GetNumFaces(const SMikkTSpaceContext* context);
-int GetNumVerticesOfFace(const SMikkTSpaceContext*, int);
-void GetPosition(const SMikkTSpaceContext* context, float pos[3], int faceIdx, int vertIdx);
-void GetNormal(const SMikkTSpaceContext* context, float norm[3], int faceIdx, int vertIdx);
-void GetTexCoord(const SMikkTSpaceContext* context, float uv[2], int faceIdx, int vertIdx);
-void SetTangent(const SMikkTSpaceContext* context, const float tangent[3], float sign, int faceIdx, int vertIdx);
 
 

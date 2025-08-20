@@ -21,6 +21,13 @@ Window::Window(int W, int H, std::string WN) : Width(W),Height(H),WindowName(WN)
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
+    GLFWmonitor* primary = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(primary);
+
+    //window = glfwCreateWindow(Width, Height, WindowName.c_str(), nullptr, nullptr);
+    Width = mode->width * 0.7;
+    Height = mode->height * 0.7;
+
     window = glfwCreateWindow(Width, Height, WindowName.c_str(), nullptr, nullptr);
 
     int Height; 

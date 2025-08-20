@@ -4,7 +4,6 @@ layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec2 inTexCoord;
 layout(location = 2) in vec3 inNormal;       
 layout(location = 3) in vec3 inTangent;
-layout(location = 4) in vec3 inBiTangent;
 
 layout(set = 0,binding = 0) uniform VertexUniformBufferObject {
       mat4 view;
@@ -45,18 +44,21 @@ void main() {
 
     mat3 normalMatrix = transpose(inverse(mat3(model)));
 
+
     vec3 worldT  = normalize(vec3(normalMatrix * inTangent  ));
-    vec3 worldB  = normalize(vec3(normalMatrix * inBiTangent));
     vec3 worldN  = normalize(vec3(normalMatrix * inNormal   ));
+
+    vec3 worldB = cross(worldN,worldT);
 
     WorldSpaceTBN = mat3(worldT, worldB, worldN);
 
 
-    mat3 ViewSpacenormalMatrix = transpose(inverse(mat3(vuob.view)));
+    mat3 ViewSpacenormalMatrix = mat3(vuob.view);
 
-    vec3 vT = normalize(vec3(ViewSpacenormalMatrix * inTangent));
-    vec3 vB = normalize(vec3(ViewSpacenormalMatrix * inBiTangent));
-    vec3 vN = normalize(vec3(ViewSpacenormalMatrix * inNormal));
+    vec3 vT = normalize(vec3(ViewSpacenormalMatrix * worldT));
+    vec3 vN = normalize(vec3(ViewSpacenormalMatrix * worldN));
+
+    vec3 vB = cross(vN,vT);
 
     ViewSpaceTBN = mat3(vT, vB, vN);
 

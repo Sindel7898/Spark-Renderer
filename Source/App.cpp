@@ -147,6 +147,8 @@
 	createTLAS();
 
 	createGBuffer();
+
+	recreateSwapChain();
 }
 
  void App::createTLAS()
@@ -1242,7 +1244,7 @@ void App::CreateGraphicsPipeline()
 
 		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.setVertexBindingDescriptionCount(1);
-		vertexInputInfo.setVertexAttributeDescriptionCount(5);
+		vertexInputInfo.setVertexAttributeDescriptionCount(4);
 		vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
 		vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
 

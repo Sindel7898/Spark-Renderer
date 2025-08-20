@@ -50,8 +50,6 @@ public:
 	vk::Format                 swapchainformat;
 	vk::Extent2D               swapchainExtent = { 0, 0 };
 	vk::SwapchainKHR           swapChain = nullptr;
-	///std::vector<vk::Image>       swapchainImages = {};
-	//std::vector<vk::ImageView>   swapchainImageViews = {};
 
 	void ResetTemporalAccumilation();
 	int AccumilationCount = 0;

@@ -20,7 +20,7 @@ void AssetManager::ParseModelData(const std::string& filePath, StoredModelData m
 void AssetManager::ParseTextureData(const std::string& filePath, std::vector<StoredImageData> Textures)
 {
 	//// If file path is not in the Map Add it and the Data
-	if (LoadedTextureData.find(filePath.c_str()) == LoadedTextureData.end()) {
+	if (LoadedTextureData.find(filePath) == LoadedTextureData.end()) {
 
 		LoadedTextureData.emplace(filePath, Textures);
 	}

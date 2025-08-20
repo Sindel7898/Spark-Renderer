@@ -203,8 +203,6 @@ void VulkanContext::create_swapchain()
 	   swapchainImageData.push_back(NewImageData);
     }
 	
-	//swapchainImages = std::vector<vk::Image>(imageVector.begin(), imageVector.end());
-
 
 	auto imageViews = vkbswapChain.get_image_views().value();
 
@@ -212,7 +210,6 @@ void VulkanContext::create_swapchain()
 	{
 		swapchainImageData[i].imageView = imageViews[i];
 	}
-	//swapchainImageViews = std::vector<vk::ImageView>(imageViews.begin(), imageViews.end());
 }
 
 vk::Pipeline VulkanContext::createGraphicsPipeline(vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo, vk::PipelineShaderStageCreateInfo ShaderStages[], vk::PipelineVertexInputStateCreateInfo* vertexInputInfo, vk::PipelineInputAssemblyStateCreateInfo* inputAssembleInfo, vk::PipelineViewportStateCreateInfo viewportState, vk::PipelineRasterizationStateCreateInfo rasterizerinfo, vk::PipelineMultisampleStateCreateInfo multisampling, vk::PipelineDepthStencilStateCreateInfo depthStencilState, vk::PipelineColorBlendStateCreateInfo colorBlend, vk::PipelineDynamicStateCreateInfo DynamicState, vk::PipelineLayout& pipelineLayout, int numOfShaderStages)
