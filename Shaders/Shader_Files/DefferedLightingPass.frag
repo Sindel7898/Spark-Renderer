@@ -4,11 +4,10 @@ const float PI = 3.14159265359;
 layout (binding = 0) uniform sampler2D samplerPosition;
 layout (binding = 1) uniform sampler2D samplerNormal;
 layout (binding = 2) uniform sampler2D samplerAlbedo;
-layout (binding = 3) uniform sampler2D samplerSSAO;
-layout (binding = 4) uniform sampler2D samplerMaterials;
-layout (binding = 5) uniform samplerCube samplerReflectiveCubeMap;
-layout (binding = 6) uniform sampler2D samplerReflectionMask;
-layout (binding = 7) uniform sampler2D samplerShadowMap;
+layout (binding = 3) uniform sampler2D samplerMaterials;
+layout (binding = 4) uniform samplerCube samplerReflectiveCubeMap;
+layout (binding = 5) uniform sampler2D samplerReflectionMask;
+layout (binding = 6) uniform sampler2D samplerShadowMap;
 
 layout(location = 0) in vec2 inTexCoord;           
 
@@ -19,7 +18,7 @@ struct LightData{
     mat4    LightProjectionViewMatrix;
 
 };
-layout (binding = 8) uniform LightUniformBuffer {
+layout (binding = 7) uniform LightUniformBuffer {
    
    LightData lights[3];
 };
@@ -82,13 +81,9 @@ void main() {
     vec3  WorldPos     = texture(samplerPosition,inTexCoord).rgb;
     vec3  Normal       = normalize(texture(samplerNormal,inTexCoord).rgb);
     vec3  Albedo       = texture(samplerAlbedo,inTexCoord).rgb;
-    float SSAO         = texture(samplerSSAO,inTexCoord).r;
     float Metallic     = texture(samplerMaterials,inTexCoord).r;
     float Roughness    = texture(samplerMaterials,inTexCoord).g;
-    float AO           = texture(samplerMaterials,inTexCoord).b;
     vec2  ReflectionMask     = texture(samplerReflectionMask,inTexCoord).rg;
-
-    float ambientOcclusion = AO * SSAO;
 
     vec3  ViewDir    = normalize(lights[0].CameraPositionAndLightIntensity.xyz -  WorldPos);
 
@@ -98,9 +93,6 @@ void main() {
     vec3 cR = reflect (-ViewDir, normalize(Normal));
     vec3 Reflection = texture(samplerReflectiveCubeMap, cR,mipLevel).rgb;
 
-
-    float ambientStrength = 0.0;
-     vec3 Ambient = Albedo  * ambientStrength;
 
   for (int i = 0; i < 3; i++) {
 

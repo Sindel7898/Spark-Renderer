@@ -75,47 +75,40 @@ void Lighting_FullScreenQuad::createDescriptorSetLayout()
 		AlbedoSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		AlbedoSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-		vk::DescriptorSetLayoutBinding SSAOSamplerLayout{};
-		SSAOSamplerLayout.binding = 3;
-		SSAOSamplerLayout.descriptorCount = 1;
-		SSAOSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		SSAOSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
-
 		vk::DescriptorSetLayoutBinding MaterialsSamplerLayout{};
-		MaterialsSamplerLayout.binding = 4;
+		MaterialsSamplerLayout.binding = 3;
 		MaterialsSamplerLayout.descriptorCount = 1;
 		MaterialsSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		MaterialsSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 		vk::DescriptorSetLayoutBinding ReflectiveCubeSamplerLayout{};
-		ReflectiveCubeSamplerLayout.binding = 5;
+		ReflectiveCubeSamplerLayout.binding = 4;
 		ReflectiveCubeSamplerLayout.descriptorCount = 1;
 		ReflectiveCubeSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		ReflectiveCubeSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 		vk::DescriptorSetLayoutBinding ReflectionMaskSamplerLayout{};
-		ReflectionMaskSamplerLayout.binding = 6;
+		ReflectionMaskSamplerLayout.binding = 5;
 		ReflectionMaskSamplerLayout.descriptorCount = 1;
 		ReflectionMaskSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		ReflectionMaskSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 		vk::DescriptorSetLayoutBinding ShadowMapSamplerLayout{};
-		ShadowMapSamplerLayout.binding = 7;
+		ShadowMapSamplerLayout.binding = 6;
 		ShadowMapSamplerLayout.descriptorCount = 1;
 		ShadowMapSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		ShadowMapSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 		vk::DescriptorSetLayoutBinding LightUniformBufferLayout{};
-		LightUniformBufferLayout.binding = 8;
+		LightUniformBufferLayout.binding = 7;
 		LightUniformBufferLayout.descriptorCount = 1;
 		LightUniformBufferLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
 		LightUniformBufferLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 
-		std::array<vk::DescriptorSetLayoutBinding, 9> bindings = { PositionSampleryLayout,        // binding 0
+		std::array<vk::DescriptorSetLayoutBinding, 8> bindings = { PositionSampleryLayout,        // binding 0
 																   NormalSamplerLayout,           // binding 1
 																   AlbedoSamplerLayout,           // binding 2
-			                                                       SSAOSamplerLayout,
 			                                                       MaterialsSamplerLayout,
 																   ReflectiveCubeSamplerLayout,
 																   ReflectionMaskSamplerLayout,
@@ -206,20 +199,6 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 		AlbedoSamplerdescriptorWrite.pImageInfo = &AlbedoimageInfo;
 		/////////////////////////////////////////////////////////////////////////////////////
 
-		vk::DescriptorImageInfo SSAOimageInfo{};
-		SSAOimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		SSAOimageInfo.imageView = GbufferRef->SSAOBlured.imageView;
-		SSAOimageInfo.sampler = GbufferRef->SSAOBlured.imageSampler;
-
-		vk::WriteDescriptorSet SSAOSamplerdescriptorWrite{};
-		SSAOSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		SSAOSamplerdescriptorWrite.dstBinding = 3;
-		SSAOSamplerdescriptorWrite.dstArrayElement = 0;
-		SSAOSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		SSAOSamplerdescriptorWrite.descriptorCount = 1;
-		SSAOSamplerdescriptorWrite.pImageInfo = &SSAOimageInfo;
-		/////////////////////////////////////////////////////////////////////////////////////
-
 		vk::DescriptorImageInfo MaterialsimageInfo{};
 		MaterialsimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		MaterialsimageInfo.imageView = GbufferRef->Materials.imageView;
@@ -227,7 +206,7 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 
 		vk::WriteDescriptorSet MaterialsSamplerdescriptorWrite{};
 		MaterialsSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		MaterialsSamplerdescriptorWrite.dstBinding = 4;
+		MaterialsSamplerdescriptorWrite.dstBinding = 3;
 		MaterialsSamplerdescriptorWrite.dstArrayElement = 0;
 		MaterialsSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		MaterialsSamplerdescriptorWrite.descriptorCount = 1;
@@ -241,7 +220,7 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 
 		vk::WriteDescriptorSet ReflectiveCubeSamplerdescriptorWrite{};
 		ReflectiveCubeSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		ReflectiveCubeSamplerdescriptorWrite.dstBinding = 5;
+		ReflectiveCubeSamplerdescriptorWrite.dstBinding = 4;
 		ReflectiveCubeSamplerdescriptorWrite.dstArrayElement = 0;
 		ReflectiveCubeSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		ReflectiveCubeSamplerdescriptorWrite.descriptorCount = 1;
@@ -255,7 +234,7 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 
 		vk::WriteDescriptorSet ReflectionMaskSamplerdescriptorWrite{};
 		ReflectionMaskSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		ReflectionMaskSamplerdescriptorWrite.dstBinding = 6;
+		ReflectionMaskSamplerdescriptorWrite.dstBinding = 5;
 		ReflectionMaskSamplerdescriptorWrite.dstArrayElement = 0;
 		ReflectionMaskSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		ReflectionMaskSamplerdescriptorWrite.descriptorCount = 1;
@@ -270,7 +249,7 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 
 		vk::WriteDescriptorSet ShadowPassSamplerdescriptorWrite{};
 		ShadowPassSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		ShadowPassSamplerdescriptorWrite.dstBinding = 7;
+		ShadowPassSamplerdescriptorWrite.dstBinding = 6;
 		ShadowPassSamplerdescriptorWrite.dstArrayElement = 0;
 		ShadowPassSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		ShadowPassSamplerdescriptorWrite.descriptorCount = 1;
@@ -286,17 +265,16 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 
 		vk::WriteDescriptorSet LightUniformBufferDescriptorWrite{};
 		LightUniformBufferDescriptorWrite.dstSet = DescriptorSets[i];
-		LightUniformBufferDescriptorWrite.dstBinding = 8;
+		LightUniformBufferDescriptorWrite.dstBinding = 7;
 		LightUniformBufferDescriptorWrite.dstArrayElement = 0;
 		LightUniformBufferDescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
 		LightUniformBufferDescriptorWrite.descriptorCount = 1;
 		LightUniformBufferDescriptorWrite.pBufferInfo = &LightUniformBufferInfo;
 
-		std::array<vk::WriteDescriptorSet, 9> descriptorWrites = {
+		std::array<vk::WriteDescriptorSet, 8> descriptorWrites = {
 																	PositionSamplerdescriptorWrite,        // binding 0
 																	NormalSamplerdescriptorWrite,          // binding 1
 																	AlbedoSamplerdescriptorWrite,          // binding 2
-																	SSAOSamplerdescriptorWrite,
 																	MaterialsSamplerdescriptorWrite,
 																	ReflectiveCubeSamplerdescriptorWrite,
 																	ReflectionMaskSamplerdescriptorWrite,

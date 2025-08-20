@@ -65,9 +65,19 @@ void CombinedResult_FullScreenQuad::createDescriptorSetLayout()
 		SSGIDescriptorBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		SSGIDescriptorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
+		vk::DescriptorSetLayoutBinding SSAODescriptorBinding{};
+		SSAODescriptorBinding.binding = 2;
+		SSAODescriptorBinding.descriptorCount = 1;
+		SSAODescriptorBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		SSAODescriptorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
+		vk::DescriptorSetLayoutBinding MaterialsDescriptorBinding{};
+		MaterialsDescriptorBinding.binding = 3;
+		MaterialsDescriptorBinding.descriptorCount = 1;
+		MaterialsDescriptorBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		MaterialsDescriptorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-		std::array<vk::DescriptorSetLayoutBinding, 2> ImageResultPassBinding = { LightingResultDescriptorBinding,SSGIDescriptorBinding };
+		std::array<vk::DescriptorSetLayoutBinding, 4> ImageResultPassBinding = { LightingResultDescriptorBinding,SSGIDescriptorBinding,SSAODescriptorBinding,MaterialsDescriptorBinding };
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.bindingCount = static_cast<uint32_t>(ImageResultPassBinding.size());
@@ -86,7 +96,7 @@ void CombinedResult_FullScreenQuad::UpdataeUniformBufferData()
 }
 
 
-void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData SSGIImage)
+void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData SSGIImage, ImageData SSAOIImage, ImageData MaterialImage)
 {
 	// create sets from the pool based on the layout
 	std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
@@ -133,9 +143,37 @@ void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::Descr
 		SSGISamplerdescriptorWrite.pImageInfo = &SSGIImageResultimageInfo;
         /////////////////////////////////////////////////////////////////////////////////////
 
-		std::array<vk::WriteDescriptorSet, 2> descriptorWrites = { LightingResultSamplerdescriptorWrite,
-																	SSGISamplerdescriptorWrite,
-		                                                         };
+
+		vk::DescriptorImageInfo SSAOImageResultimageInfo{};
+		SSAOImageResultimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		SSAOImageResultimageInfo.imageView = SSAOIImage.imageView;
+		SSAOImageResultimageInfo.sampler = SSAOIImage.imageSampler;
+
+		vk::WriteDescriptorSet SSAOSamplerdescriptorWrite{};
+		SSAOSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+		SSAOSamplerdescriptorWrite.dstBinding = 2;
+		SSAOSamplerdescriptorWrite.descriptorCount = 1;
+		SSAOSamplerdescriptorWrite.dstArrayElement = 0;
+		SSAOSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		SSAOSamplerdescriptorWrite.pImageInfo = &SSAOImageResultimageInfo;
+
+
+		vk::DescriptorImageInfo MaterialsImageResultimageInfo{};
+		MaterialsImageResultimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		MaterialsImageResultimageInfo.imageView = MaterialImage.imageView;
+		MaterialsImageResultimageInfo.sampler = MaterialImage.imageSampler;
+
+		vk::WriteDescriptorSet MaterialsSamplerdescriptorWrite{};
+		MaterialsSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+		MaterialsSamplerdescriptorWrite.dstBinding = 3;
+		MaterialsSamplerdescriptorWrite.descriptorCount = 1;
+		MaterialsSamplerdescriptorWrite.dstArrayElement = 0;
+		MaterialsSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		MaterialsSamplerdescriptorWrite.pImageInfo = &MaterialsImageResultimageInfo;
+
+
+		std::array<vk::WriteDescriptorSet, 4> descriptorWrites = { LightingResultSamplerdescriptorWrite,
+																	SSGISamplerdescriptorWrite,SSAOSamplerdescriptorWrite,MaterialsSamplerdescriptorWrite };
 
 		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	}

@@ -32,10 +32,10 @@ public:
 
     ImageData NoiseTexture;
 
-    int KernelSize = 32;
-    int bShouldSSAO = 0;
-    float Radius = 1.0f;
-    float Bias = 0.025f;
+    int KernelSize = 25;
+    int bShouldSSAO = 1;
+    float Radius = 1.5f;
+    float Bias = 0.09;
 private:
 
     std::vector<Vertex> quad = {

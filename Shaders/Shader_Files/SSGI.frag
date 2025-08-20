@@ -15,7 +15,7 @@ layout (binding = 6) uniform SSGIUniformBuffer {
 layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragcolor;
 
-const int MAX_ITERATION = 100;
+const int MAX_ITERATION = 30;
 const float MAX_THICKNESS = 0.1; // Increased from 0.0002 to better handle depth precision
 
 vec3 GetPerpendicularVector(vec3 v) {
@@ -45,14 +45,15 @@ vec3 FindIntersectionPoint(vec3 SamplePosInVS, vec3 DirInVS, float MaxTraceDista
     vec3 dp2 = EndPosInVS - SamplePosInVS;
     const float max_dist = max(abs(dp2.x), max(abs(dp2.y), abs(dp2.z)));
     
-    float stepScale = 0.1; // Reduced from 4.4 for more precise stepping
+    float stepScale = 0.16; // Reduced from 4.4 for more precise stepping
     vec3 Step = (EndPosInVS.xyz - SamplePosInVS.xyz) / (max_dist / stepScale);
-    
+
     vec3 rayPosInVS = SamplePosInVS;
     bool intersected = false;
     vec3 hitPoint = SamplePosInVS;
     
     for(int i = 0; i < MAX_ITERATION; i++) {
+
         rayPosInVS += Step;
         
         // Project current ray position to screen space

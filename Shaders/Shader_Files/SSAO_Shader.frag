@@ -9,7 +9,7 @@ layout (binding = 3) uniform KernelData{
      mat4 CameraProjMatrix;
      mat4 CameraViewMatrix;
      vec4 KernelSizeRadiusBiasAndBool;
-     vec4 samples[32];
+     vec4 samples[10];
 }KD;
 
 layout(location = 0) in vec2 inTexCoord;           
@@ -17,14 +17,14 @@ layout(location = 0) in vec2 inTexCoord;
 
 layout (location = 0) out vec4 outFragcolor;
 
-const vec2 noiseScale = vec2(2560 /4.0, 1440 /4.0);  
-
 void main() {
     
     if(KD.KernelSizeRadiusBiasAndBool.w == 1){
+        
+        vec2 TextureSize       = vec2(textureSize(samplerposition,0));
         vec3 ViewSpaceFragPos  = texture(samplerposition,inTexCoord).rgb;
         vec3 ViewSpaceNormal   = texture(samplerNormal, inTexCoord).rgb;
-        vec3 randomVec         = texture(samplerNoise,inTexCoord * noiseScale).rgb;
+        vec3 randomVec         = texture(samplerNoise,inTexCoord * TextureSize).rgb;
         
         vec3 tangent   = normalize(randomVec - ViewSpaceNormal * dot(randomVec,ViewSpaceNormal));
         vec3 bitangent = cross(ViewSpaceNormal,tangent);

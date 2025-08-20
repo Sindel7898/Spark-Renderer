@@ -499,7 +499,7 @@ void App::createGBuffer()
 	ssao_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
 	ssaoBlur_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
 	ssr_FullScreenQuad->createDescriptorSets(DescriptorPool, LightingPassImageData, gbuffer.ViewSpaceNormal,gbuffer.ViewSpacePosition, DepthTextureData, ReflectionMaskImageData,gbuffer.Materials);
-	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, LightingPassImageData, SSGI_FullScreenQuad->SSGIAccumilationImage);
+	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, LightingPassImageData, SSGI_FullScreenQuad->SSGIAccumilationImage, gbuffer.SSAOBlured, gbuffer.Materials);
 	fxaa_FullScreenQuad->createDescriptorSets(DescriptorPool, Combined_FullScreenQuad->FinalResultImage);
 	Raytracing_Shadows->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
 	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, LightingPassImageData,DepthTextureData);
@@ -562,6 +562,9 @@ void App::createGBuffer()
 	SSGITextureId            = ImGui_ImplVulkan_AddTexture(SSGI_FullScreenQuad->SSGIAccumilationImage.imageSampler,
 		                                                   SSGI_FullScreenQuad->SSGIAccumilationImage.imageView,
 		                                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	vulkanContext->ResetTemporalAccumilation();
+
 }
 
 void App::CreateGraphicsPipeline()
@@ -2805,14 +2808,12 @@ void App::recreateSwapChain() {
 	vulkanContext->LogicalDevice.waitIdle();
 
 	vulkanContext->create_swapchain();
-	createDepthTextureImage();
-	createGBuffer();
-
 
 	camera->SetSwapChainHeight(vulkanContext->swapchainExtent.height);
 	camera->SetSwapChainWidth(vulkanContext->swapchainExtent.width);
+	createDepthTextureImage();
+	createGBuffer();
 
-	vulkanContext->ResetTemporalAccumilation();
 }
 
 void App::recreatePipeline()
