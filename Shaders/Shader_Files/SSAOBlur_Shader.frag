@@ -17,7 +17,7 @@ void main() {
         for(int y = -2; y < 2; ++y){
 
                     vec2 offset = vec2(float(x), float(y)) * texelSize;
-                     result += texture(samplerSSAO, inTexCoord + offset).r;
+                     result += textureLod(samplerSSAO, inTexCoord + offset,0).r;
 
         }
     }

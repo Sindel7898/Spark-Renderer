@@ -78,9 +78,9 @@ void main() {
     vec3 totalLighting = vec3(0.0);
     ///////////////////////////////////////
 
-    vec3  WorldPos     = texture(samplerPosition,inTexCoord).rgb;
-    vec3  Normal       = normalize(texture(samplerNormal,inTexCoord).rgb);
-    vec3  Albedo       = texture(samplerAlbedo,inTexCoord).rgb;
+    vec3  WorldPos     = textureLod(samplerPosition,inTexCoord,0).rgb;
+    vec3  Normal       = normalize(textureLod(samplerNormal,inTexCoord,0).rgb);
+    vec3  Albedo       = textureLod(samplerAlbedo,inTexCoord,0).rgb;
     float Metallic     = texture(samplerMaterials,inTexCoord).r;
     float Roughness    = texture(samplerMaterials,inTexCoord).g;
     vec2  ReflectionMask     = texture(samplerReflectionMask,inTexCoord).rg;
@@ -138,7 +138,7 @@ void main() {
      Lo += (kD * Albedo / PI + specular) * radiance * NdotL;
 
 
-   float shadow = texture(samplerShadowMap, inTexCoord).r;
+   float shadow = textureLod(samplerShadowMap, inTexCoord,0).r;
    totalLighting += shadow * Lo * light.CameraPositionAndLightIntensity.a;
   }
 

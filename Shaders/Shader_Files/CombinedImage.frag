@@ -10,10 +10,10 @@ layout (location = 0) out vec4 outFragColor;
 
 
 void main() {
-    vec3  Lighting_Shadows = texture(LightingReflectionTexture, inTexCoord).rgb;
-    vec3  GI               = texture(GITexture, inTexCoord).rgb;
-    float SSAO             = texture(SSAOTexture, inTexCoord).r;
-    float TextureFromAO    = texture(MaterialsTexture, inTexCoord).b;
+    vec3  Lighting_Shadows = textureLod(LightingReflectionTexture, inTexCoord,0).rgb;
+    vec3  GI               = textureLod(GITexture, inTexCoord,0).rgb;
+    float SSAO             = textureLod(SSAOTexture, inTexCoord,0).r;
+    float TextureFromAO    = textureLod(MaterialsTexture, inTexCoord,0).b;
 
     float FinalAO   = (SSAO * TextureFromAO) * 0.7;
 

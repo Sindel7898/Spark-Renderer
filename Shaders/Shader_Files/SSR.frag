@@ -16,7 +16,7 @@ layout (binding = 5) uniform sampler2D MaterialTexture;
 layout (location = 0) in vec2 inTexCoord;           
 layout (location = 0) out vec4 outFragcolor;
 
-const int MAX_ITERATION = 150;
+const int MAX_ITERATION = 100;
 const int NUM_BINARY_SEARCH_SAMPLES = 5;
 float MAX_THICKNESS = 0.0002;
 
@@ -93,7 +93,7 @@ float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceD
 
      const float max_dist = max(abs(dp2.x), abs(dp2.y)); //get the maximum possible distance that will be traveled on the X or Y axis
 
-     float stepScale = 4.4; 
+     float stepScale = 6; 
      vec3 Step       = (ReflectionEndPosInTS.xyz - SamplePosInTS.xyz) / (max_dist / stepScale); // scale down steps !! look into more
 
      vec4 rayPosInTS  = vec4(SamplePosInTS.xyz + Step, 0);
@@ -106,7 +106,7 @@ float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceD
     for(int i = 0; i < max_dist && i < MAX_ITERATION; i++)
     {
 
-	    float depth = texture(DepthTexture, rayPosInTS.xy).x; // ray hit  current depth
+	    float depth = textureLod(DepthTexture, rayPosInTS.xy,0).x; // ray hit  current depth
 
 	    float thickness = rayPosInTS.z - depth; // rays current depth - hit depth 
         

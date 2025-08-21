@@ -2416,11 +2416,25 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		SSGIImageImageInfo.layerCount = 1;
 		SSGIImageImageInfo.colorAttachmentCount = 1;
 		SSGIImageImageInfo.pColorAttachments = &SSGIImageAttachInfo;
-		SSGIImageImageInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
-		SSGIImageImageInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
+		SSGIImageImageInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width  ;
+		SSGIImageImageInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height ;
 
-		commandBuffer.setViewport(0, 1, &viewport);
-		commandBuffer.setScissor(0, 1, &scissor);
+
+		vk::Viewport viewport50{};
+		viewport50.x = 0.0f;
+		viewport50.y = 0.0f;
+		viewport50.width = vulkanContext->swapchainExtent.width ;
+		viewport50.height = vulkanContext->swapchainExtent.height ;
+		viewport50.minDepth = 0.0f;
+		viewport50.maxDepth = 1.0f;
+
+		vk::Rect2D scissor50{};
+		scissor50.offset = imageoffset;
+		scissor50.extent.width = vulkanContext->swapchainExtent.width ;
+		scissor50.extent.height = vulkanContext->swapchainExtent.height ;
+
+		commandBuffer.setViewport(0, 1, &viewport50);
+		commandBuffer.setScissor(0, 1, &scissor50);
 		commandBuffer.beginRendering(SSGIImageImageInfo);
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SSGIPipeline);
 		SSGI_FullScreenQuad->Draw(commandBuffer, SSGIPipelineLayout, currentFrame);
@@ -2489,12 +2503,15 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		DstSubresourceLayers.layerCount = 1;
 		DstSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
 
-		vk::Extent3D  swapchainExtent = { vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height,1};
-
+		vk::Extent3D swapchainExtenthalf = {
+			vulkanContext->swapchainExtent.width ,
+			vulkanContext->swapchainExtent.height,
+			1
+		};
 		bufferManger->CopyImageToAnotherImage(commandBuffer,
 			                                  SSGI_FullScreenQuad->SSGIAccumilationImage, vk::ImageLayout::eTransferSrcOptimal, SrcSubresourceLayers,
 			                                  SSGI_FullScreenQuad->SSGIPassLastFrameImage, vk::ImageLayout::eTransferDstOptimal, DstSubresourceLayers,
-			                                  swapchainExtent, vulkanContext->graphicsQueue);
+			                                  swapchainExtenthalf, vulkanContext->graphicsQueue);
 
 
 		ImageTransitionData TransitionSrcBack{};
@@ -2551,11 +2568,24 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		SSGIImageInfo.layerCount = 1;
 		SSGIImageInfo.colorAttachmentCount = 1;
 		SSGIImageInfo.pColorAttachments = &BluredImageAttachInfo;
-		SSGIImageInfo.renderArea.extent.width  = vulkanContext->swapchainExtent.width;
-		SSGIImageInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
+		SSGIImageInfo.renderArea.extent.width  = vulkanContext->swapchainExtent.width ;
+		SSGIImageInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height ;
 
-		commandBuffer.setViewport(0, 1, &viewport);
-		commandBuffer.setScissor(0, 1, &scissor);
+		vk::Viewport viewport50{};
+		viewport50.x = 0.0f;
+		viewport50.y = 0.0f;
+		viewport50.width = vulkanContext->swapchainExtent.width ;
+		viewport50.height = vulkanContext->swapchainExtent.height ;
+		viewport50.minDepth = 0.0f;
+		viewport50.maxDepth = 1.0f;
+
+		vk::Rect2D scissor50{};
+		scissor50.offset = imageoffset;
+		scissor50.extent.width = vulkanContext->swapchainExtent.width ;
+		scissor50.extent.height = vulkanContext->swapchainExtent.height ;
+
+		commandBuffer.setViewport(0, 1, &viewport50);
+		commandBuffer.setScissor(0, 1, &scissor50);
 		commandBuffer.beginRendering(SSGIImageInfo);
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, BluredSSGIPipeline);
 		SSGI_FullScreenQuad->DrawTA(commandBuffer, BluredSSGIPipelineLayout, currentFrame);

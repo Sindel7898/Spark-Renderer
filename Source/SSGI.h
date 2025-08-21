@@ -43,6 +43,7 @@ public:
     ImageData SSGIPassImage;
     ImageData SSGIPassLastFrameImage;
     ImageData SSGIAccumilationImage;
+    ImageData SSGIFullRessAccumilationImage;
 
     int NoiseIndex;
 

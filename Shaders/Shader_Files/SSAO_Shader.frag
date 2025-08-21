@@ -22,9 +22,9 @@ void main() {
     if(KD.KernelSizeRadiusBiasAndBool.w == 1){
         
         vec2 TextureSize       = vec2(textureSize(samplerposition,0));
-        vec3 ViewSpaceFragPos  = texture(samplerposition,inTexCoord).rgb;
-        vec3 ViewSpaceNormal   = texture(samplerNormal, inTexCoord).rgb;
-        vec3 randomVec         = texture(samplerNoise,inTexCoord * TextureSize).rgb;
+        vec3 ViewSpaceFragPos  = textureLod(samplerposition,inTexCoord,0).rgb;
+        vec3 ViewSpaceNormal   = textureLod(samplerNormal, inTexCoord,0).rgb;
+        vec3 randomVec         = textureLod(samplerNoise,inTexCoord * TextureSize,0).rgb;
         
         vec3 tangent   = normalize(randomVec - ViewSpaceNormal * dot(randomVec,ViewSpaceNormal));
         vec3 bitangent = cross(ViewSpaceNormal,tangent);
@@ -42,7 +42,7 @@ void main() {
            offset.xyz /= offset.w;               
            offset.xyz  = offset.xyz * 0.5 + 0.5; 
            
-           float  sampleDepth  = texture(samplerposition, offset.xy).z;
+           float  sampleDepth  = textureLod(samplerposition, offset.xy,0).z;
            
            float rangeCheck = smoothstep(0.0, 1.0, radius/ abs(ViewSpaceFragPos.z - sampleDepth));
           

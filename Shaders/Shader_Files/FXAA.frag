@@ -33,7 +33,7 @@ float QUALITY(int i) {
 void main() {
  if(pc.bFXAA.x == 1){
 
-    vec3 colorCenter = texture(screenTexture, inTexCoord).rgb;
+    vec3 colorCenter = textureLod(screenTexture, inTexCoord,0).rgb;
     // Luma at the current fragment
     float lumaCenter = rgb2luma(colorCenter);
     
@@ -123,8 +123,8 @@ void main() {
     vec2 uv2 = currentUv + offset;
     
     // Read the lumas at both current extremities of the exploration segment, and compute the delta wrt to the local average luma.
-    float lumaEnd1 = rgb2luma(texture(screenTexture, uv1).rgb);
-    float lumaEnd2 = rgb2luma(texture(screenTexture, uv2).rgb);
+    float lumaEnd1 = rgb2luma(textureLod(screenTexture, uv1,0).rgb);
+    float lumaEnd2 = rgb2luma(textureLod(screenTexture, uv2,0).rgb);
     lumaEnd1 -= lumaLocalAverage;
     lumaEnd2 -= lumaLocalAverage;
     
@@ -146,12 +146,12 @@ void main() {
         for (int i = 2; i < ITERATIONS; i++) {
             // If needed, read luma in 1st direction, compute delta.
             if (!reached1) {
-                lumaEnd1 = rgb2luma(texture(screenTexture, uv1).rgb);
+                lumaEnd1 = rgb2luma(textureLod(screenTexture, uv1,0).rgb);
                 lumaEnd1 = lumaEnd1 - lumaLocalAverage;
             }
             // If needed, read luma in opposite direction, compute delta.
             if (!reached2) {
-                lumaEnd2 = rgb2luma(texture(screenTexture, uv2).rgb);
+                lumaEnd2 = rgb2luma(textureLod(screenTexture, uv2,0).rgb);
                 lumaEnd2 = lumaEnd2 - lumaLocalAverage;
             }
             // If the luma deltas at the current extremities is larger than the local gradient, we have reached the side of the edge.
@@ -219,10 +219,10 @@ void main() {
     }
     
     // Read the color at the new UV coordinates, and use it.
-    vec3 finalColor = texture(screenTexture, finalUv).rgb;
+    vec3 finalColor = textureLod(screenTexture, finalUv,0).rgb;
     outFragcolor = vec4(finalColor, 1.0);
   }else{
-     vec3 finalColor = texture(screenTexture, inTexCoord).rgb;
+     vec3 finalColor = textureLod(screenTexture, inTexCoord,0).rgb;
           outFragcolor = vec4(finalColor, 1.0);
 
   }

@@ -43,7 +43,7 @@ bool TraceShadow(vec3 origin, vec3 direction,float MaxDistance) {
     PayloadResults.Shadowed = true;
     PayloadResults.SkyBox = false;
 
-    const uint rayFlags = gl_RayFlagsOpaqueEXT;
+    const uint rayFlags = gl_RayFlagsOpaqueEXT |gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsSkipClosestHitShaderEXT | gl_RayFlagsCullBackFacingTrianglesEXT;
     const uint cullMask = 0xff;
     const float tMin = 0.001;
     const float tMax = MaxDistance;
@@ -104,8 +104,8 @@ void main() {
        
        const int LightCount   = int(floor(cam.LightCount_NumOfLightCasters_Padding.x));
        
-       vec3 hitPosition = texture(Position, inUV).xyz;
-       
+        ivec2 texCoord = ivec2(gl_LaunchIDEXT.xy);
+        vec3 hitPosition = texelFetch(Position, texCoord, 0).xyz;       
        
        vec3 origin  = hitPosition;
             origin  += 0.21;
