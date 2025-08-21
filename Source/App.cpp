@@ -13,7 +13,11 @@
 #include "RayTracing.h"
 #include "CombinedResult_FullScreenQuad.h"
 #include "SSGI.h"
-
+#include "NRD.h"
+#include "NRI.h"
+#include "Extensions/NRIHelper.h"
+#include "Extensions/NRIDeviceCreation.h"
+#include "NRDIntegration.hpp"
 #include <crtdbg.h>
 
 #define DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
