@@ -1214,6 +1214,19 @@ void App::CreateGraphicsPipeline()
 
 
 	{
+
+		vk::PipelineRasterizationStateCreateInfo rasterizerinfo{};
+		rasterizerinfo.depthClampEnable = vk::False;
+		rasterizerinfo.rasterizerDiscardEnable = vk::False;
+		rasterizerinfo.polygonMode = vk::PolygonMode::eFill;
+		rasterizerinfo.lineWidth = 1.0f;
+		rasterizerinfo.cullMode = vk::CullModeFlagBits::eBack;
+		rasterizerinfo.frontFace = vk::FrontFace::eCounterClockwise;
+		rasterizerinfo.depthBiasEnable = vk::False;
+		rasterizerinfo.depthBiasConstantFactor = 0.0f;
+		rasterizerinfo.depthBiasClamp = 0.0f;
+		rasterizerinfo.depthBiasSlopeFactor = 0.0f;
+
 		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/GeometryPass.vert.spv");
 		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/GeometryPass.frag.spv");
 
