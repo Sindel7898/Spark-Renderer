@@ -91,9 +91,9 @@ void main() {
     float Luminance = rgb2luma(Color);
     
     // Get blue noise sample
-    ivec2 BluenoiseTextureSize = textureSize(BlueNoise[NoiseImageIndex], 0);
+    ivec2 WindowSize = textureSize(DirectLigtingTexture, 0);
 
-    vec2 tiledUV = (inTexCoord * BluenoiseTextureSize * 1.5);
+    vec2 tiledUV = (inTexCoord * (WindowSize / 70));
     
     vec2 frameJitter = fract(ubo.BlueNoiseImageIndex_DeltaTime_Padding.y * vec2(0.618034, 0.324719));;
 
@@ -123,7 +123,7 @@ void main() {
       float NdotL = max(dot(Normal, normalize(IntersectionPoint - VSposition)), 0.0);
       giContribution = hitColor * NdotL;
 
-      giContribution*= 2;
+      giContribution *= 2;
       giContribution *= Albedo;
       
     }
