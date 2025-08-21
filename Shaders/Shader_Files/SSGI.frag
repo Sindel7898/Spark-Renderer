@@ -93,7 +93,7 @@ void main() {
     // Get blue noise sample
     ivec2 BluenoiseTextureSize = textureSize(BlueNoise[NoiseImageIndex], 0);
 
-    vec2 tiledUV = (inTexCoord * BluenoiseTextureSize/ 6);
+    vec2 tiledUV = (inTexCoord * BluenoiseTextureSize * 1.5);
     
     vec2 frameJitter = fract(ubo.BlueNoiseImageIndex_DeltaTime_Padding.y * vec2(0.618034, 0.324719));;
 
