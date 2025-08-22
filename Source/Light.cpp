@@ -16,8 +16,22 @@ Light::Light(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* 
 	CreateVertexAndIndexBuffer();
 	CreateUniformBuffer();
 	createDescriptorSetLayout();
-	Instantiate();
 
+	lightType       = 1;
+	position        = glm::vec3(0.0f, -1, 0.0f);
+	rotation        = glm::vec3(1.0f, 1.0f, 1.0f);
+	scale           = glm::vec3(0.5f, 0.5f, 0.5f);
+	color           = glm::vec3(1.0f, 1.0f, 1.0f);
+	ambientStrength = 0.9f;
+	lightIntensity  = 4.0f;
+	CastShadow      = 0;
+
+	transformMatrices.modelMatrix = glm::mat4(1.0f);
+	transformMatrices.modelMatrix = glm::translate(transformMatrices.modelMatrix, position);
+	transformMatrices.modelMatrix = glm::rotate   (transformMatrices.modelMatrix, glm::radians(rotation.x), glm::vec3(0.0f, 0.0f, 1.0f));
+	transformMatrices.modelMatrix = glm::rotate   (transformMatrices.modelMatrix, glm::radians(rotation.y), glm::vec3(1.0f, 0.0f, 0.0f));
+	transformMatrices.modelMatrix = glm::rotate   (transformMatrices.modelMatrix, glm::radians(rotation.z), glm::vec3(0.0f, 1.0f, 0.0f));
+	transformMatrices.modelMatrix = glm::scale    (transformMatrices.modelMatrix , scale);
 }
 
 
@@ -33,7 +47,7 @@ void Light::CreateUniformBuffer()
 	vertexUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 	VertexUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
 
-	VkDeviceSize UniformBufferSize = sizeof(InstanceTransformMatrices);
+	VkDeviceSize UniformBufferSize = sizeof(TransformMatrices);
 
 	for (size_t i = 0; i < vertexUniformBuffers.size(); i++)
 	{
@@ -45,60 +59,19 @@ void Light::CreateUniformBuffer()
 		VertexUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
 	}
 
-	{
-		Light_GPU_DataUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-		Light_GPU_DataUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
-
-		VkDeviceSize ModeluniformBufferSize = sizeof(Light_GPU_InstanceData) * 300;
-
-		for (size_t i = 0; i < Light_GPU_DataUniformBuffers.size(); i++)
-		{
-			BufferData bufferdata;
-			bufferdata.BufferID = "Model Vertex Uniform Buffer" + i;
-			bufferManager->CreateBuffer(&bufferdata, ModeluniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
-			Light_GPU_DataUniformBuffers[i] = bufferdata;
-
-			Light_GPU_DataUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
-		}
-	}
-
 }
 
-void Light::Instantiate()
+void Light::CastShadowsSwitch(bool bCastShadow)
 {
-	vulkanContext->ResetTemporalAccumilation();
-
-	if (!Instances.empty())
+	if (bCastShadow)
 	{
-		int LastIndex = Instances.size() - 1;
-
-		Light_InstanceData* NewInstance = new Light_InstanceData(Instances[LastIndex], vulkanContext);
-
-		Instances.push_back(NewInstance);
-		GPU_InstancesData.push_back(NewInstance->gpu_InstanceData);
-
+		CastShadow = 1;
 	}
-	else
-	{
-		Light_InstanceData* NewInstance = new Light_InstanceData(nullptr, vulkanContext);
-		glm::mat4 BaseModelMatrix = glm::mat4(1);
-		NewInstance->SetModelMatrix(BaseModelMatrix);
-
-		Instances.push_back(NewInstance);
-		GPU_InstancesData.push_back(NewInstance->gpu_InstanceData);
+	else {
+		CastShadow = 0;
 	}
 }
 
-void Light::Destroy(int instanceIndex)
-{
-	vulkanContext->ResetTemporalAccumilation();
-
-	if (!Instances.empty() && Instances[instanceIndex] && GPU_InstancesData[instanceIndex])
-	{
-		Instances.erase(Instances.begin() + instanceIndex);
-		GPU_InstancesData.erase(GPU_InstancesData.begin() + instanceIndex);
-	}
-}
 
 void Light::createDescriptorSetLayout()
 {
@@ -108,13 +81,8 @@ void Light::createDescriptorSetLayout()
 	VertexUniformBufferBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
 	VertexUniformBufferBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
 
-	vk::DescriptorSetLayoutBinding ModelUniformBufferBinding{};
-	ModelUniformBufferBinding.binding = 1;
-	ModelUniformBufferBinding.descriptorCount = 1;
-	ModelUniformBufferBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
-	ModelUniformBufferBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
 
-	std::array<vk::DescriptorSetLayoutBinding, 2> bindings = { VertexUniformBufferBinding,ModelUniformBufferBinding };
+	std::array<vk::DescriptorSetLayoutBinding, 1> bindings = { VertexUniformBufferBinding};
 
 	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -149,7 +117,7 @@ void Light::createDescriptorSets(vk::DescriptorPool descriptorpool)
 		vk::DescriptorBufferInfo VertexbufferInfo{};
 		VertexbufferInfo.buffer = vertexUniformBuffers[i].buffer;
 		VertexbufferInfo.offset = 0;
-		VertexbufferInfo.range = sizeof(InstanceTransformMatrices);
+		VertexbufferInfo.range = sizeof(TransformMatrices);
 
 		vk::WriteDescriptorSet VertexUniformdescriptorWrite{};
 		VertexUniformdescriptorWrite.dstSet = DescriptorSets[i];
@@ -159,23 +127,8 @@ void Light::createDescriptorSets(vk::DescriptorPool descriptorpool)
 		VertexUniformdescriptorWrite.descriptorCount = 1;
 		VertexUniformdescriptorWrite.pBufferInfo = &VertexbufferInfo;
         
-		vk::DescriptorBufferInfo ModelbufferInfo{};
-		ModelbufferInfo.buffer = Light_GPU_DataUniformBuffers[i].buffer;
-		ModelbufferInfo.offset = 0;
-		ModelbufferInfo.range = sizeof(Light_GPU_InstanceData) * 300;
-
-		vk::WriteDescriptorSet ModelUniformdescriptorWrite{};
-		ModelUniformdescriptorWrite.dstSet = DescriptorSets[i];
-		ModelUniformdescriptorWrite.dstBinding = 1;
-		ModelUniformdescriptorWrite.dstArrayElement = 0;
-		ModelUniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-		ModelUniformdescriptorWrite.descriptorCount = 1;
-		ModelUniformdescriptorWrite.pBufferInfo = &ModelbufferInfo;
-
-		std::array<vk::WriteDescriptorSet, 2> descriptorWrites = { VertexUniformdescriptorWrite,ModelUniformdescriptorWrite };
-
 		////////////////////////////////////////////////////////////////////////////////////////
-		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+		vulkanContext->LogicalDevice.updateDescriptorSets(1, &VertexUniformdescriptorWrite, 0, nullptr);
 	}
 }
 
@@ -185,28 +138,23 @@ void Light::UpdateUniformBuffer(uint32_t currentImage)
 
 	Drawable::UpdateUniformBuffer(currentImage);
 
-	InstancetransformMatrices.viewMatrix = camera->GetViewMatrix();
-	InstancetransformMatrices.projectionMatrix = camera->GetProjectionMatrix();
-	InstancetransformMatrices.projectionMatrix[1][1] *= -1;
-	memcpy(VertexUniformBuffersMappedMem[currentImage], &InstancetransformMatrices, sizeof(InstancetransformMatrices));
-	
-
-	for (size_t i = 0; i < GPU_InstancesData.size(); i++) {
-		Light_GPU_InstanceData* instanceData = GPU_InstancesData[i].get();
-		memcpy((char*)Light_GPU_DataUniformBuffersMappedMem[currentImage] + i * sizeof(Light_GPU_InstanceData), instanceData, sizeof(Light_GPU_InstanceData));
-	}
-
+	transformMatrices.viewMatrix = camera->GetViewMatrix();
+	transformMatrices.projectionMatrix = camera->GetProjectionMatrix();
+	transformMatrices.projectionMatrix[1][1] *= -1;
+	memcpy(VertexUniformBuffersMappedMem[currentImage], &transformMatrices, sizeof(transformMatrices));
 }
 
 void Light::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)
 {
+	//Send Light Color To The Fragment Shader 
+	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(color), &color);
 
 	//Continue Rendering As Usual
 	vk::DeviceSize offsets[] = { 0 };
 	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.draw(vertices.size(), Instances.size(), 0, 0);
+	commandbuffer.draw(vertices.size(), 1, 0, 0);
 }
 
 

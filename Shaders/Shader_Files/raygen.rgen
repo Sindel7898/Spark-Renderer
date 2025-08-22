@@ -95,7 +95,7 @@ void main() {
    }
 
    ////////////////////////////////////////////////////////////////////////////////////////////
-   float shadowFactor = 1; // Start fully lit
+   float shadowFactor = 1.0; // Start fully lit
 
    if(PayloadResults.SkyBox == false){
    

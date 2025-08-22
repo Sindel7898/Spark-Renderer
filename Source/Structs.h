@@ -16,3 +16,11 @@ struct GBuffer {
     ImageData Materials;
     ImageData Albedo;
 };
+
+struct VertexUniformData
+{
+    TransformMatrices  transformMatrices;
+    glm::mat4 LightViewMatrix;
+    glm::mat4 LightProjectionMatrix;
+
+};

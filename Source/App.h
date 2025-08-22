@@ -17,6 +17,7 @@
 #include "SSAOBlur_FullScreenQuad.h"
 #include "FXAA_FullScreenQuad.h"
 #include "SSR_FullScreenQuad.h"
+#include "Terrain.h"
 
 
 class Window;
@@ -124,7 +125,7 @@ public:
 
 	std::shared_ptr<Camera>             camera = nullptr;
 	std::vector<std::shared_ptr<Model>> Models;
-	std::shared_ptr<Light> light;
+	std::vector<std::shared_ptr<Light>> lights;
 	std::vector<Drawable*> UserInterfaceItems;
 
 

@@ -8,11 +8,7 @@
 #include "VertexInputLayouts.h"
 #include "Drawable.h"
 
-struct SkyBoxVertexData
-{
-    glm::mat4 viewMatrix;
-    glm::mat4 projectionMatrix;
-};
+
 
 class SkyBox : public Drawable
 {
@@ -34,8 +30,8 @@ public:
     int SkyBoxIndex;
     int LastSkyBoxIndex;
     bool bSkyBoxUpdate;
+    TransformMatrices  transformMatrices;
 
-    SkyBoxVertexData transformMatrices;
 private:
 
     const std::vector<VertexOnly> vertices = {

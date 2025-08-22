@@ -410,7 +410,7 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 
 }
 
-void SSGI::UpdateUniformBuffer(uint32_t currentImage, float DeltaTime)
+void SSGI::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref, float DeltaTime)
 {
 	 NoiseIndex = (NoiseIndex + 1)  % BlueNoiseTextures.size();
 

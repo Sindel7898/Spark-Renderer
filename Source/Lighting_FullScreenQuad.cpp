@@ -286,7 +286,7 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 	}
 }
 
-void Lighting_FullScreenQuad::UpdateUniformBuffer(uint32_t currentImage, Light* LightRef)
+void Lighting_FullScreenQuad::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref)
 {
 	if (SkyBoxRef->bSkyBoxUpdate)
 	{
@@ -295,17 +295,25 @@ void Lighting_FullScreenQuad::UpdateUniformBuffer(uint32_t currentImage, Light* 
 	}
 
 	std::vector<LightUniformData> lightDataspack;
-	lightDataspack.reserve(LightRef->Instances.size());
+	lightDataspack.reserve(lightref.size());
 
-	for (int  i = 0; i < LightRef->Instances.size(); i++)
+	for (int  i = 0; i < lightref.size(); i++)
 	{
-		if (LightRef->Instances[i])
+		Drawable::UpdateUniformBuffer(currentImage);
+
+		if (lightref[i])
 		{
 			LightUniformData LightData;
-			LightData.lightPositionAndLightType = glm::vec4(LightRef->Instances[i]->GetPostion(), LightRef->Instances[i]->LightType);
-			LightData.colorAndLightIntensity = glm::vec4(LightRef->Instances[i]->Color, LightRef->Instances[i]->LightIntensity);
-			LightData.CameraPositionAndPadding = glm::vec4(camera->GetPosition().x,camera->GetPosition().y,camera->GetPosition().z,0);
+			LightData.lightPositionAndLightType = glm::vec4(lightref[i]->position,lightref[i]->lightType);
+			LightData.colorAndAmbientStrength  = glm::vec4(lightref[i]->color, lightref[i]->ambientStrength);
+			LightData.CameraPositionAndLightIntensity = glm::vec4(camera->GetPosition().x, 
+				                                                  camera->GetPosition().y,
+				                                                  camera->GetPosition().z, 
+				                                                  lightref[i]->lightIntensity);
 
+			glm::mat4 projection = lightref[i]->ProjectionMatrix;
+			projection[1][1] *= -1;
+			LightData.LightViewProjMatrix = projection * lightref[i]->ViewMatrix;
 			lightDataspack.push_back(LightData);
 		}
 	}
