@@ -9,15 +9,14 @@
 #include "VulkanContext.h"
 #include "FramesPerSecondCounter.h"
 #include "Light.h"
-#include "Grass.h"
 #include "RayTracing.h"
 #include "CombinedResult_FullScreenQuad.h"
 #include "SSGI.h"
-#include "NRD.h"
-#include "NRI.h"
-#include "Extensions/NRIHelper.h"
-#include "Extensions/NRIDeviceCreation.h"
-#include "NRDIntegration.hpp"
+//#include "NRD.h"
+//#include "NRI.h"
+//#include "Extensions/NRIHelper.h"
+//#include "Extensions/NRIDeviceCreation.h"
+//#include "NRDIntegration.hpp"
 #include <crtdbg.h>
 
 #define DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
@@ -111,34 +110,18 @@
 	SSGI_FullScreenQuad     = std::shared_ptr<SSGI>(new SSGI(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSGIDeleter);
 	Raytracing_Shadows      = std::shared_ptr<RayTracing>(new RayTracing(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), RayTracingDeleter);
 
-	lights.reserve(2);
 
-	for (int i = 0; i < 3; i++) {
-		std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), LightDeleter);
-		lights.push_back(std::move(light));
-	}
+	light = std::shared_ptr<Light>(new Light(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), LightDeleter);
 
-	lights[0]->SetPosition(glm::vec3(-0.529, -0.678, -0.957));
-	lights[0]->lightType = 0;
-	lights[0]->lightIntensity = 9;
-	lights[0]->CastShadowsSwitch(true);
-	lights[0]->ambientStrength = 0.1;
-	lights[0]->SetScale(glm::vec3(0.100, 0.100, 0.100));
+	light->Instances[0]->SetPostion(glm::vec3(-0.529, -0.678, -0.957));
+	light->Instances[0]->LightType = 0;
+	light->Instances[0]->LightIntensity = 9;
+	light->Instances[0]->SetCastShadow(true);
+	light->Instances[0]->SetScale(glm::vec3(0.100, 0.100, 0.100));
 
-	lights[1]->SetPosition(glm::vec3(0.598, 24.282, 0.477));
-	lights[1]->SetScale(glm::vec3(0.100, 0.100, 0.100));
-	lights[1]->CastShadowsSwitch(true);
-	lights[1]->ambientStrength = 0.3;
 
-	lights[2]->SetPosition(glm::vec3(-20.0f, -50, 0.0f));
 
-	lights[0]->color = glm::vec3(1.0f, 1.0f, 1.0f);
-	lights[1]->color = glm::vec3(1.0f, 0.0f, 0.0f);
-	lights[2]->color = glm::vec3(1.0f, 1.0f, 1.0f);
-
-	UserInterfaceItems.push_back(lights[0].get());
-	UserInterfaceItems.push_back(lights[1].get());
-	UserInterfaceItems.push_back(lights[2].get());
+	UserInterfaceItems.push_back(light.get());
 
 
 	createDescriptorPool();
@@ -397,10 +380,8 @@ void App::createDescriptorPool()
 
 	skyBox->createDescriptorSets(DescriptorPool);
 
-	for (auto& light : lights)
-	{
-		light->createDescriptorSets(DescriptorPool);
-	}
+
+   light->createDescriptorSets(DescriptorPool);
 }
 
 
@@ -1139,16 +1120,12 @@ void App::CreateGraphicsPipeline()
 		                                        depthStencilState.maxDepthBounds = 1.0f;
 		                                        depthStencilState.stencilTestEnable = VK_FALSE;
         
-	    vk::PushConstantRange range = {};
-	                          range.stageFlags = vk::ShaderStageFlagBits::eFragment;
-	                          range.offset = 0;
-	                          range.size = 12;
 
 	    vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
                                      pipelineLayoutInfo.setLayoutCount = 1;
-                                     pipelineLayoutInfo.setSetLayouts(lights[0]->descriptorSetLayout);
-                                     pipelineLayoutInfo.pushConstantRangeCount = 1;
-                                     pipelineLayoutInfo.pPushConstantRanges = &range;
+                                     pipelineLayoutInfo.setSetLayouts(light->descriptorSetLayout);
+									 pipelineLayoutInfo.pushConstantRangeCount = 0;
+                                     pipelineLayoutInfo.pPushConstantRanges;
         
 		LightpipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 		
@@ -1885,10 +1862,9 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 	
 	UpdateTLAS();
 
-	for (auto& light : lights)
-	{
-		light->UpdateUniformBuffer(currentImage);
-	}
+	
+    light->UpdateUniformBuffer(currentImage);
+
 
 
 	for (auto& model : Models)
@@ -1898,10 +1874,10 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 
 	skyBox->UpdateUniformBuffer(currentImage);
 
-	lighting_FullScreenQuad->UpdateUniformBuffer(currentImage, lights);
+	lighting_FullScreenQuad->UpdateUniformBuffer(currentImage, light.get());
 	ssao_FullScreenQuad->UpdataeUniformBufferData();
-	Raytracing_Shadows->UpdateUniformBuffer(currentImage, lights);
-    SSGI_FullScreenQuad->UpdateUniformBuffer(currentImage, lights,deltaTime);
+	Raytracing_Shadows->UpdateUniformBuffer(currentImage, light.get());
+    SSGI_FullScreenQuad->UpdateUniformBuffer(currentImage,deltaTime);
 
 }
 
@@ -2712,10 +2688,10 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, LightgraphicsPipeline);
 
-		for (auto& light : lights)
-		{
-			light->Draw(commandBuffer, LightpipelineLayout, currentFrame);
-		}
+		
+	
+	    light->Draw(commandBuffer, LightpipelineLayout, currentFrame);
+		
 
 		commandBuffer.endRendering();
 
@@ -2901,10 +2877,9 @@ void App::DestroyBuffers()
 		model.reset();
 	}
 
-	for (auto& light : lights)
-	{
-		light.reset();
-	}
+
+    light.reset();
+	
 
 	skyBox.reset();
 

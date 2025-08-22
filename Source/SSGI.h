@@ -27,7 +27,7 @@ public:
     void GenerateMipMaps(vk::CommandBuffer commandbuffer);
     void createDescriptorSetLayout() override;
     void createDescriptorSets(vk::DescriptorPool descriptorpool, GBuffer gbuffer, ImageData LightingPass, ImageData DepthImage);
-    void UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref,float DeltaTime);
+    void UpdateUniformBuffer(uint32_t currentImage, float DeltaTime);
     void CreateUniformBuffer();
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
 

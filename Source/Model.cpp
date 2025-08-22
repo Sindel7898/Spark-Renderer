@@ -209,7 +209,7 @@ void Model::CreateUniformBuffer()
 		Model_GPU_DataUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		Model_GPU_DataUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
 
-		VkDeviceSize ModeluniformBufferSize = sizeof(GPU_InstanceData) * 300;
+		VkDeviceSize ModeluniformBufferSize = sizeof(Model_GPU_InstanceData) * 300;
 
 		for (size_t i = 0; i < Model_GPU_DataUniformBuffers.size(); i++)
 		{
@@ -232,7 +232,7 @@ void Model::Instantiate()
 	{
 		int LastIndex = Instances.size() - 1;
 
-		InstanceData* NewInstance = new InstanceData(Instances[LastIndex],vulkanContext);
+		Model_InstanceData* NewInstance = new Model_InstanceData(Instances[LastIndex],vulkanContext);
 
 		Instances.push_back(NewInstance);
 		GPU_InstancesData.push_back(NewInstance->gpu_InstanceData);
@@ -240,7 +240,7 @@ void Model::Instantiate()
 	}
 	else
 	{
-		InstanceData* NewInstance = new InstanceData(nullptr, vulkanContext);
+		Model_InstanceData* NewInstance = new Model_InstanceData(nullptr, vulkanContext);
 		NewInstance->SetModelMatrix(storedModelData->modelMatrix);
 
 		Instances.push_back(NewInstance);
@@ -346,7 +346,7 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 			vk::DescriptorBufferInfo ModelbufferInfo{};
 			ModelbufferInfo.buffer = Model_GPU_DataUniformBuffers[i].buffer;
 			ModelbufferInfo.offset = 0;
-			ModelbufferInfo.range = sizeof(GPU_InstanceData) * 300;
+			ModelbufferInfo.range = sizeof(Model_GPU_InstanceData) * 300;
 
 			vk::WriteDescriptorSet ModelUniformdescriptorWrite{};
 			ModelUniformdescriptorWrite.dstSet = DescriptorSets[i];
@@ -420,8 +420,8 @@ void Model::UpdateUniformBuffer(uint32_t currentImage)
 	memcpy(VertexUniformBuffersMappedMem[currentImage], &VertexData, sizeof(VertexData));
 
 	for (size_t i = 0; i < GPU_InstancesData.size(); i++) {
-		GPU_InstanceData* instanceData = GPU_InstancesData[i].get();
-		memcpy((char*)Model_GPU_DataUniformBuffersMappedMem[currentImage] + i * sizeof(GPU_InstanceData), instanceData, sizeof(GPU_InstanceData));
+		Model_GPU_InstanceData* instanceData = GPU_InstancesData[i].get();
+		memcpy((char*)Model_GPU_DataUniformBuffersMappedMem[currentImage] + i * sizeof(Model_GPU_InstanceData), instanceData, sizeof(Model_GPU_InstanceData));
 	}
 }
 

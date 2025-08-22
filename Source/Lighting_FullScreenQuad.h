@@ -10,9 +10,8 @@
 
 struct LightUniformData {
      glm::vec4  lightPositionAndLightType;
-     glm::vec4  colorAndAmbientStrength;
-     glm::vec4  CameraPositionAndLightIntensity;
-     glm::mat4  LightViewProjMatrix;
+     glm::vec4  colorAndLightIntensity;
+     glm::vec4  CameraPositionAndPadding;
 };
 
 class Lighting_FullScreenQuad : public Drawable
@@ -25,7 +24,7 @@ public:
     void createDescriptorSetLayout() override;
     void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer* Gbuffer, ImageData* ReflectionMask, ImageData* ShadowPass);
     void UpdateDescrptorSets();
-    void UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref);
+    void UpdateUniformBuffer(uint32_t currentImage, Light* LightRef);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
 
     void CleanUp() ;

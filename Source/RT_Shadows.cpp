@@ -245,13 +245,13 @@ void RayTracing::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool
 
 }
 
-void RayTracing::ActiveLightsCastingShadows(std::vector<std::shared_ptr<Light>>& lightref)
+void RayTracing::ActiveLightsCastingShadows(Light* lightref)
 {
 	NumOfShadowCasters = 0;
 
-	for (int i = 0; i < lightref.size(); i++)
+	for (int i = 0; i < lightref->Instances.size(); i++)
 	{
-		if (lightref[i]->CastShadow)
+		if (lightref->Instances[i]->CastShadow)
 		{
 			NumOfShadowCasters++;
 		}
@@ -259,7 +259,7 @@ void RayTracing::ActiveLightsCastingShadows(std::vector<std::shared_ptr<Light>>&
 
 }
 
-void RayTracing::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref)
+void RayTracing::UpdateUniformBuffer(uint32_t currentImage, Light*  lightref)
 {
 	ActiveLightsCastingShadows(lightref);
 
@@ -268,18 +268,18 @@ void RayTracing::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::sha
 	RayGent_UniformBufferData.ProjectionMatrix = glm::inverse(camera->GetProjectionMatrix());
 	RayGent_UniformBufferData.ProjectionMatrix[1][1] *= -1;
 
-	RayGent_UniformBufferData.LightCount_NumOfLightCasters_Padding = glm::vec4(lightref.size(), NumOfShadowCasters, 0.0f, 0.0f);
+	RayGent_UniformBufferData.LightCount_NumOfLightCasters_Padding = glm::vec4(lightref->Instances.size(), NumOfShadowCasters, 0.0f, 0.0f);
 
 	memcpy(RayGen_UniformBuffersMappedMem[currentImage], &RayGent_UniformBufferData, sizeof(RayGent_UniformBufferData));
 
 	std::vector<RayClosesetHit_UniformBufferData> LightsData;
 
 	
-	for (int i = 0; i < lightref.size(); i++)
+	for (int i = 0; i < lightref->Instances.size(); i++)
 	{
 		RayClosesetHit_UniformBufferData lightInstancedata;
-		lightInstancedata.LightPosition_Padding = glm::vec4(lightref[i]->position, 0.0f);
-		lightInstancedata.LightType_CastShadow_AmbientStrength_Padding = glm::vec4(lightref[i]->lightType, lightref[i]->CastShadow, lightref[i]->ambientStrength, 0.0f);
+		lightInstancedata.LightPosition_Padding = glm::vec4(lightref->Instances[i]->GetPostion(), 0.0f);
+		lightInstancedata.LightType_CastShadow_AmbientStrength_Padding = glm::vec4(lightref->Instances[i]->LightType, lightref->Instances[i]->CastShadow, lightref->Instances[i]->LightIntensity, 0.0f);
 
 		LightsData.push_back(lightInstancedata);
 	}

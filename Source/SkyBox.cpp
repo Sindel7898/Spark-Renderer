@@ -79,7 +79,7 @@ void SkyBox::CreateUniformBuffer()
 	vertexUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 	VertexUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
 
-	VkDeviceSize UniformBufferSize = sizeof(TransformMatrices);
+	VkDeviceSize UniformBufferSize = sizeof(SkyBoxVertexData);
 
 	for (size_t i = 0; i < vertexUniformBuffers.size(); i++)
 	{
@@ -147,7 +147,7 @@ void SkyBox::UpdateDescriptorSets()
 		vk::DescriptorBufferInfo bufferInfo{};
 		bufferInfo.buffer = vertexUniformBuffers[i].buffer;
 		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(TransformMatrices);
+		bufferInfo.range = sizeof(SkyBoxVertexData);
 
 		vk::DescriptorImageInfo imageInfo{};
 		imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -187,7 +187,6 @@ void SkyBox::UpdateUniformBuffer(uint32_t currentImage)
 
 	Drawable::UpdateUniformBuffer(currentImage);
 
-	transformMatrices.modelMatrix = glm::mat4(1.0f);
 	transformMatrices.viewMatrix = camera->GetViewMatrix();
 	transformMatrices.projectionMatrix = camera->GetProjectionMatrix();
 	transformMatrices.projectionMatrix[1][1] *= -1;

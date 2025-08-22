@@ -11,12 +11,6 @@ class VulkanContext;
 class Camera;
 class Light;
  
-struct TransformMatrices {
-	alignas(16) glm::mat4 modelMatrix;
-	alignas(16) glm::mat4 viewMatrix;
-	alignas(16) glm::mat4 projectionMatrix;
-};
-
 struct InstanceTransformMatrices {
 	alignas(16) glm::mat4 viewMatrix;
 	alignas(16) glm::mat4 projectionMatrix;
@@ -51,8 +45,6 @@ protected:
 	 BufferData indexBufferData;
 
 	
-
-	 TransformMatrices  transformMatrices;
 	 InstanceTransformMatrices InstancetransformMatrices;
 
 
@@ -66,21 +58,8 @@ protected:
 	 std::vector<vk::DescriptorSet> DescriptorSets;
 
 public:
-	glm::mat4 GetModelMatrix();
-	void SetPosition(glm::vec3 newposition);
-	void SetRotation(glm::vec3 rotationAxis);
-	void SetScale(glm::vec3 newscale);
-	void SetModelMatrix(glm::mat4 newModelMatrix);
-
-	void UpdateModelMatrix();
-
+	
 	vk::DescriptorSetLayout  descriptorSetLayout;
 
-	glm::vec3 position;
-	glm::vec3 rotation;
-	glm::vec3 scale;
-
-	glm::mat4 ViewMatrix;
-	glm::mat4 ProjectionMatrix;
 };
 

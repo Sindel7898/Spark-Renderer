@@ -13,10 +13,8 @@ layout(location = 0) in vec2 inTexCoord;
 
 struct LightData{
     vec4    positionAndLightType;
-    vec4    colorAndAmbientStrength;
-    vec4    CameraPositionAndLightIntensity;
-    mat4    LightProjectionViewMatrix;
-
+    vec4    colorAndLightIntensity;
+    vec4    CameraPositionAndPadding;
 };
 layout (binding = 7) uniform LightUniformBuffer {
    
@@ -85,7 +83,7 @@ void main() {
     float Roughness    = texture(samplerMaterials,inTexCoord).g;
     vec2  ReflectionMask     = texture(samplerReflectionMask,inTexCoord).rg;
 
-    vec3  ViewDir    = normalize(lights[0].CameraPositionAndLightIntensity.xyz -  WorldPos);
+    vec3  ViewDir    = normalize(lights[0].CameraPositionAndPadding.xyz -  WorldPos);
 
 
     //Reflection Calc
@@ -105,7 +103,7 @@ void main() {
       if(light.positionAndLightType.w == 0){
 
          LightDir = normalize(-light.positionAndLightType.xyz);
-         radiance = light.colorAndAmbientStrength.rgb ;
+         radiance = light.colorAndLightIntensity.rgb ;
 
        }
       else if (light.positionAndLightType.w == 1){
@@ -114,10 +112,10 @@ void main() {
                LightDir          = normalize(LightPos - WorldPos);
                float Distance    = length(LightPos -  WorldPos);
              float Attenuation       = 1.0 / (Constant + Linear * Distance + Quadratic * (Distance * Distance));
-               radiance          = light.colorAndAmbientStrength.rgb * Attenuation;
+               radiance          = light.colorAndLightIntensity.rgb * Attenuation;
     }  
 
-    vec3 F0          = vec3(0.04); 
+    vec3 F0          = vec3(0.05); 
          F0          = mix(F0, Albedo, Metallic);
     vec3 halfwayDir  = normalize(LightDir + ViewDir);
     
@@ -137,12 +135,13 @@ void main() {
      float NdotL = max(dot(Normal, LightDir), 0.0);        
      Lo += (kD * Albedo / PI + specular) * radiance * NdotL;
 
+    totalLighting +=  Lo * light.colorAndLightIntensity.a;
 
-   float shadow = textureLod(samplerShadowMap, inTexCoord,0).r;
-   totalLighting += shadow * Lo * light.CameraPositionAndLightIntensity.a;
+     float shadow = textureLod(samplerShadowMap, inTexCoord,0).r;
+     totalLighting *= shadow;
+
   }
 
-  
   vec3 finalColor;
 
   if(ReflectionMask.x > 0.5){
@@ -156,7 +155,7 @@ void main() {
    // Add environment reflection with Fresnel weighting
    vec3 envSpecular = Reflection * F;
    
-    finalColor =  totalLighting + envSpecular * 0.3;
+   //finalColor =  totalLighting + envSpecular * 0.1;
   }else{
   
      finalColor = totalLighting;

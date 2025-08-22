@@ -4,8 +4,12 @@
 #include <string>
 #include "VertexInputLayouts.h"
 #include "Drawable.h"
+#include "VulkanContext.h"
+#include "Instances.h"
 
 class Camera;
+
+
 
 
 class Light : public Drawable
@@ -16,22 +20,21 @@ public:
 
     void CreateVertexAndIndexBuffer() override;
     void CreateUniformBuffer() override;
-    void CastShadowsSwitch(bool bCastShadow);
     void createDescriptorSets(vk::DescriptorPool descriptorpool) override;
     void UpdateUniformBuffer(uint32_t currentImage) override;
     void createDescriptorSetLayout() override;
- 
+    void Instantiate();
+    void Destroy(int instanceIndex);
 
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
 
     void CleanUp();
 
-    glm::vec3  color;
-    float      ambientStrength;
-    float      lightIntensity;
+    std::vector<Light_InstanceData*>     Instances;
+    std::vector<std::shared_ptr<Light_GPU_InstanceData>> GPU_InstancesData;
 
-    int        lightType;
-    int        CastShadow;
+    std::vector<BufferData> Light_GPU_DataUniformBuffers;
+    std::vector<void*>      Light_GPU_DataUniformBuffersMappedMem;
 
 private:
 

@@ -8,7 +8,6 @@ layout(location = 3) in vec3 inTangent;
 layout(set = 0,binding = 0) uniform VertexUniformBufferObject {
       mat4 view;
       mat4 proj;
-      mat4 Model;
 }vuob;
 
 struct InstanceData{
@@ -32,7 +31,6 @@ layout(location = 9) out vec4 bCubeMapReflection_bScreenSpaceReflection_Padding;
 void main() {
     
     mat4 model = ModelInstance[gl_InstanceIndex].Model;
-    //mat4 model = vuob.Model;
 
     vec4 worldPos = model * vec4(inPosition, 1.0);
     vec4 viewPos = vuob.view * worldPos;

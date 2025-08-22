@@ -400,23 +400,23 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 		}
 
 		// If no model instance selected, check for regular item selection
-		if (SelectedInstanceIndex == -1) {
-
-			for (size_t i = 0; i < appref->UserInterfaceItems.size(); i++) {
-
-				if (!appref->UserInterfaceItems[i]) continue;
-
-				glm::vec3 itemPosition = appref->UserInterfaceItems[i]->position;
-				float distance = CalculateDistanceInScreenSpace(cameraprojection, cameraview, itemPosition);
-
-				if (distance < 100.0f) {
-
-					UserInterfaceItemsIndex = i;
-
-					break;
-				}
-			}
-		}
+		//if (SelectedInstanceIndex == -1) {
+		//
+		//	for (size_t i = 0; i < appref->UserInterfaceItems.size(); i++) {
+		//
+		//		if (!appref->UserInterfaceItems[i]) continue;
+		//
+		//		glm::vec3 itemPosition = appref->UserInterfaceItems[i]->position;
+		//		float distance = CalculateDistanceInScreenSpace(cameraprojection, cameraview, itemPosition);
+		//
+		//		if (distance < 100.0f) {
+		//
+		//			UserInterfaceItemsIndex = i;
+		//
+		//			break;
+		//		}
+		//	}
+		//}
 	}
 
 	// Handle gizmo manipulation
@@ -437,7 +437,7 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 			}
 		}
 		else {
-			modelMatrix = item->GetModelMatrix();
+		//	modelMatrix = item->GetModelMatrix();
 		}
 
 		ImGuizmo::Manipulate(glm::value_ptr(cameraview), glm::value_ptr(cameraprojection),
@@ -454,7 +454,7 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 				}
 			}
 			else {
-				item->SetModelMatrix(modelMatrix);
+			//	item->SetModelMatrix(modelMatrix);
 			}
 		}
 
@@ -501,19 +501,18 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 			}
 		}
 		else {
-			if (LastModelMatrix != item->GetModelMatrix())
-			{
-				item->SetModelMatrix(modelMatrix);
-
-				LastModelMatrix = item->GetModelMatrix();
-			}
+			//if (LastModelMatrix != item->GetModelMatrix())
+			//{
+			//	item->SetModelMatrix(modelMatrix);
+			//
+			//	LastModelMatrix = item->GetModelMatrix();
+			//}
 
 			Light* light = dynamic_cast<Light*>(item);
 
 			if (light) {
-				ImGui::ColorEdit3("Color", glm::value_ptr(light->color));
+			/*	ImGui::ColorEdit3("Color", glm::value_ptr(light->Instances[]color));
 				ImGui::InputFloat("Light Intensity", &light->lightIntensity);
-				ImGui::InputFloat("Ambience Value", &light->ambientStrength);
 
 				if (ImGui::BeginCombo("Light Type", currentItem.c_str())) {
 					for (int i = 0; i < items.size(); i++) {
@@ -526,7 +525,7 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 					ImGui::EndCombo();
 				}
 
-				ImGui::Checkbox("Cast Shadow", (bool*)&light->CastShadow);
+				ImGui::Checkbox("Cast Shadow", (bool*)&light->CastShadow);*/
 			}
 		}
 		ImGui::End();
