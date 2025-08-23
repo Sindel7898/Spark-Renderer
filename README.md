@@ -1,7 +1,7 @@
 # Spark Renderer
 
 **Spark** is an experimental 3D renderer built with **Vulkan**, aimed at finding a balance between **real-time performance** and **high-quality rendering**.  
-It serves as a **flexible platform** for experimenting with modern rendering techniques.  
+It serves as a **Test Bed** for experimenting with modern rendering techniques.  
 
 ### Purpose
 Spark is a renderer And **testbed** for prototype and implement new graphics techniques without rebuilding core systems from scratch.  
