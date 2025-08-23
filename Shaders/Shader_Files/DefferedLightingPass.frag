@@ -7,7 +7,7 @@ layout (binding = 2) uniform sampler2D samplerAlbedo;
 layout (binding = 3) uniform sampler2D samplerMaterials;
 layout (binding = 4) uniform samplerCube samplerReflectiveCubeMap;
 layout (binding = 5) uniform sampler2D samplerReflectionMask;
-layout (binding = 6) uniform sampler2D samplerShadowMap;
+layout (binding = 6) uniform sampler2D samplerShadowMap[2];
 
 layout(location = 0) in vec2 inTexCoord;           
 
@@ -94,7 +94,7 @@ void main() {
     vec3 Reflection = texture(samplerReflectiveCubeMap, cR,mipLevel).rgb;
 
 
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 2; i++) {
 
     LightData light = lights[i];
 
@@ -138,8 +138,9 @@ void main() {
      Lo += (kD * Albedo / PI + specular) * radiance * NdotL;
 
 
-   float shadow = textureLod(samplerShadowMap, inTexCoord,0).r;
-   totalLighting += shadow * Lo * light.CameraPositionAndLightIntensity.a;
+        float shadow = textureLod(samplerShadowMap[i], inTexCoord,0).r;
+        totalLighting += shadow * Lo * light.CameraPositionAndLightIntensity.a;
+
   }
 
   
@@ -156,7 +157,7 @@ void main() {
    // Add environment reflection with Fresnel weighting
    vec3 envSpecular = Reflection * F;
    
-    finalColor =  totalLighting + envSpecular * 0.3;
+    finalColor =  totalLighting + envSpecular * 0.8;
   }else{
   
      finalColor = totalLighting;

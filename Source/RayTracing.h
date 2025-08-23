@@ -47,7 +47,8 @@ public:
     vk::DescriptorSetLayout  RayTracingDescriptorSetLayout;
     std::vector<vk::DescriptorSet> RayTracingDescriptorSets;
 
-    ImageData ShadowPassImage;
+    std::vector<ImageData> ShadowPassImages;
+
     int NumOfShadowCasters;
 
 private:

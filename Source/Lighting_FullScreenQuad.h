@@ -6,6 +6,7 @@
 #include "Drawable.h"
 #include "Structs.h"
 #include "SkyBox.h"
+#include "RayTracing.h"
 
 
 struct LightUniformData {
@@ -19,11 +20,11 @@ class Lighting_FullScreenQuad : public Drawable
 {
 public:
 
-    Lighting_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext,Camera* cameraref, vk::CommandPool commandpool, SkyBox* skyboxref);
+    Lighting_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext, Camera* cameraref, vk::CommandPool commandpool, SkyBox* skyboxref, RayTracing* raytracingref);
     void CreateVertexAndIndexBuffer() override;
     void CreateUniformBuffer() override;
     void createDescriptorSetLayout() override;
-    void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer* Gbuffer, ImageData* ReflectionMask, ImageData* ShadowPass);
+    void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer* Gbuffer, ImageData* ReflectionMask);
     void UpdateDescrptorSets();
     void UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
@@ -32,7 +33,7 @@ public:
 
     GBuffer*   GbufferRef = nullptr;
     ImageData* ReflectionMaskRef = nullptr;
-    ImageData* ShadowPassRef = nullptr;
+    RayTracing* raytracingRef = nullptr;
     SkyBox* SkyBoxRef = nullptr;
 
    private:

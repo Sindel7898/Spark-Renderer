@@ -101,15 +101,14 @@
 	UserInterfaceItems.push_back(Models[6].get());
 	UserInterfaceItems.push_back(Models[7].get());
 
-
-	lighting_FullScreenQuad = std::shared_ptr<Lighting_FullScreenQuad>(new Lighting_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool, skyBox.get()), Lighting_FullScreenQuadDeleter);
+	Raytracing_Shadows = std::shared_ptr<RayTracing>(new RayTracing(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), RayTracingDeleter);
+	lighting_FullScreenQuad = std::shared_ptr<Lighting_FullScreenQuad>(new Lighting_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool, skyBox.get(), Raytracing_Shadows.get()), Lighting_FullScreenQuadDeleter);
 	ssao_FullScreenQuad     = std::shared_ptr<SSA0_FullScreenQuad>(new SSA0_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSA0_FullScreenQuadDeleter);
 	ssaoBlur_FullScreenQuad = std::shared_ptr<SSAOBlur_FullScreenQuad>(new SSAOBlur_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSAOBlur_FullScreenQuadDeleter);
 	fxaa_FullScreenQuad     = std::shared_ptr<FXAA_FullScreenQuad>(new FXAA_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), FXAA_FullScreenQuadDeleter);
 	ssr_FullScreenQuad      = std::shared_ptr<SSR_FullScreenQuad>(new SSR_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSR_FullScreenQuadDeleter);
 	Combined_FullScreenQuad = std::shared_ptr<CombinedResult_FullScreenQuad>(new CombinedResult_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), CombinedResult_FullScreenQuadDeleter);
 	SSGI_FullScreenQuad     = std::shared_ptr<SSGI>(new SSGI(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSGIDeleter);
-	Raytracing_Shadows      = std::shared_ptr<RayTracing>(new RayTracing(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), RayTracingDeleter);
 
 	lights.reserve(2);
 
@@ -499,7 +498,7 @@ void App::createGBuffer()
 	Combined_FullScreenQuad->CreateImage(swapchainextent);
 
 
-	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,& ReflectionMaskImageData, &Raytracing_Shadows->ShadowPassImage);
+	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&ReflectionMaskImageData);
 	ssao_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
 	ssaoBlur_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
 	ssr_FullScreenQuad->createDescriptorSets(DescriptorPool, LightingPassImageData, gbuffer.ViewSpaceNormal,gbuffer.ViewSpacePosition, DepthTextureData, ReflectionMaskImageData,gbuffer.Materials);
@@ -540,8 +539,8 @@ void App::createGBuffer()
 		                                                                LightingPassImageData.imageView,
 		                                                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-	Shadow_TextureId       = ImGui_ImplVulkan_AddTexture (Raytracing_Shadows->ShadowPassImage.imageSampler,
-		                                                  Raytracing_Shadows->ShadowPassImage.imageView,
+	Shadow_TextureId       = ImGui_ImplVulkan_AddTexture (Raytracing_Shadows->ShadowPassImages[1].imageSampler,
+		                                                  Raytracing_Shadows->ShadowPassImages[1].imageView,
 		                                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 
@@ -2177,7 +2176,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TransitiontoGeneral.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
 		TransitiontoGeneral.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
 
-		bufferManger->TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImage, TransitiontoGeneral);
+		bufferManger->TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImages[0], TransitiontoGeneral);
+		bufferManger->TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImages[1], TransitiontoGeneral);
 
 
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_ShadowsPassPipeline);
@@ -2201,7 +2201,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TransitiontoShaderOutput.SourceOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
 		TransitiontoShaderOutput.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 
-		bufferManger->TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImage, TransitiontoShaderOutput);
+		bufferManger->TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImages[0], TransitiontoShaderOutput);
+		bufferManger->TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImages[1], TransitiontoShaderOutput);
 
 		ImageTransitionData TransitionBacktoColorOutput{};
 		TransitionBacktoColorOutput.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;

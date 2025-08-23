@@ -6,14 +6,14 @@
 #include "Light.h"
 #include "Camera.h"
 
-Lighting_FullScreenQuad::Lighting_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext,Camera* cameraref, vk::CommandPool commandpool, SkyBox* skyboxref): Drawable()
+Lighting_FullScreenQuad::Lighting_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext,Camera* cameraref, vk::CommandPool commandpool, SkyBox* skyboxref, RayTracing* raytracingref): Drawable()
 {
 	camera = cameraref;
 	bufferManager = buffermanager;
 	vulkanContext = vulkancontext;
 	commandPool   = commandpool;
 	SkyBoxRef = skyboxref;
-
+	raytracingRef = raytracingref;
 	CreateVertexAndIndexBuffer();
 	CreateUniformBuffer();
 	createDescriptorSetLayout();
@@ -95,7 +95,7 @@ void Lighting_FullScreenQuad::createDescriptorSetLayout()
 
 		vk::DescriptorSetLayoutBinding ShadowMapSamplerLayout{};
 		ShadowMapSamplerLayout.binding = 6;
-		ShadowMapSamplerLayout.descriptorCount = 1;
+		ShadowMapSamplerLayout.descriptorCount = 2;
 		ShadowMapSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		ShadowMapSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
@@ -129,12 +129,11 @@ void Lighting_FullScreenQuad::createDescriptorSetLayout()
 
 }
 
-void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer* Gbuffer, ImageData* ReflectionMask, ImageData* ShadowPass)
+void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer* Gbuffer, ImageData* ReflectionMask)
 {
 
 	GbufferRef = Gbuffer;
 	ReflectionMaskRef = ReflectionMask;
-	ShadowPassRef = ShadowPass;
 
 	// create sets from the pool based on the layout
 	std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
@@ -241,19 +240,27 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 		ReflectionMaskSamplerdescriptorWrite.pImageInfo = &ReflectionMaskimageInfo;
 
 
+		std::vector<vk::DescriptorImageInfo>ShadowImagesInfos;
 
-		vk::DescriptorImageInfo ShadowPassimageInfo{};
-		ShadowPassimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		ShadowPassimageInfo.imageView = ShadowPassRef->imageView;
-		ShadowPassimageInfo.sampler = ShadowPassRef->imageSampler;
+		for (int i = 0; i < raytracingRef->ShadowPassImages.size(); i++)
+		{
 
-		vk::WriteDescriptorSet ShadowPassSamplerdescriptorWrite{};
-		ShadowPassSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		ShadowPassSamplerdescriptorWrite.dstBinding = 6;
-		ShadowPassSamplerdescriptorWrite.dstArrayElement = 0;
-		ShadowPassSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		ShadowPassSamplerdescriptorWrite.descriptorCount = 1;
-		ShadowPassSamplerdescriptorWrite.pImageInfo = &ShadowPassimageInfo;
+			vk::DescriptorImageInfo StoreageImageInfo{};
+			StoreageImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			StoreageImageInfo.imageView = raytracingRef->ShadowPassImages[i].imageView;
+			StoreageImageInfo.sampler = raytracingRef->ShadowPassImages[i].imageSampler;
+
+			ShadowImagesInfos.push_back(StoreageImageInfo);
+		}
+
+		vk::WriteDescriptorSet StoreageImagSamplerdescriptorWrite{};
+		StoreageImagSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+		StoreageImagSamplerdescriptorWrite.dstBinding = 6;
+		StoreageImagSamplerdescriptorWrite.dstArrayElement = 0;
+		StoreageImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		StoreageImagSamplerdescriptorWrite.descriptorCount = ShadowImagesInfos.size();
+		StoreageImagSamplerdescriptorWrite.pImageInfo = ShadowImagesInfos.data();
+
 
 
 		/////////////////////////////////////////////////////////////////////////////////////
@@ -278,7 +285,7 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 																	MaterialsSamplerdescriptorWrite,
 																	ReflectiveCubeSamplerdescriptorWrite,
 																	ReflectionMaskSamplerdescriptorWrite,
-																	ShadowPassSamplerdescriptorWrite,
+																	StoreageImagSamplerdescriptorWrite,
 																	LightUniformBufferDescriptorWrite      // binding 3
 		};
 

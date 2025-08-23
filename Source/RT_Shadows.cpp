@@ -59,16 +59,27 @@ void RayTracing::CreateStorageImage() {
 
 	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
-	ShadowPassImage.ImageID = "RT Shadow Pass Image";
-	bufferManager->CreateImage(&ShadowPassImage, swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled);
-	ShadowPassImage.imageView = bufferManager->CreateImageView(&ShadowPassImage, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
-	ShadowPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+
+	for (int i = 0; i < 2; i++)
+	{
+		ImageData ShadowPassImage;
+
+		ShadowPassImage.ImageID = "RT Shadow Pass Image";
+		bufferManager->CreateImage(&ShadowPassImage, swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled);
+		ShadowPassImage.imageView = bufferManager->CreateImageView(&ShadowPassImage, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
+		ShadowPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+
+		ShadowPassImages.push_back(ShadowPassImage);
+	}
 
 }
 void RayTracing::DestroyStorageImage() {
 
-	bufferManager->DestroyImage(ShadowPassImage);
-
+	for (ImageData image : ShadowPassImages)
+	{
+		bufferManager->DestroyImage(image);
+	}
+	ShadowPassImages.clear();
 
 }
 
@@ -94,7 +105,7 @@ void RayTracing::createRayTracingDescriptorSetLayout(){
 
 	vk::DescriptorSetLayoutBinding ShadowResultSamplerLayout{};
 	ShadowResultSamplerLayout.binding = 3;
-	ShadowResultSamplerLayout.descriptorCount = 1;
+	ShadowResultSamplerLayout.descriptorCount = 2;
 	ShadowResultSamplerLayout.descriptorType = vk::DescriptorType::eStorageImage;
 	ShadowResultSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
@@ -189,18 +200,27 @@ void RayTracing::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool
 			NormalSamplerdescriptorWrite.pImageInfo = &NormalimageInfo;
 			/////////////////////////////////////////////////////////////////////////////////////
 
-			vk::DescriptorImageInfo StoreageImageInfo{};
-			StoreageImageInfo.imageLayout = vk::ImageLayout::eGeneral;
-			StoreageImageInfo.imageView   = ShadowPassImage.imageView;
-			StoreageImageInfo.sampler     = ShadowPassImage.imageSampler;
+			std::vector<vk::DescriptorImageInfo>ShadowImagesInfos;
+
+			for (int i = 0; i < ShadowPassImages.size(); i++)
+			{
+
+				vk::DescriptorImageInfo StoreageImageInfo{};
+				StoreageImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+				StoreageImageInfo.imageView = ShadowPassImages[i].imageView;
+				StoreageImageInfo.sampler = ShadowPassImages[i].imageSampler;
+
+				ShadowImagesInfos.push_back(StoreageImageInfo);
+			}
+
 
 			vk::WriteDescriptorSet StoreageImagSamplerdescriptorWrite{};
 			StoreageImagSamplerdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
 			StoreageImagSamplerdescriptorWrite.dstBinding = 3;
 			StoreageImagSamplerdescriptorWrite.dstArrayElement = 0;
 			StoreageImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
-			StoreageImagSamplerdescriptorWrite.descriptorCount = 1;
-			StoreageImagSamplerdescriptorWrite.pImageInfo = &StoreageImageInfo;
+			StoreageImagSamplerdescriptorWrite.descriptorCount = ShadowImagesInfos.size();
+			StoreageImagSamplerdescriptorWrite.pImageInfo = ShadowImagesInfos.data();;
 
 			/////////////////////////////////////////////////////////////////////////////////////
 
