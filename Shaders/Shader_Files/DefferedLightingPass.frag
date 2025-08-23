@@ -89,9 +89,10 @@ void main() {
 
 
     //Reflection Calc
-    float mipLevel = Roughness * float(6);
     vec3 cR = reflect (-ViewDir, normalize(Normal));
-    vec3 Reflection = texture(samplerReflectiveCubeMap, cR,mipLevel).rgb;
+    float mipCount = float(textureQueryLevels(samplerReflectiveCubeMap));
+    float mipLevel = Roughness * (mipCount - 1.0);
+    vec3 Reflection = textureLod(samplerReflectiveCubeMap, cR, mipLevel).rgb;
 
 
   for (int i = 0; i < 2; i++) {

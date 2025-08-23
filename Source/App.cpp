@@ -117,22 +117,23 @@
 		lights.push_back(std::move(light));
 	}
 
-	lights[0]->SetPosition(glm::vec3(-0.529, -0.678, -0.957));
-	lights[0]->lightType = 0;
-	lights[0]->lightIntensity = 9;
+	lights[0]->SetPosition(glm::vec3(-0.908, 8.704, 1.505));
+	lights[0]->lightType = 1;
+	lights[0]->lightIntensity = 40.000;
 	lights[0]->CastShadowsSwitch(true);
 	lights[0]->ambientStrength = 0.1;
-	lights[0]->SetScale(glm::vec3(0.100, 0.100, 0.100));
+	lights[0]->SetScale(glm::vec3(0.400, 0.400, 0.400));
 
 	lights[1]->SetPosition(glm::vec3(0.598, 24.282, 0.477));
 	lights[1]->SetScale(glm::vec3(0.100, 0.100, 0.100));
-	lights[1]->CastShadowsSwitch(true);
+	lights[1]->CastShadowsSwitch(false);
 	lights[1]->ambientStrength = 0.3;
+	lights[1]->lightIntensity = 0;
 
 	lights[2]->SetPosition(glm::vec3(-20.0f, -50, 0.0f));
 
 	lights[0]->color = glm::vec3(1.0f, 1.0f, 1.0f);
-	lights[1]->color = glm::vec3(1.0f, 0.0f, 0.0f);
+	lights[1]->color = glm::vec3(1.0f, 1.0f, 1.0f);
 	lights[2]->color = glm::vec3(1.0f, 1.0f, 1.0f);
 
 	UserInterfaceItems.push_back(lights[0].get());

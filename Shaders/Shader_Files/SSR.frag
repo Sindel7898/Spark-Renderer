@@ -190,7 +190,7 @@ void main() {
      vec3 SSR     = ReflectionColor.rgb;
 
      ReflectionColor.rgb;
-     vec3 finalColor = mix(Color, ReflectionColor.rgb, fresnel * 0.7); 
+     vec3 finalColor = mix(Color, ReflectionColor.rgb, fresnel * 0.5); 
 
      outFragcolor = vec4(finalColor.rgb, 1.0);
 }

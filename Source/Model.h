@@ -21,7 +21,7 @@ struct GPU_InstanceData {
 
 struct InstanceData {
     bool bCubeMapReflection = true;
-    bool bScreenSpaceReflection = false;
+    bool bScreenSpaceReflection = true;
 
     std::shared_ptr<GPU_InstanceData> gpu_InstanceData  = std::make_shared<GPU_InstanceData>();
     VulkanContext* vulkanContext = nullptr;
