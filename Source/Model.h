@@ -153,6 +153,7 @@ public:
     ImageData  albedoTextureData;
     ImageData  normalTextureData;
     ImageData  MetallicRoughnessTextureData;
+    ImageData  AOTextureData;
 
     vk::AccelerationStructureKHR BLAS;
 

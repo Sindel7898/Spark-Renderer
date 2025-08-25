@@ -15,7 +15,7 @@ void main() {
     float SSAO             = textureLod(SSAOTexture, inTexCoord,0).r;
     float TextureFromAO    = textureLod(MaterialsTexture, inTexCoord,0).b;
 
-    float FinalAO   = (SSAO * TextureFromAO) * 0.7;
+    float FinalAO   = (SSAO * TextureFromAO);
 
     vec3 FinalColor = Lighting_Shadows + (GI * FinalAO) ;
 

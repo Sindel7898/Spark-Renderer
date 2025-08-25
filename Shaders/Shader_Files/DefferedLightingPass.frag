@@ -81,8 +81,8 @@ void main() {
     vec3  WorldPos     = textureLod(samplerPosition,inTexCoord,0).rgb;
     vec3  Normal       = normalize(textureLod(samplerNormal,inTexCoord,0).rgb);
     vec3  Albedo       = textureLod(samplerAlbedo,inTexCoord,0).rgb;
-    float Metallic     = texture(samplerMaterials,inTexCoord).r;
-    float Roughness    = texture(samplerMaterials,inTexCoord).g;
+    float Metallic     = texture(samplerMaterials,inTexCoord).g;
+    float Roughness    = texture(samplerMaterials,inTexCoord).r;
     vec2  ReflectionMask     = texture(samplerReflectionMask,inTexCoord).rg;
 
     vec3  ViewDir    = normalize(lights[0].CameraPositionAndLightIntensity.xyz -  WorldPos);
@@ -158,7 +158,7 @@ void main() {
    // Add environment reflection with Fresnel weighting
    vec3 envSpecular = Reflection * F;
    
-    finalColor =  totalLighting + envSpecular * 0.8;
+    finalColor =  totalLighting + envSpecular * 1;
   }else{
   
      finalColor = totalLighting;

@@ -58,6 +58,12 @@ bool TraceShadow(vec3 origin, vec3 direction, float MaxDistance) {
     return PayloadResults.Shadowed;
 }
 
+vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal)
+{
+    return ViewPosition + 0.006 * normal;
+}
+
+
 void main() {
     float shadowFactor[MAX_LIGHTS] = {1.0, 1.0};
     
@@ -66,8 +72,8 @@ void main() {
     
     // Add small bias to avoid self-intersection
     vec3 normal = texelFetch(Normal, texCoord, 0).xyz;
-    vec3 origin = hitPosition + 0.01 * normal; // Better bias using normal
-    
+     vec3 origin = offsetPositionAlongNormal(hitPosition,normal); 
+
     for(int i = 0; i < MAX_LIGHTS; ++i) {
         // Check if light exists and casts shadows
         if(i < int(cam.LightCount_NumOfLightCasters_Padding.x) && 

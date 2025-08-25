@@ -122,13 +122,16 @@
   ],
   "images": [
     {
-      "uri": "textures/DefaultMaterial_baseColor.jpeg"
+      "uri": "textures/Red.jpg"
     },
     {
-      "uri": "textures/MRA.png"
+      "uri": "textures/DefaultMaterial_metallicRoughness.png"
     },
     {
       "uri": "textures/DefaultMaterial_normal.png"
+    },
+    {
+      "uri": "textures/AO.png"
     }
   ],
   "materials": [
@@ -139,10 +142,7 @@
         "index": 2
       },
       "occlusionTexture": {
-        "index": 1
-      },
-      "MetalRoughnessAOPack": {
-        "index": 1
+        "index": 3
       },
       "pbrMetallicRoughness": {
         "baseColorTexture": {
@@ -261,6 +261,11 @@
     {
       "sampler": 0,
       "source": 2
+    },
+    {
+      "sampler": 0,
+      "source": 3
     }
+
   ]
 }

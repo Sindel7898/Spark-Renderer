@@ -41,9 +41,9 @@
 	skyBox = std::shared_ptr<SkyBox>(new SkyBox(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), SkyBoxDeleter);
 
 
-	auto model  = std::shared_ptr<Model>(new Model("../Textures/Helmet/DamagedHelmet.gltf"   , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model  = std::shared_ptr<Model>(new Model("../Textures/Helmet/Helmet.gltf"   , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	auto model2 = std::shared_ptr<Model>(new Model("../Textures/WaterBottle/WaterBottle.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model3 = std::shared_ptr<Model>(new Model("../Textures/ScifiHelmet/SciFiHelmet.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	auto model4 = std::shared_ptr<Model>(new Model("../Textures/Wall/Cube.gltf"            , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	auto model5 = std::shared_ptr<Model>(new Model("../Textures/Wall2/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	auto model6 = std::shared_ptr<Model>(new Model("../Textures/Wall3/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
@@ -59,7 +59,7 @@
 	model2.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
 
 	model3.get()->Instances[0]->SetPostion(glm::vec3(-4.507, -0.488, 6.017));
-	model3.get()->Instances[0]->SetScale(glm::vec3(1.100, 1.000, 1.050));
+	model3.get()->Instances[0]->SetScale(glm::vec3(0.04, 0.04, 0.04));
 	model3.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
 
 
@@ -126,7 +126,7 @@
 
 	lights[1]->SetPosition(glm::vec3(0.598, 24.282, 0.477));
 	lights[1]->SetScale(glm::vec3(0.100, 0.100, 0.100));
-	lights[1]->CastShadowsSwitch(false);
+	lights[1]->CastShadowsSwitch(true);
 	lights[1]->ambientStrength = 0.3;
 	lights[1]->lightIntensity = 0;
 

@@ -89,9 +89,6 @@
     },
     {
       "uri": "WaterBottle_emissive.png"
-    },
-    {
-      "uri": "MetalRoughnessAO.png"
     }
   ],
   "meshes": [
@@ -121,9 +118,6 @@
           "index": 1
         }
       },
-      "MetalRoughnessAOPack": {
-        "index": 4
-      },
       "normalTexture": {
         "index": 2
       },
@@ -150,8 +144,6 @@
         0.0,
         0.0
       ],
-      "translation": [ -5.0, 0.0, 0.0 ],
-      "scale": [ 8.0, 8.0, 8.0 ],
       "name": "WaterBottle"
     }
   ],
@@ -175,9 +167,6 @@
     },
     {
       "source": 3
-    },
-    {
-      "source": 4
     }
   ]
 }

@@ -32,17 +32,16 @@ void MeshLoader::LoadModel(const std::string& pFile)
 
     std::cout << "Loaded glTF: " << pFile << std::endl;
 
-    for (size_t i = 0; i < model.scenes.size(); i++)
-    {
-        const tinygltf::Scene& scene = model.scenes[i];
+    
+    const tinygltf::Scene& scene = model.scenes[0];
 
-        for (size_t j = 0; j < scene.nodes.size(); j++) {
+    for (size_t i = 0; i < scene.nodes.size(); i++) {
 
-            const tinygltf::Node node = model.nodes[scene.nodes[j]];
+        const tinygltf::Node node = model.nodes[scene.nodes[i]];
 
-            ProcessNode(node, model);
-        }
+        ProcessNode(node, model);
     }
+    
 
 }
 
@@ -51,12 +50,14 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
     if (!model.textures.empty()) {
 
         //create the list of textures array
-        std::vector<StoredImageData> Textures;
+        std::vector<StoredImageData> Textures(4);
 
         // For all the "Materials group" get the individual material  
         for (int i = 0; i < model.materials.size(); i++)
         {
             tinygltf::Material gltfMaterial = model.materials[i];
+           
+               
 
             {
                //check if the material group has the albedo texture in its map
@@ -77,7 +78,36 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
                    TextureData.imageHeight = image.height;
                    TextureData.imageWidth = image.width;
                
-                   Textures.push_back(TextureData);
+                   Textures[0] = TextureData;
+               }
+               else
+               {
+                   std::vector<stbi_uc> DefaultImage;
+                   const int ImageSize = 4;
+
+                   DefaultImage.resize(ImageSize * ImageSize * 4);
+
+                   for (int i = 0; i < ImageSize * ImageSize * 4; i += 4) {
+
+                       DefaultImage[i + 0] = 255; // R
+                       DefaultImage[i + 1] = 255; // G
+                       DefaultImage[i + 2] = 255; // B
+                       DefaultImage[i + 3] = 255; // A
+                   }
+
+                   size_t DefaultimageSize = DefaultImage.size();
+
+                   StoredImageData TextureData;
+                   TextureData.imageData = static_cast<stbi_uc*>(malloc(DefaultimageSize));
+
+                   // Copy pixel data
+                   std::memcpy(TextureData.imageData, DefaultImage.data(), DefaultimageSize);
+
+                   TextureData.imageHeight = ImageSize;
+                   TextureData.imageWidth = ImageSize;
+
+                   // Store in your textures array
+                   Textures[0] = TextureData;
                }
             }
 
@@ -97,17 +127,46 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
                    TextureData.imageHeight = image.height;
                    TextureData.imageWidth = image.width;
                
-                   Textures.push_back(TextureData);
+                   Textures[1] = TextureData;
+               }
+               else
+               {
+                   std::vector<stbi_uc> DefaultImage;
+                   const int ImageSize = 4;
+
+                   DefaultImage.resize(ImageSize * ImageSize * 4);
+
+                   for (int i = 0; i < ImageSize * ImageSize * 4; i += 4) {
+
+                       DefaultImage[i + 0] = 255; // R
+                       DefaultImage[i + 1] = 255; // G
+                       DefaultImage[i + 2] = 255; // B
+                       DefaultImage[i + 3] = 255; // A
+                   }
+
+                   size_t DefaultimageSize = DefaultImage.size();
+
+                   StoredImageData TextureData;
+                   TextureData.imageData = static_cast<stbi_uc*>(malloc(DefaultimageSize));
+
+                   // Copy pixel data
+                   std::memcpy(TextureData.imageData, DefaultImage.data(), DefaultimageSize);
+
+                   TextureData.imageHeight = ImageSize;
+                   TextureData.imageWidth = ImageSize;
+
+                   // Store in your textures array
+                   Textures[1] = TextureData;
                }
             }
 
             {
                 //check if the material group has the normal texture in its map. 
-                if (gltfMaterial.additionalValues.find("MetalRoughnessAOPack") != gltfMaterial.additionalValues.end())
+                if (gltfMaterial.values.find("metallicRoughnessTexture") != gltfMaterial.values.end())
                 {
                     StoredImageData TextureData;
                     //get the texture from the material map
-                    tinygltf::Texture& metalicroughnesstex = model.textures[gltfMaterial.additionalValues["MetalRoughnessAOPack"].TextureIndex()];
+                    tinygltf::Texture& metalicroughnesstex = model.textures[gltfMaterial.values["metallicRoughnessTexture"].TextureIndex()];
                     //get the image from the texture
                     const tinygltf::Image& image = model.images[metalicroughnesstex.source];
 
@@ -117,30 +176,108 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
                     TextureData.imageHeight = image.height;
                     TextureData.imageWidth = image.width;
 
-                    Textures.push_back(TextureData);
+                    Textures[2] = TextureData;
+                }
+                else
+                {
+                    std::vector<stbi_uc> DefaultImage;
+                    const int ImageSize = 4;
+
+                    DefaultImage.resize(ImageSize* ImageSize * 4);
+
+                    for (int i = 0; i < ImageSize * ImageSize * 4; i += 4) {
+
+                        DefaultImage[i + 0] = 255; // R
+                        DefaultImage[i + 1] = 255; // G
+                        DefaultImage[i + 2] = 255; // B
+                        DefaultImage[i + 3] = 255; // A
+                    }
+
+                    size_t DefaultimageSize = DefaultImage.size();
+
+                    StoredImageData TextureData;
+                    TextureData.imageData = static_cast<stbi_uc*>(malloc(DefaultimageSize));
+
+                    // Copy pixel data
+                    std::memcpy(TextureData.imageData, DefaultImage.data(), DefaultimageSize);
+
+                    TextureData.imageHeight = ImageSize;
+                    TextureData.imageWidth = ImageSize;
+
+                    // Store in your textures array
+                    Textures[2] = TextureData;
                 }
             }
-
 
             {
                 //check if the material group has the normal texture in its map. 
-                if (gltfMaterial.additionalValues.find("HeightMap") != gltfMaterial.additionalValues.end())
+                if (gltfMaterial.additionalValues.find("occlusionTexture") != gltfMaterial.additionalValues.end())
                 {
                     StoredImageData TextureData;
                     //get the texture from the material map
-                    tinygltf::Texture& HeightMaptex = model.textures[gltfMaterial.additionalValues["HeightMap"].TextureIndex()];
+                    tinygltf::Texture& occlusiontex = model.textures[gltfMaterial.additionalValues["occlusionTexture"].TextureIndex()];
                     //get the image from the texture
-                    const tinygltf::Image& image = model.images[HeightMaptex.source];
+                    const tinygltf::Image& image = model.images[occlusiontex.source];
 
-                    size_t HeightMapteximageSize = image.width * image.height * 4;
-                    TextureData.imageData = static_cast<stbi_uc*>(malloc(HeightMapteximageSize));
-                    std::memcpy(TextureData.imageData, image.image.data(), HeightMapteximageSize);
+                    size_t occlusionmageSize = image.width * image.height * 4;
+                    TextureData.imageData = static_cast<stbi_uc*>(malloc(occlusionmageSize));
+                    std::memcpy(TextureData.imageData, image.image.data(), occlusionmageSize);
                     TextureData.imageHeight = image.height;
                     TextureData.imageWidth = image.width;
 
-                    Textures.push_back(TextureData);
+                    Textures[3] = TextureData;
+                }
+                else
+                {
+                    std::vector<stbi_uc> DefaultImage;
+                    const int ImageSize = 4;
+
+                    DefaultImage.resize(ImageSize* ImageSize * 4);
+
+                    for (int i = 0; i < ImageSize * ImageSize * 4; i += 4) {
+
+                        DefaultImage[i + 0] = 255; // R
+                        DefaultImage[i + 1] = 255; // G
+                        DefaultImage[i + 2] = 255; // B
+                        DefaultImage[i + 3] = 255; // A
+                    }
+
+                    size_t DefaultimageSize = DefaultImage.size();
+
+                    StoredImageData TextureData;
+                    TextureData.imageData = static_cast<stbi_uc*>(malloc(DefaultimageSize));
+
+                    // Copy pixel data
+                    std::memcpy(TextureData.imageData, DefaultImage.data(), DefaultimageSize);
+
+                    TextureData.imageHeight = ImageSize;
+                    TextureData.imageWidth = ImageSize;
+
+                    // Store in your textures array
+                    Textures[3] = TextureData;
                 }
             }
+
+
+            //{
+            //    //check if the material group has the normal texture in its map. 
+            //    if (gltfMaterial.additionalValues.find("HeightMap") != gltfMaterial.additionalValues.end())
+            //    {
+            //        StoredImageData TextureData;
+            //        //get the texture from the material map
+            //        tinygltf::Texture& HeightMaptex = model.textures[gltfMaterial.additionalValues["HeightMap"].TextureIndex()];
+            //        //get the image from the texture
+            //        const tinygltf::Image& image = model.images[HeightMaptex.source];
+            //
+            //        size_t HeightMapteximageSize = image.width * image.height * 4;
+            //        TextureData.imageData = static_cast<stbi_uc*>(malloc(HeightMapteximageSize));
+            //        std::memcpy(TextureData.imageData, image.image.data(), HeightMapteximageSize);
+            //        TextureData.imageHeight = image.height;
+            //        TextureData.imageWidth = image.width;
+            //
+            //        Textures.push_back(TextureData);
+            //    }
+            //}
         }
 
         AssetManager::GetInstance().ParseTextureData(pFile, Textures);

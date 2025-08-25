@@ -140,11 +140,15 @@
       "uri": "textures/Red.jpg"
     },
     {
-      "uri": "textures/streaky-metal1_metallic.png"
+      "uri": "textures/streaky-metal1_roughness.png"
     },
     {
       "uri": "textures/streaky-metal1_normal-ogl.png"
+    },
+    {
+      "uri": "textures/streaky-metal1_ao.png"
     }
+
   ],
   "materials": [
     {
@@ -152,14 +156,17 @@
       "normalTexture": {
         "index": 2
       },
-      "metallicFactor": 0.0,
-      "MetalRoughnessAOPack": {
-        "index": 1
+      "occlusionTexture": {
+        "index": 3
       },
       "pbrMetallicRoughness": {
         "baseColorTexture": {
           "index": 0
-        }
+        },
+        "metallicRoughnessTexture": {
+          "index": 1
+        },
+        "metallicFactor": 0.0
       }
     }
   ],
@@ -277,6 +284,10 @@
     {
       "sampler": 0,
       "source": 2
+    },
+    {
+      "sampler": 0,
+      "source": 3
     }
   ]
 }

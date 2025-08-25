@@ -27,22 +27,41 @@ void Model::LoadTextures()
 
 	std::vector<StoredImageData> ModelTextures = AssetManager::GetInstance().GetStoredImageData(FilePath);
 
+	if (&ModelTextures[0].imageData)
+	{
+		StoredImageData AlbedoImageData = ModelTextures[0];
+		vk::DeviceSize AlbedoImagesize = AlbedoImageData.imageWidth * AlbedoImageData.imageHeight * 4;
 
-	StoredImageData AlbedoImageData = ModelTextures[0];
-	vk::DeviceSize AlbedoImagesize = AlbedoImageData.imageWidth * AlbedoImageData.imageHeight * 4;
+		albedoTextureData = bufferManager->CreateTextureImage(AlbedoImageData.imageData, AlbedoImagesize, AlbedoImageData.imageWidth, AlbedoImageData.imageHeight, vk::Format::eR8G8B8A8Srgb, commandPool, vulkanContext->graphicsQueue);
+	}
+	
+	if (ModelTextures[1].imageData)
+	{
+		StoredImageData NormalImageData = ModelTextures[1];
+		vk::DeviceSize NormalImagesize = NormalImageData.imageWidth * NormalImageData.imageHeight * 4;
 
-	albedoTextureData = bufferManager->CreateTextureImage(AlbedoImageData.imageData, AlbedoImagesize, AlbedoImageData.imageWidth, AlbedoImageData.imageHeight,vk::Format::eR8G8B8A8Srgb , commandPool, vulkanContext->graphicsQueue);
+		normalTextureData = bufferManager->CreateTextureImage(NormalImageData.imageData, NormalImagesize, NormalImageData.imageWidth, NormalImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
+	}
+	
 
-	StoredImageData NormalImageData = ModelTextures[1];
-	vk::DeviceSize NormalImagesize = NormalImageData.imageWidth * NormalImageData.imageHeight * 4;
+	if (ModelTextures[2].imageData)
+	{
+		StoredImageData MetallicRoughnessImageData = ModelTextures[2];
+	    vk::DeviceSize  MetallicRoughnessImagesize = MetallicRoughnessImageData.imageWidth * MetallicRoughnessImageData.imageHeight * 4;
 
-	normalTextureData = bufferManager->CreateTextureImage(NormalImageData.imageData, NormalImagesize, NormalImageData.imageWidth, NormalImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
+	    MetallicRoughnessTextureData = bufferManager->CreateTextureImage(MetallicRoughnessImageData.imageData, MetallicRoughnessImagesize, MetallicRoughnessImageData.imageWidth, MetallicRoughnessImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
+	}
+	
+
+	if (ModelTextures[3].imageData)
+	{
+		StoredImageData AOImageData = ModelTextures[3];
+		vk::DeviceSize  AOImagesize = AOImageData.imageWidth * AOImageData.imageHeight * 4;
+
+		AOTextureData = bufferManager->CreateTextureImage(AOImageData.imageData, AOImagesize, AOImageData.imageWidth, AOImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
+	}
 
 
-	StoredImageData MetallicRoughnessImageData = ModelTextures[2];
-	vk::DeviceSize  MetallicRoughnessImagesize = MetallicRoughnessImageData.imageWidth * MetallicRoughnessImageData.imageHeight * 4;
-
-	MetallicRoughnessTextureData = bufferManager->CreateTextureImage(MetallicRoughnessImageData.imageData, MetallicRoughnessImagesize, MetallicRoughnessImageData.imageWidth, MetallicRoughnessImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
 }
 
 void Model::CreateVertexAndIndexBuffer()
@@ -291,8 +310,15 @@ void Model::createDescriptorSetLayout()
 	MetallicRoughnessSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	MetallicRoughnessSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-	std::array<vk::DescriptorSetLayoutBinding, 5> bindings = { VertexUniformBufferBinding,
-																ModelUniformBufferBinding,AlbedoSamplerLayout,NormalSamplerLayout,MetallicRoughnessSamplerLayout,
+	vk::DescriptorSetLayoutBinding AOSamplerLayout{};
+	AOSamplerLayout.binding = 5;
+	AOSamplerLayout.descriptorCount = 1;
+	AOSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	AOSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+
+	std::array<vk::DescriptorSetLayoutBinding, 6> bindings = { VertexUniformBufferBinding,
+																ModelUniformBufferBinding,AlbedoSamplerLayout,NormalSamplerLayout,MetallicRoughnessSamplerLayout,AOSamplerLayout
 	                                                            };
 
 	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
@@ -398,11 +424,24 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 			MetallicRoughnessSamplerdescriptorWrite.descriptorCount = 1;
 			MetallicRoughnessSamplerdescriptorWrite.pImageInfo = &MetallicRoughnessimageInfo;
 
+			vk::DescriptorImageInfo AOimageInfo{};
+			AOimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			AOimageInfo.imageView   = AOTextureData.imageView;
+			AOimageInfo.sampler     = AOTextureData.imageSampler;
+
+			vk::WriteDescriptorSet AOSamplerdescriptorWrite{};
+			AOSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+			AOSamplerdescriptorWrite.dstBinding = 5;
+			AOSamplerdescriptorWrite.dstArrayElement = 0;
+			AOSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			AOSamplerdescriptorWrite.descriptorCount = 1;
+			AOSamplerdescriptorWrite.pImageInfo = &AOimageInfo;
+
 			/////////////////////////////////////////////////////////////////////////////////////
 
 
-	     	std::array<vk::WriteDescriptorSet, 5> descriptorWrites{ VertexUniformdescriptorWrite,
-																	ModelUniformdescriptorWrite,SamplerdescriptorWrite,NormalSamplerdescriptorWrite,MetallicRoughnessSamplerdescriptorWrite };
+	     	std::array<vk::WriteDescriptorSet, 6> descriptorWrites{ VertexUniformdescriptorWrite,
+																	ModelUniformdescriptorWrite,SamplerdescriptorWrite,NormalSamplerdescriptorWrite,MetallicRoughnessSamplerdescriptorWrite,AOSamplerdescriptorWrite };
 	     
 	     	vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	     }
