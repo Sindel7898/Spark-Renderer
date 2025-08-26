@@ -32,16 +32,30 @@ void MeshLoader::LoadModel(const std::string& pFile)
 
     std::cout << "Loaded glTF: " << pFile << std::endl;
 
-    
+    std::vector<ModelVertex> vertices;
+    std::vector<uint32_t > indices;
+
+    StoredModelData modelData;
+
     const tinygltf::Scene& scene = model.scenes[0];
 
     for (size_t i = 0; i < scene.nodes.size(); i++) {
 
         const tinygltf::Node node = model.nodes[scene.nodes[i]];
 
-        ProcessNode(node, model);
+        Node* rootNode = loadNode(node, model, vertices, indices, nullptr);
+
+        if (rootNode) {
+
+            modelData.nodes.push_back(rootNode);
+
+        }
     }
     
+    modelData.VertexData = std::move(vertices);
+    modelData.IndexData = std::move(indices);
+
+    AssetManager::GetInstance().ParseModelData(pFile, modelData);
 
 }
 
@@ -287,52 +301,44 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
     }
 }
 
-void MeshLoader::ProcessNode(const tinygltf::Node& node, const tinygltf::Model& model) {
-    // Process the current node
-    ProcessMesh(node, model);
 
-    // Recursively process all child nodes
-    for (int childIndex : node.children) {
-
-        const tinygltf::Node& childNode = model.nodes[childIndex];
-
-        ProcessNode(childNode, model);
-    }
-}
-
-
-void MeshLoader::ProcessMesh(const tinygltf::Node& inputNode, const tinygltf::Model& model)
+Node* MeshLoader::loadNode(const tinygltf::Node& inputNode, const tinygltf::Model& model,
+                          std::vector<ModelVertex>& vertices, std::vector<uint32_t >& indices,Node* parent)
 {
-    std::vector<ModelVertex> vertices;
-    std::vector<uint32_t > indices;
+    StoredModelData modeldata;
 
-    glm::mat4 ModelMatrix = glm::mat4(1.0f);
+    Node* node = new Node;
+    node->name = inputNode.name;
+    node->parent = parent;
+    node->matrix  = glm::mat4(1.0f);
+   
+    if (inputNode.translation.size() == 3)
+    {
+        node->matrix = glm::translate(node->matrix, glm::vec3(glm::make_vec3(inputNode.translation.data())));
+    }
 
+    if (inputNode.rotation.size() == 4)
+    {
+        glm::quat q = glm::make_quat(inputNode.rotation.data());
+        node->matrix *= glm::mat4(q);
+    }
 
- 
-
+    if (inputNode.scale.size() == 3)
+    {
+        node->matrix = glm::scale(node->matrix, glm::vec3(glm::make_vec3(inputNode.scale.data())));
+    }
+    
     if (inputNode.matrix.size() == 16)
     {
-        ModelMatrix = glm::make_mat4x4(inputNode.matrix.data());
+        node->matrix = glm::make_mat4x4(inputNode.matrix.data());
     }
-    else
-    {
-        if (inputNode.translation.size() == 3)
-        {
-            ModelMatrix = glm::translate(ModelMatrix, glm::vec3(glm::make_vec3(inputNode.translation.data())));
-        }
 
-        if (inputNode.rotation.size() == 4)
-        {
-            glm::quat q = glm::make_quat(inputNode.rotation.data());
-            ModelMatrix *= glm::mat4(q);
-        }
-
-        if (inputNode.scale.size() == 3)
-        {
-            ModelMatrix = glm::scale(ModelMatrix, glm::vec3(glm::make_vec3(inputNode.scale.data())));
+    if (inputNode.children.size() > 0) {
+        for (size_t i = 0; i < inputNode.children.size(); i++) {
+            loadNode(model.nodes[inputNode.children[i]], model, vertices, indices, node);
         }
     }
+
 
 
     if (inputNode.mesh > -1)
@@ -340,106 +346,120 @@ void MeshLoader::ProcessMesh(const tinygltf::Node& inputNode, const tinygltf::Mo
         const tinygltf::Mesh mesh = model.meshes[inputNode.mesh];
 
         for (size_t i = 0; i < mesh.primitives.size(); i++) {
-            uint32_t indexCount = 0;
 
             const tinygltf::Primitive& glTFPrimitive = mesh.primitives[i];
             
-            const float* positions = nullptr;
-            const float* normals = nullptr;
-            const float* texcoords = nullptr;
-            const float* tangents = nullptr;
+            uint32_t firstIndex  = static_cast<uint32_t>(indices.size());
+            uint32_t vertexStart = static_cast<uint32_t>(vertices.size());
+            uint32_t indexCount  = 0;
 
-            size_t vertexCount;
+            {
+                const float* positions = nullptr;
+                const float* normals = nullptr;
+                const float* texcoords = nullptr;
+                const float* tangents = nullptr;
+
+                size_t vertexCount;
 
 
-            if (glTFPrimitive.attributes.find("POSITION") != glTFPrimitive.attributes.end()) {
-                const tinygltf::Accessor& accessor = model.accessors[glTFPrimitive.attributes.find("POSITION")->second];
-                const tinygltf::BufferView& view   = model.bufferViews[accessor.bufferView];
-                positions = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
-                vertexCount = accessor.count;
-            }
-
-            if (glTFPrimitive.attributes.find("NORMAL") != glTFPrimitive.attributes.end()) {
-                const tinygltf::Accessor& accessor = model.accessors[glTFPrimitive.attributes.find("NORMAL")->second];
-                const tinygltf::BufferView& view   = model.bufferViews[accessor.bufferView];
-                normals = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
-            }
-
-            if (glTFPrimitive.attributes.find("TEXCOORD_0") != glTFPrimitive.attributes.end()) {
-                const tinygltf::Accessor& accessor = model.accessors[glTFPrimitive.attributes.find("TEXCOORD_0")->second];
-                const tinygltf::BufferView& view   = model.bufferViews[accessor.bufferView];
-                texcoords = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
-            }
-
-            if (glTFPrimitive.attributes.find("TANGENT") != glTFPrimitive.attributes.end()) {
-                const tinygltf::Accessor& accessor = model.accessors[glTFPrimitive.attributes.find("TANGENT")->second];
-                const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
-
-                tangents = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
-            }
-
-            for (size_t i = 0; i < vertexCount; ++i) {
-                ModelVertex vertex;
-
-                if (positions)
-                {
-                    vertex.vert = { positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2] };
-                }
-                if (normals) {
-                    vertex.normal = { normals[i * 3 + 0], normals[i * 3 + 1], normals[i * 3 + 2] };
-                }
-                if (texcoords) {
-                    vertex.text = { texcoords[i * 2 + 0], texcoords[i * 2 + 1] };
+                if (glTFPrimitive.attributes.find("POSITION") != glTFPrimitive.attributes.end()) {
+                    const tinygltf::Accessor& accessor = model.accessors[glTFPrimitive.attributes.find("POSITION")->second];
+                    const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
+                    positions = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
+                    vertexCount = accessor.count;
                 }
 
-                if (tangents) {
-                    vertex.tangent = { tangents[i * 3 + 0], tangents[i * 3 + 1],tangents[i * 3 + 2] };
+                if (glTFPrimitive.attributes.find("NORMAL") != glTFPrimitive.attributes.end()) {
+                    const tinygltf::Accessor& accessor = model.accessors[glTFPrimitive.attributes.find("NORMAL")->second];
+                    const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
+                    normals = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
                 }
 
-                vertices.push_back(vertex);
-            }
-
-            const auto& indexAccessor = model.accessors[glTFPrimitive.indices];
-            const tinygltf::BufferView& bufferView = model.bufferViews[indexAccessor.bufferView];
-            const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
-
-            indexCount += static_cast<uint32_t>(indexAccessor.count);
-
-            switch (indexAccessor.componentType) {
-            case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
-                const uint32_t* buf = reinterpret_cast<const uint32_t*>(&buffer.data[indexAccessor.byteOffset + bufferView.byteOffset]);
-                for (size_t index = 0; index < indexAccessor.count; index++) {
-                    indices.push_back(buf[index]);
+                if (glTFPrimitive.attributes.find("TEXCOORD_0") != glTFPrimitive.attributes.end()) {
+                    const tinygltf::Accessor& accessor = model.accessors[glTFPrimitive.attributes.find("TEXCOORD_0")->second];
+                    const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
+                    texcoords = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
                 }
-                break;
-            }
-            case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
-                const uint16_t* buf = reinterpret_cast<const uint16_t*>(&buffer.data[indexAccessor.byteOffset + bufferView.byteOffset]);
-                for (size_t index = 0; index < indexAccessor.count; index++) {
-                    indices.push_back(buf[index]);
+
+                if (glTFPrimitive.attributes.find("TANGENT") != glTFPrimitive.attributes.end()) {
+                    const tinygltf::Accessor& accessor = model.accessors[glTFPrimitive.attributes.find("TANGENT")->second];
+                    const tinygltf::BufferView& view = model.bufferViews[accessor.bufferView];
+
+                    tangents = reinterpret_cast<const float*>(&(model.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
                 }
-                break;
-            }
-            case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
-                const uint8_t* buf = reinterpret_cast<const uint8_t*>(&buffer.data[indexAccessor.byteOffset + bufferView.byteOffset]);
-                for (size_t index = 0; index < indexAccessor.count; index++) {
-                    indices.push_back(buf[index]);
+
+                for (size_t i = 0; i < vertexCount; ++i) {
+                    ModelVertex vertex;
+
+                    if (positions)
+                    {
+                        vertex.vert = { positions[i * 3 + 0], positions[i * 3 + 1], positions[i * 3 + 2] };
+                    }
+                    if (normals) {
+                        vertex.normal = { normals[i * 3 + 0], normals[i * 3 + 1], normals[i * 3 + 2] };
+                    }
+                    if (texcoords) {
+                        vertex.text = { texcoords[i * 2 + 0], texcoords[i * 2 + 1] };
+                    }
+
+                    if (tangents) {
+                        vertex.tangent = { tangents[i * 3 + 0], tangents[i * 3 + 1],tangents[i * 3 + 2] };
+                    }
+
+                    vertices.push_back(vertex);
                 }
-                break;
-            }
-            default:
-                std::cerr << "Index component type " << indexAccessor.componentType << " not supported!" << std::endl;
-                return;
+
+                const auto& indexAccessor = model.accessors[glTFPrimitive.indices];
+                const tinygltf::BufferView& bufferView = model.bufferViews[indexAccessor.bufferView];
+                const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+
+                indexCount += static_cast<uint32_t>(indexAccessor.count);
+
+                switch (indexAccessor.componentType) {
+                case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
+                    const uint32_t* buf = reinterpret_cast<const uint32_t*>(&buffer.data[indexAccessor.byteOffset + bufferView.byteOffset]);
+                    for (size_t index = 0; index < indexAccessor.count; index++) {
+                        indices.push_back(buf[index]);
+                    }
+                    break;
+                }
+                case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
+                    const uint16_t* buf = reinterpret_cast<const uint16_t*>(&buffer.data[indexAccessor.byteOffset + bufferView.byteOffset]);
+                    for (size_t index = 0; index < indexAccessor.count; index++) {
+                        indices.push_back(buf[index]);
+                    }
+                    break;
+                }
+                case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
+                    const uint8_t* buf = reinterpret_cast<const uint8_t*>(&buffer.data[indexAccessor.byteOffset + bufferView.byteOffset]);
+                    for (size_t index = 0; index < indexAccessor.count; index++) {
+                        indices.push_back(buf[index]);
+                    }
+                    break;
+                }
+                default:
+                    std::cerr << "Index component type " << indexAccessor.componentType << " not supported!" << std::endl;
+                    return;
+                }
             }
 
+            Primitive primitive;
+            primitive.firstIndex = firstIndex;
+            primitive.indexCount = indexCount;
+            primitive.materialIndex = glTFPrimitive.material;
 
+            node->meshPrimitive = primitive;
         }
-
-        StoredModelData modeldata; 
-        modeldata.VertexData  = vertices;
-        modeldata.IndexData   = indices;
-        modeldata.modelMatrix = ModelMatrix;
-
-        AssetManager::GetInstance().ParseModelData(FilePath, modeldata);
     }
+
+    for (int childIndex : inputNode.children) {
+
+        Node* child = loadNode(model.nodes[childIndex], model, vertices, indices, node);
+
+        if (child) {
+            node->children.push_back(child);
+        }
+    }
+
+    return node;
 }

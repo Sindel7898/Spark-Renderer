@@ -5,11 +5,33 @@
 #include <string>             
 #include"glm/glm.hpp"
 
+struct Primitive {
+	uint32_t firstIndex;
+	uint32_t indexCount;
+	int32_t materialIndex;
+};
+
+struct Node {
+
+	Node* parent = nullptr;
+	std::vector<Node*> children;
+	glm::mat4 matrix;
+	std::string name;
+	Primitive meshPrimitive;
+
+	~Node() {
+		for (auto child : children) {
+			delete child;
+		}
+		children.clear();
+	}
+};
+
 struct StoredModelData
 {
-	std::vector<ModelVertex> VertexData;
+	std::vector<ModelVertex>  VertexData;
 	std::vector<uint32_t >    IndexData;
-	glm::mat4 modelMatrix;
+	std::vector<Node*> nodes;
 };
 
 namespace tinygltf {
@@ -37,9 +59,7 @@ public:
 	void LoadModel(const std::string& pFile);
 	void LoadMaterials(const std::string& pFile, tinygltf::Model& model);
 
-	void ProcessNode(const tinygltf::Node& node, const tinygltf::Model& model);
-
-	void ProcessMesh(const tinygltf::Node& inputNode, const tinygltf::Model& model);
+	Node* loadNode(const tinygltf::Node& inputNode, const tinygltf::Model& model, std::vector<ModelVertex>& vertices, std::vector<uint32_t>& indices, Node* Patent);
 
 
 private:
