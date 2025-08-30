@@ -143,6 +143,7 @@ public:
     void Instantiate();
     void Destroy(int instanceIndex);
     void UpdateUniformBuffer(uint32_t currentImage);
+    void DrawNode(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, StoredModelData* storedModelData);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
     void CreateBLAS();
 

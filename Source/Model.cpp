@@ -260,7 +260,7 @@ void Model::Instantiate()
 	else
 	{
 		InstanceData* NewInstance = new InstanceData(nullptr, vulkanContext);
-		NewInstance->SetModelMatrix(storedModelData->modelMatrix);
+		//NewInstance->SetModelMatrix(storedModelData->modelMatrix);
 
 		Instances.push_back(NewInstance);
 		GPU_InstancesData.push_back(NewInstance->gpu_InstanceData);
@@ -464,6 +464,11 @@ void Model::UpdateUniformBuffer(uint32_t currentImage)
 	}
 }
 
+
+void Model::DrawNode(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, StoredModelData* storedModelData)
+{
+
+}
 
 void Model::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)
 {

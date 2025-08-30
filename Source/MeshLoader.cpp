@@ -32,8 +32,6 @@ void MeshLoader::LoadModel(const std::string& pFile)
 
     std::cout << "Loaded glTF: " << pFile << std::endl;
 
-    std::vector<ModelVertex> vertices;
-    std::vector<uint32_t > indices;
 
     StoredModelData modelData;
 
@@ -43,17 +41,11 @@ void MeshLoader::LoadModel(const std::string& pFile)
 
         const tinygltf::Node node = model.nodes[scene.nodes[i]];
 
-        Node* rootNode = loadNode(node, model, vertices, indices, nullptr);
+        if (auto rootNode = loadNode(node, model, modelData.VertexData, modelData.IndexData, nullptr)) {
 
-        if (rootNode) {
-
-            modelData.nodes.push_back(rootNode);
-
+            modelData.nodes.push_back(std::move(rootNode));
         }
     }
-    
-    modelData.VertexData = std::move(vertices);
-    modelData.IndexData = std::move(indices);
 
     AssetManager::GetInstance().ParseModelData(pFile, modelData);
 
@@ -271,27 +263,6 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
                     Textures[3] = TextureData;
                 }
             }
-
-
-            //{
-            //    //check if the material group has the normal texture in its map. 
-            //    if (gltfMaterial.additionalValues.find("HeightMap") != gltfMaterial.additionalValues.end())
-            //    {
-            //        StoredImageData TextureData;
-            //        //get the texture from the material map
-            //        tinygltf::Texture& HeightMaptex = model.textures[gltfMaterial.additionalValues["HeightMap"].TextureIndex()];
-            //        //get the image from the texture
-            //        const tinygltf::Image& image = model.images[HeightMaptex.source];
-            //
-            //        size_t HeightMapteximageSize = image.width * image.height * 4;
-            //        TextureData.imageData = static_cast<stbi_uc*>(malloc(HeightMapteximageSize));
-            //        std::memcpy(TextureData.imageData, image.image.data(), HeightMapteximageSize);
-            //        TextureData.imageHeight = image.height;
-            //        TextureData.imageWidth = image.width;
-            //
-            //        Textures.push_back(TextureData);
-            //    }
-            //}
         }
 
         AssetManager::GetInstance().ParseTextureData(pFile, Textures);
@@ -302,16 +273,18 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
 }
 
 
-Node* MeshLoader::loadNode(const tinygltf::Node& inputNode, const tinygltf::Model& model,
-                          std::vector<ModelVertex>& vertices, std::vector<uint32_t >& indices,Node* parent)
+std::unique_ptr<Node> MeshLoader::loadNode(const tinygltf::Node&      inputNode, 
+                                           const tinygltf::Model&     model,
+                                           std::vector<ModelVertex>&  vertices, 
+                                           std::vector<uint32_t >&    indices,
+                                                              Node*   parent)
 {
-    StoredModelData modeldata;
 
-    Node* node = new Node;
-    node->name = inputNode.name;
+    std::unique_ptr<Node> node = std::make_unique<Node>();;
     node->parent = parent;
     node->matrix  = glm::mat4(1.0f);
-   
+
+  
     if (inputNode.translation.size() == 3)
     {
         node->matrix = glm::translate(node->matrix, glm::vec3(glm::make_vec3(inputNode.translation.data())));
@@ -333,13 +306,6 @@ Node* MeshLoader::loadNode(const tinygltf::Node& inputNode, const tinygltf::Mode
         node->matrix = glm::make_mat4x4(inputNode.matrix.data());
     }
 
-    if (inputNode.children.size() > 0) {
-        for (size_t i = 0; i < inputNode.children.size(); i++) {
-            loadNode(model.nodes[inputNode.children[i]], model, vertices, indices, node);
-        }
-    }
-
-
 
     if (inputNode.mesh > -1)
     {
@@ -349,17 +315,17 @@ Node* MeshLoader::loadNode(const tinygltf::Node& inputNode, const tinygltf::Mode
 
             const tinygltf::Primitive& glTFPrimitive = mesh.primitives[i];
             
-            uint32_t firstIndex  = static_cast<uint32_t>(indices.size());
-            uint32_t vertexStart = static_cast<uint32_t>(vertices.size());
+            uint32_t indicesStart = static_cast<uint32_t>(indices.size());
+            uint32_t verticesStart = static_cast<uint32_t>(vertices.size());
+           
             uint32_t indexCount  = 0;
+            uint32_t vertexCount = 0;
 
             {
                 const float* positions = nullptr;
                 const float* normals = nullptr;
                 const float* texcoords = nullptr;
                 const float* tangents = nullptr;
-
-                size_t vertexCount;
 
 
                 if (glTFPrimitive.attributes.find("POSITION") != glTFPrimitive.attributes.end()) {
@@ -419,34 +385,36 @@ Node* MeshLoader::loadNode(const tinygltf::Node& inputNode, const tinygltf::Mode
                 case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
                     const uint32_t* buf = reinterpret_cast<const uint32_t*>(&buffer.data[indexAccessor.byteOffset + bufferView.byteOffset]);
                     for (size_t index = 0; index < indexAccessor.count; index++) {
-                        indices.push_back(buf[index]);
+                        indices.push_back(buf[index] + verticesStart);
                     }
                     break;
                 }
                 case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
                     const uint16_t* buf = reinterpret_cast<const uint16_t*>(&buffer.data[indexAccessor.byteOffset + bufferView.byteOffset]);
                     for (size_t index = 0; index < indexAccessor.count; index++) {
-                        indices.push_back(buf[index]);
+                        indices.push_back(buf[index] + verticesStart);
                     }
                     break;
                 }
                 case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
                     const uint8_t* buf = reinterpret_cast<const uint8_t*>(&buffer.data[indexAccessor.byteOffset + bufferView.byteOffset]);
                     for (size_t index = 0; index < indexAccessor.count; index++) {
-                        indices.push_back(buf[index]);
+                        indices.push_back(buf[index] + verticesStart);
                     }
                     break;
                 }
                 default:
                     std::cerr << "Index component type " << indexAccessor.componentType << " not supported!" << std::endl;
-                    return;
+                    return std::move(nullptr);
                 }
             }
 
             Primitive primitive;
-            primitive.firstIndex = firstIndex;
-            primitive.indexCount = indexCount;
-            primitive.materialIndex = glTFPrimitive.material;
+            primitive.verticesStart  = verticesStart;
+            primitive.indicesStart   = indicesStart;
+            primitive.numVertices    = vertexCount;
+            primitive.numIndices     = indexCount;
+            primitive.materialIndex  = glTFPrimitive.material;
 
             node->meshPrimitive = primitive;
         }
@@ -454,11 +422,11 @@ Node* MeshLoader::loadNode(const tinygltf::Node& inputNode, const tinygltf::Mode
 
     for (int childIndex : inputNode.children) {
 
-        Node* child = loadNode(model.nodes[childIndex], model, vertices, indices, node);
+        if (auto rootNode = loadNode(model.nodes[childIndex], model, vertices, indices, nullptr)) {
 
-        if (child) {
-            node->children.push_back(child);
+            node->children.push_back(std::move(rootNode));
         }
+
     }
 
     return node;
