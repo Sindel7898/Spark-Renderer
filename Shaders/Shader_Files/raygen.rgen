@@ -60,7 +60,7 @@ bool TraceShadow(vec3 origin, vec3 direction, float MaxDistance) {
 
 vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal)
 {
-    return ViewPosition + normal * 0.0001;
+    return ViewPosition + normal * 0.1;
 
 }
 
