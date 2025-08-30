@@ -17,8 +17,8 @@ struct Primitive {
 struct Node {
 
 	Node* parent = nullptr;
-	std::vector<std::unique_ptr<Node>> children;
-	Primitive meshPrimitive;
+	std::vector<std::shared_ptr<Node>> children;
+	std::vector<Primitive> meshPrimitives; 
 	glm::mat4 matrix = glm::mat4(1.0f);
 
 };

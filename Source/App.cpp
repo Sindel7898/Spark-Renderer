@@ -42,64 +42,64 @@
 
 
 	auto model  = std::shared_ptr<Model>(new Model("../Textures/Helmet/Helmet.gltf"   , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model2 = std::shared_ptr<Model>(new Model("../Textures/WaterBottle/WaterBottle.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model4 = std::shared_ptr<Model>(new Model("../Textures/Wall/Cube.gltf"            , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model5 = std::shared_ptr<Model>(new Model("../Textures/Wall2/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model6 = std::shared_ptr<Model>(new Model("../Textures/Wall3/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model7 = std::shared_ptr<Model>(new Model("../Textures/Wall4/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model8 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model2 = std::shared_ptr<Model>(new Model("../Textures/Sponza/glTF/Sponza.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model3 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model4 = std::shared_ptr<Model>(new Model("../Textures/Wall/Cube.gltf"            , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model5 = std::shared_ptr<Model>(new Model("../Textures/Wall2/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model6 = std::shared_ptr<Model>(new Model("../Textures/Wall3/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model7 = std::shared_ptr<Model>(new Model("../Textures/Wall4/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model8 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 
 	model.get()->Instances[0]->SetPostion(glm::vec3(5.000, -1.202, 5.798));
 	model.get()->Instances[0]->SetScale(glm::vec3(1.100, 1.000, 1.050));
 	model.get()->Instances[0]->SetRotation(glm::vec3(90.000, 0.000, 0.00));
 
-	model2.get()->Instances[0]->SetPostion(glm::vec3(-5.329, 0.265, -4.715));
-	model2.get()->Instances[0]->SetScale(glm::vec3(8.000, 8.000, 8.000));
-	model2.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
-
-	model3.get()->Instances[0]->SetPostion(glm::vec3(-4.507, -0.488, 6.017));
-	model3.get()->Instances[0]->SetScale(glm::vec3(0.04, 0.04, 0.04));
-	model3.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
-
-
-	model4.get()->Instances[0]->SetPostion(glm::vec3(7.091, 1.704, 0.472));
-	model4.get()->Instances[0]->SetRotation(glm::vec3(90.000, 90.000, 0.00));
-	model4.get()->Instances[0]->SetScale(glm::vec3(7.000, 0.200, 5.000));
-
-	model5.get()->Instances[0]->SetPostion(glm::vec3(-6.656, 1.672, 0.485));
-	model5.get()->Instances[0]->SetRotation(glm::vec3(-90.000, -90.000, 180.000));
-	model5.get()->Instances[0]->SetScale(glm::vec3(6.996, 0.200, 5.000));
-
-	model6.get()->Instances[0]->SetPostion(glm::vec3(0.287, -3.482, 0.467));
-	model6.get()->Instances[0]->SetRotation(glm::vec3(0.000, 180.000, 0.00));
-	model6.get()->Instances[0]->SetScale(glm::vec3(7.000, 0.200, 7.000));
-
-	model7.get()->Instances[0]->SetPostion(glm::vec3(-0.000, 1.741, -6.425));
-	model7.get()->Instances[0]->SetRotation(glm::vec3(0.000, 90.000, 0.000));
-	model7.get()->Instances[0]->SetScale(glm::vec3(0.100, 5.000, 7.500));
-
-	model8.get()->Instances[0]->SetPostion(glm::vec3(0.957, -3.219, 1.225));
-	model8.get()->Instances[0]->SetRotation(glm::vec3(0.000, 20, 0.000));
-	model8.get()->Instances[0]->SetScale(glm::vec3(0.060, 0.060, 0.060));
+	//model2.get()->Instances[0]->SetPostion(glm::vec3(-5.329, 0.265, -4.715));
+	//model2.get()->Instances[0]->SetScale(glm::vec3(8.000, 8.000, 8.000));
+	//model2.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
+	//
+	//model3.get()->Instances[0]->SetPostion(glm::vec3(-4.507, -0.488, 6.017));
+	//model3.get()->Instances[0]->SetScale(glm::vec3(0.04, 0.04, 0.04));
+	//model3.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
+	//
+	//
+	//model4.get()->Instances[0]->SetPostion(glm::vec3(7.091, 1.704, 0.472));
+	//model4.get()->Instances[0]->SetRotation(glm::vec3(90.000, 90.000, 0.00));
+	//model4.get()->Instances[0]->SetScale(glm::vec3(7.000, 0.200, 5.000));
+	//
+	//model5.get()->Instances[0]->SetPostion(glm::vec3(-6.656, 1.672, 0.485));
+	//model5.get()->Instances[0]->SetRotation(glm::vec3(-90.000, -90.000, 180.000));
+	//model5.get()->Instances[0]->SetScale(glm::vec3(6.996, 0.200, 5.000));
+	//
+	//model6.get()->Instances[0]->SetPostion(glm::vec3(0.287, -3.482, 0.467));
+	//model6.get()->Instances[0]->SetRotation(glm::vec3(0.000, 180.000, 0.00));
+	//model6.get()->Instances[0]->SetScale(glm::vec3(7.000, 0.200, 7.000));
+	//
+	//model7.get()->Instances[0]->SetPostion(glm::vec3(-0.000, 1.741, -6.425));
+	//model7.get()->Instances[0]->SetRotation(glm::vec3(0.000, 90.000, 0.000));
+	//model7.get()->Instances[0]->SetScale(glm::vec3(0.100, 5.000, 7.500));
+	//
+	//model8.get()->Instances[0]->SetPostion(glm::vec3(0.957, -3.219, 1.225));
+	//model8.get()->Instances[0]->SetRotation(glm::vec3(0.000, 20, 0.000));
+	//model8.get()->Instances[0]->SetScale(glm::vec3(0.060, 0.060, 0.060));
 
 	Models.push_back(std::move(model));
 	Models.push_back(std::move(model2));
-	Models.push_back(std::move(model3));
-	Models.push_back(std::move(model4));
-	Models.push_back(std::move(model5));
-	Models.push_back(std::move(model6));
-	Models.push_back(std::move(model7));
-	Models.push_back(std::move(model8));
+	//Models.push_back(std::move(model3));
+	//Models.push_back(std::move(model4));
+	//Models.push_back(std::move(model5));
+	//Models.push_back(std::move(model6));
+	//Models.push_back(std::move(model7));
+	//Models.push_back(std::move(model8));
 
 	UserInterfaceItems.push_back(Models[0].get());
 	UserInterfaceItems.push_back(Models[1].get());
-	UserInterfaceItems.push_back(Models[2].get());
-	UserInterfaceItems.push_back(Models[3].get());
-	UserInterfaceItems.push_back(Models[4].get());
-	UserInterfaceItems.push_back(Models[5].get());
-	UserInterfaceItems.push_back(Models[6].get());
-	UserInterfaceItems.push_back(Models[7].get());
+	//UserInterfaceItems.push_back(Models[2].get());
+	//UserInterfaceItems.push_back(Models[3].get());
+	//UserInterfaceItems.push_back(Models[4].get());
+	//UserInterfaceItems.push_back(Models[5].get());
+	//UserInterfaceItems.push_back(Models[6].get());
+	//UserInterfaceItems.push_back(Models[7].get());
 
 	Raytracing_Shadows = std::shared_ptr<RayTracing>(new RayTracing(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), RayTracingDeleter);
 	lighting_FullScreenQuad = std::shared_ptr<Lighting_FullScreenQuad>(new Lighting_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool, skyBox.get(), Raytracing_Shadows.get()), Lighting_FullScreenQuadDeleter);
@@ -1287,11 +1287,16 @@ void App::CreateGraphicsPipeline()
 
 		vk::DescriptorSetLayout setLayouts[] = { Models[0]->descriptorSetLayout };
 
+		vk::PushConstantRange range{};
+		range.setOffset(0);
+		range.setSize(sizeof(glm::mat4));
+		range.setStageFlags(vk::ShaderStageFlagBits::eVertex);
+
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.setLayoutCount = 1;
 		pipelineLayoutInfo.pSetLayouts = setLayouts;
-		pipelineLayoutInfo.pushConstantRangeCount;
-		pipelineLayoutInfo.pPushConstantRanges;
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges = &range;
 
 		std::array<vk::PipelineColorBlendAttachmentState, 7> colorBlendAttachments = {
 			// Position attachment blend state

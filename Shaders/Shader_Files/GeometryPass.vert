@@ -20,7 +20,9 @@ layout(set = 0,binding = 1) uniform UniformBufferObject {
      InstanceData ModelInstance[300];
 };
 
-
+layout(push_constant) uniform PushConstants {
+          mat4 Model;
+} pc;
 
 layout(location = 0) out vec4 WorldSpacPosition;   
 layout(location = 1) out vec4 ViewSpacePosition;   
@@ -31,7 +33,7 @@ layout(location = 9) out vec4 bCubeMapReflection_bScreenSpaceReflection_Padding;
 
 void main() {
     
-    mat4 model = ModelInstance[gl_InstanceIndex].Model;
+    mat4 model = pc.Model;
     //mat4 model = vuob.Model;
 
     vec4 worldPos = model * vec4(inPosition, 1.0);
