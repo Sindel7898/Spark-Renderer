@@ -27,39 +27,54 @@ void Model::LoadTextures()
 
 	std::vector<StoredImageData> ModelTextures = AssetManager::GetInstance().GetStoredImageData(FilePath);
 
-	if (&ModelTextures[0].imageData)
-	{
-		StoredImageData AlbedoImageData = ModelTextures[0];
+    materialCount = ModelTextures.size() / 4;
+
+	for (size_t i = 0; i < materialCount; i++) {
+
+
+		ImageData  albedoTextureData;
+
+		StoredImageData AlbedoImageData = ModelTextures[i * 4 + 0];
 		vk::DeviceSize AlbedoImagesize = AlbedoImageData.imageWidth * AlbedoImageData.imageHeight * 4;
 
 		albedoTextureData = bufferManager->CreateTextureImage(AlbedoImageData.imageData, AlbedoImagesize, AlbedoImageData.imageWidth, AlbedoImageData.imageHeight, vk::Format::eR8G8B8A8Srgb, commandPool, vulkanContext->graphicsQueue);
-	}
-	
-	if (ModelTextures[1].imageData)
-	{
-		StoredImageData NormalImageData = ModelTextures[1];
+
+		AlbedoTextures.push_back(albedoTextureData);
+
+
+		ImageData  normalTextureData;
+
+		StoredImageData NormalImageData = ModelTextures[i * 4 + 1];
 		vk::DeviceSize NormalImagesize = NormalImageData.imageWidth * NormalImageData.imageHeight * 4;
 
 		normalTextureData = bufferManager->CreateTextureImage(NormalImageData.imageData, NormalImagesize, NormalImageData.imageWidth, NormalImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
-	}
-	
 
-	if (ModelTextures[2].imageData)
-	{
-		StoredImageData MetallicRoughnessImageData = ModelTextures[2];
-	    vk::DeviceSize  MetallicRoughnessImagesize = MetallicRoughnessImageData.imageWidth * MetallicRoughnessImageData.imageHeight * 4;
+		NormalTextures.push_back(normalTextureData);
 
-	    MetallicRoughnessTextureData = bufferManager->CreateTextureImage(MetallicRoughnessImageData.imageData, MetallicRoughnessImagesize, MetallicRoughnessImageData.imageWidth, MetallicRoughnessImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
-	}
-	
 
-	if (ModelTextures[3].imageData)
-	{
-		StoredImageData AOImageData = ModelTextures[3];
+		ImageData  MetallicRoughnessTextureData;
+
+		StoredImageData MetallicRoughnessImageData = ModelTextures[i * 4 + 2];
+		vk::DeviceSize  MetallicRoughnessImagesize = MetallicRoughnessImageData.imageWidth * MetallicRoughnessImageData.imageHeight * 4;
+
+		MetallicRoughnessTextureData = bufferManager->CreateTextureImage(MetallicRoughnessImageData.imageData, MetallicRoughnessImagesize, MetallicRoughnessImageData.imageWidth, MetallicRoughnessImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
+
+		MetallicRoughnessTextures.push_back(MetallicRoughnessTextureData);
+
+
+		ImageData  AOTextureData;
+
+		StoredImageData AOImageData = ModelTextures[i * 4 + 3];
 		vk::DeviceSize  AOImagesize = AOImageData.imageWidth * AOImageData.imageHeight * 4;
 
 		AOTextureData = bufferManager->CreateTextureImage(AOImageData.imageData, AOImagesize, AOImageData.imageWidth, AOImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
+
+		AOTextures.push_back(AOTextureData);
 	}
+
+
+
+
 
 
 }
@@ -336,117 +351,124 @@ void Model::createDescriptorSetLayout()
 
 void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 {
+
+
+	for (size_t j = 0; j < materialCount; j++)
 	{
-	     // create sets from the pool based on the layout
-		 // 	     
-		std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
+
+			std::vector<vk::DescriptorSet> DescriptorSets;
+
+			std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
 
 
-	     vk::DescriptorSetAllocateInfo allocinfo;
-	     allocinfo.descriptorPool = descriptorpool;
-	     allocinfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-	     allocinfo.pSetLayouts = layouts.data();
-		 
-	     DescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
-	     
-	     vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, DescriptorSets.data());
-	     
-	     ////////////////////////////////////////////////////////////////////////////////////////////////
-	     //specifies what exactly to send
-	     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-	     
-	     	vk::DescriptorBufferInfo vertexbufferInfo{};
-	     	vertexbufferInfo.buffer = vertexUniformBuffers[i].buffer;
-	     	vertexbufferInfo.offset = 0;
-	     	vertexbufferInfo.range = sizeof(VertexData);
-	     
-	     	vk::WriteDescriptorSet VertexUniformdescriptorWrite{};
-	     	VertexUniformdescriptorWrite.dstSet = DescriptorSets[i];
-	     	VertexUniformdescriptorWrite.dstBinding = 0;
-	     	VertexUniformdescriptorWrite.dstArrayElement = 0;
-	     	VertexUniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-	     	VertexUniformdescriptorWrite.descriptorCount = 1;
-	     	VertexUniformdescriptorWrite.pBufferInfo = &vertexbufferInfo;
+			vk::DescriptorSetAllocateInfo allocinfo;
+			allocinfo.descriptorPool = descriptorpool;
+			allocinfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+			allocinfo.pSetLayouts = layouts.data();
+
+			DescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+
+			vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, DescriptorSets.data());
+
+			////////////////////////////////////////////////////////////////////////////////////////////////
+			//specifies what exactly to send
+			for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+
+				vk::DescriptorBufferInfo vertexbufferInfo{};
+				vertexbufferInfo.buffer = vertexUniformBuffers[i].buffer;
+				vertexbufferInfo.offset = 0;
+				vertexbufferInfo.range = sizeof(VertexData);
+
+				vk::WriteDescriptorSet VertexUniformdescriptorWrite{};
+				VertexUniformdescriptorWrite.dstSet = DescriptorSets[i];
+				VertexUniformdescriptorWrite.dstBinding = 0;
+				VertexUniformdescriptorWrite.dstArrayElement = 0;
+				VertexUniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+				VertexUniformdescriptorWrite.descriptorCount = 1;
+				VertexUniformdescriptorWrite.pBufferInfo = &vertexbufferInfo;
+
+
+				vk::DescriptorBufferInfo ModelbufferInfo{};
+				ModelbufferInfo.buffer = Model_GPU_DataUniformBuffers[i].buffer;
+				ModelbufferInfo.offset = 0;
+				ModelbufferInfo.range = sizeof(GPU_InstanceData) * 300;
+
+				vk::WriteDescriptorSet ModelUniformdescriptorWrite{};
+				ModelUniformdescriptorWrite.dstSet = DescriptorSets[i];
+				ModelUniformdescriptorWrite.dstBinding = 1;
+				ModelUniformdescriptorWrite.dstArrayElement = 0;
+				ModelUniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+				ModelUniformdescriptorWrite.descriptorCount = 1;
+				ModelUniformdescriptorWrite.pBufferInfo = &ModelbufferInfo;
+
+				/////////////////////////////////////////////////////////////////////////////////////
+				vk::DescriptorImageInfo imageInfo{};
+				imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+				imageInfo.imageView   = AlbedoTextures[j].imageView;
+				imageInfo.sampler     = AlbedoTextures[j].imageSampler;
+
+				vk::WriteDescriptorSet SamplerdescriptorWrite{};
+				SamplerdescriptorWrite.dstSet = DescriptorSets[i];
+				SamplerdescriptorWrite.dstBinding = 2;
+				SamplerdescriptorWrite.dstArrayElement = 0;
+				SamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+				SamplerdescriptorWrite.descriptorCount = 1;
+				SamplerdescriptorWrite.pImageInfo = &imageInfo;
+				/////////////////////////////////////////////////////////////////////////////////////
+
+				vk::DescriptorImageInfo NormalimageInfo{};
+				NormalimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+				NormalimageInfo.imageView = NormalTextures[j].imageView;
+				NormalimageInfo.sampler = NormalTextures[j].imageSampler;
+
+				vk::WriteDescriptorSet NormalSamplerdescriptorWrite{};
+				NormalSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+				NormalSamplerdescriptorWrite.dstBinding = 3;
+				NormalSamplerdescriptorWrite.dstArrayElement = 0;
+				NormalSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+				NormalSamplerdescriptorWrite.descriptorCount = 1;
+				NormalSamplerdescriptorWrite.pImageInfo = &NormalimageInfo;
+				/////////////////////////////////////////////////////////////////////////////////////
+
+				vk::DescriptorImageInfo MetallicRoughnessimageInfo{};
+				MetallicRoughnessimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+				MetallicRoughnessimageInfo.imageView = MetallicRoughnessTextures[j].imageView;
+				MetallicRoughnessimageInfo.sampler = MetallicRoughnessTextures[j].imageSampler;
+
+				vk::WriteDescriptorSet MetallicRoughnessSamplerdescriptorWrite{};
+				MetallicRoughnessSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+				MetallicRoughnessSamplerdescriptorWrite.dstBinding = 4;
+				MetallicRoughnessSamplerdescriptorWrite.dstArrayElement = 0;
+				MetallicRoughnessSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+				MetallicRoughnessSamplerdescriptorWrite.descriptorCount = 1;
+				MetallicRoughnessSamplerdescriptorWrite.pImageInfo = &MetallicRoughnessimageInfo;
+
+				vk::DescriptorImageInfo AOimageInfo{};
+				AOimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+				AOimageInfo.imageView = AOTextures[j].imageView;
+				AOimageInfo.sampler = AOTextures[j].imageSampler;
+
+				vk::WriteDescriptorSet AOSamplerdescriptorWrite{};
+				AOSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+				AOSamplerdescriptorWrite.dstBinding = 5;
+				AOSamplerdescriptorWrite.dstArrayElement = 0;
+				AOSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+				AOSamplerdescriptorWrite.descriptorCount = 1;
+				AOSamplerdescriptorWrite.pImageInfo = &AOimageInfo;
+
+				/////////////////////////////////////////////////////////////////////////////////////
+
+
+				std::array<vk::WriteDescriptorSet, 6> descriptorWrites{ VertexUniformdescriptorWrite,
+																		ModelUniformdescriptorWrite,SamplerdescriptorWrite,NormalSamplerdescriptorWrite,MetallicRoughnessSamplerdescriptorWrite,AOSamplerdescriptorWrite };
+
+				vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 			
-
-			vk::DescriptorBufferInfo ModelbufferInfo{};
-			ModelbufferInfo.buffer = Model_GPU_DataUniformBuffers[i].buffer;
-			ModelbufferInfo.offset = 0;
-			ModelbufferInfo.range = sizeof(GPU_InstanceData) * 300;
-
-			vk::WriteDescriptorSet ModelUniformdescriptorWrite{};
-			ModelUniformdescriptorWrite.dstSet = DescriptorSets[i];
-			ModelUniformdescriptorWrite.dstBinding = 1;
-			ModelUniformdescriptorWrite.dstArrayElement = 0;
-			ModelUniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-			ModelUniformdescriptorWrite.descriptorCount = 1;
-			ModelUniformdescriptorWrite.pBufferInfo = &ModelbufferInfo;
-	     	
-	     	/////////////////////////////////////////////////////////////////////////////////////
-	     	vk::DescriptorImageInfo imageInfo{};
-	     	imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-	     	imageInfo.imageView = albedoTextureData.imageView;
-	     	imageInfo.sampler = albedoTextureData.imageSampler;
-	     
-	     	vk::WriteDescriptorSet SamplerdescriptorWrite{};
-	     	SamplerdescriptorWrite.dstSet = DescriptorSets[i];
-	     	SamplerdescriptorWrite.dstBinding = 2;
-	     	SamplerdescriptorWrite.dstArrayElement = 0;
-	     	SamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	     	SamplerdescriptorWrite.descriptorCount = 1;
-	     	SamplerdescriptorWrite.pImageInfo = &imageInfo;
-	     	/////////////////////////////////////////////////////////////////////////////////////
-	     
-	     	vk::DescriptorImageInfo NormalimageInfo{};
-	     	NormalimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-	     	NormalimageInfo.imageView = normalTextureData.imageView;
-	     	NormalimageInfo.sampler = normalTextureData.imageSampler;
-	     
-	     	vk::WriteDescriptorSet NormalSamplerdescriptorWrite{};
-	     	NormalSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-	     	NormalSamplerdescriptorWrite.dstBinding = 3;
-	     	NormalSamplerdescriptorWrite.dstArrayElement = 0;
-	     	NormalSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	     	NormalSamplerdescriptorWrite.descriptorCount = 1;
-	     	NormalSamplerdescriptorWrite.pImageInfo = &NormalimageInfo;
-	     	/////////////////////////////////////////////////////////////////////////////////////
-	     
-			vk::DescriptorImageInfo MetallicRoughnessimageInfo{};
-			MetallicRoughnessimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			MetallicRoughnessimageInfo.imageView = MetallicRoughnessTextureData.imageView;
-			MetallicRoughnessimageInfo.sampler   = MetallicRoughnessTextureData.imageSampler;
-
-			vk::WriteDescriptorSet MetallicRoughnessSamplerdescriptorWrite{};
-			MetallicRoughnessSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-			MetallicRoughnessSamplerdescriptorWrite.dstBinding = 4;
-			MetallicRoughnessSamplerdescriptorWrite.dstArrayElement = 0;
-			MetallicRoughnessSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-			MetallicRoughnessSamplerdescriptorWrite.descriptorCount = 1;
-			MetallicRoughnessSamplerdescriptorWrite.pImageInfo = &MetallicRoughnessimageInfo;
-
-			vk::DescriptorImageInfo AOimageInfo{};
-			AOimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			AOimageInfo.imageView   = AOTextureData.imageView;
-			AOimageInfo.sampler     = AOTextureData.imageSampler;
-
-			vk::WriteDescriptorSet AOSamplerdescriptorWrite{};
-			AOSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-			AOSamplerdescriptorWrite.dstBinding = 5;
-			AOSamplerdescriptorWrite.dstArrayElement = 0;
-			AOSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-			AOSamplerdescriptorWrite.descriptorCount = 1;
-			AOSamplerdescriptorWrite.pImageInfo = &AOimageInfo;
-
-			/////////////////////////////////////////////////////////////////////////////////////
+			}
 
 
-	     	std::array<vk::WriteDescriptorSet, 6> descriptorWrites{ VertexUniformdescriptorWrite,
-																	ModelUniformdescriptorWrite,SamplerdescriptorWrite,NormalSamplerdescriptorWrite,MetallicRoughnessSamplerdescriptorWrite,AOSamplerdescriptorWrite };
-	     
-	     	vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
-	     }
+			SceneDescriptorSets.push_back(DescriptorSets);
 	}
-
 }
 
 void Model::UpdateUniformBuffer(uint32_t currentImage)
@@ -465,7 +487,7 @@ void Model::UpdateUniformBuffer(uint32_t currentImage)
 }
 
 
-void Model::DrawNode(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipelineLayout,const std::vector<std::shared_ptr<Node>>& nodes,const glm::mat4& parentMatrix)
+void Model::DrawNode(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipelineLayout, uint32_t imageIndex,const std::vector<std::shared_ptr<Node>>& nodes,const glm::mat4& parentMatrix)
 {
 	for (const auto& node : nodes) {
 		if (!node) continue;
@@ -476,13 +498,15 @@ void Model::DrawNode(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipeline
 
 			if (primitive.numIndices > 0) {
 
+				commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &SceneDescriptorSets[primitive.materialIndex][imageIndex], 0, nullptr);
+
 				commandBuffer.pushConstants(pipelineLayout,vk::ShaderStageFlagBits::eVertex,0,sizeof(glm::mat4),&worldMatrix);
 
 				commandBuffer.drawIndexed(primitive.numIndices,1,primitive.indicesStart,0,0);
 			}
 		}
 
-		DrawNode(commandBuffer, pipelineLayout, node->children, worldMatrix);
+		DrawNode(commandBuffer, pipelineLayout, imageIndex,node->children, worldMatrix);
 	}
 }
 
@@ -493,9 +517,8 @@ void Model::Draw(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipelineLayo
 
 	commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
 	commandBuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint32);
-	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,pipelineLayout,0,1,&DescriptorSets[imageIndex],0,nullptr);
 
-	DrawNode(commandBuffer, pipelineLayout, storedModelData->nodes, glm::mat4(1.0f));
+	DrawNode(commandBuffer, pipelineLayout, imageIndex,storedModelData->nodes, glm::mat4(1.0f));
 }
 
 void Model::CleanUp()
@@ -503,9 +526,9 @@ void Model::CleanUp()
 	if (bufferManager)
 	{
 		storedModelData = nullptr;
-		bufferManager->DestroyImage(albedoTextureData);
-		bufferManager->DestroyImage(normalTextureData);
-		bufferManager->DestroyImage(MetallicRoughnessTextureData);
+		//bufferManager->DestroyImage(albedoTextureData);
+		//bufferManager->DestroyImage(normalTextureData);
+		//bufferManager->DestroyImage(MetallicRoughnessTextureData);
 
 	    bufferManager->DestroyBuffer(BLAS_Buffer);
 		bufferManager->DestroyBuffer(BLAS_ScratchBuffer);

@@ -9,6 +9,13 @@
 #include "Drawable.h"
 #include "structs.h"
 
+struct PushConstantData {
+   glm::mat4 worldMatrix;
+   glm::vec4 MaterialIndex_Padding;
+};
+
+
+
 struct VertexData {
     alignas(16) glm::mat4 ViewMatrix;
     alignas(16) glm::mat4 ProjectionMatrix;
@@ -143,7 +150,7 @@ public:
     void Instantiate();
     void Destroy(int instanceIndex);
     void UpdateUniformBuffer(uint32_t currentImage);
-    void DrawNode(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, const std::vector<std::shared_ptr<Node>>& nodes, const glm::mat4& parentMatrix);
+    void DrawNode(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex, const std::vector<std::shared_ptr<Node>>& nodes, const glm::mat4& parentMatrix);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
     void CreateBLAS();
 
@@ -151,10 +158,11 @@ public:
 
     vk::DescriptorSetLayout  RayTracingDescriptorSetLayout;
 
-    ImageData  albedoTextureData;
-    ImageData  normalTextureData;
-    ImageData  MetallicRoughnessTextureData;
-    ImageData  AOTextureData;
+    std::vector<ImageData> AlbedoTextures;
+    std::vector<ImageData> NormalTextures;
+    std::vector<ImageData> MetallicRoughnessTextures;
+    std::vector<ImageData> AOTextures;
+
 
     vk::AccelerationStructureKHR BLAS;
 
@@ -163,6 +171,10 @@ public:
 
     std::vector<BufferData> Model_GPU_DataUniformBuffers;
     std::vector<void*>      Model_GPU_DataUniformBuffersMappedMem;
+
+    size_t materialCount;
+
+    std::vector<std::vector<vk::DescriptorSet>> SceneDescriptorSets;
 
 private:
 

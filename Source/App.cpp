@@ -41,8 +41,8 @@
 	skyBox = std::shared_ptr<SkyBox>(new SkyBox(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), SkyBoxDeleter);
 
 
-	auto model  = std::shared_ptr<Model>(new Model("../Textures/Helmet/Helmet.gltf"   , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model2 = std::shared_ptr<Model>(new Model("../Textures/Sponza/glTF/Sponza.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model  = std::shared_ptr<Model>(new Model("../Textures/Helmet/Helmet.gltf"   , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model2 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	//auto model3 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	//auto model4 = std::shared_ptr<Model>(new Model("../Textures/Wall/Cube.gltf"            , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	//auto model5 = std::shared_ptr<Model>(new Model("../Textures/Wall2/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
@@ -50,9 +50,9 @@
 	//auto model7 = std::shared_ptr<Model>(new Model("../Textures/Wall4/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	//auto model8 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 
-	model.get()->Instances[0]->SetPostion(glm::vec3(5.000, -1.202, 5.798));
-	model.get()->Instances[0]->SetScale(glm::vec3(1.100, 1.000, 1.050));
-	model.get()->Instances[0]->SetRotation(glm::vec3(90.000, 0.000, 0.00));
+	//model.get()->Instances[0]->SetPostion(glm::vec3(5.000, -1.202, 5.798));
+	//model.get()->Instances[0]->SetScale(glm::vec3(1.100, 1.000, 1.050));
+	//model.get()->Instances[0]->SetRotation(glm::vec3(90.000, 0.000, 0.00));
 
 	//model2.get()->Instances[0]->SetPostion(glm::vec3(-5.329, 0.265, -4.715));
 	//model2.get()->Instances[0]->SetScale(glm::vec3(8.000, 8.000, 8.000));
@@ -83,7 +83,7 @@
 	//model8.get()->Instances[0]->SetRotation(glm::vec3(0.000, 20, 0.000));
 	//model8.get()->Instances[0]->SetScale(glm::vec3(0.060, 0.060, 0.060));
 
-	Models.push_back(std::move(model));
+	//Models.push_back(std::move(model));
 	Models.push_back(std::move(model2));
 	//Models.push_back(std::move(model3));
 	//Models.push_back(std::move(model4));
@@ -93,7 +93,7 @@
 	//Models.push_back(std::move(model8));
 
 	UserInterfaceItems.push_back(Models[0].get());
-	UserInterfaceItems.push_back(Models[1].get());
+	//UserInterfaceItems.push_back(Models[1].get());
 	//UserInterfaceItems.push_back(Models[2].get());
 	//UserInterfaceItems.push_back(Models[3].get());
 	//UserInterfaceItems.push_back(Models[4].get());

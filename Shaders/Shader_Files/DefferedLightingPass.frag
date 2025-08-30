@@ -158,7 +158,7 @@ void main() {
    // Add environment reflection with Fresnel weighting
    vec3 envSpecular = Reflection * F;
    
-    finalColor =  totalLighting + envSpecular * 1;
+    finalColor =  totalLighting + envSpecular * 0;
   }else{
   
      finalColor = totalLighting;

@@ -56,15 +56,15 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
     if (!model.textures.empty()) {
 
         //create the list of textures array
-        std::vector<StoredImageData> Textures(4);
+        std::vector<StoredImageData> Textures;
+        Textures.reserve(model.materials.size() * 4);
+
 
         // For all the "Materials group" get the individual material  
         for (int i = 0; i < model.materials.size(); i++)
         {
             tinygltf::Material gltfMaterial = model.materials[i];
            
-               
-
             {
                //check if the material group has the albedo texture in its map
                if (gltfMaterial.values.find("baseColorTexture") != gltfMaterial.values.end())
@@ -84,7 +84,7 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
                    TextureData.imageHeight = image.height;
                    TextureData.imageWidth = image.width;
                
-                   Textures[0] = TextureData;
+                   Textures.push_back(TextureData);
                }
                else
                {
@@ -113,7 +113,7 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
                    TextureData.imageWidth = ImageSize;
 
                    // Store in your textures array
-                   Textures[0] = TextureData;
+                   Textures.push_back(TextureData);
                }
             }
 
@@ -133,7 +133,7 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
                    TextureData.imageHeight = image.height;
                    TextureData.imageWidth = image.width;
                
-                   Textures[1] = TextureData;
+                   Textures.push_back(TextureData);
                }
                else
                {
@@ -162,7 +162,7 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
                    TextureData.imageWidth = ImageSize;
 
                    // Store in your textures array
-                   Textures[1] = TextureData;
+                   Textures.push_back(TextureData);
                }
             }
 
@@ -182,7 +182,7 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
                     TextureData.imageHeight = image.height;
                     TextureData.imageWidth = image.width;
 
-                    Textures[2] = TextureData;
+                    Textures.push_back(TextureData);
                 }
                 else
                 {
@@ -211,7 +211,7 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
                     TextureData.imageWidth = ImageSize;
 
                     // Store in your textures array
-                    Textures[2] = TextureData;
+                    Textures.push_back(TextureData);
                 }
             }
 
@@ -231,7 +231,7 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
                     TextureData.imageHeight = image.height;
                     TextureData.imageWidth = image.width;
 
-                    Textures[3] = TextureData;
+                    Textures.push_back(TextureData);
                 }
                 else
                 {
@@ -260,7 +260,7 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
                     TextureData.imageWidth = ImageSize;
 
                     // Store in your textures array
-                    Textures[3] = TextureData;
+                    Textures.push_back(TextureData);
                 }
             }
         }
@@ -419,7 +419,6 @@ std::unique_ptr<Node> MeshLoader::loadNode(const tinygltf::Node&      inputNode,
             primitive.indicesStart   = indicesStart;
             primitive.numIndices     = indexCount;
             primitive.materialIndex  = glTFPrimitive.material;
-
             node->meshPrimitives.push_back( primitive);
         }
     }
