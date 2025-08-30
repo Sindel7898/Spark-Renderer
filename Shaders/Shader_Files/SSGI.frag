@@ -123,6 +123,7 @@ void main() {
       float NdotL = max(dot(Normal, normalize(IntersectionPoint - VSposition)), 0.0);
       giContribution = hitColor * NdotL;
 
+      giContribution *= 300;
       giContribution *= Albedo;
       
     }

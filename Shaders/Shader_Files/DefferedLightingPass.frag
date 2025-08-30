@@ -140,6 +140,8 @@ void main() {
 
 
         float shadow = textureLod(samplerShadowMap[i], inTexCoord,0).r;
+        shadow = mix(0.005, 1.0, shadow);
+
         totalLighting += shadow * Lo * light.CameraPositionAndLightIntensity.a;
 
   }
@@ -147,22 +149,23 @@ void main() {
   
   vec3 finalColor;
 
-  if(ReflectionMask.x > 0.5){
-
-    // Compute Fresnel for reflection
-   vec3 F0 = vec3(0.04);
-   F0 = mix(F0, Albedo, Metallic);
-   float NdotV = max(dot(Normal, ViewDir), 0.0);
-   vec3 F = fresnelSchlick(NdotV, F0);
-   
-   // Add environment reflection with Fresnel weighting
-   vec3 envSpecular = Reflection * F;
-   
-    finalColor =  totalLighting + envSpecular * 0;
-  }else{
-  
-     finalColor = totalLighting;
-  }
+ //if(ReflectionMask.x > 0.5){
+ //
+ //  // Compute Fresnel for reflection
+ // vec3 F0 = vec3(0.04);
+ // F0 = mix(F0, Albedo, Metallic);
+ // float NdotV = max(dot(Normal, ViewDir), 0.0);
+ // vec3 F = fresnelSchlick(NdotV, F0);
+ // 
+ // // Add environment reflection with Fresnel weighting
+ // vec3 envSpecular = Reflection * F;
+ // 
+ //  finalColor =  totalLighting + envSpecular * 0.1;
+ //}else{
+ //
+ //   finalColor = totalLighting;
+ //}
+   finalColor = totalLighting;
 
    outFragcolor = vec4(finalColor, 1.0);
 }
