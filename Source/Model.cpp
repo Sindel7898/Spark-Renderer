@@ -465,56 +465,36 @@ void Model::UpdateUniformBuffer(uint32_t currentImage)
 }
 
 
-void Model::DrawNode(vk::CommandBuffer commandBuffer,
-	vk::PipelineLayout pipelineLayout,
-	const std::vector<std::shared_ptr<Node>>& nodes,
-	const glm::mat4& parentMatrix)
+void Model::DrawNode(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipelineLayout,const std::vector<std::shared_ptr<Node>>& nodes,const glm::mat4& parentMatrix)
 {
 	for (const auto& node : nodes) {
 		if (!node) continue;
 
-		// Calculate world matrix: parent * current node transformation
 		glm::mat4 worldMatrix = parentMatrix * node->matrix;
 
 		for (const auto& primitive : node->meshPrimitives) {
-			if (primitive.numIndices > 0) {
-				commandBuffer.pushConstants(pipelineLayout,
-					vk::ShaderStageFlagBits::eVertex,
-					0,
-					sizeof(glm::mat4),
-					&worldMatrix);
 
-				commandBuffer.drawIndexed(primitive.numIndices,
-					1,
-					primitive.indicesStart,
-					static_cast<int32_t>(primitive.verticesStart),
-					0);
+			if (primitive.numIndices > 0) {
+
+				commandBuffer.pushConstants(pipelineLayout,vk::ShaderStageFlagBits::eVertex,0,sizeof(glm::mat4),&worldMatrix);
+
+				commandBuffer.drawIndexed(primitive.numIndices,1,primitive.indicesStart,0,0);
 			}
 		}
 
-		// Recursively draw children with current world matrix as their parent
 		DrawNode(commandBuffer, pipelineLayout, node->children, worldMatrix);
 	}
 }
 
-void Model::Draw(vk::CommandBuffer commandBuffer,
-	vk::PipelineLayout pipelineLayout,
-	uint32_t imageIndex)
+void Model::Draw(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipelineLayout,uint32_t imageIndex)
 {
 	vk::DeviceSize offsets[] = { 0 };
 	vk::Buffer vertexBuffers[] = { vertexBufferData.buffer };
 
 	commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
 	commandBuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint32);
-	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-		pipelineLayout,
-		0,
-		1,
-		&DescriptorSets[imageIndex],
-		0,
-		nullptr);
+	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,pipelineLayout,0,1,&DescriptorSets[imageIndex],0,nullptr);
 
-	// Start with identity matrix as parent
 	DrawNode(commandBuffer, pipelineLayout, storedModelData->nodes, glm::mat4(1.0f));
 }
 

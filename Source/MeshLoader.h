@@ -7,9 +7,7 @@
 #include <memory>
 
 struct Primitive {
-	uint32_t  verticesStart = 0;
 	uint32_t  indicesStart = 0;
-	uint32_t  numVertices   = 0;
 	uint32_t  numIndices    = 0;
 	uint32_t  materialIndex = 0;
 };

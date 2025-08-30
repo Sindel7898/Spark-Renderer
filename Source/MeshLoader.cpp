@@ -416,9 +416,7 @@ std::unique_ptr<Node> MeshLoader::loadNode(const tinygltf::Node&      inputNode,
           
 
             Primitive primitive;
-            primitive.verticesStart  = verticesStart;
             primitive.indicesStart   = indicesStart;
-            primitive.numVertices    = vertexCount;
             primitive.numIndices     = indexCount;
             primitive.materialIndex  = glTFPrimitive.material;
 
