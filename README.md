@@ -26,6 +26,7 @@ Spark is a renderer And **testbed** for prototype and implement new graphics tec
 
 *(Development previews - more coming soon)*  
 ![Spark Renderer Screenshot](https://github.com/Sindel7898/Spark-Renderer/blob/69d2235af25262cd5fdce4980d19623217c82c05/GitHub%20Doc/Screenshot%202025-08-23%20151346.png)
+![Spark Renderer Screenshot](https://github.com/Sindel7898/Spark-Renderer/blob/e81f4d323526f9d871e7800e8e0ce082db4dd0d4/GitHub%20Doc/Screenshot%202025-08-31%20203030.png)
 
 ![GI Screenshot](https://github.com/Sindel7898/Spark-Renderer/blob/69d2235af25262cd5fdce4980d19623217c82c05/GitHub%20Doc/Screenshot%202025-08-23%20010645.png)
 
