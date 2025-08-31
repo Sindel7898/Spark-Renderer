@@ -24,7 +24,7 @@
 
  App::App()
 {
-	window        = std::shared_ptr<Window>(new Window(1920, 1080, "Impulsion Renderer"), WindowDeleter);
+	window        = std::shared_ptr<Window>(new Window(1920, 1080, "Spark Renderer"), WindowDeleter);
 	vulkanContext = std::shared_ptr<VulkanContext>(new VulkanContext(*window), VulkanContextDeleter);
 	bufferManger  = std::shared_ptr<BufferManager>(new BufferManager (vulkanContext->LogicalDevice, vulkanContext->PhysicalDevice, vulkanContext->VulkanInstance), BufferManagerDeleter);
   	camera        = std::shared_ptr<Camera>(new Camera (vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, window->GetWindow()));
