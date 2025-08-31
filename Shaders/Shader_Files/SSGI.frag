@@ -123,7 +123,6 @@ void main() {
       float NdotL = max(dot(Normal, normalize(IntersectionPoint - VSposition)), 0.0);
       giContribution = hitColor * NdotL;
 
-      giContribution ;
       giContribution *= Albedo;
       
     }
@@ -132,5 +131,15 @@ void main() {
        giContribution *= Albedo;
 
     }
+   
+   float giLum = rgb2luma(giContribution);
+   float minLum = 0.1;         
+   float boostFactor = 15;    
+   
+   if (giLum < minLum) {
+
+       giContribution *= boostFactor;
+   }
+
     outFragcolor = vec4(giContribution, 1.0);
 }

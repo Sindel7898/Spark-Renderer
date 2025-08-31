@@ -13,8 +13,8 @@ layout (location = 0) out vec4 outFragcolor;
 
 void main() {
 
-    vec3 Color          = texture(SSGIImage,inTexCoord).rgb;
-    vec3 LastFrameColor = texture(LastFrameImage,inTexCoord).rgb;
+    vec3 Color          = textureLod(SSGIImage,inTexCoord,0).rgb;
+    vec3 LastFrameColor = textureLod(LastFrameImage,inTexCoord,0).rgb;
 
     float count = pc.AccumilationCount;
 

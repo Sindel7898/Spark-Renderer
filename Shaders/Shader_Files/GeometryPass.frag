@@ -26,19 +26,22 @@ void main() {
   
   outWorldPosition     = WorldSpacePosition;
   outViewSpacePosition = ViewSpacePosition;
+  
+  vec3 NormalTexture = textureLod(samplerNormal, fragTexCoord,0).rgb * 2.0 - vec3(1.0);
 
-  vec3 tnorm = normalize(WorldSpaceTBN * normalize(texture(samplerNormal, fragTexCoord).rgb * 2.0 - vec3(1.0)));
+
+  vec3 tnorm = normalize(WorldSpaceTBN * NormalTexture);
   outNormal = vec4(tnorm, 1);
 
-  vec3 vtnorm = ViewSpaceTBN * normalize(texture(samplerNormal, fragTexCoord).rgb * 2.0 - vec3(1.0));
+  vec3 vtnorm = normalize(ViewSpaceTBN * NormalTexture);
   outViewSpaceNormal = vec4(vtnorm, 1);
 
-  vec2 MetallicRoughness  = texture(samplerMetallicRoughness,fragTexCoord).gb;
-  float A0                = texture(samplerAO,fragTexCoord).r;
+  vec2 MetallicRoughness  = textureLod(samplerMetallicRoughness,fragTexCoord,0).gb;
+  float A0                = textureLod(samplerAO,fragTexCoord,0).r;
 
   outMetallicRoughnessMapAO = vec4(MetallicRoughness,A0,1);
 
-  vec3 Albedo = texture(samplerColor,fragTexCoord).rgb;
+  vec3 Albedo = textureLod(samplerColor,fragTexCoord,0).rgb;
 
   outAlbedo   = vec4(Albedo,1.0);
 

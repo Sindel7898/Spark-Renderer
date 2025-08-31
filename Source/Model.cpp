@@ -274,7 +274,7 @@ void Model::Instantiate()
 	else
 	{
 		InstanceData* NewInstance = new InstanceData(nullptr, vulkanContext);
-		NewInstance->SetModelMatrix(storedModelData->modelMatrix);
+		NewInstance->SetModelMatrix(glm::mat4(1.0f));
 
 		Instances.push_back(NewInstance);
 		GPU_InstancesData.push_back(NewInstance->gpu_InstanceData);
