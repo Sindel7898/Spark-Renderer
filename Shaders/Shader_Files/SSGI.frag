@@ -15,8 +15,9 @@ layout (binding = 6) uniform SSGIUniformBuffer {
 layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragcolor;
 
-const int MAX_ITERATION = 30;
-const float MAX_THICKNESS = 0.1; // Increased from 0.0002 to better handle depth precision
+const int MAX_ITERATION = 16;
+const int NUM_RAYS = 6;
+const float MAX_THICKNESS = 0.1; 
 
 vec3 GetPerpendicularVector(vec3 v) {
     // More efficient perpendicular vector calculation
@@ -39,7 +40,7 @@ vec3 FindIntersectionPoint(vec3 SamplePosInVS, vec3 DirInVS, float MaxTraceDista
     
     // Use max component for step calculation
     float max_dist = max(max(abs(dp2.x), abs(dp2.y)), abs(dp2.z));
-    vec3 Step = dp2 / (max_dist * 5.0); // Optimized step calculation
+    vec3 Step = dp2 / (max_dist * 2.3); // Optimized step calculation
     
     vec3 rayPosInVS = SamplePosInVS;
     
@@ -101,45 +102,34 @@ void main() {
 
      vec2 noise = textureLod(BlueNoise[NoiseImageIndex], tiledUV,0).rg;
 
-    // Get random direction in hemisphere
     vec3 stochasticNormal = GetHemisphereSample(noise, Normal);
     
-    vec3 giContribution;
+    vec3 giContribution = vec3(0.0);
 
     if(dot(stochasticNormal, stochasticNormal) > 0.001){
          // Find intersection point in view space with dynamic iterations
-      vec3 IntersectionPoint = FindIntersectionPoint(
+
+         for(int i = 0; i < NUM_RAYS; i++) {
+
+          vec3 IntersectionPoint = FindIntersectionPoint(
           offsetPositionAlongNormal(VSposition, stochasticNormal), 
           stochasticNormal, 
           100.0);
       
       // Project intersection point to screen space
-      vec4 RayPositionPS = ubo.ProjectionMatrix * vec4(IntersectionPoint, 1.0);
-      RayPositionPS.xyz /= RayPositionPS.w;
-      vec2 uv = RayPositionPS.xy * 0.5 + 0.5;
-      
-      vec3 hitColor = textureLod(DirectLigtingTexture, uv,0).rgb;
-      
-      float NdotL = max(dot(Normal, normalize(IntersectionPoint - VSposition)), 0.0);
-      giContribution = hitColor * NdotL;
+         vec4 RayPositionPS = ubo.ProjectionMatrix * vec4(IntersectionPoint, 1.0);
+         RayPositionPS.xyz /= RayPositionPS.w;
+         vec2 uv = RayPositionPS.xy * 0.5 + 0.5;
+         
+         vec3 hitLighting = textureLod(DirectLigtingTexture, uv,0).rgb;
+         
+         vec3 radianceB = hitLighting;
+         float cosTerm = max(dot(Normal, stochasticNormal), 0.0);
 
-      giContribution *= Albedo;
-      
-    }
-    else{
-       giContribution = vec3(0);
-       giContribution *= Albedo;
-
-    }
+          giContribution += (radianceB * Albedo * cosTerm) * 1.5;  
+       }
+      }
    
-   float giLum = rgb2luma(giContribution);
-   float minLum = 0.1;         
-   float boostFactor = 15;    
-   
-   if (giLum < minLum) {
-
-       giContribution *= boostFactor;
-   }
 
     outFragcolor = vec4(giContribution, 1.0);
 }
