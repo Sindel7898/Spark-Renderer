@@ -14,7 +14,7 @@ public:
     void CreateVertexAndIndexBuffer() override;
     void createDescriptorSetLayout() override;
     void UpdataeUniformBufferData();
-    void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData SSGIImage, ImageData SSAOIImage, ImageData MaterialImage);
+    void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData SSGIImage, ImageData SSAOIImage, ImageData MaterialImage, ImageData AlbedoImage);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
     void CreateImage(vk::Extent3D imageExtent);
     void DestroyImage();

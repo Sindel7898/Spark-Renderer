@@ -15,8 +15,8 @@ layout (binding = 6) uniform SSGIUniformBuffer {
 layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragcolor;
 
-const int MAX_ITERATION = 10;
-const int NUM_RAYS = 3;
+const int MAX_ITERATION = 20;
+const int NUM_RAYS = 4;
 const float MAX_THICKNESS = 0.1; 
 
 vec3 GetPerpendicularVector(vec3 v) {
@@ -73,9 +73,7 @@ vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal)
     return ViewPosition + 0.0001 * normal;
 }
 
-float rgb2luma(vec3 rgb) {
-    return dot(rgb, vec3(0.299, 0.587, 0.114));
-}
+
 
 
 void main() {
@@ -88,11 +86,9 @@ void main() {
     vec3 VSposition = textureLod(ViewSpacePosition, inTexCoord,0).rgb;
     vec3 Normal = normalize(textureLod(NormalTexture, inTexCoord,0).xyz);
     
-
-    float Luminance = rgb2luma(Color);
     
     // Get blue noise sample
-    ivec2 WindowSize = textureSize(DirectLigtingTexture, 0);
+    ivec2 WindowSize = textureSize(DirectLigtingTexture, 3);
 
     vec2 tiledUV = (inTexCoord * (WindowSize / 100));
 
@@ -124,16 +120,8 @@ void main() {
             vec3 radianceB = hitLighting;
             float cosTerm = max(dot(Normal, stochasticNormal), 0.0);
             
-             giContribution += (radianceB * Albedo * cosTerm);  
+             giContribution += (radianceB * cosTerm);  
        }
-    }
-   
-    float giLuma = rgb2luma(giContribution);
-
-    if (giLuma < 0.01) {        
-        giContribution *= 2;
-        giContribution += (Albedo * 0.1);        
-        
     }
 
     outFragcolor = vec4(giContribution, 1.0);

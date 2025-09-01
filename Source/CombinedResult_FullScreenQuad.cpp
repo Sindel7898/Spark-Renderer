@@ -77,7 +77,13 @@ void CombinedResult_FullScreenQuad::createDescriptorSetLayout()
 		MaterialsDescriptorBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		MaterialsDescriptorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-		std::array<vk::DescriptorSetLayoutBinding, 4> ImageResultPassBinding = { LightingResultDescriptorBinding,SSGIDescriptorBinding,SSAODescriptorBinding,MaterialsDescriptorBinding };
+		vk::DescriptorSetLayoutBinding AlbedoDescriptorBinding{};
+		AlbedoDescriptorBinding.binding = 4;
+		AlbedoDescriptorBinding.descriptorCount = 1;
+		AlbedoDescriptorBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		AlbedoDescriptorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+		std::array<vk::DescriptorSetLayoutBinding, 5> ImageResultPassBinding = { LightingResultDescriptorBinding,SSGIDescriptorBinding,SSAODescriptorBinding,MaterialsDescriptorBinding,AlbedoDescriptorBinding };
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.bindingCount = static_cast<uint32_t>(ImageResultPassBinding.size());
@@ -96,7 +102,7 @@ void CombinedResult_FullScreenQuad::UpdataeUniformBufferData()
 }
 
 
-void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData SSGIImage, ImageData SSAOIImage, ImageData MaterialImage)
+void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData SSGIImage, ImageData SSAOIImage, ImageData MaterialImage, ImageData AlbedoImage)
 {
 	// create sets from the pool based on the layout
 	std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
@@ -172,8 +178,23 @@ void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::Descr
 		MaterialsSamplerdescriptorWrite.pImageInfo = &MaterialsImageResultimageInfo;
 
 
-		std::array<vk::WriteDescriptorSet, 4> descriptorWrites = { LightingResultSamplerdescriptorWrite,
-																	SSGISamplerdescriptorWrite,SSAOSamplerdescriptorWrite,MaterialsSamplerdescriptorWrite };
+		vk::DescriptorImageInfo AlbedoImageResultimageInfo{};
+		AlbedoImageResultimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		AlbedoImageResultimageInfo.imageView = AlbedoImage.imageView;
+		AlbedoImageResultimageInfo.sampler = AlbedoImage.imageSampler;
+
+		vk::WriteDescriptorSet AlbedoSamplerdescriptorWrite{};
+		AlbedoSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+		AlbedoSamplerdescriptorWrite.dstBinding = 4;
+		AlbedoSamplerdescriptorWrite.descriptorCount = 1;
+		AlbedoSamplerdescriptorWrite.dstArrayElement = 0;
+		AlbedoSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		AlbedoSamplerdescriptorWrite.pImageInfo = &AlbedoImageResultimageInfo;
+
+
+
+		std::array<vk::WriteDescriptorSet, 5> descriptorWrites = { LightingResultSamplerdescriptorWrite,
+																	SSGISamplerdescriptorWrite,SSAOSamplerdescriptorWrite,MaterialsSamplerdescriptorWrite,AlbedoSamplerdescriptorWrite };
 
 		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	}

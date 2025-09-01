@@ -33,18 +33,30 @@ public:
 
     void DrawTA(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
 
+    void DrawTA_HorizontalBlur(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
+
+    void DrawTA_VerticalBlur(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
+
     void CleanUp() ;
 
     std::vector<vk::DescriptorSet> TemporalAccumilationFullDescriptorSets;
     vk::DescriptorSetLayout TemporalAccumilationDescriptorSetLayout;
 
+
+    std::vector<vk::DescriptorSet> HorizontalBlured_TemporalAccumilationFullDescriptorSets;
+    std::vector<vk::DescriptorSet> FinalBlured_TemporalAccumilationFullDescriptorSets;
+
+    vk::DescriptorSetLayout Blured_TemporalAccumilationDescriptorSetLayout;
+
     std::vector<ImageData> BlueNoiseTextures;
 
-    ImageData SSGIPassImage;
-    ImageData SSGIPassLastFrameImage;
-    ImageData SSGIAccumilationImage;
-    ImageData SSGIFullRessAccumilationImage;
+    ImageData HalfRes_SSGIPassImage;
+    ImageData HalfRes_SSGIPassLastFrameImage;
+    ImageData HalfRes_SSGIAccumilationImage;
+    ImageData HalfRes_HorizontalBluredSSGIAccumilationImage;
+    ImageData HalfRes_BluredSSGIAccumilationImage;
 
+    vk::Extent3D Swapchainextent_Half_Res;
     int NoiseIndex;
 
     glm::mat4 LastCameraMatrix;

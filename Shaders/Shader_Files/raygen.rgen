@@ -16,7 +16,7 @@ layout(binding = 4) uniform CameraProperties {
 
 struct LightStruct {
     vec4 LightPositions;
-    vec4 LightType_CastShadow_Padding;
+    vec4 LightType_CastShadow_AmbientStrength_Padding;
 };
 
 layout(binding = 5) uniform LightInformation {
@@ -78,30 +78,29 @@ void main() {
 
     for(int i = 0; i < MAX_LIGHTS; ++i) {
         // Check if light exists and casts shadows
-        if(i < int(cam.LightCount_NumOfLightCasters_Padding.x) && 
-           Light_UBO.LightData[i].LightType_CastShadow_Padding.y > 0.5) {
+        if(Light_UBO.LightData[i].LightType_CastShadow_AmbientStrength_Padding.y > 0.5) {
             
-            vec3 lightDir;
-            float maxDistance;
-            
-            // Directional light (type 0)
-            if(Light_UBO.LightData[i].LightType_CastShadow_Padding.x < 0.5) {
-                lightDir = normalize(-Light_UBO.LightData[i].LightPositions.xyz);
-                maxDistance = 10000.0;
-            } 
-            // Point light (type 1)
-            else {
-                vec3 toLight = Light_UBO.LightData[i].LightPositions.xyz - hitPosition;
-                maxDistance = length(toLight);
-                lightDir = normalize(toLight);
-            }
-            
-            // Trace shadow ray
-            bool isShadowed = TraceShadow(origin, lightDir, maxDistance);
-            
-            if(isShadowed) {
-                shadowFactor[i] = 0.0;
-            }
+             vec3 lightDir;
+             float maxDistance;
+             
+             // Directional light (type 0)
+             if(Light_UBO.LightData[i].LightType_CastShadow_AmbientStrength_Padding.x < 0.5) {
+                 lightDir = normalize(-Light_UBO.LightData[i].LightPositions.xyz);
+                 maxDistance = 10000.0;
+             } 
+             // Point light (type 1)
+             else {
+                 vec3 toLight = Light_UBO.LightData[i].LightPositions.xyz - hitPosition;
+                 maxDistance = length(toLight);
+                 lightDir = normalize(toLight);
+             }
+             
+             // Trace shadow ray
+             bool isShadowed = TraceShadow(origin, lightDir, maxDistance);
+             
+             if(isShadowed) {
+                 shadowFactor[i] = 0.0 + Light_UBO.LightData[i].LightType_CastShadow_AmbientStrength_Padding.z;
+             }
         }
     }
 
