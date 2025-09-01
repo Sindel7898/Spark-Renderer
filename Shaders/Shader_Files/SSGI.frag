@@ -15,7 +15,7 @@ layout (binding = 6) uniform SSGIUniformBuffer {
 layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragcolor;
 
-const int MAX_ITERATION = 15;
+const int MAX_ITERATION = 10;
 const int NUM_RAYS = 3;
 const float MAX_THICKNESS = 0.1; 
 
