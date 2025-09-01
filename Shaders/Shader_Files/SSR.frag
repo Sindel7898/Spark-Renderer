@@ -183,14 +183,13 @@ void main() {
 
      vec3 viewDir   = -normalize(ViewSpacePosition.xyz);
      float cosTheta = clamp(dot(viewDir, Normal), 0.0, 1.0);
-     vec3 F0        = mix(vec3(0.08),Color,MetalicRoughnessAO.r);
+     vec3 F0        = mix(vec3(0.04),Color,MetalicRoughnessAO.r);
      
      vec3 fresnel = fresnelSchlick(cosTheta, F0);
      vec3 SSR     = ReflectionColor.rgb;
 
-     ReflectionColor.rgb;
 
-     vec3 finalColor = mix(Color, ReflectionColor.rgb, fresnel * 0.4); 
+     vec3 finalColor = mix(Color, ReflectionColor.rgb, fresnel * 0.2); 
 
      outFragcolor = vec4(finalColor.rgb, 1.0);
 }

@@ -15,14 +15,13 @@ layout (binding = 6) uniform SSGIUniformBuffer {
 layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragcolor;
 
-const int MAX_ITERATION = 16;
-const int NUM_RAYS = 6;
+const int MAX_ITERATION = 15;
+const int NUM_RAYS = 3;
 const float MAX_THICKNESS = 0.1; 
 
 vec3 GetPerpendicularVector(vec3 v) {
-    // More efficient perpendicular vector calculation
-    return normalize(cross(v, 
-        abs(v.x) > abs(v.z) ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0)
+
+    return normalize(cross(v, abs(v.x) > abs(v.z) ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0)
     ));
 }
 vec3 GetHemisphereSample(vec2 randVal, vec3 HitNormal) {
@@ -78,6 +77,7 @@ float rgb2luma(vec3 rgb) {
     return dot(rgb, vec3(0.299, 0.587, 0.114));
 }
 
+
 void main() {
 
 
@@ -94,42 +94,47 @@ void main() {
     // Get blue noise sample
     ivec2 WindowSize = textureSize(DirectLigtingTexture, 0);
 
-    vec2 tiledUV = (inTexCoord * (WindowSize / 70));
-    
-    vec2 frameJitter = fract(ubo.BlueNoiseImageIndex_DeltaTime_Padding.y * vec2(0.618034, 0.324719));;
+    vec2 tiledUV = (inTexCoord * (WindowSize / 100));
 
-     tiledUV = (tiledUV + frameJitter);
-
-     vec2 noise = textureLod(BlueNoise[NoiseImageIndex], tiledUV,0).rg;
-
-    vec3 stochasticNormal = GetHemisphereSample(noise, Normal);
     
     vec3 giContribution = vec3(0.0);
 
-    if(dot(stochasticNormal, stochasticNormal) > 0.001){
-         // Find intersection point in view space with dynamic iterations
 
-         for(int i = 0; i < NUM_RAYS; i++) {
+       for(int i = 0; i < NUM_RAYS; i++) {
 
-          vec3 IntersectionPoint = FindIntersectionPoint(
-          offsetPositionAlongNormal(VSposition, stochasticNormal), 
-          stochasticNormal, 
-          100.0);
-      
-      // Project intersection point to screen space
-         vec4 RayPositionPS = ubo.ProjectionMatrix * vec4(IntersectionPoint, 1.0);
-         RayPositionPS.xyz /= RayPositionPS.w;
-         vec2 uv = RayPositionPS.xy * 0.5 + 0.5;
-         
-         vec3 hitLighting = textureLod(DirectLigtingTexture, uv,0).rgb;
-         
-         vec3 radianceB = hitLighting;
-         float cosTerm = max(dot(Normal, stochasticNormal), 0.0);
+             int noiseIdx = (NoiseImageIndex + i) % 63;
 
-          giContribution += (radianceB * Albedo * cosTerm) * 1.5;  
+             vec2 noise = textureLod(BlueNoise[noiseIdx], tiledUV,0).rg;
+
+            vec3 stochasticNormal = GetHemisphereSample(noise, Normal);
+
+            if(dot(stochasticNormal, stochasticNormal) > 0.001){
+            
+             vec3 IntersectionPoint = FindIntersectionPoint(
+                                       offsetPositionAlongNormal(VSposition, stochasticNormal), 
+                                        stochasticNormal, 
+                                        100.0);
+            
+            vec4 RayPositionPS = ubo.ProjectionMatrix * vec4(IntersectionPoint, 1.0);
+            RayPositionPS.xyz /= RayPositionPS.w;
+            vec2 uv = RayPositionPS.xy * 0.5 + 0.5;
+            
+            vec3 hitLighting = textureLod(DirectLigtingTexture, uv,0).rgb;
+            
+            vec3 radianceB = hitLighting;
+            float cosTerm = max(dot(Normal, stochasticNormal), 0.0);
+            
+             giContribution += (radianceB * Albedo * cosTerm);  
        }
-      }
+    }
    
+    float giLuma = rgb2luma(giContribution);
+
+    if (giLuma < 0.01) {        
+        giContribution *= 2;
+        giContribution += (Albedo * 0.1);        
+        
+    }
 
     outFragcolor = vec4(giContribution, 1.0);
 }
