@@ -7,7 +7,7 @@ layout (binding = 2) uniform sampler2D samplerAlbedo;
 layout (binding = 3) uniform sampler2D samplerMaterials;
 layout (binding = 4) uniform samplerCube samplerReflectiveCubeMap;
 layout (binding = 5) uniform sampler2D samplerReflectionMask;
-layout (binding = 6) uniform sampler2D samplerShadowMap[2];
+layout (binding = 6) uniform sampler2D samplerShadowMap[4];
 
 layout(location = 0) in vec2 inTexCoord;           
 
@@ -20,7 +20,7 @@ struct LightData{
 };
 layout (binding = 7) uniform LightUniformBuffer {
    
-   LightData lights[3];
+   LightData lights[4];
 };
 
 layout (location = 0) out vec4 outFragcolor;
@@ -95,7 +95,14 @@ void main() {
     vec3 Reflection = textureLod(samplerReflectiveCubeMap, cR, mipLevel).rgb;
 
 
-  for (int i = 0; i < 2; i++) {
+
+    float shadows[4] = {textureLod(samplerShadowMap[0], inTexCoord,0).r,
+                        textureLod(samplerShadowMap[0], inTexCoord,0).g,
+                        textureLod(samplerShadowMap[0], inTexCoord,0).b,
+                        textureLod(samplerShadowMap[0], inTexCoord,0).a};
+
+
+  for (int i = 0; i < 4; i++) {
 
     LightData light = lights[i];
 
@@ -139,7 +146,7 @@ void main() {
      Lo += (kD * Albedo / PI + specular) * radiance * NdotL;
 
 
-        float shadow = textureLod(samplerShadowMap[i], inTexCoord,0).r;
+        float shadow = shadows[i];
 
         totalLighting += shadow * Lo * light.CameraPositionAndLightIntensity.a;
 

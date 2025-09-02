@@ -120,35 +120,53 @@
 	SSGI_FullScreenQuad     = std::shared_ptr<SSGI>(new SSGI(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSGIDeleter);
 	pipelineManager         = std::shared_ptr<PipelineManager>(new PipelineManager(vulkanContext.get()));
 
-	lights.reserve(2);
+	lights.reserve(4);
 
-	for (int i = 0; i < 3; i++) {
+	for (int i = 0; i < 4; i++) {
 		std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), LightDeleter);
 		lights.push_back(std::move(light));
 	}
 
-	lights[0]->SetPosition(glm::vec3(-0.908, 8.704, 1.505));
+	lights[0]->SetPosition(glm::vec3(-4.351, 5.012, -4.192));
 	lights[0]->lightType = 1;
-	lights[0]->lightIntensity = 40.000;
+	lights[0]->lightIntensity = 3.000;
 	lights[0]->CastShadowsSwitch(true);
 	lights[0]->ambientStrength = 0.1;
-	lights[0]->SetScale(glm::vec3(0.400, 0.400, 0.400));
+	lights[0]->SetScale(glm::vec3(0.200, 0.200, 0.200));
 
-	lights[1]->SetPosition(glm::vec3(0.598, 24.282, 0.477));
-	lights[1]->SetScale(glm::vec3(0.100, 0.100, 0.100));
+	lights[1]->SetPosition(glm::vec3(14.869, -15.006, 11.578));
+	lights[1]->SetScale(glm::vec3(0.200, 0.200, 0.200));
 	lights[1]->CastShadowsSwitch(true);
-	lights[1]->ambientStrength = 0.3;
-	lights[1]->lightIntensity = 0;
+	lights[1]->ambientStrength = 0.100;
+	lights[1]->lightIntensity = 1.000;
+	lights[1]->lightType = 0;
 
-	lights[2]->SetPosition(glm::vec3(-20.0f, -50, 0.0f));
+
+	lights[2]->SetPosition(glm::vec3(-1.830, 4.918, 10.112));
+	lights[2]->lightType = 1;
+	lights[2]->lightIntensity = 3.000;
+	lights[2]->CastShadowsSwitch(true);
+	lights[2]->ambientStrength = 0.1;
+	lights[2]->SetScale(glm::vec3(0.200, 0.200, 0.200));
+
+
+	lights[3]->SetPosition(glm::vec3(3.723, 5.277, -21.320));
+	lights[3]->lightType = 1;
+	lights[3]->lightIntensity = 3.000;
+	lights[3]->CastShadowsSwitch(true);
+	lights[3]->ambientStrength = 0.1;
+	lights[3]->SetScale(glm::vec3(0.200, 0.200, 0.200));
+
 
 	lights[0]->color = glm::vec3(1.0f, 1.0f, 1.0f);
 	lights[1]->color = glm::vec3(1.0f, 1.0f, 1.0f);
 	lights[2]->color = glm::vec3(1.0f, 1.0f, 1.0f);
+	lights[3]->color = glm::vec3(1.0f, 1.0f, 1.0f);
 
-	UserInterfaceItems.push_back(lights[0].get());
-	UserInterfaceItems.push_back(lights[1].get());
-	UserInterfaceItems.push_back(lights[2].get());
+
+	for (auto& l : lights) {
+		UserInterfaceItems.push_back(l.get());
+	}
 
 
 	createDescriptorPool();
@@ -387,7 +405,7 @@ void App::createDescriptorPool()
 
 	vk::DescriptorPoolSize StorageImagepoolsize;
 	StorageImagepoolsize.type = vk::DescriptorType::eStorageImage;
-	StorageImagepoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 2;
+	StorageImagepoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 10;
 
 	std::array<	vk::DescriptorPoolSize, 4> poolSizes{ Uniformpoolsize ,Samplerpoolsize,
 		                                              AccelerationStructurepoolsize,StorageImagepoolsize };
@@ -1360,6 +1378,7 @@ void App::CalculateFps(FramesPerSecondCounter& fpsCounter)
 }
 void App::Draw()
 {
+
 	// ZoneScopedN("render"); // Tracy profiling marker (commented out)
 
 	// --- CPU-GPU Synchronization ---

@@ -57,10 +57,10 @@ void RayTracing::CreateUniformBuffer() {
 
 void RayTracing::CreateStorageImage() {
 
-	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
+	 swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
 
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < 4; i++)
 	{
 		ImageData ShadowPassImage;
 
@@ -105,7 +105,7 @@ void RayTracing::createRayTracingDescriptorSetLayout(){
 
 	vk::DescriptorSetLayoutBinding ShadowResultSamplerLayout{};
 	ShadowResultSamplerLayout.binding = 3;
-	ShadowResultSamplerLayout.descriptorCount = 2;
+	ShadowResultSamplerLayout.descriptorCount = 4;
 	ShadowResultSamplerLayout.descriptorType = vk::DescriptorType::eStorageImage;
 	ShadowResultSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
@@ -360,8 +360,8 @@ void RayTracing::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferDa
 	VkStridedDeviceAddressRegionKHR  TEMP_hitShaderSbtEntry      = static_cast<VkStridedDeviceAddressRegionKHR>(hitShaderSbtEntry);;
 	VkStridedDeviceAddressRegionKHR  TEMP_callableShaderSbtEntry = static_cast<VkStridedDeviceAddressRegionKHR>(callableShaderSbtEntry);;
 
-	int width  = vulkanContext->swapchainExtent.width;
-	int height = vulkanContext->swapchainExtent.height;
+	int width  = swapchainextent.width;
+	int height = swapchainextent.height;
 	int depth  = 1;
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, pipelinelayout, 0, 1, &RayTracingDescriptorSets[imageIndex],0,nullptr);
 	

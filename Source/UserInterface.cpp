@@ -528,6 +528,24 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 			Light* light = dynamic_cast<Light*>(item);
 
 			if (light) {
+
+				glm::vec3 pos = light->position;
+				glm::vec3 rot = light->rotation;
+				glm::vec3 scl = light->scale;
+
+				if (ImGui::InputFloat3("Position", glm::value_ptr(pos))) {
+					light->SetPosition(pos);
+				}
+
+				if (ImGui::InputFloat3("Rotation", glm::value_ptr(rot))) {
+					light->SetRotation(rot);
+				}
+
+				if (ImGui::InputFloat3("Scale", glm::value_ptr(scl))) {
+					light->SetScale(scl);
+				}
+
+
 				ImGui::ColorEdit3("Color", glm::value_ptr(light->color));
 				ImGui::InputFloat("Light Intensity", &light->lightIntensity);
 				ImGui::InputFloat("Ambience Value", &light->ambientStrength);

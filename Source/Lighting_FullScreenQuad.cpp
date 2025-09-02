@@ -95,7 +95,7 @@ void Lighting_FullScreenQuad::createDescriptorSetLayout()
 
 		vk::DescriptorSetLayoutBinding ShadowMapSamplerLayout{};
 		ShadowMapSamplerLayout.binding = 6;
-		ShadowMapSamplerLayout.descriptorCount = 2;
+		ShadowMapSamplerLayout.descriptorCount = 4;
 		ShadowMapSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		ShadowMapSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
@@ -321,6 +321,7 @@ void Lighting_FullScreenQuad::UpdateUniformBuffer(uint32_t currentImage, std::ve
 			glm::mat4 projection = lightref[i]->ProjectionMatrix;
 			projection[1][1] *= -1;
 			LightData.LightViewProjMatrix = projection * lightref[i]->ViewMatrix;
+
 			lightDataspack.push_back(LightData);
 		}
 	}

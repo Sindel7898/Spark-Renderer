@@ -9,11 +9,12 @@
 #include "RayTracing.h"
 
 
-struct LightUniformData {
-     glm::vec4  lightPositionAndLightType;
-     glm::vec4  colorAndAmbientStrength;
-     glm::vec4  CameraPositionAndLightIntensity;
-     glm::mat4  LightViewProjMatrix;
+struct alignas(16) LightUniformData {
+     alignas(16) glm::vec4  lightPositionAndLightType;
+     alignas(16) glm::vec4  colorAndAmbientStrength;
+     alignas(16) glm::vec4  CameraPositionAndLightIntensity;
+     alignas(16) glm::mat4  LightViewProjMatrix;
+
 };
 
 class Lighting_FullScreenQuad : public Drawable

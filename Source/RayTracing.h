@@ -51,6 +51,7 @@ public:
 
     int NumOfShadowCasters;
 
+    vk::Extent3D swapchainextent;
 private:
 
     VulkanContext*   vulkanContext = nullptr;

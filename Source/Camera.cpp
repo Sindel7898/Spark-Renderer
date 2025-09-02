@@ -2,10 +2,10 @@
 #include <GLFW/glfw3.h>
 
 Camera::Camera(uint32_t SwapChainHeight, uint32_t SwapChainWidth, GLFWwindow* Window) :
-    position(0.0f, 1.0f, 15),
+    position(-8.56827, 2.08025, 0.447241),
     worldUp(0.0f, 1.0f, 0.0f),
-    pitch(0.0f),
-    yaw(-90.0f),
+    pitch(-4.5),
+    yaw(-11),
     movementSpeed(15.0f),
     mouseSensitivity(0.1f),
     fov(100.0f),
@@ -95,6 +95,8 @@ void Camera::Update(float deltaTime) {
 
         UpdateViewMatrix();
     }
+
+
 }
 
 void Camera::UpdateCameraVectors() {
