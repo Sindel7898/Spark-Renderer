@@ -191,5 +191,5 @@ void main() {
 
      vec3 finalColor = mix(Color, ReflectionColor.rgb, fresnel); 
 
-     outFragcolor = vec4(SSR, 1.0);
+     outFragcolor = vec4(finalColor, 1.0);
 }

@@ -12,7 +12,6 @@ layout(set = 0,binding = 0) uniform VertexUniformBufferObject {
 }vuob;
 
 struct InstanceData{
-       mat4 Model;
        vec4 bCubeMapReflection_bScreenSpaceReflection_Padding;
 };
 
