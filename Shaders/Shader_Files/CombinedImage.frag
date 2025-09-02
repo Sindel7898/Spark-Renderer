@@ -35,20 +35,18 @@ vec3 ContrastSaturationBrightness(vec3 color, float brt, float sat, float con)
 }
 
 void main() {
-    vec3  Lighting_Shadows = textureLod(LightingReflectionTexture, inTexCoord,0).rgb;
-    vec3  GI               = textureLod(GITexture, inTexCoord,0).rgb;
-    float SSAO             = textureLod(SSAOTexture, inTexCoord,0).r;
-    float TextureFromAO    = textureLod(MaterialsTexture, inTexCoord,0).b;
-    float Albedo           = textureLod(AlbedoTexture, inTexCoord,0).b;
+     vec3 Lighting_Shadows = texture(LightingReflectionTexture, inTexCoord).rgb;
+     vec3 GI               = texture(GITexture, inTexCoord).rgb;
+     float SSAO            = texture(SSAOTexture, inTexCoord).r;
+     float TextureFromAO   = texture(MaterialsTexture, inTexCoord).b;
+     vec3 Albedo           = texture(AlbedoTexture, inTexCoord).rgb;
+     
 
-    float FinalAO   = (SSAO * TextureFromAO);
-
-    vec3  GI_Contribution = GI * Albedo;
-
- 
-    vec3 FinalColor    = Lighting_Shadows + (GI_Contribution * FinalAO) ;
-
-	vec3 CorrectedColor = ContrastSaturationBrightness(FinalColor,1,1.3,1);
-
-    outFragColor    = vec4(CorrectedColor, 1.0); 
+     float FinalAO         = SSAO * TextureFromAO;
+     vec3 GI_Contribution  = GI * Albedo * FinalAO;
+     
+     vec3 FinalColor       = Lighting_Shadows + GI_Contribution;
+     vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, 1.0, 1.3, 1.0);
+     
+     outFragColor = vec4(CorrectedColor, 1.0);
 }

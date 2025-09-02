@@ -15,8 +15,8 @@ layout (binding = 6) uniform SSGIUniformBuffer {
 layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragcolor;
 
-const int MAX_ITERATION = 20;
-const int NUM_RAYS = 4;
+const int MAX_ITERATION = 10;
+const int NUM_RAYS = 5;
 const float MAX_THICKNESS = 0.1; 
 
 vec3 GetPerpendicularVector(vec3 v) {
@@ -39,7 +39,7 @@ vec3 FindIntersectionPoint(vec3 SamplePosInVS, vec3 DirInVS, float MaxTraceDista
     
     // Use max component for step calculation
     float max_dist = max(max(abs(dp2.x), abs(dp2.y)), abs(dp2.z));
-    vec3 Step = dp2 / (max_dist * 2.3); // Optimized step calculation
+    vec3 Step = dp2 / (max_dist * 2.3); 
     
     vec3 rayPosInVS = SamplePosInVS;
     
@@ -90,7 +90,7 @@ void main() {
     // Get blue noise sample
     ivec2 WindowSize = textureSize(DirectLigtingTexture, 3);
 
-    vec2 tiledUV = (inTexCoord * (WindowSize / 100));
+    vec2 tiledUV = (inTexCoord);
 
     
     vec3 giContribution = vec3(0.0);
@@ -109,7 +109,7 @@ void main() {
              vec3 IntersectionPoint = FindIntersectionPoint(
                                        offsetPositionAlongNormal(VSposition, stochasticNormal), 
                                         stochasticNormal, 
-                                        100.0);
+                                        50.0);
             
             vec4 RayPositionPS = ubo.ProjectionMatrix * vec4(IntersectionPoint, 1.0);
             RayPositionPS.xyz /= RayPositionPS.w;

@@ -274,7 +274,7 @@ void Model::Instantiate()
 	else
 	{
 		InstanceData* NewInstance = new InstanceData(nullptr, vulkanContext);
-		NewInstance->SetModelMatrix(glm::mat4(1.0f));
+		NewInstance->SetTrasnformationMatrix(glm::mat4(1.0f));
 
 		Instances.push_back(NewInstance);
 		GPU_InstancesData.push_back(NewInstance->gpu_InstanceData);
@@ -489,9 +489,12 @@ void Model::UpdateUniformBuffer(uint32_t currentImage)
 void Model::DrawNode(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipelineLayout, uint32_t imageIndex,const std::vector<std::shared_ptr<Node>>& nodes,const glm::mat4& parentMatrix)
 {
 	for (const auto& node : nodes) {
+		
 		if (!node) continue;
 
 		glm::mat4 worldMatrix = parentMatrix * node->matrix;
+
+		Instances[0]->SetModelMatrix(worldMatrix);
 
 		for (const auto& primitive : node->meshPrimitives) {
 
@@ -517,7 +520,7 @@ void Model::Draw(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipelineLayo
 	commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
 	commandBuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint32);
 
-	DrawNode(commandBuffer, pipelineLayout, imageIndex,storedModelData->nodes, glm::mat4(1.0f));
+	DrawNode(commandBuffer, pipelineLayout, imageIndex,storedModelData->nodes, Instances[0]->GetTransformationMatrix());
 }
 
 void Model::CleanUp()

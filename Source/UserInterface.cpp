@@ -332,6 +332,9 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 			ImGui::EndCombo();
 		}
 
+		ImGui::Dummy(ImVec2(0.0f, 20.0f));
+
+
 		ImGui::End();
 	}
 
@@ -433,7 +436,7 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 		if (SelectedInstanceIndex != -1) {
 			Model* model = dynamic_cast<Model*>(item);
 			if (model && SelectedInstanceIndex < model->Instances.size() && model->Instances[SelectedInstanceIndex]) {
-				modelMatrix = model->Instances[SelectedInstanceIndex]->GetModelMatrix();
+				modelMatrix = model->Instances[SelectedInstanceIndex]->GetTransformationMatrix();
 			}
 		}
 		else {
@@ -450,7 +453,7 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 			if (SelectedInstanceIndex != -1) {
 				Model* model = dynamic_cast<Model*>(item);
 				if (model && SelectedInstanceIndex < model->Instances.size() && model->Instances[SelectedInstanceIndex]) {
-					model->Instances[SelectedInstanceIndex]->SetModelMatrix(modelMatrix);
+					model->Instances[SelectedInstanceIndex]->SetTrasnformationMatrix(modelMatrix);
 				}
 			}
 			else {
@@ -466,10 +469,6 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 		float matrixTranslation[3], matrixRotation[3], matrixScale[3];
 		ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(modelMatrix), matrixTranslation, matrixRotation, matrixScale);
 
-		ImGui::InputFloat3("Position", matrixTranslation);
-		ImGui::InputFloat3("Rotation", matrixRotation);
-		ImGui::InputFloat3("Scale", matrixScale);
-
 		ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, glm::value_ptr(modelMatrix));
 
 		if (SelectedInstanceIndex != -1) {
@@ -477,13 +476,31 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 
 			if (model && SelectedInstanceIndex < model->Instances.size() && model->Instances[SelectedInstanceIndex]) {
 
-				if (LastModelMatrix != model->Instances[SelectedInstanceIndex]->GetModelMatrix())
+				if (LastModelMatrix != model->Instances[SelectedInstanceIndex]->GetTransformationMatrix())
 				{
-					model->Instances[SelectedInstanceIndex]->SetModelMatrix(modelMatrix);
+					model->Instances[SelectedInstanceIndex]->SetTrasnformationMatrix(modelMatrix);
 
-					LastModelMatrix = model->Instances[SelectedInstanceIndex]->GetModelMatrix();
+					LastModelMatrix = model->Instances[SelectedInstanceIndex]->GetTransformationMatrix();
 				}
 				
+
+				glm::vec3 pos = model->Instances[SelectedInstanceIndex]->GetPostion();
+				glm::vec3 rot = model->Instances[SelectedInstanceIndex]->GetRotation();
+				glm::vec3 scl = model->Instances[SelectedInstanceIndex]->GetScale();
+
+				if (ImGui::InputFloat3("Position", glm::value_ptr(pos))) {
+					model->Instances[SelectedInstanceIndex]->SetPostion(pos);
+				}
+
+				if (ImGui::InputFloat3("Rotation", glm::value_ptr(rot))) {
+					model->Instances[SelectedInstanceIndex]->SetRotation(rot);
+				}
+
+				if (ImGui::InputFloat3("Scale", glm::value_ptr(scl))) {
+					model->Instances[SelectedInstanceIndex]->SetScale(scl);
+				}
+
+
 				ImGui::Checkbox("Cube Map Reflections", (bool*)&model->Instances[SelectedInstanceIndex]->bCubeMapReflection);
 				ImGui::Checkbox("Screen Space Reflections", (bool*)&model->Instances[SelectedInstanceIndex]->bScreenSpaceReflection);
 				

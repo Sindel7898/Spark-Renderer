@@ -22,7 +22,6 @@ struct VertexData {
 };
 
 struct GPU_InstanceData {
-    alignas(16) glm::mat4 modelMatrix;
     glm::vec4 bCubeMapReflection_bScreenSpaceReflectionWithPadding;
 };
 
@@ -49,16 +48,15 @@ struct InstanceData {
             ScreenSpaceReflectiveSwitch(LastInstanceData->bScreenSpaceReflection);
         }
         
-        UpdateModelMatrix();
+        UpdateTrasnformationMatrix();
         UpdateGPU_ReflectionFlags();
     }
-
-    //GPU_InstanceData GetGPU_InstanceData() { return gpu_InstanceData;}
 
     glm::vec3 GetPostion () const { return Position;}
     glm::vec3 GetRotation() const { return Rotation;}
     glm::vec3 GetScale   () const { return Scale; }
-    glm::mat4 GetModelMatrix() const { return gpu_InstanceData->modelMatrix; }
+    glm::mat4 GetTransformationMatrix() const { return TransformationMatrix; }
+    glm::mat4 GetModelMatrix() const { return ModelMatrix; }
 
     void CubeMapReflectiveSwitch(bool breflective)
     {
@@ -78,63 +76,70 @@ struct InstanceData {
     void SetPostion(glm::vec3 NewPosition)
     {
         Position = NewPosition;
-        UpdateModelMatrix();
+        UpdateTrasnformationMatrix();
     }
 
     void SetRotation(glm::vec3 NewRotation)
     {
         Rotation = NewRotation;
-        UpdateModelMatrix();
+        UpdateTrasnformationMatrix();
     }
 
     void SetScale(glm::vec3 NewScale)
     {
         Scale = NewScale;
-        UpdateModelMatrix();
+        UpdateTrasnformationMatrix();
+    }
+
+    void SetTrasnformationMatrix(glm::mat4 NewTrasnformationlMatrix)
+    {
+        TransformationMatrix = NewTrasnformationlMatrix;
+        BreakDownAndUpdateModelMatrix();
     }
 
     void SetModelMatrix(glm::mat4 NewModelMatrix)
     {
-        gpu_InstanceData->modelMatrix = NewModelMatrix;
-        BreakDownAndUpdateModelMatrix();
-
+        ModelMatrix = NewModelMatrix;
     }
 
-    void UpdateModelMatrix()
+    void UpdateTrasnformationMatrix()
     {
-        gpu_InstanceData->modelMatrix = glm::mat4(1.0f);
-        gpu_InstanceData->modelMatrix = glm::translate(gpu_InstanceData->modelMatrix, Position);
-        gpu_InstanceData->modelMatrix = glm::rotate(gpu_InstanceData->modelMatrix, glm::radians(Rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-        gpu_InstanceData->modelMatrix = glm::rotate(gpu_InstanceData->modelMatrix, glm::radians(Rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-        gpu_InstanceData->modelMatrix = glm::rotate(gpu_InstanceData->modelMatrix, glm::radians(Rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
-        gpu_InstanceData->modelMatrix = glm::scale(gpu_InstanceData->modelMatrix, Scale);
+        TransformationMatrix = glm::mat4(1.0f);
+        TransformationMatrix = glm::translate(TransformationMatrix, Position);
+        TransformationMatrix = glm::rotate(TransformationMatrix, glm::radians(Rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+        TransformationMatrix = glm::rotate(TransformationMatrix, glm::radians(Rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
+        TransformationMatrix = glm::rotate(TransformationMatrix, glm::radians(Rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+        TransformationMatrix = glm::scale(TransformationMatrix, Scale);
 
         vulkanContext->ResetTemporalAccumilation();
     }
 
-
     void BreakDownAndUpdateModelMatrix()
     {
-
         glm::vec3 Newscale;
         glm::quat Newrotation;
         glm::vec3 Newtranslation;
         glm::vec3 Newskew;
         glm::vec4 Newperspective;
-        glm::decompose(gpu_InstanceData->modelMatrix, Newscale, Newrotation, Newtranslation, Newskew, Newperspective);
+
+        // Decompose the matrix
+        glm::decompose(TransformationMatrix, Newscale, Newrotation, Newtranslation, Newskew, Newperspective);
 
         Position = Newtranslation;
-        Rotation = glm::degrees(glm::eulerAngles(glm::conjugate(Newrotation)));
+
+        Rotation = glm::degrees(glm::eulerAngles(Newrotation));
+
         Scale = Newscale;
         vulkanContext->ResetTemporalAccumilation();
-
     }
+
     private:
 
     glm::vec3 Position  = glm::vec3(1);
     glm::vec3 Scale     = glm::vec3(1);
     glm::vec3 Rotation  = glm::vec3(1);
-    
+    glm::mat4 TransformationMatrix = glm::mat4(1);
+    glm::mat4 ModelMatrix = glm::mat4(1);
 };
 
 class Model : public Drawable

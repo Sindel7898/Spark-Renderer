@@ -64,7 +64,7 @@ void SSGI::CreateUniformBuffer() {
 
 void SSGI::CreateGIImage() {
 
-	Swapchainextent_Half_Res   = vk::Extent3D(vulkanContext->swapchainExtent.width /12, vulkanContext->swapchainExtent.height / 12, 1);
+	Swapchainextent_Half_Res   = vk::Extent3D(vulkanContext->swapchainExtent.width/30, vulkanContext->swapchainExtent.height / 30, 1);
 	
 	vk::Extent3D Swapchainextent_Full_Res = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
@@ -234,23 +234,8 @@ void SSGI::createDescriptorSetLayout(){
 		NoiseTASSGISamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		NoiseTASSGISamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-		vk::DescriptorSetLayoutBinding DepthSamplerLayout{};
-		DepthSamplerLayout.binding = 1;
-		DepthSamplerLayout.descriptorCount = 1;
-		DepthSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		DepthSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-
-
-		vk::DescriptorSetLayoutBinding NormalSamplerLayout{};
-		NormalSamplerLayout.binding = 2;
-		NormalSamplerLayout.descriptorCount = 1;
-		NormalSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		NormalSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
-
-
-
-		std::array<vk::DescriptorSetLayoutBinding, 3> bindings = { NoiseTASSGISamplerLayout,DepthSamplerLayout,NormalSamplerLayout };
+		std::array<vk::DescriptorSetLayoutBinding, 1> bindings = { NoiseTASSGISamplerLayout };
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -536,39 +521,7 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			HorizontalBluredSamplerdescriptorWrite.pImageInfo = &HorizontalBluredimageInfo;
 
 
-			vk::DescriptorImageInfo DepthimageInfo{};
-			DepthimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			DepthimageInfo.imageView = DepthImage.imageView;
-			DepthimageInfo.sampler = DepthImage.imageSampler;
-
-			vk::WriteDescriptorSet DepthSamplerdescriptorWrite{};
-			DepthSamplerdescriptorWrite.dstSet = FinalBlured_TemporalAccumilationFullDescriptorSets[i];
-			DepthSamplerdescriptorWrite.dstBinding = 1;
-			DepthSamplerdescriptorWrite.dstArrayElement = 0;
-			DepthSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-			DepthSamplerdescriptorWrite.descriptorCount = 1;
-			DepthSamplerdescriptorWrite.pImageInfo = &DepthimageInfo;
-
-
-
-
-			vk::DescriptorImageInfo NormalimageInfo{};
-			NormalimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			NormalimageInfo.imageView = gbuffer.Normal.imageView;
-			NormalimageInfo.sampler = gbuffer.Normal.imageSampler;
-
-			vk::WriteDescriptorSet NormalSamplerdescriptorWrite{};
-			NormalSamplerdescriptorWrite.dstSet = FinalBlured_TemporalAccumilationFullDescriptorSets[i];
-			NormalSamplerdescriptorWrite.dstBinding = 2;
-			NormalSamplerdescriptorWrite.dstArrayElement = 0;
-			NormalSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-			NormalSamplerdescriptorWrite.descriptorCount = 1;
-			NormalSamplerdescriptorWrite.pImageInfo = &NormalimageInfo;
-
-
-
-
-			std::array<vk::WriteDescriptorSet, 3> BlureddescriptorWrites{ HorizontalBluredSamplerdescriptorWrite,DepthSamplerdescriptorWrite,NormalSamplerdescriptorWrite };
+			std::array<vk::WriteDescriptorSet, 1> BlureddescriptorWrites{ HorizontalBluredSamplerdescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(BlureddescriptorWrites.size(), BlureddescriptorWrites.data(), 0, nullptr);
 		}
