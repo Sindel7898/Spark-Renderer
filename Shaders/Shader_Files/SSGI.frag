@@ -16,7 +16,7 @@ layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragcolor;
 
 const int MAX_ITERATION = 10;
-const int NUM_RAYS = 5;
+const int NUM_RAYS = 2;
 const float MAX_THICKNESS = 0.1; 
 
 vec3 GetPerpendicularVector(vec3 v) {
@@ -90,9 +90,9 @@ void main() {
     // Get blue noise sample
     ivec2 WindowSize = textureSize(DirectLigtingTexture, 3);
 
-    vec2 tiledUV = (inTexCoord);
+    // Convert WindowSize to float and scale
+    vec2 tiledUV = inTexCoord * (vec2(WindowSize) / 10);
 
-    
     vec3 giContribution = vec3(0.0);
 
 
@@ -120,9 +120,9 @@ void main() {
             vec3 radianceB = hitLighting;
             float cosTerm = max(dot(Normal, stochasticNormal), 0.0);
             
-             giContribution += (radianceB * cosTerm);  
+             giContribution += (radianceB * Albedo *  cosTerm);  
        }
     }
 
-    outFragcolor = vec4(giContribution, 1.0);
+    outFragcolor = vec4(giContribution,1.0);
 }

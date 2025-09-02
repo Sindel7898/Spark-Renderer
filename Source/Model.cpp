@@ -163,7 +163,7 @@ void Model::CreateBLAS()
 	BLAS_ScratchBuffer.BufferID = "Model BLAS_ScratchBuffer Buffer";
 	bufferManager->CreateDeviceBuffer(&BLAS_ScratchBuffer,
 		                               ASBuildSizeInfo.buildScratchSize,
-		                               vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
+		                               vk::BufferUsageFlagBits::eStorageBuffer |
 		                               vk::BufferUsageFlagBits::eShaderDeviceAddress,
 		                               commandPool,
 		                               vulkanContext->graphicsQueue);
@@ -173,7 +173,7 @@ void Model::CreateBLAS()
 	BLAS_Buffer.BufferID = "Model bottomLevelASBuffer Buffer";
 	bufferManager->CreateDeviceBuffer(&BLAS_Buffer,
 		ASBuildSizeInfo.accelerationStructureSize,
-		vk::BufferUsageFlagBits::eStorageBuffer |
+		vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
 		vk::BufferUsageFlagBits::eShaderDeviceAddress,
 		commandPool,
 		vulkanContext->graphicsQueue);

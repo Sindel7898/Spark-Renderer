@@ -41,71 +41,74 @@
 	skyBox = std::shared_ptr<SkyBox>(new SkyBox(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), SkyBoxDeleter);
 
 
-	auto model  = std::shared_ptr<Model>(new Model("../Textures/Helmet/Helmet.gltf"   , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model2 = std::shared_ptr<Model>(new Model("../Textures/Horse/horse_statue_01_4k.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model4 = std::shared_ptr<Model>(new Model("../Textures/Wall/Cube.gltf"            , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model5 = std::shared_ptr<Model>(new Model("../Textures/Wall2/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model6 = std::shared_ptr<Model>(new Model("../Textures/Wall3/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model7 = std::shared_ptr<Model>(new Model("../Textures/Wall4/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model8 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	//auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model  = std::shared_ptr<Model>(new Model("../Textures/Helmet/Helmet.gltf"   , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model2 = std::shared_ptr<Model>(new Model("../Textures/Horse/horse_statue_01_4k.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model3 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model4 = std::shared_ptr<Model>(new Model("../Textures/Wall/Cube.gltf"            , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model5 = std::shared_ptr<Model>(new Model("../Textures/Wall2/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model6 = std::shared_ptr<Model>(new Model("../Textures/Wall3/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model7 = std::shared_ptr<Model>(new Model("../Textures/Wall4/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model8 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	
 	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-
-	model.get()->Instances[0]->SetPostion(glm::vec3(1.702, -9.761, 5.964));
-	model.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
-	model.get()->Instances[0]->SetScale(glm::vec3(1.500, 1.500, 1.500));
-
-	model2.get()->Instances[0]->SetPostion(glm::vec3(0.024, -11.111, -4.403));
-	model2.get()->Instances[0]->SetScale(glm::vec3(50.000, 50.000, 50.000));
-	model2.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
-	
-	model3.get()->Instances[0]->SetPostion(glm::vec3(-13.581, -11.309, -0.131));
-	model3.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
-	model3.get()->Instances[0]->SetScale(glm::vec3(0.040, 0.040, 0.040));
-
-	model8.get()->Instances[0]->SetPostion(glm::vec3(14.125, -10.750, 1.885));
-	model8.get()->Instances[0]->SetScale(glm::vec3(0.070, 0.070, 0.070));
-	model8.get()->Instances[0]->SetRotation(glm::vec3(0.000, 22.913, 0.000));
-
-	model4.get()->Instances[0]->SetPostion(glm::vec3(-21.740, -3.316, -1.843));
-	model4.get()->Instances[0]->SetRotation(glm::vec3(90.000, 90.000, -180.0));
-	model4.get()->Instances[0]->SetScale(glm::vec3(0.500, 0.500, 1.000));
-
-	model5.get()->Instances[0]->SetPostion(glm::vec3(25.300, -3.275, -1.251));
-	model5.get()->Instances[0]->SetRotation(glm::vec3(93.814, 90.000, -180.000));
-	model5.get()->Instances[0]->SetScale(glm::vec3(0.500, 0.500, 1.000));
-	
-	model6.get()->Instances[0]->SetPostion(glm::vec3(3.159, -11.066, -1.801));
-	model6.get()->Instances[0]->SetRotation(glm::vec3(0.000, -0.000, 0.00));
-	model6.get()->Instances[0]->SetScale(glm::vec3(1.158, 0.054, 1.270));
-	
-	model7.get()->Instances[0]->SetPostion(glm::vec3(2.904, -5.455, -11.447));
-	model7.get()->Instances[0]->SetRotation(glm::vec3(90.000, 0.003, 0.000));
-	model7.get()->Instances[0]->SetScale(glm::vec3(1.200, 0.050, 1.270));
-	
-
-	Models.push_back(std::move(model));
-	Models.push_back(std::move(model2));
-	Models.push_back(std::move(model3));
-	Models.push_back(std::move(model4));
-	Models.push_back(std::move(model5));
-	Models.push_back(std::move(model6));
-	Models.push_back(std::move(model7));
-	Models.push_back(std::move(model8));
-	//Models.push_back(std::move(model9));
+	//
+	//model.get()->Instances[0]->SetPostion(glm::vec3(1.702, -9.761, 5.964));
+	//model.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
+	//model.get()->Instances[0]->SetScale(glm::vec3(1.500, 1.500, 1.500));
+	//
+	//model2.get()->Instances[0]->SetPostion(glm::vec3(0.024, -11.111, -4.403));
+	//model2.get()->Instances[0]->SetScale(glm::vec3(50.000, 50.000, 50.000));
+	//model2.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
+	//
+	//model3.get()->Instances[0]->SetPostion(glm::vec3(-13.581, -11.309, -0.131));
+	//model3.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
+	//model3.get()->Instances[0]->SetScale(glm::vec3(0.040, 0.040, 0.040));
+	//
+	//model8.get()->Instances[0]->SetPostion(glm::vec3(14.125, -10.750, 1.885));
+	//model8.get()->Instances[0]->SetScale(glm::vec3(0.070, 0.070, 0.070));
+	//model8.get()->Instances[0]->SetRotation(glm::vec3(0.000, 22.913, 0.000));
+	//
+	//model4.get()->Instances[0]->SetPostion(glm::vec3(-21.740, -3.316, -1.843));
+	//model4.get()->Instances[0]->SetRotation(glm::vec3(90.000, 90.000, -180.0));
+	//model4.get()->Instances[0]->SetScale(glm::vec3(0.500, 0.500, 1.000));
+	//
+	//model5.get()->Instances[0]->SetPostion(glm::vec3(25.300, -3.275, -1.251));
+	//model5.get()->Instances[0]->SetRotation(glm::vec3(93.814, 90.000, -180.000));
+	//model5.get()->Instances[0]->SetScale(glm::vec3(0.500, 0.500, 1.000));
+	//
+	//model6.get()->Instances[0]->SetPostion(glm::vec3(3.159, -11.066, -1.801));
+	//model6.get()->Instances[0]->SetRotation(glm::vec3(0.000, -0.000, 0.00));
+	//model6.get()->Instances[0]->SetScale(glm::vec3(1.158, 0.054, 1.270));
+	//
+	//model7.get()->Instances[0]->SetPostion(glm::vec3(2.904, -5.455, -11.447));
+	//model7.get()->Instances[0]->SetRotation(glm::vec3(90.000, 0.003, 0.000));
+	//model7.get()->Instances[0]->SetScale(glm::vec3(1.200, 0.050, 1.270));
+	//
+	//
+	//Models.push_back(std::move(model));
+	//Models.push_back(std::move(model2));
+	//Models.push_back(std::move(model3));
+	//Models.push_back(std::move(model4));
+	//Models.push_back(std::move(model5));
+	//Models.push_back(std::move(model6));
+	//Models.push_back(std::move(model7));
+	//Models.push_back(std::move(model8));
+	Models.push_back(std::move(model9));
 	//Models.push_back(std::move(model10));
+	//
+	//UserInterfaceItems.push_back(Models[0].get());
+	//UserInterfaceItems.push_back(Models[1].get());
+	//UserInterfaceItems.push_back(Models[2].get());
+	//UserInterfaceItems.push_back(Models[3].get());
+	//UserInterfaceItems.push_back(Models[4].get());
+	//UserInterfaceItems.push_back(Models[5].get());
+	//UserInterfaceItems.push_back(Models[6].get());
+	//UserInterfaceItems.push_back(Models[7].get());
+	//UserInterfaceItems.push_back(Models[8].get());
+
 
 	UserInterfaceItems.push_back(Models[0].get());
-	UserInterfaceItems.push_back(Models[1].get());
-	UserInterfaceItems.push_back(Models[2].get());
-	UserInterfaceItems.push_back(Models[3].get());
-	UserInterfaceItems.push_back(Models[4].get());
-	UserInterfaceItems.push_back(Models[5].get());
-	UserInterfaceItems.push_back(Models[6].get());
-	UserInterfaceItems.push_back(Models[7].get());
-	//UserInterfaceItems.push_back(Models[8].get());
-	//UserInterfaceItems.push_back(Models[9].get());
 
 	Raytracing_Shadows = std::shared_ptr<RayTracing>(new RayTracing(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), RayTracingDeleter);
 	lighting_FullScreenQuad = std::shared_ptr<Lighting_FullScreenQuad>(new Lighting_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool, skyBox.get(), Raytracing_Shadows.get()), Lighting_FullScreenQuadDeleter);
@@ -115,6 +118,7 @@
 	ssr_FullScreenQuad      = std::shared_ptr<SSR_FullScreenQuad>(new SSR_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSR_FullScreenQuadDeleter);
 	Combined_FullScreenQuad = std::shared_ptr<CombinedResult_FullScreenQuad>(new CombinedResult_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), CombinedResult_FullScreenQuadDeleter);
 	SSGI_FullScreenQuad     = std::shared_ptr<SSGI>(new SSGI(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSGIDeleter);
+	pipelineManager         = std::shared_ptr<PipelineManager>(new PipelineManager(vulkanContext.get()));
 
 	lights.reserve(2);
 
@@ -443,6 +447,7 @@ void App::createDepthTextureImage()
 
 void App::createGBuffer()
 {
+	vulkanContext->ResetTemporalAccumilation();
 
 	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
@@ -669,97 +674,27 @@ void App::CreateGraphicsPipeline()
 	DynamicState.pDynamicStates = DynamicStates.data();
 
 
-    {
-    	auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/FullScreenQuad.vert.spv");
-    	auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/DefferedLightingPass.frag.spv");
-    
-    	VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
-    	VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
-    
-    	vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
-    	VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
-    	VertShaderStageInfo.module = VertShaderModule;
-    	VertShaderStageInfo.pName = "main";
-    
-    	vk::PipelineShaderStageCreateInfo FragmentShaderStageInfo{};
-    	FragmentShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
-    	FragmentShaderStageInfo.module = FragShaderModule;
-    	FragmentShaderStageInfo.pName = "main";
-    
-    	vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo ,FragmentShaderStageInfo };
-    
-    	auto BindDesctiptions = FullScreenQuadDescription::GetBindingDescription();
-    	auto attributeDescriptions = FullScreenQuadDescription::GetAttributeDescription();
-    
-    	vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
-    	vertexInputInfo.setVertexBindingDescriptionCount(1);
-    	vertexInputInfo.setVertexAttributeDescriptionCount(2);
-    	vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
-    	vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
-    
-    	vk::PipelineDepthStencilStateCreateInfo depthStencilState;
-    	depthStencilState.depthTestEnable = VK_FALSE;
-    	depthStencilState.depthWriteEnable = VK_FALSE;
-    	depthStencilState.depthCompareOp = vk::CompareOp::eLessOrEqual;
-    	depthStencilState.minDepthBounds = 0.0f;
-    	depthStencilState.maxDepthBounds = 1.0f;
-    	depthStencilState.stencilTestEnable = VK_FALSE;
-
-		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
-		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-		pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext->swapchainformat;
-
-    	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-    	pipelineLayoutInfo.setLayoutCount = 1;
-    	pipelineLayoutInfo.setSetLayouts(lighting_FullScreenQuad->descriptorSetLayout);
-    	pipelineLayoutInfo.pushConstantRangeCount = 0;
-    	pipelineLayoutInfo.pPushConstantRanges = nullptr;
-    
-		DeferedLightingPassPipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
-    
-		DeferedLightingPassPipeline = vulkanContext->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
-    		                                                     viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, DeferedLightingPassPipelineLayout);
-    
-    	vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
-    	vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
-    }
 
 	{
-		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/FullScreenQuad.vert.spv");
-		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/FXAA.frag.spv");
+	   vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
+	   pipelineRenderingCreateInfo.colorAttachmentCount = 1;
+	   pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext->swapchainformat;
 
-		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
-		VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
+	   vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
 
-		vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
-		VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
-		VertShaderStageInfo.module = VertShaderModule;
-		VertShaderStageInfo.pName = "main";
+	   pipelineLayoutInfo.setLayoutCount = 1;
+	   pipelineLayoutInfo.setSetLayouts(lighting_FullScreenQuad->descriptorSetLayout);
+	   pipelineLayoutInfo.pushConstantRangeCount = 0;
+	   pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
-		vk::PipelineShaderStageCreateInfo FragmentShaderStageInfo{};
-		FragmentShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
-		FragmentShaderStageInfo.module = FragShaderModule;
-		FragmentShaderStageInfo.pName = "main";
+	   FullScreen_Quad_Pipeline_Data  Lighting = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/DefferedLightingPass.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
-		vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo ,FragmentShaderStageInfo };
+	   DeferedLightingPassPipelineLayout = Lighting.FQ_PipelineLayout;
+	   DeferedLightingPassPipeline = Lighting.FQ_Pipeline;
 
-		auto BindDesctiptions = FullScreenQuadDescription::GetBindingDescription();
-		auto attributeDescriptions = FullScreenQuadDescription::GetAttributeDescription();
+	}
 
-		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
-		vertexInputInfo.setVertexBindingDescriptionCount(1);
-		vertexInputInfo.setVertexAttributeDescriptionCount(2);
-		vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
-		vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
-
-		vk::PipelineDepthStencilStateCreateInfo depthStencilState;
-		depthStencilState.depthTestEnable = VK_FALSE;
-		depthStencilState.depthWriteEnable = VK_FALSE;
-		depthStencilState.depthCompareOp = vk::CompareOp::eLessOrEqual;
-		depthStencilState.minDepthBounds = 0.0f;
-		depthStencilState.maxDepthBounds = 1.0f;
-		depthStencilState.stencilTestEnable = VK_FALSE;
-
+	{
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
 		pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext->swapchainformat;
@@ -775,52 +710,16 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges = &range;
 
-		FXAAPassPipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 
-		FXAAPassPipeline = vulkanContext->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
-			viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, FXAAPassPipelineLayout);
+		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/FXAA.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
-		vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
-		vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
+		FXAAPassPipelineLayout = Temp.FQ_PipelineLayout;
+		FXAAPassPipeline = Temp.FQ_Pipeline;
 	}
 
 
 	
 	{
-		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/FullScreenQuad.vert.spv");
-		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/SSAO_Shader.frag.spv");
-
-		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
-		VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
-
-		vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
-		VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
-		VertShaderStageInfo.module = VertShaderModule;
-		VertShaderStageInfo.pName = "main";
-
-		vk::PipelineShaderStageCreateInfo FragShaderStageInfo{};
-		FragShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
-		FragShaderStageInfo.module = FragShaderModule;
-		FragShaderStageInfo.pName = "main";
-
-		vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo,FragShaderStageInfo };
-
-		auto BindDesctiptions      = FullScreenQuadDescription::GetBindingDescription();
-		auto attributeDescriptions = FullScreenQuadDescription::GetAttributeDescription();
-
-		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
-		vertexInputInfo.setVertexBindingDescriptionCount(1);
-		vertexInputInfo.setVertexAttributeDescriptionCount(2);
-		vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
-		vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
-
-		vk::PipelineDepthStencilStateCreateInfo depthStencilState;
-		depthStencilState.depthTestEnable  = vk::False;
-		depthStencilState.depthWriteEnable = vk::False;
-		depthStencilState.depthCompareOp = vk::CompareOp::eLessOrEqual;
-		depthStencilState.minDepthBounds = 0.0f;
-		depthStencilState.maxDepthBounds = 1.0f;
-		depthStencilState.stencilTestEnable = vk::False;
 
 		std::array<vk::Format, 1> colorFormats = { vk::Format::eR8G8B8A8Unorm };
 
@@ -833,65 +732,16 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.setSetLayouts(ssao_FullScreenQuad->descriptorSetLayout);
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
 		pipelineLayoutInfo.pPushConstantRanges = nullptr;
-		
-		vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
-		colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR |
-			vk::ColorComponentFlagBits::eG |
-			vk::ColorComponentFlagBits::eB |
-			vk::ColorComponentFlagBits::eA;
-		colorBlendAttachment.blendEnable = vk::True;
-
-		colorBlendAttachment.setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha);
-		colorBlendAttachment.setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
-		colorBlendAttachment.setColorBlendOp(vk::BlendOp::eAdd);
-		colorBlendAttachment.setSrcAlphaBlendFactor(vk::BlendFactor::eOne);
-		colorBlendAttachment.setDstAlphaBlendFactor(vk::BlendFactor::eZero);
-		colorBlendAttachment.setAlphaBlendOp(vk::BlendOp::eAdd);
 
 
-		vk::PipelineColorBlendStateCreateInfo colorBlend{};
-		colorBlend.setLogicOpEnable(vk::False);
-		colorBlend.logicOp = vk::LogicOp::eCopy;
-		colorBlend.setAttachmentCount(1);
-		colorBlend.setPAttachments(&colorBlendAttachment);
 
+		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSAO_Shader.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
-		SSAOPipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
-
-		SSAOPipeline = vulkanContext->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
-			viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, SSAOPipelineLayout,2);
-
-		vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
-		vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
+		SSAOPipelineLayout = Temp.FQ_PipelineLayout;
+		SSAOPipeline = Temp.FQ_Pipeline;
 	}
 
 	{
-		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/FullScreenQuad.vert.spv");
-		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/SSAOBlur_Shader.frag.spv");
-
-		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
-		VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
-
-		vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
-		VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
-		VertShaderStageInfo.module = VertShaderModule;
-		VertShaderStageInfo.pName = "main";
-
-		vk::PipelineShaderStageCreateInfo FragShaderStageInfo{};
-		FragShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
-		FragShaderStageInfo.module = FragShaderModule;
-		FragShaderStageInfo.pName = "main";
-
-		vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo,FragShaderStageInfo };
-
-		auto BindDesctiptions = FullScreenQuadDescription::GetBindingDescription();
-		auto attributeDescriptions = FullScreenQuadDescription::GetAttributeDescription();
-
-		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
-		vertexInputInfo.setVertexBindingDescriptionCount(1);
-		vertexInputInfo.setVertexAttributeDescriptionCount(2);
-		vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
-		vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
 
 		vk::PipelineDepthStencilStateCreateInfo depthStencilState;
 		depthStencilState.depthTestEnable = vk::False;
@@ -913,75 +763,16 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
 		pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
-		vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
-		colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR |
-			vk::ColorComponentFlagBits::eG |
-			vk::ColorComponentFlagBits::eB |
-			vk::ColorComponentFlagBits::eA;
-		colorBlendAttachment.blendEnable = vk::True;
 
-		colorBlendAttachment.setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha);
-		colorBlendAttachment.setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
-		colorBlendAttachment.setColorBlendOp(vk::BlendOp::eAdd);
-		colorBlendAttachment.setSrcAlphaBlendFactor(vk::BlendFactor::eOne);
-		colorBlendAttachment.setDstAlphaBlendFactor(vk::BlendFactor::eZero);
-		colorBlendAttachment.setAlphaBlendOp(vk::BlendOp::eAdd);
+		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSAOBlur_Shader.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
-
-		vk::PipelineColorBlendStateCreateInfo colorBlend{};
-		colorBlend.setLogicOpEnable(vk::False);
-		colorBlend.logicOp = vk::LogicOp::eCopy;
-		colorBlend.setAttachmentCount(1);
-		colorBlend.setPAttachments(&colorBlendAttachment);
-
-
-		SSAOBlurPipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
-
-		SSAOBlurPipeline = vulkanContext->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
-			viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, SSAOBlurPipelineLayout, 2);
-
-		vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
-		vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
+		SSAOBlurPipelineLayout = Temp.FQ_PipelineLayout;
+		SSAOBlurPipeline = Temp.FQ_Pipeline;
 
 	}
 
 
 	{
-		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/FullScreenQuad.vert.spv");
-		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/CombinedImage.frag.spv");
-
-		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
-		VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
-
-		vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
-		VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
-		VertShaderStageInfo.module = VertShaderModule;
-		VertShaderStageInfo.pName = "main";
-
-		vk::PipelineShaderStageCreateInfo FragShaderStageInfo{};
-		FragShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
-		FragShaderStageInfo.module = FragShaderModule;
-		FragShaderStageInfo.pName = "main";
-
-		vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo,FragShaderStageInfo };
-
-		auto BindDesctiptions = FullScreenQuadDescription::GetBindingDescription();
-		auto attributeDescriptions = FullScreenQuadDescription::GetAttributeDescription();
-
-		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
-		vertexInputInfo.setVertexBindingDescriptionCount(1);
-		vertexInputInfo.setVertexAttributeDescriptionCount(2);
-		vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
-		vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
-
-		vk::PipelineDepthStencilStateCreateInfo depthStencilState;
-		depthStencilState.depthTestEnable = vk::False;
-		depthStencilState.depthWriteEnable = vk::False;
-		depthStencilState.depthCompareOp = vk::CompareOp::eLessOrEqual;
-		depthStencilState.minDepthBounds = 0.0f;
-		depthStencilState.maxDepthBounds = 1.0f;
-		depthStencilState.stencilTestEnable = vk::False;
-
 		std::array<vk::Format, 1> colorFormats = { vulkanContext->swapchainformat };
 
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
@@ -994,74 +785,14 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
 		pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
-		vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
-		colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR |
-			vk::ColorComponentFlagBits::eG |
-			vk::ColorComponentFlagBits::eB |
-			vk::ColorComponentFlagBits::eA;
-		colorBlendAttachment.blendEnable = vk::True;
 
-		colorBlendAttachment.setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha);
-		colorBlendAttachment.setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
-		colorBlendAttachment.setColorBlendOp(vk::BlendOp::eAdd);
-		colorBlendAttachment.setSrcAlphaBlendFactor(vk::BlendFactor::eOne);
-		colorBlendAttachment.setDstAlphaBlendFactor(vk::BlendFactor::eZero);
-		colorBlendAttachment.setAlphaBlendOp(vk::BlendOp::eAdd);
+		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/CombinedImage.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
-
-		vk::PipelineColorBlendStateCreateInfo colorBlend{};
-		colorBlend.setLogicOpEnable(vk::False);
-		colorBlend.logicOp = vk::LogicOp::eCopy;
-		colorBlend.setAttachmentCount(1);
-		colorBlend.setPAttachments(&colorBlendAttachment);
-
-
-		CombinedImagePipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
-
-		CombinedImagePassPipeline = vulkanContext->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
-			viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, CombinedImagePipelineLayout, 2);
-
-		vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
-		vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
-
+		CombinedImagePipelineLayout = Temp.FQ_PipelineLayout;
+		CombinedImagePassPipeline = Temp.FQ_Pipeline;
 	}
 
 	{
-		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/FullScreenQuad.vert.spv");
-		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/SSR.frag.spv");
-
-		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
-		VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
-
-		vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
-		VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
-		VertShaderStageInfo.module = VertShaderModule;
-		VertShaderStageInfo.pName = "main";
-
-		vk::PipelineShaderStageCreateInfo FragShaderStageInfo{};
-		FragShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
-		FragShaderStageInfo.module = FragShaderModule;
-		FragShaderStageInfo.pName = "main";
-
-		vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo,FragShaderStageInfo };
-
-		auto BindDesctiptions = FullScreenQuadDescription::GetBindingDescription();
-		auto attributeDescriptions = FullScreenQuadDescription::GetAttributeDescription();
-
-		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
-		vertexInputInfo.setVertexBindingDescriptionCount(1);
-		vertexInputInfo.setVertexAttributeDescriptionCount(2);
-		vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
-		vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
-
-		vk::PipelineDepthStencilStateCreateInfo depthStencilState;
-		depthStencilState.depthTestEnable = vk::False;
-		depthStencilState.depthWriteEnable = vk::False;
-		depthStencilState.depthCompareOp = vk::CompareOp::eLessOrEqual;
-		depthStencilState.minDepthBounds = 0.0f;
-		depthStencilState.maxDepthBounds = 1.0f;
-		depthStencilState.stencilTestEnable = vk::False;
-
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
 		pipelineRenderingCreateInfo.pColorAttachmentFormats = & vulkanContext->swapchainformat;
@@ -1077,44 +808,18 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges = &range;
 
-		vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
-		colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR |
-			vk::ColorComponentFlagBits::eG |
-			vk::ColorComponentFlagBits::eB |
-			vk::ColorComponentFlagBits::eA;
-		colorBlendAttachment.blendEnable = vk::True;
+		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSR.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
-		colorBlendAttachment.setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha);
-		colorBlendAttachment.setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
-		colorBlendAttachment.setColorBlendOp(vk::BlendOp::eAdd);
-		colorBlendAttachment.setSrcAlphaBlendFactor(vk::BlendFactor::eOne);
-		colorBlendAttachment.setDstAlphaBlendFactor(vk::BlendFactor::eZero);
-		colorBlendAttachment.setAlphaBlendOp(vk::BlendOp::eAdd);
-
-
-		vk::PipelineColorBlendStateCreateInfo colorBlend{};
-		colorBlend.setLogicOpEnable(vk::False);
-		colorBlend.logicOp = vk::LogicOp::eCopy;
-		colorBlend.setAttachmentCount(1);
-		colorBlend.setPAttachments(&colorBlendAttachment);
-
-
-		SSRPipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
-
-		SSRPipeline = vulkanContext->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
-			viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, SSRPipelineLayout, 2);
-
-		vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
-		vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
-
+		SSRPipelineLayout = Temp.FQ_PipelineLayout;
+		SSRPipeline = Temp.FQ_Pipeline;
 	}
 
 	{
 		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/Light_Shader.vert.spv");
 		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/Light_Shader.frag.spv");
 
-		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
-		VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
+		VkShaderModule VertShaderModule = pipelineManager->createShaderModule(VertShaderCode);
+		VkShaderModule FragShaderModule = pipelineManager->createShaderModule(FragShaderCode);
 
 		vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
 		VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
@@ -1158,7 +863,7 @@ void App::CreateGraphicsPipeline()
         
 		LightpipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 		
-		LightgraphicsPipeline = vulkanContext->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
+		LightgraphicsPipeline = pipelineManager->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
 			                                  viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, LightpipelineLayout);
 
 		vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
@@ -1170,8 +875,8 @@ void App::CreateGraphicsPipeline()
 		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/SkyBox_Shader.vert.spv");
 		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/SkyBox_Shader.frag.spv");
 
-		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
-		VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
+		VkShaderModule VertShaderModule = pipelineManager->createShaderModule(VertShaderCode);
+		VkShaderModule FragShaderModule = pipelineManager->createShaderModule(FragShaderCode);
 
 		vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
 		VertShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
@@ -1214,7 +919,7 @@ void App::CreateGraphicsPipeline()
 
 		 SkyBoxpipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 
-		 SkyBoxgraphicsPipeline =  vulkanContext->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
+		 SkyBoxgraphicsPipeline = pipelineManager->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
 			                                  viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, SkyBoxpipelineLayout);
 
 		 vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
@@ -1240,8 +945,8 @@ void App::CreateGraphicsPipeline()
 		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/GeometryPass.vert.spv");
 		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/GeometryPass.frag.spv");
 
-		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
-		VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
+		VkShaderModule VertShaderModule = pipelineManager->createShaderModule(VertShaderCode);
+		VkShaderModule FragShaderModule = pipelineManager->createShaderModule(FragShaderCode);
 
 		vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
 		VertShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
@@ -1364,7 +1069,7 @@ void App::CreateGraphicsPipeline()
 
 		geometryPassPipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 
-		geometryPassPipeline = vulkanContext->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
+		geometryPassPipeline = pipelineManager->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
 			viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, geometryPassPipelineLayout);
 
 		vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
@@ -1376,13 +1081,10 @@ void App::CreateGraphicsPipeline()
 	{
 		auto RayGen_ShaderCode        = readFile("../Shaders/Compiled_Shader_Files/raygen.rgen.spv");
 		auto RayGenMiss_ShaderCode    = readFile("../Shaders/Compiled_Shader_Files/RayGenMiss.rmiss.spv");
-		//auto ShadowMiss_ShaderCode    = readFile("../Shaders/Compiled_Shader_Files/ShadowMiss.rmiss.spv");
-		//auto RayClosestHit_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/closesthit.rchit.spv");
 
-		VkShaderModule RayGen_ShaderModule        = createShaderModule(RayGen_ShaderCode);
-		VkShaderModule RayMiss_ShaderModule       = createShaderModule(RayGenMiss_ShaderCode);
-		//VkShaderModule ShadowMiss_ShaderModule    = createShaderModule(ShadowMiss_ShaderCode);
-		//VkShaderModule RayClosestHit_ShaderModule = createShaderModule(RayClosestHit_ShaderCode);
+		VkShaderModule RayGen_ShaderModule        = pipelineManager->createShaderModule(RayGen_ShaderCode);
+		VkShaderModule RayMiss_ShaderModule       = pipelineManager->createShaderModule(RayGenMiss_ShaderCode);
+
 
 		vk::PipelineShaderStageCreateInfo RayGen_ShaderStageInfo{};
 		RayGen_ShaderStageInfo.sType      = vk::StructureType::ePipelineShaderStageCreateInfo;
@@ -1395,24 +1097,6 @@ void App::CreateGraphicsPipeline()
 		RayMiss_ShaderStageInfo.stage     = vk::ShaderStageFlagBits::eMissKHR;
 		RayMiss_ShaderStageInfo.module    = RayMiss_ShaderModule;
 		RayMiss_ShaderStageInfo.pName     = "main";
-
-		/*vk::PipelineShaderStageCreateInfo    ShadowMiss_ShaderStageInfo{};
-		ShadowMiss_ShaderStageInfo.sType    = vk::StructureType::ePipelineShaderStageCreateInfo;
-		ShadowMiss_ShaderStageInfo.stage    = vk::ShaderStageFlagBits::eMissKHR;
-		ShadowMiss_ShaderStageInfo.module   = ShadowMiss_ShaderModule;
-		ShadowMiss_ShaderStageInfo.pName    = "main";
-
-
-		vk::PipelineShaderStageCreateInfo    RayClosestHit_ShaderStageInfo{};
-		RayClosestHit_ShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
-		RayClosestHit_ShaderStageInfo.stage = vk::ShaderStageFlagBits::eClosestHitKHR;
-		RayClosestHit_ShaderStageInfo.module = RayClosestHit_ShaderModule;
-		RayClosestHit_ShaderStageInfo.pName = "main";*/
-
-	   /*std::vector<vk::PipelineShaderStageCreateInfo> ShaderStages = { RayGen_ShaderStageInfo ,
-			                                                           RayMiss_ShaderStageInfo,
-																	   ShadowMiss_ShaderStageInfo ,
-																	   RayClosestHit_ShaderStageInfo };*/
 
 	   std::vector<vk::PipelineShaderStageCreateInfo> ShaderStages = { RayGen_ShaderStageInfo ,
 																	  RayMiss_ShaderStageInfo};
@@ -1433,14 +1117,6 @@ void App::CreateGraphicsPipeline()
 	   Miss_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
 	   Miss_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
 
-	   //vk::RayTracingShaderGroupCreateInfoKHR ShadowMiss_GroupInfo{};
-	   //ShadowMiss_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
-	   //ShadowMiss_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
-	   //ShadowMiss_GroupInfo.generalShader = 2;
-	   //ShadowMiss_GroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
-	   //ShadowMiss_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
-	   //ShadowMiss_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
-
 	   vk::RayTracingShaderGroupCreateInfoKHR Hit_GroupInfo{};
 	   Hit_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
 	   Hit_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup;
@@ -1449,13 +1125,6 @@ void App::CreateGraphicsPipeline()
 	   Hit_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
 	   Hit_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
 
-
-	   //std::vector<vk::RayTracingShaderGroupCreateInfoKHR> ShaderGroups = {
-		  // RayGen_GroupInfo,
-		  // Miss_GroupInfo,
-		  // ShadowMiss_GroupInfo,
-		  // Hit_GroupInfo,
-	   //};
 
 
 	   std::vector<vk::RayTracingShaderGroupCreateInfoKHR> ShaderGroups = {
@@ -1472,52 +1141,15 @@ void App::CreateGraphicsPipeline()
 
 	   RT_ShadowsPipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 	   
-	   RT_ShadowsPassPipeline = vulkanContext->createRayTracingGraphicsPipeline(RT_ShadowsPipelineLayout, ShaderStages, ShaderGroups);
+	   RT_ShadowsPassPipeline = pipelineManager->createRayTracingGraphicsPipeline(RT_ShadowsPipelineLayout, ShaderStages, ShaderGroups);
 	   
 	   vulkanContext->LogicalDevice.destroyShaderModule(RayGen_ShaderModule);
 	   vulkanContext->LogicalDevice.destroyShaderModule(RayMiss_ShaderModule);
-	  /* vulkanContext->LogicalDevice.destroyShaderModule(RayClosestHit_ShaderModule);
-	   vulkanContext->LogicalDevice.destroyShaderModule(ShadowMiss_ShaderModule);*/
 
 	}
 
 
-	{
-		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/FullScreenQuad.vert.spv");
-		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/SSGI.frag.spv");
-
-		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
-		VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
-
-		vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
-		VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
-		VertShaderStageInfo.module = VertShaderModule;
-		VertShaderStageInfo.pName = "main";
-
-		vk::PipelineShaderStageCreateInfo FragShaderStageInfo{};
-		FragShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
-		FragShaderStageInfo.module = FragShaderModule;
-		FragShaderStageInfo.pName = "main";
-
-		vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo,FragShaderStageInfo };
-
-		auto BindDesctiptions = FullScreenQuadDescription::GetBindingDescription();
-		auto attributeDescriptions = FullScreenQuadDescription::GetAttributeDescription();
-
-		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
-		vertexInputInfo.setVertexBindingDescriptionCount(1);
-		vertexInputInfo.setVertexAttributeDescriptionCount(2);
-		vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
-		vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
-
-		vk::PipelineDepthStencilStateCreateInfo depthStencilState;
-		depthStencilState.depthTestEnable = vk::False;
-		depthStencilState.depthWriteEnable = vk::False;
-		depthStencilState.depthCompareOp = vk::CompareOp::eLessOrEqual;
-		depthStencilState.minDepthBounds = 0.0f;
-		depthStencilState.maxDepthBounds = 1.0f;
-		depthStencilState.stencilTestEnable = vk::False;
-
+	{	
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
 		pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext->swapchainformat;
@@ -1533,74 +1165,16 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges = &range;
 
-		vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
-		colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR |
-			vk::ColorComponentFlagBits::eG |
-			vk::ColorComponentFlagBits::eB |
-			vk::ColorComponentFlagBits::eA;
-		colorBlendAttachment.blendEnable = vk::True;
 
-		colorBlendAttachment.setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha);
-		colorBlendAttachment.setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
-		colorBlendAttachment.setColorBlendOp(vk::BlendOp::eAdd);
-		colorBlendAttachment.setSrcAlphaBlendFactor(vk::BlendFactor::eOne);
-		colorBlendAttachment.setDstAlphaBlendFactor(vk::BlendFactor::eZero);
-		colorBlendAttachment.setAlphaBlendOp(vk::BlendOp::eAdd);
+		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSGI.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
-
-		vk::PipelineColorBlendStateCreateInfo colorBlend{};
-		colorBlend.setLogicOpEnable(vk::False);
-		colorBlend.logicOp = vk::LogicOp::eCopy;
-		colorBlend.setAttachmentCount(1);
-		colorBlend.setPAttachments(&colorBlendAttachment);
-
-
-		SSGIPipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
-
-		SSGIPipeline = vulkanContext->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
-			viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, SSGIPipelineLayout, 2);
-
-		vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
-		vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
+		SSGIPipelineLayout = Temp.FQ_PipelineLayout;
+		SSGIPipeline = Temp.FQ_Pipeline;
 
 	}
 
 
 	{
-		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/FullScreenQuad.vert.spv");
-		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/TemporalAccumulation.frag.spv");
-
-		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
-		VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
-
-		vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
-		VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
-		VertShaderStageInfo.module = VertShaderModule;
-		VertShaderStageInfo.pName = "main";
-
-		vk::PipelineShaderStageCreateInfo FragShaderStageInfo{};
-		FragShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
-		FragShaderStageInfo.module = FragShaderModule;
-		FragShaderStageInfo.pName = "main";
-
-		vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo,FragShaderStageInfo };
-
-		auto BindDesctiptions = FullScreenQuadDescription::GetBindingDescription();
-		auto attributeDescriptions = FullScreenQuadDescription::GetAttributeDescription();
-
-		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
-		vertexInputInfo.setVertexBindingDescriptionCount(1);
-		vertexInputInfo.setVertexAttributeDescriptionCount(2);
-		vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
-		vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
-
-		vk::PipelineDepthStencilStateCreateInfo depthStencilState;
-		depthStencilState.depthTestEnable = vk::False;
-		depthStencilState.depthWriteEnable = vk::False;
-		depthStencilState.depthCompareOp = vk::CompareOp::eLessOrEqual;
-		depthStencilState.minDepthBounds = 0.0f;
-		depthStencilState.maxDepthBounds = 1.0f;
-		depthStencilState.stencilTestEnable = vk::False;
 
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
@@ -1617,75 +1191,15 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges = &range;
 
-		vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
-		colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR |
-			vk::ColorComponentFlagBits::eG |
-			vk::ColorComponentFlagBits::eB |
-			vk::ColorComponentFlagBits::eA;
-		colorBlendAttachment.blendEnable = vk::True;
 
-		colorBlendAttachment.setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha);
-		colorBlendAttachment.setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
-		colorBlendAttachment.setColorBlendOp(vk::BlendOp::eAdd);
-		colorBlendAttachment.setSrcAlphaBlendFactor(vk::BlendFactor::eOne);
-		colorBlendAttachment.setDstAlphaBlendFactor(vk::BlendFactor::eZero);
-		colorBlendAttachment.setAlphaBlendOp(vk::BlendOp::eAdd);
+		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/TemporalAccumulation.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
-
-		vk::PipelineColorBlendStateCreateInfo colorBlend{};
-		colorBlend.setLogicOpEnable(vk::False);
-		colorBlend.logicOp = vk::LogicOp::eCopy;
-		colorBlend.setAttachmentCount(1);
-		colorBlend.setPAttachments(&colorBlendAttachment);
-
-
-		TA_SSGIPipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
-
-		TA_SSGIPipeline = vulkanContext->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
-			viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, TA_SSGIPipelineLayout, 2);
-
-		vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
-		vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
-
+		TA_SSGIPipelineLayout = Temp.FQ_PipelineLayout;
+		TA_SSGIPipeline = Temp.FQ_Pipeline;
 	}
 
 
 	{
-		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/FullScreenQuad.vert.spv");
-		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/SSGI_Blur_Shader.frag.spv");
-
-		VkShaderModule VertShaderModule = createShaderModule(VertShaderCode);
-		VkShaderModule FragShaderModule = createShaderModule(FragShaderCode);
-
-		vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
-		VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
-		VertShaderStageInfo.module = VertShaderModule;
-		VertShaderStageInfo.pName = "main";
-
-		vk::PipelineShaderStageCreateInfo FragShaderStageInfo{};
-		FragShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
-		FragShaderStageInfo.module = FragShaderModule;
-		FragShaderStageInfo.pName = "main";
-
-		vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo,FragShaderStageInfo };
-
-		auto BindDesctiptions = FullScreenQuadDescription::GetBindingDescription();
-		auto attributeDescriptions = FullScreenQuadDescription::GetAttributeDescription();
-
-		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
-		vertexInputInfo.setVertexBindingDescriptionCount(1);
-		vertexInputInfo.setVertexAttributeDescriptionCount(2);
-		vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
-		vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
-
-		vk::PipelineDepthStencilStateCreateInfo depthStencilState;
-		depthStencilState.depthTestEnable = vk::False;
-		depthStencilState.depthWriteEnable = vk::False;
-		depthStencilState.depthCompareOp = vk::CompareOp::eLessOrEqual;
-		depthStencilState.minDepthBounds = 0.0f;
-		depthStencilState.maxDepthBounds = 1.0f;
-		depthStencilState.stencilTestEnable = vk::False;
-
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
 		pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext->swapchainformat;
@@ -1701,35 +1215,11 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges = &range;
 
-		vk::PipelineColorBlendAttachmentState colorBlendAttachment{};
-		colorBlendAttachment.colorWriteMask = vk::ColorComponentFlagBits::eR |
-			vk::ColorComponentFlagBits::eG |
-			vk::ColorComponentFlagBits::eB |
-			vk::ColorComponentFlagBits::eA;
-		colorBlendAttachment.blendEnable = vk::True;
 
-		colorBlendAttachment.setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha);
-		colorBlendAttachment.setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
-		colorBlendAttachment.setColorBlendOp(vk::BlendOp::eAdd);
-		colorBlendAttachment.setSrcAlphaBlendFactor(vk::BlendFactor::eOne);
-		colorBlendAttachment.setDstAlphaBlendFactor(vk::BlendFactor::eZero);
-		colorBlendAttachment.setAlphaBlendOp(vk::BlendOp::eAdd);
+		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSGI_Blur_Shader.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
-
-		vk::PipelineColorBlendStateCreateInfo colorBlend{};
-		colorBlend.setLogicOpEnable(vk::False);
-		colorBlend.logicOp = vk::LogicOp::eCopy;
-		colorBlend.setAttachmentCount(1);
-		colorBlend.setPAttachments(&colorBlendAttachment);
-
-
-		BluredSSGIPipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
-
-		BluredSSGIPipeline = vulkanContext->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
-			viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, BluredSSGIPipelineLayout, 2);
-
-		vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
-		vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
+		BluredSSGIPipelineLayout = Temp.FQ_PipelineLayout;
+		BluredSSGIPipeline = Temp.FQ_Pipeline;
 	}
 
 }
@@ -1779,21 +1269,6 @@ void App::DestroyShaderBindingTable() {
 
 }
 
-vk::ShaderModule App::createShaderModule(const std::vector<char>& code)
-{
-	vk::ShaderModuleCreateInfo createInfo{};
-	createInfo.codeSize = code.size();
-	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-	vk::ShaderModule Shader;
-
-	if (vulkanContext->LogicalDevice.createShaderModule(&createInfo, nullptr, &Shader) != vk::Result::eSuccess)
-	{
-		throw std::runtime_error("failed to create shader module!");
-	}
-
-	return Shader;
-}
 
 
 

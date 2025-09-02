@@ -18,6 +18,7 @@
 #include "FXAA_FullScreenQuad.h"
 #include "SSR_FullScreenQuad.h"
 #include "Terrain.h"
+#include "Pipeline_Manager.h"
 
 
 class Window;
@@ -93,8 +94,6 @@ public:
 
 	void recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex);
 
-	vk::ShaderModule createShaderModule(const std::vector<char>& code);
-
 	void destroy_DepthImage();
 
 	void destroy_GbufferImages();
@@ -112,6 +111,7 @@ public:
 	std::shared_ptr<RayTracing>                         Raytracing_Shadows = nullptr;
 	std::shared_ptr<SSGI>                               SSGI_FullScreenQuad = nullptr;
 	std::shared_ptr<CombinedResult_FullScreenQuad>      Combined_FullScreenQuad = nullptr;
+	std::shared_ptr<PipelineManager>      pipelineManager = nullptr;
 
 	VkDescriptorSet FinalRenderTextureId;
 	VkDescriptorSet LightingAndReflectionsRenderTextureId;

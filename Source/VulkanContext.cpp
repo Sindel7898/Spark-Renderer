@@ -212,62 +212,6 @@ void VulkanContext::create_swapchain()
 	}
 }
 
-vk::Pipeline VulkanContext::createGraphicsPipeline(vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo, vk::PipelineShaderStageCreateInfo ShaderStages[], vk::PipelineVertexInputStateCreateInfo* vertexInputInfo, vk::PipelineInputAssemblyStateCreateInfo* inputAssembleInfo, vk::PipelineViewportStateCreateInfo viewportState, vk::PipelineRasterizationStateCreateInfo rasterizerinfo, vk::PipelineMultisampleStateCreateInfo multisampling, vk::PipelineDepthStencilStateCreateInfo depthStencilState, vk::PipelineColorBlendStateCreateInfo colorBlend, vk::PipelineDynamicStateCreateInfo DynamicState, vk::PipelineLayout& pipelineLayout, int numOfShaderStages)
-{
-	vk::GraphicsPipelineCreateInfo pipelineInfo{};
-	pipelineInfo.pNext = &pipelineRenderingCreateInfo; // Add this line
-	pipelineInfo.stageCount = numOfShaderStages;
-	pipelineInfo.pStages = ShaderStages;
-	pipelineInfo.pVertexInputState = vertexInputInfo;
-	pipelineInfo.pInputAssemblyState = inputAssembleInfo;
-	pipelineInfo.pViewportState = &viewportState;
-	pipelineInfo.pRasterizationState = &rasterizerinfo;
-	pipelineInfo.pMultisampleState = &multisampling;
-	pipelineInfo.pDepthStencilState = &depthStencilState;
-	pipelineInfo.pColorBlendState = &colorBlend;
-	pipelineInfo.pDynamicState = &DynamicState;
-	pipelineInfo.layout = pipelineLayout;
-	pipelineInfo.renderPass = VK_NULL_HANDLE;
-	pipelineInfo.subpass = 0;
-
-
-	vk::Pipeline graphicsPipeline;
-	vk::Result result = LogicalDevice.createGraphicsPipelines(nullptr, 1, &pipelineInfo, nullptr, &graphicsPipeline);
-
-	if (result != vk::Result::eSuccess)
-	{
-		throw std::runtime_error("failed to create graphics pipeline!");
-	}
-
-	return graphicsPipeline;
-}
-
-vk::Pipeline VulkanContext::createRayTracingGraphicsPipeline(vk::PipelineLayout pipelineLayout, std::vector<vk::PipelineShaderStageCreateInfo> ShaderStage, std::vector<vk::RayTracingShaderGroupCreateInfoKHR> RayTracingshaderGroups)
-{
-	vk::RayTracingPipelineCreateInfoKHR rtPipelineInfo{};
-	rtPipelineInfo.stageCount                   = ShaderStage.size();              
-	rtPipelineInfo.pStages                      = ShaderStage.data();
-	rtPipelineInfo.groupCount                   = RayTracingshaderGroups.size();           
-	rtPipelineInfo.pGroups                      = RayTracingshaderGroups.data();
-	rtPipelineInfo.maxPipelineRayRecursionDepth = 3;            // typical minimum  *******REMEMBER TO ASK GPU INSTEAD********
-	rtPipelineInfo.layout                       = pipelineLayout;
-
-	VkRayTracingPipelineCreateInfoKHR rtinfo = rtPipelineInfo;
-
-	VkPipeline TEMP_graphicsPipeline;
-		
-	VkResult result =  vkCreateRayTracingPipelinesKHR(LogicalDevice, nullptr, nullptr, 1, &rtinfo, nullptr, &TEMP_graphicsPipeline);
-
-	if (result != VkResult::VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to create Ray traced graphics pipeline!");
-	}
-
-	vk::Pipeline graphicsPipeline = TEMP_graphicsPipeline;
-
-	return graphicsPipeline;
-}
-
 
 vk::Format VulkanContext::FindCompatableDepthFormat()
 {
