@@ -19,7 +19,8 @@ void main() {
     float count = pc.AccumilationCount;
 
 
-    outFragcolor = vec4 ((count * LastFrameColor + Color) / (count + 1),1);}
-
+    outFragcolor = vec4 ((count * LastFrameColor + Color) / (count + 1),1);
+    
+   }
      ///outFragcolor = vec4 (Color,1);}
 

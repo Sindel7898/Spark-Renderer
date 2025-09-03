@@ -1796,6 +1796,37 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.endRendering();
 	}
 
+	{
+		vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
+		SkyBoxRenderAttachInfo.clearValue = clearColor;
+		SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		SkyBoxRenderAttachInfo.imageView = LightingPassImageData.imageView;
+		SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+		SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+
+		vk::RenderingAttachmentInfo DepthAttachInfo;
+		DepthAttachInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+		DepthAttachInfo.imageView = DepthTextureData.imageView;
+		DepthAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+		DepthAttachInfo.storeOp = vk::AttachmentStoreOp::eDontCare;
+		DepthAttachInfo.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+
+		vk::RenderingInfo SkyBoxRenderInfo{};
+		SkyBoxRenderInfo.layerCount = 1;
+		SkyBoxRenderInfo.colorAttachmentCount = 1;
+		SkyBoxRenderInfo.pColorAttachments = &SkyBoxRenderAttachInfo;
+		SkyBoxRenderInfo.pDepthAttachment = &DepthAttachInfo;
+		SkyBoxRenderInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
+		SkyBoxRenderInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
+
+
+		commandBuffer.setViewport(0, 1, &viewport);
+		commandBuffer.setScissor(0, 1, &scissor);
+		commandBuffer.beginRendering(SkyBoxRenderInfo);
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
+		skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
+		commandBuffer.endRendering();
+	}
 
 	{
 		vk::RenderingAttachmentInfo SSGIImageAttachInfo;
@@ -2064,85 +2095,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	}
 
 
-	{
-		vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
-		SkyBoxRenderAttachInfo.clearValue = clearColor;
-		SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		SkyBoxRenderAttachInfo.imageView = Combined_FullScreenQuad->FinalResultImage.imageView;
-		SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
-		SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+	
 
-		vk::RenderingAttachmentInfo DepthAttachInfo;
-		DepthAttachInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
-		DepthAttachInfo.imageView = DepthTextureData.imageView;
-		DepthAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
-		DepthAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
-		DepthAttachInfo.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
-
-		vk::RenderingInfo SkyBoxRenderInfo{};
-		SkyBoxRenderInfo.layerCount = 1;
-		SkyBoxRenderInfo.colorAttachmentCount = 1;
-		SkyBoxRenderInfo.pColorAttachments = &SkyBoxRenderAttachInfo;
-		SkyBoxRenderInfo.pDepthAttachment = &DepthAttachInfo;
-		SkyBoxRenderInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
-		SkyBoxRenderInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
-
-
-		commandBuffer.setViewport(0, 1, &viewport);
-		commandBuffer.setScissor(0, 1, &scissor);
-		commandBuffer.beginRendering(SkyBoxRenderInfo);
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
-		skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
-		commandBuffer.endRendering();
-	}
-
-    /////////////////// FORWARD PASS ///////////////////////// 
-	{
-		
-		vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
-		LightPassColorAttachmentInfo.imageView = Combined_FullScreenQuad->FinalResultImage.imageView;
-		LightPassColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		LightPassColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eLoad;
-		LightPassColorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
-		LightPassColorAttachmentInfo.clearValue = clearColor;
-
-		vk::RenderingAttachmentInfo depthStencilAttachment;
-		depthStencilAttachment.imageView = DepthTextureData.imageView;
-		depthStencilAttachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-		depthStencilAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
-		depthStencilAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
-		depthStencilAttachment.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
-
-		vk::RenderingInfo renderingInfo{};
-		renderingInfo.renderArea.offset = imageoffset;
-		renderingInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
-		renderingInfo.renderArea.extent.width =  vulkanContext->swapchainExtent.width;
-		renderingInfo.layerCount = 1;
-		renderingInfo.colorAttachmentCount = 1;
-		renderingInfo.pColorAttachments = &LightPassColorAttachmentInfo;
-		renderingInfo.pDepthAttachment = &depthStencilAttachment;
-
-		if (bWireFrame)
-		{
-			vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_LINE);
-		}
-		else
-		{
-			vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
-		}
-
-		commandBuffer.beginRendering(renderingInfo);
-
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, LightgraphicsPipeline);
-
-		for (auto& light : lights)
-		{
-			light->Draw(commandBuffer, LightpipelineLayout, currentFrame);
-		}
-
-		commandBuffer.endRendering();
-
-	}
 	/////////////////// FORWARD PASS END ///////////////////////// 
 	vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
 
@@ -2169,6 +2123,53 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.endRendering();
 	}
 
+
+	{
+
+		vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
+		LightPassColorAttachmentInfo.imageView = fxaa_FullScreenQuad->FxaaImage.imageView;
+		LightPassColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		LightPassColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+		LightPassColorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		LightPassColorAttachmentInfo.clearValue = clearColor;
+
+		vk::RenderingAttachmentInfo depthStencilAttachment;
+		depthStencilAttachment.imageView = DepthTextureData.imageView;
+		depthStencilAttachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+		depthStencilAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
+		depthStencilAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
+		depthStencilAttachment.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+
+		vk::RenderingInfo renderingInfo{};
+		renderingInfo.renderArea.offset = imageoffset;
+		renderingInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
+		renderingInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
+		renderingInfo.layerCount = 1;
+		renderingInfo.colorAttachmentCount = 1;
+		renderingInfo.pColorAttachments = &LightPassColorAttachmentInfo;
+		renderingInfo.pDepthAttachment = &depthStencilAttachment;
+
+		if (bWireFrame)
+		{
+			vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_LINE);
+		}
+		else
+		{
+			vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
+		}
+
+		commandBuffer.beginRendering(renderingInfo);
+
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, LightgraphicsPipeline);
+
+		for (auto& light : lights)
+		{
+			light->Draw(commandBuffer, LightpipelineLayout, currentFrame);
+		}
+
+		commandBuffer.endRendering();
+
+	}
 
 	userinterface->RenderUi(commandBuffer, imageIndex);
 
