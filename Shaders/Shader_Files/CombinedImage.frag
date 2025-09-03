@@ -43,10 +43,9 @@ void main() {
      
 
      float FinalAO         = SSAO * TextureFromAO;
-     vec3 GI_Contribution  = GI  * FinalAO;
      
-     vec3 FinalColor       = Lighting_Shadows + GI_Contribution;
-     vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, 1.0, 1, 1.0);
+     vec3 FinalColor       = (Lighting_Shadows * FinalAO) + GI;
+     vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, 1.0, 1.7, 1.0);
      
      outFragColor = vec4(CorrectedColor, 1.0);
 }
