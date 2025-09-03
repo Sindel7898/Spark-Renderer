@@ -180,7 +180,7 @@ void SSA0_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool 
 
 		/////////////////////////////////////////////////////////////////////////////////////
 		vk::DescriptorImageInfo PositionimageInfo{};
-		PositionimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		PositionimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		PositionimageInfo.imageView = Gbuffer.ViewSpacePosition.imageView;
 		PositionimageInfo.sampler = Gbuffer.ViewSpacePosition.imageSampler;
 
@@ -194,7 +194,7 @@ void SSA0_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool 
 		/////////////////////////////////////////////////////////////////////////////////////
 ;
         vk::DescriptorImageInfo NormalimageInfo{};
-        NormalimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+        NormalimageInfo.imageLayout = vk::ImageLayout::eGeneral;
         NormalimageInfo.imageView = Gbuffer.ViewSpaceNormal.imageView;
         NormalimageInfo.sampler = Gbuffer.ViewSpaceNormal.imageSampler;
         
@@ -209,7 +209,7 @@ void SSA0_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool 
 
 
 		vk::DescriptorImageInfo NoiseTextureimageInfo{};
-		NoiseTextureimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		NoiseTextureimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		NoiseTextureimageInfo.imageView = NoiseTexture.imageView;
 		NoiseTextureimageInfo.sampler = NoiseTexture.imageSampler;
 

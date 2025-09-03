@@ -173,7 +173,7 @@ void RayTracing::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool
 			
 			/////////////////////////////////////////////////////////////////////////////////////
 			vk::DescriptorImageInfo PositionImageInfo{};
-			PositionImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			PositionImageInfo.imageLayout = vk::ImageLayout::eGeneral;
 			PositionImageInfo.imageView   = gbuffer.Position.imageView;
 			PositionImageInfo.sampler     = gbuffer.Position.imageSampler;
 
@@ -187,7 +187,7 @@ void RayTracing::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool
 			/////////////////////////////////////////////////////////////////////////////////////
 
 			vk::DescriptorImageInfo NormalimageInfo{};
-			NormalimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			NormalimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 			NormalimageInfo.imageView   = gbuffer.Normal.imageView;
 			NormalimageInfo.sampler     = gbuffer.Normal.imageSampler;
 

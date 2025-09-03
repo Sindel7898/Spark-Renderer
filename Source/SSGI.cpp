@@ -74,12 +74,12 @@ void SSGI::CreateGIImage() {
 	HalfRes_SSGIPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	HalfRes_SSGIPassLastFrameImage.ImageID = " HalfRes SSGI Accumilation Image";
-	bufferManager->CreateImage(&HalfRes_SSGIPassLastFrameImage, Swapchainextent_Half_Res, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled| vk::ImageUsageFlagBits::eTransferSrc);
+	bufferManager->CreateImage(&HalfRes_SSGIPassLastFrameImage, Swapchainextent_Half_Res, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled| vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst);
 	HalfRes_SSGIPassLastFrameImage.imageView = bufferManager->CreateImageView(&HalfRes_SSGIPassLastFrameImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
 	HalfRes_SSGIPassLastFrameImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	HalfRes_SSGIAccumilationImage.ImageID = " HalfRes Last SSGI Frame Image";
-	bufferManager->CreateImage(&HalfRes_SSGIAccumilationImage, Swapchainextent_Half_Res, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, false);
+	bufferManager->CreateImage(&HalfRes_SSGIAccumilationImage, Swapchainextent_Half_Res, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc, false);
 	HalfRes_SSGIAccumilationImage.imageView = bufferManager->CreateImageView(&HalfRes_SSGIAccumilationImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
 	HalfRes_SSGIAccumilationImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
@@ -274,7 +274,7 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			/////////////////////////////////////////////////////////////////////////////////////
 
 			vk::DescriptorImageInfo NormalimageInfo{};
-			NormalimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			NormalimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 			NormalimageInfo.imageView   = gbuffer.ViewSpaceNormal.imageView;
 			NormalimageInfo.sampler     = gbuffer.ViewSpaceNormal.imageSampler;
 
@@ -287,7 +287,7 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			NormalSamplerdescriptorWrite.pImageInfo = &NormalimageInfo;
 
 			vk::DescriptorImageInfo ViewSpacePositionimageInfo{};
-			ViewSpacePositionimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			ViewSpacePositionimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 			ViewSpacePositionimageInfo.imageView = gbuffer.ViewSpacePosition.imageView;
 			ViewSpacePositionimageInfo.sampler = gbuffer.ViewSpacePosition.imageSampler;
 
@@ -316,7 +316,7 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 
 			/////////////////////////////////////////////////////////////////////////////////////
 			vk::DescriptorImageInfo AlbedoPassimageInfo{};
-			AlbedoPassimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			AlbedoPassimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 			AlbedoPassimageInfo.imageView = gbuffer.Albedo.imageView;
 			AlbedoPassimageInfo.sampler =  gbuffer.Albedo.imageSampler;
 
@@ -330,7 +330,7 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 
 
 			vk::DescriptorImageInfo LightingPassimageInfo{};
-			LightingPassimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			LightingPassimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 			LightingPassimageInfo.imageView = LightingPass.imageView;
 			LightingPassimageInfo.sampler   = LightingPass.imageSampler;
 
@@ -411,7 +411,7 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			/////////////////////////////////////////////////////////////////////////////////////
 
 			vk::DescriptorImageInfo NoisyGIimageInfo{};
-			NoisyGIimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			NoisyGIimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 			NoisyGIimageInfo.imageView = HalfRes_SSGIPassImage.imageView;
 			NoisyGIimageInfo.sampler = HalfRes_SSGIPassImage.imageSampler;
 
@@ -425,7 +425,7 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 
 
 			vk::DescriptorImageInfo LastFrameGIimageInfo{};
-			LastFrameGIimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			LastFrameGIimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 			LastFrameGIimageInfo.imageView = HalfRes_SSGIPassLastFrameImage.imageView;
 			LastFrameGIimageInfo.sampler = HalfRes_SSGIPassLastFrameImage.imageSampler;
 
@@ -467,7 +467,7 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			/////////////////////////////////////////////////////////////////////////////////////
 
 			vk::DescriptorImageInfo NoisyTAimageInfo{};
-			NoisyTAimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			NoisyTAimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 			NoisyTAimageInfo.imageView   = HalfRes_SSGIAccumilationImage.imageView;
 			NoisyTAimageInfo.sampler     = HalfRes_SSGIAccumilationImage.imageSampler;
 
@@ -508,7 +508,7 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			/////////////////////////////////////////////////////////////////////////////////////
 
 			vk::DescriptorImageInfo HorizontalBluredimageInfo{};
-			HorizontalBluredimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			HorizontalBluredimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 			HorizontalBluredimageInfo.imageView = HalfRes_HorizontalBluredSSGIAccumilationImage.imageView;
 			HorizontalBluredimageInfo.sampler   = HalfRes_HorizontalBluredSSGIAccumilationImage.imageSampler;
 

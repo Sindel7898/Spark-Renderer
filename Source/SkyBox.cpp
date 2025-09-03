@@ -150,7 +150,7 @@ void SkyBox::UpdateDescriptorSets()
 		bufferInfo.range = sizeof(TransformMatrices);
 
 		vk::DescriptorImageInfo imageInfo{};
-		imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		imageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		imageInfo.imageView = SkyBoxImages[SkyBoxIndex].imageView;
 		imageInfo.sampler = SkyBoxImages[SkyBoxIndex].imageSampler;
 

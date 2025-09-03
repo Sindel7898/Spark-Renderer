@@ -39,20 +39,7 @@ void SSR_FullScreenQuad::CreateImage(vk::Extent3D imageExtent)
 
 	   SSRImage.imageView = bufferManager->CreateImageView(&SSRImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
 	   SSRImage.imageSampler = bufferManager->CreateImageSampler();
-	   vk::CommandBuffer commandBuffer = bufferManager->CreateSingleUseCommandBuffer(commandPool);
 
-	   ImageTransitionData transitionInfo{};
-	   transitionInfo.oldlayout = vk::ImageLayout::eUndefined;
-	   transitionInfo.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-	   transitionInfo.AspectFlag = vk::ImageAspectFlagBits::eColor;
-	   transitionInfo.SourceAccessflag = vk::AccessFlagBits::eNone;
-	   transitionInfo.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
-	   transitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
-	   transitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-
-	   bufferManager->TransitionImage(commandBuffer, &SSRImage, transitionInfo);
-
-	   bufferManager->SubmitAndDestoyCommandBuffer(commandPool, commandBuffer, vulkanContext->graphicsQueue);
 }
 
 void SSR_FullScreenQuad::DestroyImage()
@@ -136,7 +123,7 @@ void SSR_FullScreenQuad::createDescriptorSets(vk::DescriptorPool descriptorpool,
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
 		vk::DescriptorImageInfo LightingPassimageInfo{};
-		LightingPassimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		LightingPassimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		LightingPassimageInfo.imageView   = LightingPass.imageView;
 		LightingPassimageInfo.sampler     = LightingPass.imageSampler;
 
@@ -149,7 +136,7 @@ void SSR_FullScreenQuad::createDescriptorSets(vk::DescriptorPool descriptorpool,
 		LightingPassSamplerdescriptorWrite.pImageInfo = &LightingPassimageInfo;
 
 		vk::DescriptorImageInfo NormalPassimageInfo{};
-		NormalPassimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		NormalPassimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		NormalPassimageInfo.imageView   = NormalPass.imageView;
 		NormalPassimageInfo.sampler     = NormalPass.imageSampler;
 
@@ -163,7 +150,7 @@ void SSR_FullScreenQuad::createDescriptorSets(vk::DescriptorPool descriptorpool,
 
 
 		vk::DescriptorImageInfo ViewSpacePositionPassimageInfo{};
-		ViewSpacePositionPassimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		ViewSpacePositionPassimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		ViewSpacePositionPassimageInfo.imageView = ViewSpacePositionPass.imageView;
 		ViewSpacePositionPassimageInfo.sampler = ViewSpacePositionPass.imageSampler;
 
@@ -189,7 +176,7 @@ void SSR_FullScreenQuad::createDescriptorSets(vk::DescriptorPool descriptorpool,
 		DepthPassSamplerdescriptorWrite.pImageInfo = &DepthPassimageInfo;
 
 		vk::DescriptorImageInfo ReflectionMaskimageInfo{};
-		ReflectionMaskimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		ReflectionMaskimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		ReflectionMaskimageInfo.imageView = ReflectionMask.imageView;
 		ReflectionMaskimageInfo.sampler = ReflectionMask.imageSampler;
 
@@ -203,7 +190,7 @@ void SSR_FullScreenQuad::createDescriptorSets(vk::DescriptorPool descriptorpool,
 
 
 		vk::DescriptorImageInfo MaterialMaskimageInfo{};
-		MaterialMaskimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		MaterialMaskimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		MaterialMaskimageInfo.imageView = MaterialsPass.imageView;
 		MaterialMaskimageInfo.sampler   = MaterialsPass.imageSampler;
 

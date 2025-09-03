@@ -107,7 +107,7 @@ void FXAA_FullScreenQuad::createDescriptorSets(vk::DescriptorPool descriptorpool
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
 		vk::DescriptorImageInfo LightingPassimageInfo{};
-		LightingPassimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		LightingPassimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		LightingPassimageInfo.imageView   = LightingPass.imageView;
 		LightingPassimageInfo.sampler     = LightingPass.imageSampler;
 

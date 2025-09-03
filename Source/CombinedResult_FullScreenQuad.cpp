@@ -122,7 +122,7 @@ void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::Descr
 
 		/////////////////////////////////////////////////////////////////////////////////////
 		vk::DescriptorImageInfo LightingResultimageInfo{};
-		LightingResultimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		LightingResultimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		LightingResultimageInfo.imageView   = LightingResultImage.imageView;
 		LightingResultimageInfo.sampler    = LightingResultImage.imageSampler;
 
@@ -136,7 +136,7 @@ void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::Descr
 		/////////////////////////////////////////////////////////////////////////////////////
 ;
         vk::DescriptorImageInfo SSGIImageResultimageInfo{};
-		SSGIImageResultimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		SSGIImageResultimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		SSGIImageResultimageInfo.imageView   = SSGIImage.imageView;
 		SSGIImageResultimageInfo.sampler     = SSGIImage.imageSampler;
         
@@ -151,7 +151,7 @@ void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::Descr
 
 
 		vk::DescriptorImageInfo SSAOImageResultimageInfo{};
-		SSAOImageResultimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		SSAOImageResultimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		SSAOImageResultimageInfo.imageView = SSAOIImage.imageView;
 		SSAOImageResultimageInfo.sampler = SSAOIImage.imageSampler;
 
@@ -165,7 +165,7 @@ void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::Descr
 
 
 		vk::DescriptorImageInfo MaterialsImageResultimageInfo{};
-		MaterialsImageResultimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		MaterialsImageResultimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		MaterialsImageResultimageInfo.imageView = MaterialImage.imageView;
 		MaterialsImageResultimageInfo.sampler = MaterialImage.imageSampler;
 
@@ -179,7 +179,7 @@ void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::Descr
 
 
 		vk::DescriptorImageInfo AlbedoImageResultimageInfo{};
-		AlbedoImageResultimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		AlbedoImageResultimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		AlbedoImageResultimageInfo.imageView = AlbedoImage.imageView;
 		AlbedoImageResultimageInfo.sampler = AlbedoImage.imageSampler;
 

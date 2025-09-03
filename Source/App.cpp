@@ -52,7 +52,7 @@
 	auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	
 	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	//
+	
 	//model.get()->Instances[0]->SetPostion(glm::vec3(1.702, -9.761, 5.964));
 	//model.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
 	//model.get()->Instances[0]->SetScale(glm::vec3(1.500, 1.500, 1.500));
@@ -97,7 +97,7 @@
 	Models.push_back(std::move(model9));
 	//Models.push_back(std::move(model10));
 	//
-	//UserInterfaceItems.push_back(Models[0].get());
+	UserInterfaceItems.push_back(Models[0].get());
 	//UserInterfaceItems.push_back(Models[1].get());
 	//UserInterfaceItems.push_back(Models[2].get());
 	//UserInterfaceItems.push_back(Models[3].get());
@@ -536,29 +536,6 @@ void App::createGBuffer()
 	fxaa_FullScreenQuad->createDescriptorSets(DescriptorPool, Combined_FullScreenQuad->FinalResultImage);
 	Raytracing_Shadows->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
 	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, LightingPassImageData,DepthTextureData);
-
-
-	vk::CommandBuffer commandBuffer = bufferManger->CreateSingleUseCommandBuffer(commandPool);
-
-	ImageTransitionData transitionInfo{};
-	transitionInfo.oldlayout = vk::ImageLayout::eUndefined;
-	transitionInfo.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
-	transitionInfo.AspectFlag = vk::ImageAspectFlagBits::eColor;
-	transitionInfo.SourceAccessflag = vk::AccessFlagBits::eNone;
-	transitionInfo.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-	transitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
-	transitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-
-	bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpacePosition, transitionInfo);
-	bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpaceNormal, transitionInfo);
-	bufferManger->TransitionImage(commandBuffer, &gbuffer.Position, transitionInfo);
-	bufferManger->TransitionImage(commandBuffer, &gbuffer.Normal, transitionInfo);
-	bufferManger->TransitionImage(commandBuffer, &gbuffer.Albedo, transitionInfo);
-	bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, transitionInfo);
-	bufferManger->TransitionImage(commandBuffer, &ReflectionMaskImageData, transitionInfo);
-	bufferManger->TransitionImage(commandBuffer, &Combined_FullScreenQuad->FinalResultImage, transitionInfo);
-
-	bufferManger->SubmitAndDestoyCommandBuffer(commandPool, commandBuffer, vulkanContext->graphicsQueue);
 
 
 	FinalRenderTextureId = ImGui_ImplVulkan_AddTexture(fxaa_FullScreenQuad->FxaaImage.imageSampler,
@@ -1525,29 +1502,32 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	 /////////////////// GBUFFER PASS ///////////////////////// 
 	{
-		ImageTransitionData TransitionColorAttachmentOptimal{};
-		TransitionColorAttachmentOptimal.oldlayout = vk::ImageLayout::eUndefined;
-		TransitionColorAttachmentOptimal.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionColorAttachmentOptimal.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionColorAttachmentOptimal.SourceAccessflag = vk::AccessFlagBits::eNone;
-		TransitionColorAttachmentOptimal.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionColorAttachmentOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
-		TransitionColorAttachmentOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		ImageTransitionData TransitionToGeneral{};
+		TransitionToGeneral.oldlayout = vk::ImageLayout::eUndefined;
+		TransitionToGeneral.newlayout = vk::ImageLayout::eGeneral;
+		TransitionToGeneral.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitionToGeneral.SourceAccessflag = vk::AccessFlagBits::eNone;
+		TransitionToGeneral.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
+		TransitionToGeneral.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
+		TransitionToGeneral.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
 
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Position, TransitionColorAttachmentOptimal);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpacePosition, TransitionColorAttachmentOptimal);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Normal, TransitionColorAttachmentOptimal);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpaceNormal, TransitionColorAttachmentOptimal);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Albedo, TransitionColorAttachmentOptimal);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Materials, TransitionColorAttachmentOptimal);
-		bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, TransitionColorAttachmentOptimal);
-		bufferManger->TransitionImage(commandBuffer, &ssr_FullScreenQuad->SSRImage, TransitionColorAttachmentOptimal);
-		bufferManger->TransitionImage(commandBuffer, &ReflectionMaskImageData, TransitionColorAttachmentOptimal);
-		bufferManger->TransitionImage(commandBuffer, &Combined_FullScreenQuad->FinalResultImage, TransitionColorAttachmentOptimal);
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIPassImage, TransitionColorAttachmentOptimal);
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIAccumilationImage, TransitionColorAttachmentOptimal);
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_HorizontalBluredSSGIAccumilationImage, TransitionColorAttachmentOptimal);
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_BluredSSGIAccumilationImage, TransitionColorAttachmentOptimal);
+		bufferManger->TransitionImage(commandBuffer, &gbuffer.Position, TransitionToGeneral);
+		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpacePosition, TransitionToGeneral);
+		bufferManger->TransitionImage(commandBuffer, &gbuffer.Normal, TransitionToGeneral);
+		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpaceNormal, TransitionToGeneral);
+		bufferManger->TransitionImage(commandBuffer, &gbuffer.Albedo, TransitionToGeneral);
+		bufferManger->TransitionImage(commandBuffer, &gbuffer.Materials, TransitionToGeneral);
+		bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, TransitionToGeneral);
+		bufferManger->TransitionImage(commandBuffer, &ssr_FullScreenQuad->SSRImage, TransitionToGeneral);
+		bufferManger->TransitionImage(commandBuffer, &ReflectionMaskImageData, TransitionToGeneral);
+		bufferManger->TransitionImage(commandBuffer, &Combined_FullScreenQuad->FinalResultImage, TransitionToGeneral);
+		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIPassImage, TransitionToGeneral);
+		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIAccumilationImage, TransitionToGeneral);
+		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_HorizontalBluredSSGIAccumilationImage, TransitionToGeneral);
+		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_BluredSSGIAccumilationImage, TransitionToGeneral);
+
+
+
 
 
 		vk::RenderingAttachmentInfo PositioncolorAttachmentInfo{};
@@ -1647,30 +1627,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
 
 	{
-		//transiiton position and normal in prep of ssao
-		ImageTransitionData transitiontoshaderInfo{};
-		transitiontoshaderInfo.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		transitiontoshaderInfo.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		transitiontoshaderInfo.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		transitiontoshaderInfo.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		transitiontoshaderInfo.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
-		transitiontoshaderInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		transitiontoshaderInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpacePosition, transitiontoshaderInfo);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpaceNormal, transitiontoshaderInfo);
-
-		ImageTransitionData transitionInfo{};
-		transitionInfo.oldlayout = vk::ImageLayout::eUndefined;
-		transitionInfo.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		transitionInfo.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		transitionInfo.SourceAccessflag = vk::AccessFlagBits::eNone;
-		transitionInfo.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		transitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
-		transitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.SSAO, transitionInfo);
-
 		vk::RenderingAttachmentInfo SSAOColorAttachment{};
 		SSAOColorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
 		SSAOColorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
@@ -1697,29 +1653,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	}
 
 	{
-		//transiiton SSAO in prep for blur
-		ImageTransitionData gbufferTransition{};
-		gbufferTransition.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		gbufferTransition.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		gbufferTransition.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		gbufferTransition.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		gbufferTransition.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
-		gbufferTransition.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		gbufferTransition.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.SSAO, gbufferTransition);
-
-		ImageTransitionData transitionInfo{};
-		transitionInfo.oldlayout = vk::ImageLayout::eUndefined;
-		transitionInfo.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		transitionInfo.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		transitionInfo.SourceAccessflag = vk::AccessFlagBits::eNone;
-		transitionInfo.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		transitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
-		transitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.SSAOBlured, transitionInfo);
-
 		vk::RenderingAttachmentInfo SSAOBluredColorAttachment{};
 		SSAOBluredColorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
 		SSAOBluredColorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
@@ -1746,29 +1679,20 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	}
 
 	{
-		ImageTransitionData TransitionTOShaderOptimal{};
-		TransitionTOShaderOptimal.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionTOShaderOptimal.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionTOShaderOptimal.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionTOShaderOptimal.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionTOShaderOptimal.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionTOShaderOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		TransitionTOShaderOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
+		ImageTransitionData TransitiontoGeneralRT{};
+		TransitiontoGeneralRT.oldlayout = vk::ImageLayout::eUndefined;
+		TransitiontoGeneralRT.newlayout = vk::ImageLayout::eGeneral;
+		TransitiontoGeneralRT.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitiontoGeneralRT.SourceAccessflag = vk::AccessFlagBits::eNone;
+		TransitiontoGeneralRT.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
+		TransitiontoGeneralRT.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
+		TransitiontoGeneralRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
 
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Position, TransitionTOShaderOptimal);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Normal, TransitionTOShaderOptimal);
+		for (int i = 0; i < Raytracing_Shadows->ShadowPassImages.size(); i++)
+		{
+			bufferManger->TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImages[i], TransitiontoGeneralRT);
 
-		ImageTransitionData TransitiontoGeneral{};
-		TransitiontoGeneral.oldlayout = vk::ImageLayout::eUndefined;
-		TransitiontoGeneral.newlayout = vk::ImageLayout::eGeneral;
-		TransitiontoGeneral.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitiontoGeneral.SourceAccessflag = vk::AccessFlagBits::eNone;
-		TransitiontoGeneral.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
-		TransitiontoGeneral.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
-		TransitiontoGeneral.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
-
-		bufferManger->TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImages[0], TransitiontoGeneral);
-		bufferManger->TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImages[1], TransitiontoGeneral);
+		}
 
 
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_ShadowsPassPipeline);
@@ -1780,54 +1704,10 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			commandBuffer,
 			RT_ShadowsPipelineLayout,
 			currentFrame);
-
-
-
-		ImageTransitionData TransitiontoShaderOutput{};
-		TransitiontoShaderOutput.oldlayout = vk::ImageLayout::eGeneral;
-		TransitiontoShaderOutput.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitiontoShaderOutput.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitiontoShaderOutput.SourceAccessflag = vk::AccessFlagBits::eShaderWrite;
-		TransitiontoShaderOutput.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentRead;
-		TransitiontoShaderOutput.SourceOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
-		TransitiontoShaderOutput.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-
-		bufferManger->TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImages[0], TransitiontoShaderOutput);
-		bufferManger->TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImages[1], TransitiontoShaderOutput);
-
-		ImageTransitionData TransitionBacktoColorOutput{};
-		TransitionBacktoColorOutput.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionBacktoColorOutput.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionBacktoColorOutput.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionBacktoColorOutput.SourceAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionBacktoColorOutput.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionBacktoColorOutput.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-		TransitionBacktoColorOutput.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Position, TransitionBacktoColorOutput);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Normal, TransitionBacktoColorOutput);
-
 	}
 
     /////////////////// LIGHTING PASS ///////////////////////// 
 	{
-		ImageTransitionData gbufferTransition{};
-		gbufferTransition.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		gbufferTransition.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		gbufferTransition.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		gbufferTransition.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		gbufferTransition.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
-		gbufferTransition.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		gbufferTransition.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Position, gbufferTransition);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Normal  , gbufferTransition);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Albedo  , gbufferTransition);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.SSAOBlured, gbufferTransition);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Materials, gbufferTransition);
-		bufferManger->TransitionImage(commandBuffer, &ReflectionMaskImageData, gbufferTransition);
-
-
 		vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
 		LightPassColorAttachmentInfo.imageView = LightingPassImageData.imageView;
 		LightPassColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
@@ -1853,70 +1733,47 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 
 		ImageTransitionData TransitionTODst{};
-		TransitionTODst.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
+		TransitionTODst.oldlayout = vk::ImageLayout::eGeneral;
 		TransitionTODst.newlayout = vk::ImageLayout::eTransferDstOptimal;
 		TransitionTODst.AspectFlag = vk::ImageAspectFlagBits::eColor;
 		TransitionTODst.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionTODst.DestinationAccessflag = vk::AccessFlagBits::eTransferRead;
+		TransitionTODst.DestinationAccessflag = vk::AccessFlagBits::eTransferWrite;
 		TransitionTODst.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		TransitionTODst.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
+		TransitionTODst.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer; 
+		TransitionTODst.LevelCount = LightingPassImageData.miplevels;
 
 		bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, TransitionTODst);
 
 		bufferManger->GenerateMipMaps(&LightingPassImageData, &commandBuffer, vulkanContext->swapchainExtent.width,
 			                          vulkanContext->swapchainExtent.height, vulkanContext->graphicsQueue,1);
 
-		//////////////////////////////////////////////////////////////
+		ImageTransitionData TransitionTOGeneral{};
+		TransitionTOGeneral.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		TransitionTOGeneral.newlayout = vk::ImageLayout::eGeneral;
+		TransitionTOGeneral.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitionTOGeneral.SourceAccessflag = vk::AccessFlagBits::eShaderRead;
+		TransitionTOGeneral.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
+		TransitionTOGeneral.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
+		TransitionTOGeneral.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
+		TransitionTOGeneral.LevelCount = LightingPassImageData.miplevels;
 
-		//This is a little bit unnessesery but it helps with consistency 
-		ImageTransitionData TransitionBacktoColorOutput{};
-		TransitionBacktoColorOutput.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionBacktoColorOutput.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionBacktoColorOutput.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionBacktoColorOutput.SourceAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionBacktoColorOutput.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionBacktoColorOutput.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-		TransitionBacktoColorOutput.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpacePosition, TransitionBacktoColorOutput);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpaceNormal, TransitionBacktoColorOutput);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Position, TransitionBacktoColorOutput);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Normal, TransitionBacktoColorOutput);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Albedo, TransitionBacktoColorOutput);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.SSAOBlured, TransitionBacktoColorOutput);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Materials, TransitionBacktoColorOutput);
-		bufferManger->TransitionImage(commandBuffer, &ReflectionMaskImageData, TransitionBacktoColorOutput);
+		bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, TransitionTOGeneral);
 
 	}
 	 /////////////////// LIGHTING PASS END ///////////////////////// 
 
-	{
-
-		ImageTransitionData TransitionTOShaderOptimal{};
-		TransitionTOShaderOptimal.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionTOShaderOptimal.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionTOShaderOptimal.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionTOShaderOptimal.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionTOShaderOptimal.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionTOShaderOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		TransitionTOShaderOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpaceNormal, TransitionTOShaderOptimal);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpacePosition, TransitionTOShaderOptimal);
-		bufferManger->TransitionImage(commandBuffer, &ReflectionMaskImageData, TransitionTOShaderOptimal);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Materials, TransitionTOShaderOptimal);
-
-	
+	{	
 		ImageTransitionData TransitionDepthtTOShaderOptimal{};
 		TransitionDepthtTOShaderOptimal.oldlayout = vk::ImageLayout::eDepthAttachmentOptimal;
 		TransitionDepthtTOShaderOptimal.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		TransitionDepthtTOShaderOptimal.AspectFlag = vk::ImageAspectFlagBits::eDepth;
-		TransitionDepthtTOShaderOptimal.SourceAccessflag = vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+		TransitionDepthtTOShaderOptimal.SourceAccessflag = vk::AccessFlagBits::eDepthStencilAttachmentWrite;
 		TransitionDepthtTOShaderOptimal.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
 		TransitionDepthtTOShaderOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eEarlyFragmentTests;
 		TransitionDepthtTOShaderOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 		bufferManger->TransitionImage(commandBuffer, &DepthTextureData, TransitionDepthtTOShaderOptimal);
 
+	
 		vk::RenderingAttachmentInfo SSRRenderAttachInfo;
 		SSRRenderAttachInfo.clearValue = clearColor;
 		SSRRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
@@ -1937,96 +1794,10 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SSRPipeline);
 		ssr_FullScreenQuad->Draw(commandBuffer, SSRPipelineLayout, currentFrame);
 		commandBuffer.endRendering();
-
-
-		ImageTransitionData TransitionBacktoColorOutput{};
-		TransitionBacktoColorOutput.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionBacktoColorOutput.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionBacktoColorOutput.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionBacktoColorOutput.SourceAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionBacktoColorOutput.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionBacktoColorOutput.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-		TransitionBacktoColorOutput.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpaceNormal, TransitionBacktoColorOutput);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpacePosition, TransitionBacktoColorOutput);
-		bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, TransitionBacktoColorOutput);
-		bufferManger->TransitionImage(commandBuffer, &ReflectionMaskImageData, TransitionBacktoColorOutput);
-
-
-		ImageTransitionData TransitionDeptTODepthOptimal{};
-		TransitionDeptTODepthOptimal.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionDeptTODepthOptimal.newlayout = vk::ImageLayout::eDepthAttachmentOptimal;
-		TransitionDeptTODepthOptimal.AspectFlag = vk::ImageAspectFlagBits::eDepth;
-		TransitionDeptTODepthOptimal.SourceAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionDeptTODepthOptimal.DestinationAccessflag = vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-		TransitionDeptTODepthOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-		TransitionDeptTODepthOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eEarlyFragmentTests;
-		bufferManger->TransitionImage(commandBuffer, &DepthTextureData, TransitionDeptTODepthOptimal);
-	}
-	
-
-	{
-		vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
-		SkyBoxRenderAttachInfo.clearValue = clearColor;
-		SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		SkyBoxRenderAttachInfo.imageView = LightingPassImageData.imageView;
-		SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
-		SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
-
-		vk::RenderingAttachmentInfo DepthAttachInfo;
-		DepthAttachInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
-		DepthAttachInfo.imageView = DepthTextureData.imageView;
-		DepthAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
-		DepthAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
-		DepthAttachInfo.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
-
-		vk::RenderingInfo SkyBoxRenderInfo{};
-		SkyBoxRenderInfo.layerCount = 1;
-		SkyBoxRenderInfo.colorAttachmentCount = 1;
-		SkyBoxRenderInfo.pColorAttachments = &SkyBoxRenderAttachInfo;
-		SkyBoxRenderInfo.pDepthAttachment = &DepthAttachInfo;
-		SkyBoxRenderInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
-		SkyBoxRenderInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
-
-
-		commandBuffer.setViewport(0, 1, &viewport);
-		commandBuffer.setScissor(0, 1, &scissor);
-		commandBuffer.beginRendering(SkyBoxRenderInfo);
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
-		skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
-		commandBuffer.endRendering();
 	}
 
 
 	{
-
-
-		ImageTransitionData TransitionDepthtTOShaderOptimal{};
-		TransitionDepthtTOShaderOptimal.oldlayout = vk::ImageLayout::eDepthAttachmentOptimal;
-		TransitionDepthtTOShaderOptimal.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionDepthtTOShaderOptimal.AspectFlag = vk::ImageAspectFlagBits::eDepth;
-		TransitionDepthtTOShaderOptimal.SourceAccessflag = vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-		TransitionDepthtTOShaderOptimal.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionDepthtTOShaderOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eEarlyFragmentTests;
-		TransitionDepthtTOShaderOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-		bufferManger->TransitionImage(commandBuffer, &DepthTextureData, TransitionDepthtTOShaderOptimal);
-
-		ImageTransitionData TransitionTOShaderOptimal{};
-		TransitionTOShaderOptimal.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionTOShaderOptimal.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionTOShaderOptimal.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionTOShaderOptimal.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionTOShaderOptimal.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionTOShaderOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		TransitionTOShaderOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-
-		bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, TransitionTOShaderOptimal);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpacePosition, TransitionTOShaderOptimal);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpaceNormal, TransitionTOShaderOptimal);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Albedo, TransitionTOShaderOptimal);
-
-
 		vk::RenderingAttachmentInfo SSGIImageAttachInfo;
 		SSGIImageAttachInfo.clearValue = clearColor;
 		SSGIImageAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
@@ -2062,26 +1833,12 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		SSGI_FullScreenQuad->Draw(commandBuffer, SSGIPipelineLayout, currentFrame);
 		commandBuffer.endRendering();
 
-		ImageTransitionData TransitionBacktoColorOutput{};
-		TransitionBacktoColorOutput.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionBacktoColorOutput.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionBacktoColorOutput.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionBacktoColorOutput.SourceAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionBacktoColorOutput.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionBacktoColorOutput.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-		TransitionBacktoColorOutput.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpaceNormal, TransitionBacktoColorOutput);
-		bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, TransitionBacktoColorOutput);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpacePosition, TransitionBacktoColorOutput);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Albedo, TransitionBacktoColorOutput);
-
 		ImageTransitionData TransitionDeptTODepthOptimal{};
 		TransitionDeptTODepthOptimal.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		TransitionDeptTODepthOptimal.newlayout = vk::ImageLayout::eDepthAttachmentOptimal;
 		TransitionDeptTODepthOptimal.AspectFlag = vk::ImageAspectFlagBits::eDepth;
 		TransitionDeptTODepthOptimal.SourceAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionDeptTODepthOptimal.DestinationAccessflag = vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+		TransitionDeptTODepthOptimal.DestinationAccessflag = vk::AccessFlagBits::eDepthStencilAttachmentWrite;
 		TransitionDeptTODepthOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 		TransitionDeptTODepthOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eEarlyFragmentTests;
 		bufferManger->TransitionImage(commandBuffer, &DepthTextureData, TransitionDeptTODepthOptimal);
@@ -2090,12 +1847,12 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	{
 		ImageTransitionData TransitionTOSrc{};
-		TransitionTOSrc.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
+		TransitionTOSrc.oldlayout = vk::ImageLayout::eGeneral;
 		TransitionTOSrc.newlayout = vk::ImageLayout::eTransferSrcOptimal;
 		TransitionTOSrc.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionTOSrc.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
+		TransitionTOSrc.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
 		TransitionTOSrc.DestinationAccessflag = vk::AccessFlagBits::eTransferRead;
-		TransitionTOSrc.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+		TransitionTOSrc.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
 		TransitionTOSrc.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
 
 		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIAccumilationImage, TransitionTOSrc);
@@ -2130,53 +1887,43 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			SSGI_FullScreenQuad->Swapchainextent_Half_Res.height,
 			1
 		};
+
 		bufferManger->CopyImageToAnotherImage(commandBuffer,
 			                                  SSGI_FullScreenQuad->HalfRes_SSGIAccumilationImage, vk::ImageLayout::eTransferSrcOptimal, SrcSubresourceLayers,
 			                                  SSGI_FullScreenQuad->HalfRes_SSGIPassLastFrameImage, vk::ImageLayout::eTransferDstOptimal, DstSubresourceLayers,
 			                                  swapchainExtenthalf, vulkanContext->graphicsQueue);
 
 
+
+
+
+
 		ImageTransitionData TransitionSrcBack{};
 		TransitionSrcBack.oldlayout = vk::ImageLayout::eTransferSrcOptimal;
-		TransitionSrcBack.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
+		TransitionSrcBack.newlayout = vk::ImageLayout::eGeneral;
 		TransitionSrcBack.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionSrcBack.SourceAccessflag = vk::AccessFlagBits::eTransferRead;
-		TransitionSrcBack.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
+		TransitionSrcBack.SourceAccessflag = vk::AccessFlagBits::eTransferRead;  // FIXED: Only transfer read, not previous writes
+		TransitionSrcBack.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
 		TransitionSrcBack.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
-		TransitionSrcBack.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-
+		TransitionSrcBack.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
 
 		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIAccumilationImage, TransitionSrcBack);
 
 
 		ImageTransitionData TransitionDstToSample{};
 		TransitionDstToSample.oldlayout = vk::ImageLayout::eTransferDstOptimal;
-		TransitionDstToSample.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		TransitionDstToSample.newlayout = vk::ImageLayout::eGeneral;
 		TransitionDstToSample.AspectFlag = vk::ImageAspectFlagBits::eColor;
 		TransitionDstToSample.SourceAccessflag = vk::AccessFlagBits::eTransferWrite;
-		TransitionDstToSample.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
+		TransitionDstToSample.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
 		TransitionDstToSample.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
-		TransitionDstToSample.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-
+		TransitionDstToSample.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
 
 		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIPassLastFrameImage, TransitionDstToSample);
 
 	}
 
 	{
-		ImageTransitionData TransitionTOShaderOptimal{};
-		TransitionTOShaderOptimal.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionTOShaderOptimal.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionTOShaderOptimal.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionTOShaderOptimal.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionTOShaderOptimal.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionTOShaderOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		TransitionTOShaderOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIPassImage, TransitionTOShaderOptimal);
-
-
-
 		vk::RenderingAttachmentInfo TA_ImageAttachInfo;
 		TA_ImageAttachInfo.clearValue = clearColor;
 		TA_ImageAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
@@ -2210,35 +1957,11 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, TA_SSGIPipeline);
 		SSGI_FullScreenQuad->DrawTA(commandBuffer, TA_SSGIPipelineLayout, currentFrame);
 		commandBuffer.endRendering();
-
-		ImageTransitionData TransitionBacktoColorOutput{};
-		TransitionBacktoColorOutput.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionBacktoColorOutput.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionBacktoColorOutput.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionBacktoColorOutput.SourceAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionBacktoColorOutput.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionBacktoColorOutput.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-		TransitionBacktoColorOutput.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIPassImage, TransitionBacktoColorOutput);
 	}
 
 
 
 	{
-		ImageTransitionData TransitionTOShaderOptimal{};
-		TransitionTOShaderOptimal.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionTOShaderOptimal.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionTOShaderOptimal.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionTOShaderOptimal.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionTOShaderOptimal.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionTOShaderOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		TransitionTOShaderOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIAccumilationImage, TransitionTOShaderOptimal);
-
-
-
 		vk::RenderingAttachmentInfo Blured_TA_ImageAttachInfo;
 		Blured_TA_ImageAttachInfo.clearValue = clearColor;
 		Blured_TA_ImageAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
@@ -2274,34 +1997,10 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 		SSGI_FullScreenQuad->DrawTA_HorizontalBlur(commandBuffer, BluredSSGIPipelineLayout, currentFrame);
 		commandBuffer.endRendering();
-
-		ImageTransitionData TransitionBacktoColorOutput{};
-		TransitionBacktoColorOutput.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionBacktoColorOutput.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionBacktoColorOutput.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionBacktoColorOutput.SourceAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionBacktoColorOutput.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionBacktoColorOutput.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-		TransitionBacktoColorOutput.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIAccumilationImage, TransitionBacktoColorOutput);
 	}
 
 
 	{
-		ImageTransitionData TransitionTOShaderOptimal{};
-		TransitionTOShaderOptimal.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionTOShaderOptimal.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionTOShaderOptimal.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionTOShaderOptimal.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionTOShaderOptimal.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionTOShaderOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		TransitionTOShaderOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_HorizontalBluredSSGIAccumilationImage, TransitionTOShaderOptimal);
-
-
-
 		vk::RenderingAttachmentInfo Blured_TA_ImageAttachInfo;
 		Blured_TA_ImageAttachInfo.clearValue = clearColor;
 		Blured_TA_ImageAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
@@ -2337,36 +2036,11 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 		SSGI_FullScreenQuad->DrawTA_VerticalBlur(commandBuffer, BluredSSGIPipelineLayout, currentFrame);
 		commandBuffer.endRendering();
-
-		ImageTransitionData TransitionBacktoColorOutput{};
-		TransitionBacktoColorOutput.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionBacktoColorOutput.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionBacktoColorOutput.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionBacktoColorOutput.SourceAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionBacktoColorOutput.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionBacktoColorOutput.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-		TransitionBacktoColorOutput.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_HorizontalBluredSSGIAccumilationImage, TransitionBacktoColorOutput);
 	}
 
 
 
 	{
-
-		ImageTransitionData TransitionTOShaderOptimal{};
-		TransitionTOShaderOptimal.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionTOShaderOptimal.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionTOShaderOptimal.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionTOShaderOptimal.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionTOShaderOptimal.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionTOShaderOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		TransitionTOShaderOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-
-		bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, TransitionTOShaderOptimal);
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIAccumilationImage, TransitionTOShaderOptimal);
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_BluredSSGIAccumilationImage, TransitionTOShaderOptimal);
-
 		vk::RenderingAttachmentInfo CombinedImageAttachInfo;
 		CombinedImageAttachInfo.clearValue = clearColor;
 		CombinedImageAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
@@ -2387,21 +2061,40 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, CombinedImagePassPipeline);
 		Combined_FullScreenQuad->Draw(commandBuffer, CombinedImagePipelineLayout, currentFrame);
 		commandBuffer.endRendering();
-
-		ImageTransitionData TransitionBacktoColorOutput{};
-		TransitionBacktoColorOutput.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionBacktoColorOutput.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionBacktoColorOutput.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionBacktoColorOutput.SourceAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionBacktoColorOutput.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionBacktoColorOutput.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-		TransitionBacktoColorOutput.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		TransitionBacktoColorOutput.LevelCount = SSGI_FullScreenQuad->HalfRes_SSGIPassImage.miplevels;
-
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIAccumilationImage, TransitionBacktoColorOutput);
 	}
 
 
+	{
+		vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
+		SkyBoxRenderAttachInfo.clearValue = clearColor;
+		SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		SkyBoxRenderAttachInfo.imageView = Combined_FullScreenQuad->FinalResultImage.imageView;
+		SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+		SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+
+		vk::RenderingAttachmentInfo DepthAttachInfo;
+		DepthAttachInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+		DepthAttachInfo.imageView = DepthTextureData.imageView;
+		DepthAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+		DepthAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		DepthAttachInfo.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+
+		vk::RenderingInfo SkyBoxRenderInfo{};
+		SkyBoxRenderInfo.layerCount = 1;
+		SkyBoxRenderInfo.colorAttachmentCount = 1;
+		SkyBoxRenderInfo.pColorAttachments = &SkyBoxRenderAttachInfo;
+		SkyBoxRenderInfo.pDepthAttachment = &DepthAttachInfo;
+		SkyBoxRenderInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
+		SkyBoxRenderInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
+
+
+		commandBuffer.setViewport(0, 1, &viewport);
+		commandBuffer.setScissor(0, 1, &scissor);
+		commandBuffer.beginRendering(SkyBoxRenderInfo);
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
+		skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
+		commandBuffer.endRendering();
+	}
 
     /////////////////// FORWARD PASS ///////////////////////// 
 	{
@@ -2454,29 +2147,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
 
 	{
-		ImageTransitionData TransitionColorOutputOptimal{};
-		TransitionColorOutputOptimal.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionColorOutputOptimal.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionColorOutputOptimal.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionColorOutputOptimal.SourceAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionColorOutputOptimal.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionColorOutputOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-		TransitionColorOutputOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-
-		bufferManger->TransitionImage(commandBuffer, &fxaa_FullScreenQuad->FxaaImage, TransitionColorOutputOptimal);
-
-
-		ImageTransitionData TransitionShaderReadOptimal{};
-		TransitionShaderReadOptimal.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionShaderReadOptimal.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionShaderReadOptimal.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionShaderReadOptimal.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionShaderReadOptimal.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionShaderReadOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		TransitionShaderReadOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-
-		bufferManger->TransitionImage(commandBuffer, &Combined_FullScreenQuad->FinalResultImage, TransitionShaderReadOptimal);
-
 		vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
 		LightPassColorAttachmentInfo.imageView = fxaa_FullScreenQuad->FxaaImage.imageView;
 		LightPassColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
@@ -2497,45 +2167,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, FXAAPassPipeline);
 		fxaa_FullScreenQuad->Draw(commandBuffer, FXAAPassPipelineLayout, currentFrame);
 		commandBuffer.endRendering();
-
-
-		ImageTransitionData TransitionBacktoColorOutput{};
-		TransitionBacktoColorOutput.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionBacktoColorOutput.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
-		TransitionBacktoColorOutput.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionBacktoColorOutput.SourceAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionBacktoColorOutput.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionBacktoColorOutput.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-		TransitionBacktoColorOutput.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-
-		bufferManger->TransitionImage(commandBuffer, &Combined_FullScreenQuad->FinalResultImage, TransitionBacktoColorOutput);
 	}
-
-	
-
-
-	////////// Transition image in prep for GUI ////////////////////
-	ImageTransitionData TransitiontoShader{};
-	TransitiontoShader.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
-	TransitiontoShader.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-	TransitiontoShader.AspectFlag = vk::ImageAspectFlagBits::eColor;
-	TransitiontoShader.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-	TransitiontoShader.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentRead;
-	TransitiontoShader.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-	TransitiontoShader.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-
-	bufferManger->TransitionImage(commandBuffer, &gbuffer.Position, TransitiontoShader);
-	bufferManger->TransitionImage(commandBuffer, &gbuffer.Normal, TransitiontoShader);
-	bufferManger->TransitionImage(commandBuffer, &gbuffer.Albedo, TransitiontoShader); 
-	bufferManger->TransitionImage(commandBuffer, &gbuffer.SSAOBlured, TransitiontoShader);
-	bufferManger->TransitionImage(commandBuffer, &fxaa_FullScreenQuad->FxaaImage, TransitiontoShader);
-	bufferManger->TransitionImage(commandBuffer, &ssr_FullScreenQuad->SSRImage, TransitiontoShader);
-	bufferManger->TransitionImage(commandBuffer, &Combined_FullScreenQuad->FinalResultImage, TransitiontoShader);
-	bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIPassImage, TransitiontoShader);
-	bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIAccumilationImage, TransitiontoShader);
-	bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_BluredSSGIAccumilationImage, TransitiontoShader);
-
-
 
 
 	userinterface->RenderUi(commandBuffer, imageIndex);

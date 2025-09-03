@@ -486,6 +486,21 @@ void Model::UpdateUniformBuffer(uint32_t currentImage)
 }
 
 
+
+bool Model::CalcDistasnceCulling(glm::mat4 Matrix)
+{
+
+	glm::vec3 translation = glm::vec3(Matrix[3]);
+
+
+	camera->GetPosition();
+
+	float distance = glm::distance(camera->GetPosition(), translation);
+
+	return distance <= 100.0f;
+}
+
+
 void Model::DrawNode(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipelineLayout, uint32_t imageIndex,const std::vector<std::shared_ptr<Node>>& nodes,const glm::mat4& parentMatrix)
 {
 	for (const auto& node : nodes) {
@@ -496,15 +511,19 @@ void Model::DrawNode(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipeline
 
 		Instances[0]->SetModelMatrix(worldMatrix);
 
-		for (const auto& primitive : node->meshPrimitives) {
 
-			if (primitive.numIndices > 0) {
+		if (CalcDistasnceCulling(worldMatrix))
+		{
+			for (const auto& primitive : node->meshPrimitives) {
 
-				commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &SceneDescriptorSets[primitive.materialIndex][imageIndex], 0, nullptr);
+				if (primitive.numIndices > 0) {
 
-				commandBuffer.pushConstants(pipelineLayout,vk::ShaderStageFlagBits::eVertex,0,sizeof(glm::mat4),&worldMatrix);
+					commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &SceneDescriptorSets[primitive.materialIndex][imageIndex], 0, nullptr);
 
-				commandBuffer.drawIndexed(primitive.numIndices,1,primitive.indicesStart,0,0);
+					commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4), &worldMatrix);
+
+					commandBuffer.drawIndexed(primitive.numIndices, 1, primitive.indicesStart, 0, 0);
+				}
 			}
 		}
 

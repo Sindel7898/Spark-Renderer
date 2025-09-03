@@ -157,7 +157,7 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 
 		/////////////////////////////////////////////////////////////////////////////////////
 		vk::DescriptorImageInfo PositionimageInfo{};
-		PositionimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		PositionimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		PositionimageInfo.imageView = GbufferRef->Position.imageView;
 		PositionimageInfo.sampler = GbufferRef->Position.imageSampler;
 
@@ -171,7 +171,7 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 		/////////////////////////////////////////////////////////////////////////////////////
 		;
 		vk::DescriptorImageInfo NormalimageInfo{};
-		NormalimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		NormalimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		NormalimageInfo.imageView = GbufferRef->Normal.imageView;
 		NormalimageInfo.sampler = GbufferRef->Normal.imageSampler;
 
@@ -185,7 +185,7 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 		/////////////////////////////////////////////////////////////////////////////////////
 
 		vk::DescriptorImageInfo AlbedoimageInfo{};
-		AlbedoimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		AlbedoimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		AlbedoimageInfo.imageView = GbufferRef->Albedo.imageView;
 		AlbedoimageInfo.sampler = GbufferRef->Albedo.imageSampler;
 
@@ -199,7 +199,7 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 		/////////////////////////////////////////////////////////////////////////////////////
 
 		vk::DescriptorImageInfo MaterialsimageInfo{};
-		MaterialsimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		MaterialsimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		MaterialsimageInfo.imageView = GbufferRef->Materials.imageView;
 		MaterialsimageInfo.sampler = GbufferRef->Materials.imageSampler;
 
@@ -213,7 +213,7 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 
 
 		vk::DescriptorImageInfo ReflectiveCubeimageInfo{};
-		ReflectiveCubeimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		ReflectiveCubeimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		ReflectiveCubeimageInfo.imageView = SkyBoxRef->SkyBoxImages[SkyBoxRef->SkyBoxIndex].imageView;
 		ReflectiveCubeimageInfo.sampler   = SkyBoxRef->SkyBoxImages[SkyBoxRef->SkyBoxIndex].imageSampler;
 
@@ -227,7 +227,7 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 
 
 		vk::DescriptorImageInfo ReflectionMaskimageInfo{};
-		ReflectionMaskimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		ReflectionMaskimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		ReflectionMaskimageInfo.imageView = ReflectionMaskRef->imageView;
 		ReflectionMaskimageInfo.sampler = ReflectionMaskRef->imageSampler;
 
