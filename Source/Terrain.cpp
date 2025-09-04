@@ -37,27 +37,27 @@ void Terrain::LoadTextures()
 	std::vector<StoredImageData> ModelTextures = AssetManager::GetInstance().GetStoredImageData(FilePath);
 
 
-	StoredImageData AlbedoImageData = ModelTextures[0];
-	vk::DeviceSize AlbedoImagesize = AlbedoImageData.imageWidth * AlbedoImageData.imageHeight * 4;
-
-	albedoTextureData = bufferManager->CreateTextureImage(AlbedoImageData.imageData, AlbedoImagesize, AlbedoImageData.imageWidth, AlbedoImageData.imageHeight,vk::Format::eR8G8B8A8Srgb , commandPool, vulkanContext->graphicsQueue);
-
-	StoredImageData NormalImageData = ModelTextures[1];
-	vk::DeviceSize NormalImagesize = NormalImageData.imageWidth * NormalImageData.imageHeight * 4;
-
-	normalTextureData = bufferManager->CreateTextureImage(NormalImageData.imageData, NormalImagesize, NormalImageData.imageWidth, NormalImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
-
-
-	StoredImageData MetallicRoughnessImageData = ModelTextures[2];
-	vk::DeviceSize  MetallicRoughnessImagesize = MetallicRoughnessImageData.imageWidth * MetallicRoughnessImageData.imageHeight * 4;
-
-	MetallicRoughnessTextureData = bufferManager->CreateTextureImage(MetallicRoughnessImageData.imageData, MetallicRoughnessImagesize, MetallicRoughnessImageData.imageWidth, MetallicRoughnessImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
-
-
-	StoredImageData HeighMapImageData = ModelTextures[3];
-	vk::DeviceSize  HeighMapImageDataImagesize = HeighMapImageData.imageWidth * HeighMapImageData.imageHeight * 4;
-
-	HeighMapTextureData = bufferManager->CreateTextureImage(HeighMapImageData.imageData, HeighMapImageDataImagesize, HeighMapImageData.imageWidth, HeighMapImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
+	//StoredImageData AlbedoImageData = ModelTextures[0];
+	//vk::DeviceSize AlbedoImagesize = AlbedoImageData.imageWidth * AlbedoImageData.imageHeight * 4;
+	//
+	//albedoTextureData = bufferManager->CreateTextureImage(AlbedoImageData.imageData, AlbedoImagesize, AlbedoImageData.imageWidth, AlbedoImageData.imageHeight,vk::Format::eR8G8B8A8Srgb , commandPool, vulkanContext->graphicsQueue);
+	//
+	//StoredImageData NormalImageData = ModelTextures[1];
+	//vk::DeviceSize NormalImagesize = NormalImageData.imageWidth * NormalImageData.imageHeight * 4;
+	//
+	//normalTextureData = bufferManager->CreateTextureImage(NormalImageData.imageData, NormalImagesize, NormalImageData.imageWidth, NormalImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
+	//
+	//
+	//StoredImageData MetallicRoughnessImageData = ModelTextures[2];
+	//vk::DeviceSize  MetallicRoughnessImagesize = MetallicRoughnessImageData.imageWidth * MetallicRoughnessImageData.imageHeight * 4;
+	//
+	//MetallicRoughnessTextureData = bufferManager->CreateTextureImage(MetallicRoughnessImageData.imageData, MetallicRoughnessImagesize, MetallicRoughnessImageData.imageWidth, MetallicRoughnessImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
+	//
+	//
+	//StoredImageData HeighMapImageData = ModelTextures[3];
+	//vk::DeviceSize  HeighMapImageDataImagesize = HeighMapImageData.imageWidth * HeighMapImageData.imageHeight * 4;
+	//
+	//HeighMapTextureData = bufferManager->CreateTextureImage(HeighMapImageData.imageData, HeighMapImageDataImagesize, HeighMapImageData.imageWidth, HeighMapImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
 
 }
 

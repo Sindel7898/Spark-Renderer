@@ -26,7 +26,7 @@
 {
 	window        = std::shared_ptr<Window>(new Window(1920, 1080, "Spark Renderer"), WindowDeleter);
 	vulkanContext = std::shared_ptr<VulkanContext>(new VulkanContext(*window), VulkanContextDeleter);
-	bufferManger  = std::shared_ptr<BufferManager>(new BufferManager (vulkanContext->LogicalDevice, vulkanContext->PhysicalDevice, vulkanContext->VulkanInstance), BufferManagerDeleter);
+	bufferManger  = std::shared_ptr<BufferManager>(new BufferManager (vulkanContext.get()), BufferManagerDeleter);
   	camera        = std::shared_ptr<Camera>(new Camera (vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, window->GetWindow()));
 	userinterface = std::shared_ptr<UserInterface>(new UserInterface(vulkanContext.get(), window.get(), bufferManger.get()),UserInterfaceDeleter);
 	glfwSetWindowUserPointer(window->GetWindow(), this);
@@ -512,7 +512,7 @@ void App::createGBuffer()
 	gbuffer.Albedo.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	LightingPassImageData.ImageID = "Gbuffer LightingPass Texture";
-	bufferManger->CreateImage(&LightingPassImageData,swapchainextent, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst |  vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eSampled,true);
+	bufferManger->CreateImage(&LightingPassImageData,swapchainextent, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	LightingPassImageData.imageView = bufferManger->CreateImageView(&LightingPassImageData, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
 	LightingPassImageData.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
@@ -1522,13 +1522,14 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		bufferManger->TransitionImage(commandBuffer, &ReflectionMaskImageData, TransitionToGeneral);
 		bufferManger->TransitionImage(commandBuffer, &Combined_FullScreenQuad->FinalResultImage, TransitionToGeneral);
 		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIPassImage, TransitionToGeneral);
+		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIPassLastFrameImage, TransitionToGeneral);
 		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIAccumilationImage, TransitionToGeneral);
 		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_HorizontalBluredSSGIAccumilationImage, TransitionToGeneral);
 		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_BluredSSGIAccumilationImage, TransitionToGeneral);
+		bufferManger->TransitionImage(commandBuffer, &gbuffer.SSAOBlured, TransitionToGeneral);
+		bufferManger->TransitionImage(commandBuffer, &gbuffer.SSAO, TransitionToGeneral);
 
-
-
-
+		
 
 		vk::RenderingAttachmentInfo PositioncolorAttachmentInfo{};
 		PositioncolorAttachmentInfo.imageView = gbuffer.Position.imageView;
@@ -1730,35 +1731,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		lighting_FullScreenQuad->Draw(commandBuffer, DeferedLightingPassPipelineLayout, currentFrame);
 
 		commandBuffer.endRendering();
-
-
-		ImageTransitionData TransitionTODst{};
-		TransitionTODst.oldlayout = vk::ImageLayout::eGeneral;
-		TransitionTODst.newlayout = vk::ImageLayout::eTransferDstOptimal;
-		TransitionTODst.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionTODst.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-		TransitionTODst.DestinationAccessflag = vk::AccessFlagBits::eTransferWrite;
-		TransitionTODst.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-		TransitionTODst.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer; 
-		TransitionTODst.LevelCount = LightingPassImageData.miplevels;
-
-		bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, TransitionTODst);
-
-		bufferManger->GenerateMipMaps(&LightingPassImageData, &commandBuffer, vulkanContext->swapchainExtent.width,
-			                          vulkanContext->swapchainExtent.height, vulkanContext->graphicsQueue,1);
-
-		ImageTransitionData TransitionTOGeneral{};
-		TransitionTOGeneral.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionTOGeneral.newlayout = vk::ImageLayout::eGeneral;
-		TransitionTOGeneral.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionTOGeneral.SourceAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionTOGeneral.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
-		TransitionTOGeneral.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-		TransitionTOGeneral.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
-		TransitionTOGeneral.LevelCount = LightingPassImageData.miplevels;
-
-		bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, TransitionTOGeneral);
-
 	}
 	 /////////////////// LIGHTING PASS END ///////////////////////// 
 
@@ -1889,12 +1861,12 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIAccumilationImage, TransitionTOSrc);
 
 		ImageTransitionData TransitionTODst{};
-		TransitionTODst.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		TransitionTODst.oldlayout = vk::ImageLayout::eGeneral;
 		TransitionTODst.newlayout = vk::ImageLayout::eTransferDstOptimal;
 		TransitionTODst.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionTODst.SourceAccessflag = vk::AccessFlagBits::eShaderRead;
+		TransitionTODst.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
 		TransitionTODst.DestinationAccessflag = vk::AccessFlagBits::eTransferWrite;
-		TransitionTODst.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
+		TransitionTODst.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
 		TransitionTODst.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
 
 

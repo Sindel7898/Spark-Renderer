@@ -6,6 +6,7 @@
 #include "../Source/Window.h"
 #include "BufferManager.h"
 
+class BufferManager;
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
 class VulkanContext
@@ -67,7 +68,7 @@ public:
 	PFN_vkCreateRayTracingPipelinesKHR                 vkCreateRayTracingPipelinesKHR = nullptr;
 	PFN_vkGetRayTracingShaderGroupHandlesKHR           vkGetRayTracingShaderGroupHandlesKHR = nullptr;
 	PFN_vkCmdTraceRaysKHR                              vkCmdTraceRaysKHR = nullptr;
-
+	PFN_vkSetDebugUtilsObjectNameEXT                   vkSetDebugUtilsObjectNameEXT = nullptr;
 };
 
 static inline void VulkanContextDeleter(VulkanContext* vulkanContext)

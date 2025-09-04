@@ -25,13 +25,13 @@ Grass::Grass(const std::string filepath, VulkanContext* vulkancontext, vk::Comma
 
 void Grass::LoadTextures()
 {
-
-	std::vector<StoredImageData> ModelTextures = AssetManager::GetInstance().GetStoredImageData("../Textures/Cube/Terrain/HighResPlane.gltf");
-
-	StoredImageData HeighMapImageData = ModelTextures[3];
-	vk::DeviceSize  HeighMapImageDataImagesize = HeighMapImageData.imageWidth * HeighMapImageData.imageHeight * 4;
-
-	HeighMapTextureData = bufferManager->CreateTextureImage(HeighMapImageData.imageData, HeighMapImageDataImagesize, HeighMapImageData.imageWidth, HeighMapImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
+	//
+	//std::vector<StoredImageData> ModelTextures = AssetManager::GetInstance().GetStoredImageData("../Textures/Cube/Terrain/HighResPlane.gltf");
+	//
+	//StoredImageData HeighMapImageData = ModelTextures[3];
+	//vk::DeviceSize  HeighMapImageDataImagesize = HeighMapImageData.imageWidth * HeighMapImageData.imageHeight * 4;
+	//
+	// bufferManager->CreateTextureImage(&HeighMapImageData,HeighMapImageData.imageData, HeighMapImageDataImagesize, HeighMapImageData.imageWidth, HeighMapImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
 
 }
 

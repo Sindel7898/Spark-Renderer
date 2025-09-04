@@ -5,6 +5,9 @@
 #include "stb_image.h"
 #include <unordered_map>
 #include <iostream>
+#include <algorithm> 
+#include <cmath> 
+#include <cstdint>
 
 struct IDdata {
     int instance;
@@ -44,11 +47,13 @@ struct ImageTransitionData {
 
 };
 
+class VulkanContext;
+
 class BufferManager
 {
 public:
 
-    BufferManager(vk::Device& LogicalDevice, vk::PhysicalDevice& PhysicalDevice, vk::Instance& VulkanInstance);
+    BufferManager(VulkanContext* VulkcanContext);
     void CreateBuffer(BufferData* BufferData, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
     void CreateDeviceBuffer(BufferData* bufferData, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
     void AddBufferLog(BufferData* bufferdata);
@@ -81,7 +86,7 @@ public:
 
     void CreateGPUOptimisedBuffer(BufferData* bufferData,const void* Data, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
 
-    ImageData CreateTextureImage(const void* pixeldata, vk::DeviceSize imagesize, int texWidth, int textHeight, vk::Format ImageFormat, vk::CommandPool commandpool, vk::Queue Queue);
+    void CreateTextureImage(ImageData* Image, const void* pixeldata, vk::DeviceSize imagesize, int texWidth, int textHeight, vk::Format ImageFormat, vk::CommandPool commandpool, vk::Queue Queue);
 
     ImageData LoadTextureImage(std::string FilePath,vk::Format ImageFormat, vk::CommandPool commandpool, vk::Queue Queue);
 
@@ -109,10 +114,13 @@ public:
 
     int bufferCounts = 0;
 
+
 private:
+
     vk::Device& logicalDevice;
     vk::PhysicalDevice& physicalDevice;
     vk::Instance& vulkanInstance;
+    VulkanContext* vulkanContext;
 
 };
 

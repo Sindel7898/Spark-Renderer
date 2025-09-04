@@ -146,6 +146,7 @@ void VulkanContext::SelectGPU_CreateDevice()
 	vkCreateRayTracingPipelinesKHR              = (PFN_vkCreateRayTracingPipelinesKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCreateRayTracingPipelinesKHR");
 	vkGetRayTracingShaderGroupHandlesKHR        = (PFN_vkGetRayTracingShaderGroupHandlesKHR)vkGetDeviceProcAddr(LogicalDevice, "vkGetRayTracingShaderGroupHandlesKHR");
 	vkCmdTraceRaysKHR                           = (PFN_vkCmdTraceRaysKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCmdTraceRaysKHR");
+	vkSetDebugUtilsObjectNameEXT                = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetDeviceProcAddr(LogicalDevice, "vkSetDebugUtilsObjectNameEXT");
 
 }
 

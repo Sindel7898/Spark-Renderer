@@ -34,40 +34,45 @@ void Model::LoadTextures()
 
 		ImageData  albedoTextureData;
 
+		albedoTextureData.ImageID = FilePath + "Albedo Image" + std::to_string(i);
+
 		StoredImageData AlbedoImageData = ModelTextures[i * 4 + 0];
 		vk::DeviceSize AlbedoImagesize = AlbedoImageData.imageWidth * AlbedoImageData.imageHeight * 4;
 
-		albedoTextureData = bufferManager->CreateTextureImage(AlbedoImageData.imageData, AlbedoImagesize, AlbedoImageData.imageWidth, AlbedoImageData.imageHeight, vk::Format::eR8G8B8A8Srgb, commandPool, vulkanContext->graphicsQueue);
+		bufferManager->CreateTextureImage(&albedoTextureData,AlbedoImageData.imageData, AlbedoImagesize, AlbedoImageData.imageWidth, AlbedoImageData.imageHeight, vk::Format::eR8G8B8A8Srgb, commandPool, vulkanContext->graphicsQueue);
 
 		AlbedoTextures.push_back(albedoTextureData);
 
 
 		ImageData  normalTextureData;
+		normalTextureData.ImageID = FilePath + "Normal Image" + std::to_string(i);
 
 		StoredImageData NormalImageData = ModelTextures[i * 4 + 1];
 		vk::DeviceSize NormalImagesize = NormalImageData.imageWidth * NormalImageData.imageHeight * 4;
 
-		normalTextureData = bufferManager->CreateTextureImage(NormalImageData.imageData, NormalImagesize, NormalImageData.imageWidth, NormalImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
+		 bufferManager->CreateTextureImage(&normalTextureData,NormalImageData.imageData, NormalImagesize, NormalImageData.imageWidth, NormalImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
 
 		NormalTextures.push_back(normalTextureData);
 
 
 		ImageData  MetallicRoughnessTextureData;
+		MetallicRoughnessTextureData.ImageID = FilePath + "Metallic Roughness Image" + std::to_string(i);
 
 		StoredImageData MetallicRoughnessImageData = ModelTextures[i * 4 + 2];
 		vk::DeviceSize  MetallicRoughnessImagesize = MetallicRoughnessImageData.imageWidth * MetallicRoughnessImageData.imageHeight * 4;
 
-		MetallicRoughnessTextureData = bufferManager->CreateTextureImage(MetallicRoughnessImageData.imageData, MetallicRoughnessImagesize, MetallicRoughnessImageData.imageWidth, MetallicRoughnessImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
+		bufferManager->CreateTextureImage(&MetallicRoughnessTextureData,MetallicRoughnessImageData.imageData, MetallicRoughnessImagesize, MetallicRoughnessImageData.imageWidth, MetallicRoughnessImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
 
 		MetallicRoughnessTextures.push_back(MetallicRoughnessTextureData);
 
 
 		ImageData  AOTextureData;
+		AOTextureData.ImageID = FilePath + "AO Image" + std::to_string(i);
 
 		StoredImageData AOImageData = ModelTextures[i * 4 + 3];
 		vk::DeviceSize  AOImagesize = AOImageData.imageWidth * AOImageData.imageHeight * 4;
 
-		AOTextureData = bufferManager->CreateTextureImage(AOImageData.imageData, AOImagesize, AOImageData.imageWidth, AOImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
+		bufferManager->CreateTextureImage(&AOTextureData,AOImageData.imageData, AOImagesize, AOImageData.imageWidth, AOImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
 
 		AOTextures.push_back(AOTextureData);
 	}
@@ -547,9 +552,29 @@ void Model::CleanUp()
 	if (bufferManager)
 	{
 		storedModelData = nullptr;
-		//bufferManager->DestroyImage(albedoTextureData);
-		//bufferManager->DestroyImage(normalTextureData);
-		//bufferManager->DestroyImage(MetallicRoughnessTextureData);
+
+		for (auto& AlbedoTexture : AlbedoTextures)
+		{
+			bufferManager->DestroyImage(AlbedoTexture);
+		}
+
+		for (auto& NormalTexture : NormalTextures)
+		{
+			bufferManager->DestroyImage(NormalTexture);
+		}
+
+
+		for (auto& MetallicRoughnessTexture : MetallicRoughnessTextures)
+		{
+			bufferManager->DestroyImage(MetallicRoughnessTexture);
+		}
+
+
+		for (auto& AOTexture : AOTextures)
+		{
+			bufferManager->DestroyImage(AOTexture);
+		}
+
 
 	    bufferManager->DestroyBuffer(BLAS_Buffer);
 		bufferManager->DestroyBuffer(BLAS_ScratchBuffer);

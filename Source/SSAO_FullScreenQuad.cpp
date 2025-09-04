@@ -68,9 +68,10 @@ void SSA0_FullScreenQuad::CreateUniformBuffer()
 		ssaoNoise.push_back(noise);
 	}
 
-	vk::DeviceSize imagesize = 4 * 4 * sizeof(glm::vec4);
+	 vk::DeviceSize imagesize = 4 * 4 * sizeof(glm::vec4);
+	 NoiseTexture.ImageID = "SSAO NOISE DATA IMAGE";
 
-	NoiseTexture = bufferManager->CreateTextureImage(ssaoNoise.data(), imagesize, 4, 4, vk::Format::eR32G32B32A32Sfloat, commandPool, vulkanContext->graphicsQueue);
+	 bufferManager->CreateTextureImage(&NoiseTexture,ssaoNoise.data(), imagesize, 4, 4, vk::Format::eR32G32B32A32Sfloat, commandPool, vulkanContext->graphicsQueue);
 
 }
 
@@ -209,7 +210,7 @@ void SSA0_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool 
 
 
 		vk::DescriptorImageInfo NoiseTextureimageInfo{};
-		NoiseTextureimageInfo.imageLayout = vk::ImageLayout::eGeneral;
+		NoiseTextureimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		NoiseTextureimageInfo.imageView = NoiseTexture.imageView;
 		NoiseTextureimageInfo.sampler = NoiseTexture.imageSampler;
 

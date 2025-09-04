@@ -213,7 +213,7 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 
 
 		vk::DescriptorImageInfo ReflectiveCubeimageInfo{};
-		ReflectiveCubeimageInfo.imageLayout = vk::ImageLayout::eGeneral;
+		ReflectiveCubeimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		ReflectiveCubeimageInfo.imageView = SkyBoxRef->SkyBoxImages[SkyBoxRef->SkyBoxIndex].imageView;
 		ReflectiveCubeimageInfo.sampler   = SkyBoxRef->SkyBoxImages[SkyBoxRef->SkyBoxIndex].imageSampler;
 

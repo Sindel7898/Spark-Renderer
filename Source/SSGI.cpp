@@ -73,18 +73,18 @@ void SSGI::CreateGIImage() {
 	HalfRes_SSGIPassImage.imageView = bufferManager->CreateImageView(&HalfRes_SSGIPassImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
 	HalfRes_SSGIPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
-	HalfRes_SSGIPassLastFrameImage.ImageID = " HalfRes SSGI Accumilation Image";
+	HalfRes_SSGIPassLastFrameImage.ImageID = " HalfRes Last SSGI Accumilation Image";
 	bufferManager->CreateImage(&HalfRes_SSGIPassLastFrameImage, Swapchainextent_Half_Res, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled| vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst);
 	HalfRes_SSGIPassLastFrameImage.imageView = bufferManager->CreateImageView(&HalfRes_SSGIPassLastFrameImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
 	HalfRes_SSGIPassLastFrameImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
-	HalfRes_SSGIAccumilationImage.ImageID = " HalfRes Last SSGI Frame Image";
+	HalfRes_SSGIAccumilationImage.ImageID = " HalfRes  SSGI Accumilation Image";
 	bufferManager->CreateImage(&HalfRes_SSGIAccumilationImage, Swapchainextent_Half_Res, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc, false);
 	HalfRes_SSGIAccumilationImage.imageView = bufferManager->CreateImageView(&HalfRes_SSGIAccumilationImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
 	HalfRes_SSGIAccumilationImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 
-	HalfRes_HorizontalBluredSSGIAccumilationImage.ImageID = " HalfRes Blured SSGI Accumilation Image";
+	HalfRes_HorizontalBluredSSGIAccumilationImage.ImageID = " Horizontal Blured SSGI Accumilation Image";
 	bufferManager->CreateImage(&HalfRes_HorizontalBluredSSGIAccumilationImage, Swapchainextent_Half_Res, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
 	HalfRes_HorizontalBluredSSGIAccumilationImage.imageView = bufferManager->CreateImageView(&HalfRes_HorizontalBluredSSGIAccumilationImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
 	HalfRes_HorizontalBluredSSGIAccumilationImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
@@ -125,6 +125,7 @@ void SSGI::DestroyImage() {
 	bufferManager->DestroyImage(HalfRes_SSGIAccumilationImage);
 	bufferManager->DestroyImage(HalfRes_SSGIPassLastFrameImage);
 	bufferManager->DestroyImage(HalfRes_BluredSSGIAccumilationImage);
+	bufferManager->DestroyImage(HalfRes_HorizontalBluredSSGIAccumilationImage);
 
 }
 

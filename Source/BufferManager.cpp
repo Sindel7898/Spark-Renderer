@@ -1,11 +1,18 @@
 #include "BufferManager.h"
+#include "VulkanContext.h"
 #define VMA_IMPLEMENTATION
 #define VMA_DEBUG_LOG(format, ...) printf(format, __VA_ARGS__)
 #define VMA_DEBUG_MARGIN 16
 #define VMA_DEBUG_DETECT_CORRUPTION 1
 #define VMA_DEBUG_INITIALIZE_ALLOCATIONS 1
 
-BufferManager::BufferManager(vk::Device& LogicalDevice, vk::PhysicalDevice& PhysicalDevice,vk::Instance& VulkanInstance) : logicalDevice(LogicalDevice), physicalDevice(PhysicalDevice), vulkanInstance(VulkanInstance){
+BufferManager::BufferManager(VulkanContext* VulkanContext) : 
+                                                            logicalDevice(VulkanContext->LogicalDevice),
+                                                            physicalDevice(VulkanContext->PhysicalDevice),
+                                                            vulkanInstance(VulkanContext->VulkanInstance),
+	                                                        vulkanContext(VulkanContext)
+{
+
 
 	VmaAllocatorCreateInfo allocatorInfo = {};
 	allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_0; // Use the appropriate Vulkan API version
@@ -188,7 +195,7 @@ void BufferManager::CreateGPUOptimisedBuffer(BufferData* bufferData,const void* 
 
 }
 
-ImageData BufferManager::CreateTextureImage(const void* pixeldata, vk::DeviceSize imagesize, int texWidth, int textHeight,vk::Format ImageFormat, vk::CommandPool commandpool, vk::Queue Queue)
+void BufferManager::CreateTextureImage(ImageData* Image, const void* pixeldata, vk::DeviceSize imagesize, int texWidth, int textHeight,vk::Format ImageFormat, vk::CommandPool commandpool, vk::Queue Queue)
 {
 
 	vk::BufferCreateInfo StagingBufferCreateInfo = {};
@@ -216,6 +223,7 @@ ImageData BufferManager::CreateTextureImage(const void* pixeldata, vk::DeviceSiz
 	StagineBuffer.allocation = StagingBufferAllocation;
 	StagineBuffer.usage = vk::BufferUsageFlagBits::eTransferSrc;
 	StagineBuffer.BufferID = "Texture Staging Buffer";
+
 	AddBufferLog(&StagineBuffer);
 
 	CopyDataToBuffer(pixeldata, StagineBuffer);
@@ -225,10 +233,8 @@ ImageData BufferManager::CreateTextureImage(const void* pixeldata, vk::DeviceSiz
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	vk::Extent3D imageExtent = { static_cast<uint32_t>(texWidth),static_cast<uint32_t>(textHeight),1 };
 
-	 ImageData TextureImageData;
-	 TextureImageData.ImageID = "StagineBuffer texture";
 
-	 CreateImage(&TextureImageData,imageExtent, ImageFormat, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
+	 CreateImage(Image,imageExtent, ImageFormat, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -243,7 +249,7 @@ ImageData BufferManager::CreateTextureImage(const void* pixeldata, vk::DeviceSiz
 	DataToTransitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
 	DataToTransitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
 
-	TransitionImage(CommandBuffer, &TextureImageData,DataToTransitionInfo);
+	TransitionImage(CommandBuffer, Image,DataToTransitionInfo);
 
 	vk::BufferImageCopy copyRegion = {};
 	copyRegion.bufferOffset = 0;
@@ -256,7 +262,7 @@ ImageData BufferManager::CreateTextureImage(const void* pixeldata, vk::DeviceSiz
 	copyRegion.imageOffset = vk::Offset3D{ 0, 0, 0 };
 	copyRegion.imageExtent = imageExtent;
 
-	CommandBuffer.copyBufferToImage(StagineBuffer.buffer, TextureImageData.image, vk::ImageLayout::eTransferDstOptimal, 1, &copyRegion);
+	CommandBuffer.copyBufferToImage(StagineBuffer.buffer, Image->image, vk::ImageLayout::eTransferDstOptimal, 1, &copyRegion);
 
 	ImageTransitionData TransitionImageToShaderData;
 	TransitionImageToShaderData.oldlayout = vk::ImageLayout::eTransferDstOptimal;
@@ -267,16 +273,14 @@ ImageData BufferManager::CreateTextureImage(const void* pixeldata, vk::DeviceSiz
 	TransitionImageToShaderData.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
 	TransitionImageToShaderData.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 
-	TransitionImage(CommandBuffer, &TextureImageData, TransitionImageToShaderData);
+	TransitionImage(CommandBuffer, Image, TransitionImageToShaderData);
 
 	SubmitAndDestoyCommandBuffer(commandpool, CommandBuffer, Queue);
 
 	DestroyBuffer(StagineBuffer);
 
-	TextureImageData.imageView = CreateImageView(&TextureImageData, ImageFormat, vk::ImageAspectFlagBits::eColor);
-	TextureImageData.imageSampler = CreateImageSampler();
-
-	return TextureImageData;
+	Image->imageView = CreateImageView(Image, ImageFormat, vk::ImageAspectFlagBits::eColor);
+	Image->imageSampler = CreateImageSampler();
 }
 
 ImageData BufferManager::LoadTextureImage(std::string FilePath, vk::Format ImageFormat, vk::CommandPool commandpool, vk::Queue Queue)
@@ -448,7 +452,9 @@ void BufferManager::CreateCubeMap(ImageData* imageData,std::array<const char*, 6
 								 static_cast<uint32_t>(faceHeight),
 								1 };
 
-	imageData->miplevels = std::floor(std::log2(std::max(imageExtent.width, imageExtent.height))) + 1;
+	uint32_t maxDim = (faceWidth > faceHeight) ? faceWidth : faceHeight;
+
+	imageData->miplevels = std::floor(std::log2(maxDim)) + 1;
 
 	vk::ImageCreateInfo imageInfo = {};
 	imageInfo.imageType = vk::ImageType::e2D;
@@ -478,6 +484,16 @@ void BufferManager::CreateCubeMap(ImageData* imageData,std::array<const char*, 6
 	imageData->allocation = cubeAllocation;
 
 	AddImageLog(imageData);
+
+	VkDebugUtilsObjectNameInfoEXT ImagenameInfo{};
+	ImagenameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+	ImagenameInfo.pNext = nullptr;
+	ImagenameInfo.objectType = VkObjectType::VK_OBJECT_TYPE_IMAGE;
+	ImagenameInfo.objectHandle = reinterpret_cast<uint64_t>(static_cast<VkImage>(imageData->image));
+	ImagenameInfo.pObjectName = imageData->ImageID.c_str();
+
+	vulkanContext->vkSetDebugUtilsObjectNameEXT(logicalDevice, &ImagenameInfo);
+
 	// Transfer data from staging buffer to cube map image
 	vk::CommandBuffer cmdBuffer = CreateSingleUseCommandBuffer(commandpool);
 
@@ -651,14 +667,16 @@ void BufferManager::CreateImage(ImageData* imageData,vk::Extent3D imageExtent, v
 		throw std::exception("An image you are trying to create does not have an ID");
 	}
 
-
 	vk::ImageCreateInfo imagecreateinfo;
 	imagecreateinfo.imageType = vk::ImageType::e2D;
 	imagecreateinfo.extent = imageExtent;
 
 	if (bMipMaps)
 	{
-		imageData->miplevels = std::floor(std::log2(std::max(imageExtent.width, imageExtent.height))) + 1;
+		uint32_t maxDim = (imageExtent.width > imageExtent.height) ? imageExtent.width : imageExtent.height;
+
+		imageData->miplevels = std::floor(std::log2(maxDim)) + 1;
+
 		imagecreateinfo.mipLevels = imageData->miplevels;
 		std::cout << imageData->miplevels << std::endl;
 	}
@@ -690,6 +708,15 @@ void BufferManager::CreateImage(ImageData* imageData,vk::Extent3D imageExtent, v
 
 	imageData->image = vk::Image(cTextureImage);
 	imageData->allocation = ImageAllocation;
+
+	VkDebugUtilsObjectNameInfoEXT ImagenameInfo{};
+	ImagenameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+	ImagenameInfo.pNext = nullptr;
+	ImagenameInfo.objectType = VkObjectType::VK_OBJECT_TYPE_IMAGE;
+	ImagenameInfo.objectHandle = reinterpret_cast<uint64_t>(static_cast<VkImage>(imageData->image));
+	ImagenameInfo.pObjectName = imageData->ImageID.c_str();
+
+	vulkanContext->vkSetDebugUtilsObjectNameEXT(logicalDevice, &ImagenameInfo);
 
 	AddImageLog(imageData);
 }
