@@ -624,6 +624,8 @@ void SSGI::CleanUp()
 		BlueNoiseTextures.clear();
 
 		vulkanContext->LogicalDevice.destroyDescriptorSetLayout(TemporalAccumilationDescriptorSetLayout);
+		vulkanContext->LogicalDevice.destroyDescriptorSetLayout(Blured_TemporalAccumilationDescriptorSetLayout);
+
 	}
 	Drawable::Destructor();
 

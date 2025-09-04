@@ -39,14 +39,15 @@ public:
 
     void CleanUp() ;
 
-    std::vector<vk::DescriptorSet> TemporalAccumilationFullDescriptorSets;
     vk::DescriptorSetLayout TemporalAccumilationDescriptorSetLayout;
+    vk::DescriptorSetLayout Blured_TemporalAccumilationDescriptorSetLayout;
 
+
+    std::vector<vk::DescriptorSet> TemporalAccumilationFullDescriptorSets;
 
     std::vector<vk::DescriptorSet> HorizontalBlured_TemporalAccumilationFullDescriptorSets;
     std::vector<vk::DescriptorSet> FinalBlured_TemporalAccumilationFullDescriptorSets;
 
-    vk::DescriptorSetLayout Blured_TemporalAccumilationDescriptorSetLayout;
 
     std::vector<ImageData> BlueNoiseTextures;
 
