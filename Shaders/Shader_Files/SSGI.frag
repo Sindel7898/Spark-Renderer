@@ -88,10 +88,10 @@ void main() {
     
     
     // Get blue noise sample
-    ivec2 WindowSize = textureSize(DirectLigtingTexture, 3);
+    ivec2 WindowSize = textureSize(DirectLigtingTexture,0);
 
     // Convert WindowSize to float and scale
-    vec2 tiledUV = inTexCoord * (vec2(WindowSize) / 10);
+    vec2 tiledUV = inTexCoord * (vec2(WindowSize) / 50);
 
     vec3 giContribution = vec3(0.0);
 
@@ -120,7 +120,7 @@ void main() {
             vec3 radianceB = hitLighting;
             float cosTerm = max(dot(Normal, stochasticNormal), 0.0);
             
-             giContribution += (radianceB * Albedo *  cosTerm);  
+             giContribution += (radianceB *  cosTerm);  
        }
     }
 
