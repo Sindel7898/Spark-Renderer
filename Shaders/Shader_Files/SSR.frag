@@ -16,8 +16,8 @@ layout (binding = 5) uniform sampler2D MaterialTexture;
 layout (location = 0) in vec2 inTexCoord;           
 layout (location = 0) out vec4 outFragcolor;
 
-const int MAX_ITERATION = 48;
-const int NUM_BINARY_SEARCH_SAMPLES = 5;
+const int MAX_ITERATION = 34;
+const int NUM_BINARY_SEARCH_SAMPLES = 2;
 float MAX_THICKNESS = 0.003;
 
 
@@ -147,10 +147,12 @@ vec4 ComputeReflectedColor(float intensity, vec3 intersection)
     return ssr_color;
 }
 
-vec3 fresnelSchlick(float cosTheta, vec3 F0)
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
 {
-    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
-}  
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * 
+           pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+ 
 
 void main() {
  
@@ -176,20 +178,15 @@ void main() {
          ReflectionColor  = ComputeReflectedColor(Intensity,Intersection_Result);
   }
 
-     if(ReflectionColor.rgb == vec3(0,0,0) ){
-        ReflectionColor.rgb =  Color;
-     };
-
-
      vec3 viewDir   = -normalize(ViewSpacePosition.xyz);
      float cosTheta = clamp(dot(viewDir, Normal), 0.0, 1.0);
      vec3 F0        = mix(vec3(0.04),Color,MetalicRoughnessAO.r);
      
-     vec3 fresnel = fresnelSchlick(cosTheta, F0);
+     vec3 fresnel = fresnelSchlickRoughness(cosTheta, F0,MetalicRoughnessAO.g);
      vec3 SSR     = ReflectionColor.rgb;
 
 
-     vec3 finalColor = mix(Color, ReflectionColor.rgb, fresnel * 0.4); 
+     vec3 finalColor = mix(Color, ReflectionColor.rgb, fresnel ); 
 
      outFragcolor = vec4(finalColor, 1.0);
 }

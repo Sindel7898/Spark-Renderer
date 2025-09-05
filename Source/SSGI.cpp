@@ -96,11 +96,6 @@ void SSGI::CreateGIImage() {
 	HalfRes_BluredSSGIAccumilationImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 
-
-
-
-
-
 	vk::CommandBuffer commandBuffer = bufferManager->CreateSingleUseCommandBuffer(commandPool);
 
 	ImageTransitionData transitionInfo{};

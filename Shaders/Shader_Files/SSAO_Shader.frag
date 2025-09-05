@@ -58,6 +58,5 @@ void main() {
     }
     else { 
     outFragcolor =  vec4(1.0f);
-    }
-   
+    }   
 }

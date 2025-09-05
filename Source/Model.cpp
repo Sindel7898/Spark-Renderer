@@ -491,14 +491,9 @@ void Model::UpdateUniformBuffer(uint32_t currentImage)
 
 
 
-bool Model::CalcDistasnceCulling(glm::mat4 Matrix)
+bool Model::CalcDistanceCulling(glm::mat4 Matrix)
 {
-
 	glm::vec3 translation = glm::vec3(Matrix[3]);
-
-
-	camera->GetPosition();
-
 	float distance = glm::distance(camera->GetPosition(), translation);
 
 	return distance <= 100.0f;
@@ -516,7 +511,7 @@ void Model::DrawNode(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipeline
 		Instances[0]->SetModelMatrix(worldMatrix);
 
 
-		if (CalcDistasnceCulling(worldMatrix))
+		if (CalcDistanceCulling(worldMatrix))
 		{
 			for (const auto& primitive : node->meshPrimitives) {
 
@@ -534,6 +529,7 @@ void Model::DrawNode(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipeline
 		DrawNode(commandBuffer, pipelineLayout, imageIndex,node->children, worldMatrix);
 	}
 }
+
 
 void Model::Draw(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipelineLayout,uint32_t imageIndex)
 {

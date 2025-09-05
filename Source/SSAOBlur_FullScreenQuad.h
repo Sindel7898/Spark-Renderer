@@ -33,6 +33,7 @@ private:
            0, 1, 2,
            2, 1, 3
     };
+    void DrawSSAOBlurHorizontal(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
 };
 
 static inline void SSAOBlur_FullScreenQuadDeleter(SSAOBlur_FullScreenQuad* SSA0_fullScreenQuad) {

@@ -20,6 +20,8 @@ public:
 
     SSA0_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext, Camera* cameraref, vk::CommandPool commandpool);
     void CreateVertexAndIndexBuffer() override;
+    void CreateImage();
+    void DestroyImage();
     void createDescriptorSetLayout() override;
     void CreateKernel();
     void UpdataeUniformBufferData();
@@ -27,6 +29,9 @@ public:
     float lerp(float a, float b, float f);
     void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer Gbuffer);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
+
+    void DrawSSAOBlurVertical(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
+    void DrawSSAOBlurHorizontal(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
 
     void CleanUp();
 
@@ -36,6 +41,16 @@ public:
     int bShouldSSAO = 1;
     float Radius = 1.5f;
     float Bias = 0.09;
+
+    vk::DescriptorSetLayout SSAOBlurDescriptorSetLayout;
+    std::vector<vk::DescriptorSet> SSAOBlurDescriptorSet;
+
+    vk::Extent3D SSAOImageSize;
+    vk::Extent3D BluredSSAOImageSize;
+
+    ImageData SSAOImage;
+    ImageData BluredSSAOImage;
+
 private:
 
     std::vector<Vertex> quad = {

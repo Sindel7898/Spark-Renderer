@@ -120,7 +120,6 @@
 	Raytracing_Shadows = std::shared_ptr<RayTracing>(new RayTracing(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), RayTracingDeleter);
 	lighting_FullScreenQuad = std::shared_ptr<Lighting_FullScreenQuad>(new Lighting_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool, skyBox.get(), Raytracing_Shadows.get()), Lighting_FullScreenQuadDeleter);
 	ssao_FullScreenQuad     = std::shared_ptr<SSA0_FullScreenQuad>(new SSA0_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSA0_FullScreenQuadDeleter);
-	ssaoBlur_FullScreenQuad = std::shared_ptr<SSAOBlur_FullScreenQuad>(new SSAOBlur_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSAOBlur_FullScreenQuadDeleter);
 	fxaa_FullScreenQuad     = std::shared_ptr<FXAA_FullScreenQuad>(new FXAA_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), FXAA_FullScreenQuadDeleter);
 	ssr_FullScreenQuad      = std::shared_ptr<SSR_FullScreenQuad>(new SSR_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSR_FullScreenQuadDeleter);
 	Combined_FullScreenQuad = std::shared_ptr<CombinedResult_FullScreenQuad>(new CombinedResult_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), CombinedResult_FullScreenQuadDeleter);
@@ -495,16 +494,7 @@ void App::createGBuffer()
 	bufferManger->CreateImage(&gbuffer.ViewSpaceNormal,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	gbuffer.ViewSpaceNormal.imageView = bufferManger->CreateImageView(&gbuffer.ViewSpaceNormal, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	gbuffer.ViewSpaceNormal.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
-	//////////////////////////////////////////////////////////////////////////////////////////////////////
-	gbuffer.SSAO.ImageID = "Gbuffer SSAO Texture";
-	bufferManger->CreateImage(&gbuffer.SSAO,swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	gbuffer.SSAO.imageView = bufferManger->CreateImageView(&gbuffer.SSAO, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
-	gbuffer.SSAO.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
-	gbuffer.SSAOBlured.ImageID = "Gbuffer SSAOBlured Texture";
-	bufferManger->CreateImage(&gbuffer.SSAOBlured,swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	gbuffer.SSAOBlured.imageView = bufferManger->CreateImageView(&gbuffer.SSAOBlured, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
-	gbuffer.SSAOBlured.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	gbuffer.Materials.ImageID = "Gbuffer Materials Texture";
@@ -533,13 +523,12 @@ void App::createGBuffer()
 	ssr_FullScreenQuad->CreateImage(swapchainextent);
 	Raytracing_Shadows->CreateStorageImage();
 	Combined_FullScreenQuad->CreateImage(swapchainextent);
-
+	ssao_FullScreenQuad->CreateImage();
 
 	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&ReflectionMaskImageData);
 	ssao_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
-	ssaoBlur_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
 	ssr_FullScreenQuad->createDescriptorSets(DescriptorPool, LightingPassImageData, gbuffer.ViewSpaceNormal,gbuffer.ViewSpacePosition, DepthTextureData, ReflectionMaskImageData,gbuffer.Materials);
-	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, LightingPassImageData, SSGI_FullScreenQuad->HalfRes_BluredSSGIAccumilationImage, gbuffer.SSAOBlured, gbuffer.Materials,gbuffer.Albedo);
+	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, LightingPassImageData, SSGI_FullScreenQuad->HalfRes_BluredSSGIAccumilationImage, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo);
 	fxaa_FullScreenQuad->createDescriptorSets(DescriptorPool, Combined_FullScreenQuad->FinalResultImage);
 	Raytracing_Shadows->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
 	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, LightingPassImageData,DepthTextureData);
@@ -557,9 +546,9 @@ void App::createGBuffer()
 		                                                  Raytracing_Shadows->ShadowPassImages[1].imageView,
 		                                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-
-	SSAOTextureId           = ImGui_ImplVulkan_AddTexture(gbuffer.SSAOBlured.imageSampler,
-		                                                  gbuffer.SSAOBlured.imageView,
+	
+	SSAOTextureId           = ImGui_ImplVulkan_AddTexture(ssao_FullScreenQuad->BluredSSAOImage.imageSampler,
+		                                                  ssao_FullScreenQuad->BluredSSAOImage.imageView,
 		                                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 
@@ -729,13 +718,16 @@ void App::CreateGraphicsPipeline()
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
 		pipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats.data();
 
+		vk::PushConstantRange range{};
+		range.setOffset(0);
+		range.setSize(sizeof(glm::vec2));
+		range.setStageFlags(vk::ShaderStageFlagBits::eFragment);
+
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.setLayoutCount = 1;
 		pipelineLayoutInfo.setSetLayouts(ssao_FullScreenQuad->descriptorSetLayout);
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
-		pipelineLayoutInfo.pPushConstantRanges = nullptr;
-
-
+		pipelineLayoutInfo.pPushConstantRanges = &range;
 
 		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSAO_Shader.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
@@ -759,11 +751,16 @@ void App::CreateGraphicsPipeline()
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
 		pipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats.data();
 
+		vk::PushConstantRange range{};
+		range.setOffset(0);
+		range.setSize(sizeof(glm::vec2));
+		range.setStageFlags(vk::ShaderStageFlagBits::eFragment);
+
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.setSetLayouts(ssaoBlur_FullScreenQuad->descriptorSetLayout);
+		pipelineLayoutInfo.setSetLayouts(ssao_FullScreenQuad->SSAOBlurDescriptorSetLayout);
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
-		pipelineLayoutInfo.pPushConstantRanges = nullptr;
+		pipelineLayoutInfo.pPushConstantRanges = &range;
 
 
 		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSAOBlur_Shader.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
@@ -1533,10 +1530,9 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIAccumilationImage, TransitionToGeneral);
 		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_HorizontalBluredSSGIAccumilationImage, TransitionToGeneral);
 		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_BluredSSGIAccumilationImage, TransitionToGeneral);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.SSAOBlured, TransitionToGeneral);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.SSAO, TransitionToGeneral);
+		bufferManger->TransitionImage(commandBuffer, &ssao_FullScreenQuad->SSAOImage, TransitionToGeneral);
+		bufferManger->TransitionImage(commandBuffer, &ssao_FullScreenQuad->BluredSSAOImage, TransitionToGeneral);
 
-		
 
 		vk::RenderingAttachmentInfo PositioncolorAttachmentInfo{};
 		PositioncolorAttachmentInfo.imageView = gbuffer.Position.imageView;
@@ -1639,21 +1635,34 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		SSAOColorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
 		SSAOColorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
 		SSAOColorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		SSAOColorAttachment.imageView = gbuffer.SSAO.imageView;
+		SSAOColorAttachment.imageView = ssao_FullScreenQuad->SSAOImage.imageView;
 		SSAOColorAttachment.clearValue = clearColor;
 
 		vk::RenderingInfo renderingInfo{};
 		renderingInfo.renderArea.offset = imageoffset;
-		renderingInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
-		renderingInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
+		renderingInfo.renderArea.extent.height = ssao_FullScreenQuad->SSAOImageSize.height;
+		renderingInfo.renderArea.extent.width  = ssao_FullScreenQuad->SSAOImageSize.width;
 		renderingInfo.layerCount = 1;
 		renderingInfo.colorAttachmentCount = 1;
 		renderingInfo.pColorAttachments = &SSAOColorAttachment;
 
+		vk::Viewport SSAOviewport{};
+		SSAOviewport.x = 0.0f;
+		SSAOviewport.y = 0.0f;
+		SSAOviewport.width  = ssao_FullScreenQuad->SSAOImageSize.width;
+		SSAOviewport.height = ssao_FullScreenQuad->SSAOImageSize.height;
+		SSAOviewport.minDepth = 0.0f;
+		SSAOviewport.maxDepth = 1.0f;
+
+		vk::Rect2D SSAOscissor{};
+		SSAOscissor.offset = imageoffset;
+		SSAOscissor.extent.width  = ssao_FullScreenQuad->SSAOImageSize.width;
+		SSAOscissor.extent.height = ssao_FullScreenQuad->SSAOImageSize.height;
+
 
 		commandBuffer.beginRendering(renderingInfo);
-		commandBuffer.setViewport(0, 1, &viewport);
-		commandBuffer.setScissor(0, 1, &scissor);
+		commandBuffer.setViewport(0, 1, &SSAOviewport);
+		commandBuffer.setScissor(0, 1, &SSAOscissor);
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SSAOPipeline);
 
 		ssao_FullScreenQuad->Draw(commandBuffer, SSAOPipelineLayout, currentFrame);
@@ -1665,24 +1674,38 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		SSAOBluredColorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
 		SSAOBluredColorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
 		SSAOBluredColorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		SSAOBluredColorAttachment.imageView = gbuffer.SSAOBlured.imageView;
+		SSAOBluredColorAttachment.imageView = ssao_FullScreenQuad->BluredSSAOImage.imageView;
 		SSAOBluredColorAttachment.clearValue = clearColor;
 
 		vk::RenderingInfo renderingInfo{};
 		renderingInfo.renderArea.offset = imageoffset;
-		renderingInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
-		renderingInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
+		renderingInfo.renderArea.extent.height = ssao_FullScreenQuad->BluredSSAOImageSize.height;
+		renderingInfo.renderArea.extent.width = ssao_FullScreenQuad->BluredSSAOImageSize.width;
 		renderingInfo.layerCount = 1;
 		renderingInfo.colorAttachmentCount = 1;
 		renderingInfo.pColorAttachments = &SSAOBluredColorAttachment;
 
+		vk::Viewport SSAOviewport{};
+		SSAOviewport.x = 0.0f;
+		SSAOviewport.y = 0.0f;
+		SSAOviewport.width = ssao_FullScreenQuad->BluredSSAOImageSize.width;
+		SSAOviewport.height = ssao_FullScreenQuad->BluredSSAOImageSize.height;
+		SSAOviewport.minDepth = 0.0f;
+		SSAOviewport.maxDepth = 1.0f;
+
+		vk::Rect2D SSAOscissor{};
+		SSAOscissor.offset = imageoffset;
+		SSAOscissor.extent.width = ssao_FullScreenQuad->BluredSSAOImageSize.width;
+		SSAOscissor.extent.height = ssao_FullScreenQuad->BluredSSAOImageSize.height;
+
 
 		commandBuffer.beginRendering(renderingInfo);
-		commandBuffer.setViewport(0, 1, &viewport);
-		commandBuffer.setScissor(0, 1, &scissor);
+		commandBuffer.setViewport(0, 1, &SSAOviewport);
+		commandBuffer.setScissor(0, 1, &SSAOscissor);
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SSAOBlurPipeline);
 
-		ssaoBlur_FullScreenQuad->Draw(commandBuffer, SSAOBlurPipelineLayout, currentFrame);
+		ssao_FullScreenQuad->DrawSSAOBlurHorizontal(commandBuffer, SSAOBlurPipelineLayout, currentFrame);
+		ssao_FullScreenQuad->DrawSSAOBlurVertical(commandBuffer, SSAOBlurPipelineLayout, currentFrame);
 		commandBuffer.endRendering();
 	}
 
@@ -1731,7 +1754,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		renderingInfo.colorAttachmentCount = 1;
 		renderingInfo.pColorAttachments = &LightPassColorAttachmentInfo;
 
-
+		commandBuffer.setViewport(0, 1, &viewport);
+		commandBuffer.setScissor(0, 1, &scissor);
 		commandBuffer.beginRendering(renderingInfo);
 
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, DeferedLightingPassPipeline);
@@ -2165,13 +2189,12 @@ void App::destroy_GbufferImages()
 	bufferManger->DestroyImage(gbuffer.ViewSpacePosition);
 	bufferManger->DestroyImage(gbuffer.Normal);
 	bufferManger->DestroyImage(gbuffer.ViewSpaceNormal);
-	bufferManger->DestroyImage(gbuffer.SSAO);
-	bufferManger->DestroyImage(gbuffer.SSAOBlured);
 	bufferManger->DestroyImage(gbuffer.Materials);
 	bufferManger->DestroyImage(gbuffer.Albedo);
 	bufferManger->DestroyImage(LightingPassImageData);
 	bufferManger->DestroyImage(ReflectionMaskImageData);
 
+	ssao_FullScreenQuad->DestroyImage();
 	Raytracing_Shadows->DestroyStorageImage();
 	fxaa_FullScreenQuad->DestroyImage();
 	ssr_FullScreenQuad->DestroyImage();
@@ -2253,7 +2276,6 @@ void App::DestroyBuffers()
 
 	lighting_FullScreenQuad.reset();
 	ssao_FullScreenQuad.reset();
-	ssaoBlur_FullScreenQuad.reset();
 	fxaa_FullScreenQuad.reset();
 	ssr_FullScreenQuad.reset();
 	Raytracing_Shadows.reset();

@@ -28,7 +28,6 @@ class Model;
 class PipelineManager;
 class SSR_FullScreenQuad;
 class FXAA_FullScreenQuad;
-class SSAOBlur_FullScreenQuad;
 
 
 struct GBuffer;
@@ -103,7 +102,6 @@ public:
 	//Drawables
 	std::shared_ptr<Lighting_FullScreenQuad>            lighting_FullScreenQuad = nullptr;
 	std::shared_ptr<SSA0_FullScreenQuad>                ssao_FullScreenQuad = nullptr;
-	std::shared_ptr<SSAOBlur_FullScreenQuad>            ssaoBlur_FullScreenQuad = nullptr;
 	std::shared_ptr<FXAA_FullScreenQuad>                fxaa_FullScreenQuad = nullptr;
 	std::shared_ptr<SSR_FullScreenQuad>                 ssr_FullScreenQuad = nullptr;
 	std::shared_ptr<RayTracing>                         Raytracing_Shadows = nullptr;

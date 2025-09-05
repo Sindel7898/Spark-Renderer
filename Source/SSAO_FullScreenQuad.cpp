@@ -6,6 +6,7 @@
 #include "Light.h"
 #include "Camera.h"
 #include <random>
+#include "SSAOBlur_FullScreenQuad.h"
 
 SSA0_FullScreenQuad::SSA0_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext,Camera* cameraref, vk::CommandPool commandpool): Drawable()
 {
@@ -75,6 +76,30 @@ void SSA0_FullScreenQuad::CreateUniformBuffer()
 
 }
 
+void SSA0_FullScreenQuad::CreateImage() {
+
+	SSAOImageSize = vk::Extent3D(vulkanContext->swapchainExtent.width /2, vulkanContext->swapchainExtent.height/2, 1);
+	BluredSSAOImageSize = vk::Extent3D(vulkanContext->swapchainExtent.width , vulkanContext->swapchainExtent.height , 1);
+
+	SSAOImage.ImageID = "SSAO Image Pass Image";
+	bufferManager->CreateImage(&SSAOImage, SSAOImageSize, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	SSAOImage.imageView = bufferManager->CreateImageView(&SSAOImage, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
+	SSAOImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+
+	BluredSSAOImage.ImageID = "Blured SSAOImage Image Pass Image";
+	bufferManager->CreateImage(&BluredSSAOImage, BluredSSAOImageSize, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	BluredSSAOImage.imageView = bufferManager->CreateImageView(&BluredSSAOImage, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
+	BluredSSAOImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+}
+
+void SSA0_FullScreenQuad::DestroyImage() {
+
+	bufferManager->DestroyImage(SSAOImage);
+	bufferManager->DestroyImage(BluredSSAOImage);
+
+}
+
+
 void SSA0_FullScreenQuad::createDescriptorSetLayout()
 {
 	{
@@ -115,6 +140,30 @@ void SSA0_FullScreenQuad::createDescriptorSetLayout()
 			throw std::runtime_error("Failed to create descriptorset layout!");
 		}
 	}
+
+
+	{
+		//////// Create set for SSAO Blur ////////////
+		vk::DescriptorSetLayoutBinding SSAODescriptorBinding{};
+		SSAODescriptorBinding.binding = 0;
+		SSAODescriptorBinding.descriptorCount = 1;
+		SSAODescriptorBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		SSAODescriptorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+
+		std::array<vk::DescriptorSetLayoutBinding, 1> SSAOPassBinding = { SSAODescriptorBinding };
+
+		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.bindingCount = static_cast<uint32_t>(SSAOPassBinding.size());
+		layoutInfo.pBindings = SSAOPassBinding.data();
+
+		if (vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &SSAOBlurDescriptorSetLayout) != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("Failed to create descriptorset layout!");
+		}
+	}
+
+
 }
 
 void SSA0_FullScreenQuad::CreateKernel()
@@ -155,12 +204,11 @@ void SSA0_FullScreenQuad::UpdataeUniformBufferData()
 	}
 }
 
-
-
 float SSA0_FullScreenQuad::lerp(float a, float b, float f)
 {
 	return a + f * (b - a);
 }
+
 void SSA0_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer Gbuffer)
 {
 	// create sets from the pool based on the layout
@@ -246,6 +294,50 @@ void SSA0_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool 
 
 		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	}
+
+
+
+	{
+		// create sets from the pool based on the layout
+		std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, SSAOBlurDescriptorSetLayout);
+
+		vk::DescriptorSetAllocateInfo allocinfo;
+		allocinfo.descriptorPool = descriptorpool;
+		allocinfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		allocinfo.pSetLayouts = layouts.data();
+
+		SSAOBlurDescriptorSet.resize(MAX_FRAMES_IN_FLIGHT);
+
+		vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, SSAOBlurDescriptorSet.data());
+
+		////////////////////////////////////////////////////////////////////////////////////////////////
+		//specifies what exactly to send
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+
+			/////////////////////////////////////////////////////////////////////////////////////
+			vk::DescriptorImageInfo SSAOimageInfo{};
+			SSAOimageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			SSAOimageInfo.imageView = SSAOImage.imageView;
+			SSAOimageInfo.sampler  = SSAOImage.imageSampler;
+
+			vk::WriteDescriptorSet SSAOSamplerdescriptorWrite{};
+			SSAOSamplerdescriptorWrite.dstSet = SSAOBlurDescriptorSet[i];
+			SSAOSamplerdescriptorWrite.dstBinding = 0;
+			SSAOSamplerdescriptorWrite.descriptorCount = 1;
+			SSAOSamplerdescriptorWrite.dstArrayElement = 0;
+			SSAOSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			SSAOSamplerdescriptorWrite.pImageInfo = &SSAOimageInfo;
+			/////////////////////////////////////////////////////////////////////////////////////
+			;
+
+
+			std::array<vk::WriteDescriptorSet, 1> descriptorWrites = {
+																		SSAOSamplerdescriptorWrite,        // binding 1
+			};
+
+			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+		}
+	}
 }
 
 
@@ -260,6 +352,31 @@ void SSA0_FullScreenQuad::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayo
 	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
 }
 
+void SSA0_FullScreenQuad::DrawSSAOBlurHorizontal(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)
+{
+	vk::DeviceSize offsets[] = { 0 };
+	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+	glm::vec2 Direction = glm::vec2(0, 1);
+	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(glm::vec2), &Direction);
+
+	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
+	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &SSAOBlurDescriptorSet[imageIndex], 0, nullptr);
+	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+}
+
+void SSA0_FullScreenQuad::DrawSSAOBlurVertical(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)
+{
+	vk::DeviceSize offsets[] = { 0 };
+	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+	glm::vec2 Direction = glm::vec2(1, 0);
+	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(glm::vec2), &Direction);
+
+	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
+	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &SSAOBlurDescriptorSet[imageIndex], 0, nullptr);
+	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+}
 void SSA0_FullScreenQuad::CleanUp()
 {
 	bufferManager->DestroyImage(NoiseTexture);

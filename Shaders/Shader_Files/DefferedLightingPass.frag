@@ -65,6 +65,52 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
     return ggx1 * ggx2;
 }
 
+float PCF(sampler2D ShadowMap, int Channel, vec2 texCoord)
+{
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(ShadowMap, 0);
+    float totalWeight = 0.0;
+    
+    // Gaussian kernel weights for 3x3
+    float weights[9] = float[](
+        1.0/16.0, 2.0/16.0, 1.0/16.0,
+        2.0/16.0, 4.0/16.0, 2.0/16.0,
+        1.0/16.0, 2.0/16.0, 1.0/16.0
+    );
+    
+    int index = 0;
+    for(int x = -1; x <= 1; x = x + 1)
+    {
+        for(int y = -1; y <= 1; y = y + 1)
+        {
+            vec2 sampleCoord = texCoord + vec2(x, y) * texelSize;
+            vec4 sampleValues = textureLod(ShadowMap, sampleCoord, 0);
+            float sampleShadow;
+            
+            if(Channel == 0) sampleShadow = sampleValues.r;
+            else if(Channel == 1) sampleShadow = sampleValues.g;
+            else if(Channel == 2) sampleShadow = sampleValues.b;
+            else if(Channel == 3) sampleShadow = sampleValues.a;
+            else sampleShadow = 1.0;
+            
+            float weight = weights[index];
+            if(sampleShadow > 0.5)
+            {
+                shadow += (sampleShadow * weight);
+            }
+            else
+            {
+                shadow += (sampleShadow * weight);
+            }
+            
+            totalWeight = totalWeight + weight;
+            index = index + 1;
+        }
+    }
+    
+    return shadow / totalWeight;
+}
+
 void main() {
 
    //Defaults/////////////////////////////
@@ -96,10 +142,11 @@ void main() {
 
 
 
-    float shadows[4] = {textureLod(samplerShadowMap[0], inTexCoord,0).r,
-                        textureLod(samplerShadowMap[0], inTexCoord,0).g,
-                        textureLod(samplerShadowMap[0], inTexCoord,0).b,
-                        textureLod(samplerShadowMap[0], inTexCoord,0).a};
+    float shadows[4] = {PCF(samplerShadowMap[0],0,inTexCoord),
+                        PCF(samplerShadowMap[0],1,inTexCoord),
+                        PCF(samplerShadowMap[0],2,inTexCoord),
+                        PCF(samplerShadowMap[0],3,inTexCoord)};
+
 
 
   for (int i = 0; i < 4; i++) {

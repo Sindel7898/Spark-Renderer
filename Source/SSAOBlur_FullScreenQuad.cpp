@@ -91,8 +91,8 @@ void SSAOBlur_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorP
 		/////////////////////////////////////////////////////////////////////////////////////
 		vk::DescriptorImageInfo PositionimageInfo{};
 		PositionimageInfo.imageLayout = vk::ImageLayout::eGeneral;
-		PositionimageInfo.imageView = Gbuffer.SSAO.imageView;
-		PositionimageInfo.sampler = Gbuffer.SSAO.imageSampler;
+		//PositionimageInfo.imageView = Gbuffer.SSAO.imageView;
+		//PositionimageInfo.sampler = Gbuffer.SSAO.imageSampler;
 
 		vk::WriteDescriptorSet PositionSamplerdescriptorWrite{};
 		PositionSamplerdescriptorWrite.dstSet = DescriptorSets[i];

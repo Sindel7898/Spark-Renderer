@@ -69,11 +69,12 @@ vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal)
 void main() {
     float shadowFactor[MAX_LIGHTS] = {1.0, 1.0,1.0,1.0};
     
-    ivec2 texCoord = ivec2(gl_LaunchIDEXT.xy);
-    vec3 hitPosition = texelFetch(Position, texCoord, 0).xyz;
+    ivec2 halfCoord  = ivec2(gl_LaunchIDEXT.xy);
+    ivec2 fullCoord = halfCoord * 2; 
+    vec3 hitPosition = texelFetch(Position, fullCoord, 0).xyz;
     
     // Add small bias to avoid self-intersection
-    vec3 normal = texelFetch(Normal, texCoord, 0).xyz;
+    vec3 normal = texelFetch(Normal, fullCoord, 0).xyz;
      vec3 origin = offsetPositionAlongNormal(hitPosition,normal); 
 
     for(int i = 0; i < MAX_LIGHTS; ++i) {
@@ -105,8 +106,8 @@ void main() {
     }
 
     // Store results
-    imageStore(OutputImage[0], texCoord, vec4(shadowFactor[0], shadowFactor[1], shadowFactor[2],shadowFactor[3]));
-    //imageStore(OutputImage[1], texCoord, vec4(shadowFactor[1], shadowFactor[1], shadowFactor[1], 1.0));
+    imageStore(OutputImage[0], halfCoord, vec4(shadowFactor[0], shadowFactor[1], shadowFactor[2],shadowFactor[3]));
+    imageStore(OutputImage[1], halfCoord, vec4(shadowFactor[0], shadowFactor[1], shadowFactor[2], 1.0));
     //imageStore(OutputImage[2], texCoord, vec4(shadowFactor[2], shadowFactor[2], shadowFactor[2], 1.0));
     //imageStore(OutputImage[3], texCoord, vec4(shadowFactor[3], shadowFactor[3], shadowFactor[3], 1.0));
 
