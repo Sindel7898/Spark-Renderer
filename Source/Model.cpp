@@ -235,7 +235,7 @@ void Model::CreateUniformBuffer()
 		for (size_t i = 0; i < vertexUniformBuffers.size(); i++)
 		{
 			BufferData bufferdata;
-			bufferdata.BufferID = "Vertex Uniform Buffer" + i;
+			bufferdata.BufferID = "Model Vertex Uniform Buffer" + i;
 			bufferManager->CreateBuffer(&bufferdata,VertexuniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
 			vertexUniformBuffers[i] = bufferdata;
 
@@ -270,19 +270,18 @@ void Model::Instantiate()
 	{
 		int LastIndex = Instances.size() - 1;
 
-		InstanceData* NewInstance = new InstanceData(Instances[LastIndex],vulkanContext);
+		auto NewInstance = std::make_unique<InstanceData>(Instances[LastIndex].get(), vulkanContext);
 
-		Instances.push_back(NewInstance);
 		GPU_InstancesData.push_back(NewInstance->gpu_InstanceData);
-
+		Instances.push_back(std::move(NewInstance));
 	}
 	else
 	{
-		InstanceData* NewInstance = new InstanceData(nullptr, vulkanContext);
+		auto NewInstance = std::make_unique<InstanceData>(nullptr, vulkanContext);
 		NewInstance->SetTrasnformationMatrix(glm::mat4(1.0f));
 
-		Instances.push_back(NewInstance);
 		GPU_InstancesData.push_back(NewInstance->gpu_InstanceData);
+		Instances.push_back(std::move(NewInstance));
 	}
 }
 
@@ -557,23 +556,27 @@ void Model::CleanUp()
 		{
 			bufferManager->DestroyImage(AlbedoTexture);
 		}
+		AlbedoTextures.clear();
 
 		for (auto& NormalTexture : NormalTextures)
 		{
 			bufferManager->DestroyImage(NormalTexture);
 		}
+		NormalTextures.clear();
 
 
 		for (auto& MetallicRoughnessTexture : MetallicRoughnessTextures)
 		{
 			bufferManager->DestroyImage(MetallicRoughnessTexture);
 		}
+		MetallicRoughnessTextures.clear();
 
 
 		for (auto& AOTexture : AOTextures)
 		{
 			bufferManager->DestroyImage(AOTexture);
 		}
+		AOTextures.clear();
 
 
 	    bufferManager->DestroyBuffer(BLAS_Buffer);
@@ -590,6 +593,7 @@ void Model::CleanUp()
 			}
 		}
 
+		SceneDescriptorSets.clear();
 		Model_GPU_DataUniformBuffers.clear();
 		Model_GPU_DataUniformBuffersMappedMem.clear();
 		Instances.clear();

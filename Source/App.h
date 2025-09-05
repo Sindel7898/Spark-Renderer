@@ -3,23 +3,16 @@
 #define GLM_FORCE_RADIANS
 
 #include "ShaderHelper.h"
-#include "VkBootstrap.h"
 #include <stdexcept>
 #include <vulkan/vulkan.hpp>
 #include <chrono>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "Model.h"
-#include "SkyBox.h"
-#include "UserInterface.h"
 #include "Lighting_FullScreenQuad.h"
 #include "SSAO_FullScreenQuad.h"
-#include "SSAOBlur_FullScreenQuad.h"
-#include "FXAA_FullScreenQuad.h"
-#include "SSR_FullScreenQuad.h"
-#include "Pipeline_Manager.h"
 
 
+class UserInterface;
 class Window;
 class Camera;
 class MeshLoader;
@@ -27,10 +20,16 @@ class BufferManager;
 class VulkanContext;
 class FramesPerSecondCounter;
 class Light;
-class Grass;
 class RayTracing;
 class CombinedResult_FullScreenQuad;
 class SSGI;
+class SkyBox;
+class Model;
+class PipelineManager;
+class SSR_FullScreenQuad;
+class FXAA_FullScreenQuad;
+class SSAOBlur_FullScreenQuad;
+
 
 struct GBuffer;
 

@@ -9,7 +9,6 @@
 #include "VulkanContext.h"
 #include "FramesPerSecondCounter.h"
 #include "Light.h"
-#include "Grass.h"
 #include "RayTracing.h"
 #include "CombinedResult_FullScreenQuad.h"
 #include "SSGI.h"
@@ -19,6 +18,14 @@
 #include "Extensions/NRIDeviceCreation.h"
 #include "NRDIntegration.hpp"
 #include <crtdbg.h>
+#include "SkyBox.h"
+#include "Model.h"
+#include "UserInterface.h"
+#include "Pipeline_Manager.h"
+#include "SSAOBlur_FullScreenQuad.h"
+#include "FXAA_FullScreenQuad.h"
+#include "SSR_FullScreenQuad.h"
+
 
 #define DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
 

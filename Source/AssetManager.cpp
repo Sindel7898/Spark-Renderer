@@ -1,5 +1,4 @@
 #include "AssetManager.h"
-#include "MeshLoader.h"
 #include "stb_image.h"
 
 AssetManager::AssetManager() {
@@ -87,4 +86,6 @@ AssetManager::~AssetManager() {
 
 	}
 	LoadedModelData.clear();
+
+	meshloader.reset();
 }

@@ -6,6 +6,7 @@
 #include "Light.h"
 #include "SSAO_FullScreenQuad.h"
 #include "App.h"
+#include "FXAA_FullScreenQuad.h"
 
 UserInterface::UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef, BufferManager* Buffermanager)
 {

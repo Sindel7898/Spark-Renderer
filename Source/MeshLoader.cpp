@@ -8,6 +8,7 @@
 #include "tiny_gltf.h"
 #include "AssetManager.h"
 #include <glm/gtc/type_ptr.hpp>
+#include "meshoptimizer.h"
 
 MeshLoader::MeshLoader()
 {
@@ -47,7 +48,58 @@ void MeshLoader::LoadModel(const std::string& pFile)
         }
     }
 
-    AssetManager::GetInstance().ParseModelData(pFile, modelData);
+    std::vector<unsigned int> remap(modelData.IndexData.size());
+
+    meshopt_generateVertexRemap(remap.data(),
+        modelData.IndexData.data(), modelData.IndexData.size(),
+        modelData.VertexData.data(), modelData.VertexData.size(),
+        sizeof(ModelVertex));
+
+    StoredModelData Opt_modelData;
+
+    // Resize vectors BEFORE using data()
+    Opt_modelData.IndexData.resize(modelData.IndexData.size());
+    Opt_modelData.VertexData.resize(modelData.VertexData.size());
+
+    meshopt_remapIndexBuffer(Opt_modelData.IndexData.data(),
+        modelData.IndexData.data(), modelData.IndexData.size(),
+        remap.data());
+
+    meshopt_remapVertexBuffer(Opt_modelData.VertexData.data(),
+        modelData.VertexData.data(), modelData.VertexData.size(),
+        sizeof(ModelVertex), remap.data());
+
+
+    meshopt_optimizeVertexCache(Opt_modelData.IndexData.data(), Opt_modelData.IndexData.data(), Opt_modelData.IndexData.size(), modelData.VertexData.size());
+
+    meshopt_optimizeVertexFetch(Opt_modelData.VertexData.data(), Opt_modelData.IndexData.data(), Opt_modelData.IndexData.size(), Opt_modelData.VertexData.data(), Opt_modelData.VertexData.size(), sizeof(ModelVertex));
+    
+
+    //// Optional: Simplify the mesh if you need LODs
+    //float target_error = 0.01f; // Adjust based on quality requirements
+    //size_t target_index_count = Opt_modelData.IndexData.size() * 0.7f; // 30% reduction
+    //
+    //std::vector<unsigned int> simplified_indices(Opt_modelData.IndexData.size());
+    //size_t simplified_count = meshopt_simplify(
+    //    simplified_indices.data(),
+    //    Opt_modelData.IndexData.data(),
+    //    Opt_modelData.IndexData.size(),
+    //    &Opt_modelData.VertexData[0].vert.x, // Adjust for your vertex structure
+    //    Opt_modelData.VertexData.size(),
+    //    sizeof(ModelVertex),
+    //    target_index_count,
+    //    target_error);
+    //
+    //if (simplified_count > 0) {
+    //    Opt_modelData.IndexData.resize(simplified_count);
+    //    std::memcpy(Opt_modelData.IndexData.data(), simplified_indices.data(),
+    //        simplified_count * sizeof(unsigned int));
+    //}
+    //
+
+    Opt_modelData.nodes = modelData.nodes;
+
+    AssetManager::GetInstance().ParseModelData(pFile, Opt_modelData);
 
 }
 

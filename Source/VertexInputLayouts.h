@@ -5,10 +5,10 @@
 
 struct alignas(16)  ModelVertex {
 
-	alignas(16) glm::vec3 vert;
-	alignas(16) glm::vec2 text;
-	alignas(16) glm::vec3 normal;
-	alignas(16) glm::vec3 tangent;
+    glm::vec3 vert;
+    glm::vec2 text;
+    glm::vec3 normal;
+    glm::vec3 tangent;
 
 	static vk::VertexInputBindingDescription GetBindingDescription() {
 		vk::VertexInputBindingDescription  bindingdescription{};

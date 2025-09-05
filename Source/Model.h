@@ -172,7 +172,7 @@ public:
 
     vk::AccelerationStructureKHR BLAS;
 
-    std::vector<InstanceData*>     Instances;
+    std::vector<std::unique_ptr<InstanceData>>     Instances;
     std::vector<std::shared_ptr<GPU_InstanceData>> GPU_InstancesData;
 
     std::vector<BufferData> Model_GPU_DataUniformBuffers;
