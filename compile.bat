@@ -22,9 +22,11 @@ C:\VulkanSDK\1.4.321.1\Bin\glslc.exe Shaders\Shader_Files\TemporalAccumulation.f
 C:\VulkanSDK\1.4.321.1\Bin\glslc.exe Shaders\Shader_Files\SSGI_Blur_Shader.frag      -o  Shaders\Compiled_Shader_Files\SSGI_Blur_Shader.frag.spv
 
 glslc.exe Shaders/Shader_Files/raygen.rgen          -o Shaders/Compiled_Shader_Files/raygen.rgen.spv          --target-env=vulkan1.4
-glslc.exe Shaders/Shader_Files/closesthit.rchit     -o Shaders/Compiled_Shader_Files/closesthit.rchit.spv     --target-env=vulkan1.4
-glslc.exe Shaders/Shader_Files/ShadowMiss.rmiss     -o Shaders/Compiled_Shader_Files/ShadowMiss.rmiss.spv     --target-env=vulkan1.4
 glslc.exe Shaders/Shader_Files/RayGenMiss.rmiss     -o Shaders/Compiled_Shader_Files/RayGenMiss.rmiss.spv     --target-env=vulkan1.4
+
+glslc.exe Shaders/Shader_Files/Reflection_Raygen.rgen      -o Shaders/Compiled_Shader_Files/Reflection_Raygen.rgen.spv       --target-env=vulkan1.4
+glslc.exe Shaders/Shader_Files/Reflection_ClosestHit.rchit -o Shaders/Compiled_Shader_Files/Reflection_ClosestHit.rchit.spv  --target-env=vulkan1.4
+glslc.exe Shaders/Shader_Files/Reflection_Miss.rmiss       -o Shaders/Compiled_Shader_Files/Reflection_Miss.rmiss.spv         --target-env=vulkan1.4
 
 
  

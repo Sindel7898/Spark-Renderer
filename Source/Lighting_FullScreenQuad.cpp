@@ -5,8 +5,9 @@
 #include <glm/gtx/matrix_decompose.hpp>
 #include "Light.h"
 #include "Camera.h"
+#include "RT_Shadows.h"
 
-Lighting_FullScreenQuad::Lighting_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext,Camera* cameraref, vk::CommandPool commandpool, SkyBox* skyboxref, RayTracing* raytracingref): Drawable()
+Lighting_FullScreenQuad::Lighting_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext,Camera* cameraref, vk::CommandPool commandpool, SkyBox* skyboxref, RT_Shadows* raytracingref): Drawable()
 {
 	camera = cameraref;
 	bufferManager = buffermanager;

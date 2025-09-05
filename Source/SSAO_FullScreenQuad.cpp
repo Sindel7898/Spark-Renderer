@@ -6,7 +6,6 @@
 #include "Light.h"
 #include "Camera.h"
 #include <random>
-#include "SSAOBlur_FullScreenQuad.h"
 
 SSA0_FullScreenQuad::SSA0_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext,Camera* cameraref, vk::CommandPool commandpool): Drawable()
 {

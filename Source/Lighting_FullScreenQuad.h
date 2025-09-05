@@ -6,8 +6,7 @@
 #include "Drawable.h"
 #include "Structs.h"
 #include "SkyBox.h"
-#include "RayTracing.h"
-
+class RT_Shadows;
 
 struct alignas(16) LightUniformData {
      alignas(16) glm::vec4  lightPositionAndLightType;
@@ -21,7 +20,7 @@ class Lighting_FullScreenQuad : public Drawable
 {
 public:
 
-    Lighting_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext, Camera* cameraref, vk::CommandPool commandpool, SkyBox* skyboxref, RayTracing* raytracingref);
+    Lighting_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext, Camera* cameraref, vk::CommandPool commandpool, SkyBox* skyboxref, RT_Shadows* raytracingref);
     void CreateVertexAndIndexBuffer() override;
     void CreateUniformBuffer() override;
     void createDescriptorSetLayout() override;
@@ -34,7 +33,7 @@ public:
 
     GBuffer*   GbufferRef = nullptr;
     ImageData* ReflectionMaskRef = nullptr;
-    RayTracing* raytracingRef = nullptr;
+    RT_Shadows* raytracingRef = nullptr;
     SkyBox* SkyBoxRef = nullptr;
 
    private:

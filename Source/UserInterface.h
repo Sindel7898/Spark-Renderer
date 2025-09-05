@@ -57,7 +57,7 @@ class UserInterface
      ImGuizmo::OPERATION currentGizmoOperation;
      ImGuizmo::MODE currentGizmoMode;
 
-     std::vector<std::string> Passes{"Position Pass", "Normal Pass", "Albedo Pass","SSAO Pass", "RT Shadow Pass","Light Pass","SSGI Pass","Combined Pass" };
+     std::vector<std::string> Passes{"Position Pass", "Normal Pass", "Albedo Pass","SSAO Pass", "RT Shadow Pass","Light Pass","SSGI Pass","RT Reflection Pass","Combined Pass" };
      std::string currentPass = "Combined Pass";
 
      std::vector<std::string> items{ "Directional", "Point", "Spot" };

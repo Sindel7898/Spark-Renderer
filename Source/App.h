@@ -20,7 +20,7 @@ class BufferManager;
 class VulkanContext;
 class FramesPerSecondCounter;
 class Light;
-class RayTracing;
+class RT_Shadows;
 class CombinedResult_FullScreenQuad;
 class SSGI;
 class SkyBox;
@@ -28,7 +28,7 @@ class Model;
 class PipelineManager;
 class SSR_FullScreenQuad;
 class FXAA_FullScreenQuad;
-
+class RT_Reflections;
 
 struct GBuffer;
 
@@ -96,7 +96,7 @@ public:
 	void destroy_GbufferImages();
 
 	bool framebufferResized = false;
-	int DefferedDecider = 7;
+	int DefferedDecider = 8;
 
 	bool bWireFrame = false;
 	//Drawables
@@ -104,14 +104,16 @@ public:
 	std::shared_ptr<SSA0_FullScreenQuad>                ssao_FullScreenQuad = nullptr;
 	std::shared_ptr<FXAA_FullScreenQuad>                fxaa_FullScreenQuad = nullptr;
 	std::shared_ptr<SSR_FullScreenQuad>                 ssr_FullScreenQuad = nullptr;
-	std::shared_ptr<RayTracing>                         Raytracing_Shadows = nullptr;
+	std::shared_ptr<RT_Shadows>                         Raytracing_Shadows = nullptr;
+	std::shared_ptr<RT_Reflections>                     Raytracing_Reflections = nullptr;
 	std::shared_ptr<SSGI>                               SSGI_FullScreenQuad = nullptr;
 	std::shared_ptr<CombinedResult_FullScreenQuad>      Combined_FullScreenQuad = nullptr;
-	std::shared_ptr<PipelineManager>      pipelineManager = nullptr;
+	std::shared_ptr<PipelineManager>                    pipelineManager = nullptr;
 
 	VkDescriptorSet FinalRenderTextureId;
 	VkDescriptorSet LightingAndReflectionsRenderTextureId;
 	VkDescriptorSet Shadow_TextureId;
+	VkDescriptorSet Reflection_TextureId;
 	VkDescriptorSet PositionRenderTextureId;
 	VkDescriptorSet NormalTextureId;
 	VkDescriptorSet AlbedoTextureId;
@@ -150,6 +152,7 @@ private:
 	vk::PipelineLayout         SSAOBlurPipelineLayout = nullptr;
 	vk::PipelineLayout         SSRPipelineLayout = nullptr;
 	vk::PipelineLayout         RT_ShadowsPipelineLayout = nullptr;
+	vk::PipelineLayout         RT_ReflectionPipelineLayout = nullptr;
 	vk::PipelineLayout         SSGIPipelineLayout = nullptr;
 	vk::PipelineLayout         TA_SSGIPipelineLayout = nullptr;
 	vk::PipelineLayout         BluredSSGIPipelineLayout = nullptr;
@@ -164,6 +167,7 @@ private:
 	vk::Pipeline               SSAOBlurPipeline = nullptr;
 	vk::Pipeline               SSRPipeline = nullptr;
 	vk::Pipeline               RT_ShadowsPassPipeline = nullptr;
+	vk::Pipeline               RT_ReflectionPipeline = nullptr;
 	vk::Pipeline               SSGIPipeline = nullptr;
 	vk::Pipeline               TA_SSGIPipeline = nullptr;
 	vk::Pipeline               BluredSSGIPipeline = nullptr;
@@ -201,4 +205,9 @@ private:
 	BufferData raygenShaderBindingTableBuffer;
 	BufferData missShaderBindingTableBuffer;
 	BufferData hitShaderBindingTableBuffer;
+
+
+	BufferData Reflection_raygenShaderBindingTableBuffer;
+	BufferData Reflection_missShaderBindingTableBuffer;
+	BufferData Reflection_hitShaderBindingTableBuffer;
 };

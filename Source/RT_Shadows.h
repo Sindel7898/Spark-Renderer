@@ -22,11 +22,11 @@ struct RayClosesetHit_UniformBufferData {
 };
 
 
-class RayTracing
+class RT_Shadows
 {
 public:
 
-    RayTracing(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger);
+    RT_Shadows(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger);
     void CreateStorageImage();
     void DestroyStorageImage();
     void createRayTracingDescriptorSetLayout();
@@ -61,7 +61,7 @@ private:
 };
 
 
-static inline void RayTracingDeleter(RayTracing* rayTracing) {
+static inline void RT_ShadowsDeleter(RT_Shadows* rayTracing) {
 
         if (rayTracing) {
             rayTracing->CleanUp();
