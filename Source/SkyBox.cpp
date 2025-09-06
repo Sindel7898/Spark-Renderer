@@ -47,12 +47,12 @@ SkyBox::SkyBox(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera
 
 	{
 		std::array<const char*, 6> filePaths{
-		"../Textures/Skybox/Room/px.jpg",  // +X (Right)
-		"../Textures/Skybox/Room/nx.jpg",  // -X (Left)
-		"../Textures/Skybox/Room/py.jpg",  // +Y (Top)
-		"../Textures/Skybox/Room/ny.jpg",  // -Y (Bottom)
-		"../Textures/Skybox/Room/pz.jpg",  // +Z (Front)
-		"../Textures/Skybox/Room/nz.jpg"   // -Z (Back)
+		"../Textures/Skybox/Night/px.png",  // +X (Right)
+		"../Textures/Skybox/Night/nx.png",  // -X (Left)
+		"../Textures/Skybox/Night/py.png",  // +Y (Top)
+		"../Textures/Skybox/Night/ny.png",  // -Y (Bottom)
+		"../Textures/Skybox/Night/pz.png",  // +Z (Front)
+		"../Textures/Skybox/Night/nz.png"   // -Z (Back)
 		};
 
 		ImageData SkyBox3;

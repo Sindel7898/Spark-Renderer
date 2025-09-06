@@ -64,7 +64,7 @@ void SSGI::CreateUniformBuffer() {
 
 void SSGI::CreateGIImage() {
 
-	Swapchainextent_Half_Res   = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
+	Swapchainextent_Half_Res   = vk::Extent3D(vulkanContext->swapchainExtent.width/2, vulkanContext->swapchainExtent.height/2, 1);
 	
 	vk::Extent3D Swapchainextent_Full_Res = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 

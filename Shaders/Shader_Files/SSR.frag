@@ -16,7 +16,7 @@ layout (binding = 5) uniform sampler2D MaterialTexture;
 layout (location = 0) in vec2 inTexCoord;           
 layout (location = 0) out vec4 outFragcolor;
 
-const int MAX_ITERATION = 100;
+const int MAX_ITERATION = 32;
 const int NUM_BINARY_SEARCH_SAMPLES = 5;
 float MAX_THICKNESS = 0.0001;
 
@@ -100,10 +100,9 @@ float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceD
 
      const float max_dist = max(abs(dp2.x), abs(dp2.y)); //get the maximum possible distance that will be traveled on the X or Y axis
 
-      vec4  ViewSpacePosition  = textureLod(ViewSpacePositionTexture ,inTexCoord,0).rgba;
-     float stepScale = mix(1.0, 5.0, clamp(abs(ViewSpacePosition.z) / 50.0, 0.0, 1.0));
+     float stepScale = 8;
      vec3 Step       = (ReflectionEndPosInTS.xyz - SamplePosInTS.xyz) / (max_dist / stepScale); // scale down steps !! look into more
-     Step *= 3;
+
      vec4 rayPosInTS  = vec4(SamplePosInTS.xyz + Step, 0);
      vec4 RayDirInTS  = vec4(Step.xyz, 0);
 	 vec4 rayStartPos = rayPosInTS;
@@ -201,7 +200,7 @@ void main() {
      vec3 SSR     = ReflectionColor.rgb;
 
 
-     vec3 finalColor = mix(Color, ReflectionColor.rgb, fresnel ); 
+     vec3 finalColor = mix(Color, ReflectionColor.rgb, fresnel * 0.7 ); 
 
      outFragcolor = vec4(finalColor ,1.0);
 }
