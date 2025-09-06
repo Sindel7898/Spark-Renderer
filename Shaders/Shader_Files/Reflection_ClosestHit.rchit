@@ -8,5 +8,5 @@ layout(location = 0) rayPayloadInEXT ReflectionPayload reflPayload;
 
 void main() {
 
-    reflPayload.Color = vec3(1);
+    reflPayload.Color = vec3(1,1,1);
 }

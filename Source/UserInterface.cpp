@@ -355,8 +355,8 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 	case 4: ImGui::Image((ImTextureID)appref->Shadow_TextureId, viewportSize); break;
 	case 5: ImGui::Image((ImTextureID)appref->LightingAndReflectionsRenderTextureId, viewportSize); break;
 	case 6: ImGui::Image((ImTextureID)appref->SSGITextureId, viewportSize); break;
-	case 7: ImGui::Image((ImTextureID)appref->Reflection_TextureId, viewportSize); break;
-	case 8: ImGui::Image((ImTextureID)appref->FinalRenderTextureId, viewportSize); break;
+	//case 7: ImGui::Image((ImTextureID)appref->Reflection_TextureId, viewportSize); break;
+	case 7: ImGui::Image((ImTextureID)appref->FinalRenderTextureId, viewportSize); break;
 	}
 
 	ImGuizmo::SetOrthographic(false);
@@ -552,7 +552,7 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 				ImGui::InputFloat("Light Intensity", &light->lightIntensity);
 				ImGui::InputFloat("Ambience Value", &light->ambientStrength);
 
-				if (ImGui::BeginCombo("Light Type", currentItem.c_str())) {
+				if (ImGui::BeginCombo("Light Type", items[light->lightType].c_str())) {
 					for (int i = 0; i < items.size(); i++) {
 						bool is_selected = (currentItem == items[i]);
 						if (ImGui::Selectable(items[i].c_str(), is_selected)) {

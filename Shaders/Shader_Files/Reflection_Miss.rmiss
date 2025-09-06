@@ -8,5 +8,5 @@ struct ReflectionPayload {
 layout(location = 0) rayPayloadInEXT ReflectionPayload reflPayload;
 
 void main() {
-    reflPayload.Color = vec3(1,0,0);
+    reflPayload.Color = vec3(0,0,0);
 }
