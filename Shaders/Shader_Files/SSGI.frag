@@ -34,6 +34,7 @@ vec3 GetHemisphereSample(vec2 randVal, vec3 HitNormal) {
 }
 
 vec3 FindIntersectionPoint(vec3 SamplePosInVS, vec3 DirInVS, float MaxTraceDistance) {
+
     vec3 EndPosInVS = SamplePosInVS + DirInVS * MaxTraceDistance;
     vec3 dp2 = EndPosInVS - SamplePosInVS;
     
@@ -76,11 +77,24 @@ vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal)
 
 
 
+float rand(in vec2 co, in float seed) {
+    // improved hash: combine coords and seed
+    float a = 12.9898;
+    float b = 78.233;
+    float c = 43758.5453;
+    float dt = dot(co, vec2(a,b)) + seed * 0.61803398875; // golden ratio mix
+    return fract(sin(dt) * c);
+}
 
+// Return two independent random numbers [0,1)
+vec2 rand2(in vec2 co, in float seed, in float idx) {
+    // idx lets us get distinct values for multiple rays (and different channels)
+    float s1 = seed + idx * 0.1273;
+    float s2 = seed + idx * 1.337;
+    return vec2(rand(co, s1), rand(co + vec2(5.2,7.3), s2));
+}
 void main() {
 
-
-    int NoiseImageIndex = int(ubo.BlueNoiseImageIndex_DeltaTime_Padding.x);
 
     vec3 Color = textureLod(DirectLigtingTexture, inTexCoord,0).rgb;
     vec3 Albedo = textureLod(AlbedoTexture, inTexCoord,0).rgb;
@@ -88,20 +102,16 @@ void main() {
     vec3 Normal = normalize(textureLod(NormalTexture, inTexCoord,0).xyz);
     
     
-    // Get blue noise sample
     ivec2 WindowSize = textureSize(DirectLigtingTexture,0);
-
-    // Convert WindowSize to float and scale
-    vec2 tiledUV = inTexCoord * (vec2(WindowSize) / 50);
+    vec2 tiledUV = inTexCoord * (vec2(WindowSize) /10);
+    float seed = ubo.BlueNoiseImageIndex_DeltaTime_Padding.x;
 
     vec3 giContribution = vec3(0.0);
 
 
        for(int i = 0; i < NUM_RAYS; i++) {
 
-             int noiseIdx = (NoiseImageIndex + i) % 63;
-
-             vec2 noise = textureLod(BlueNoise[noiseIdx], tiledUV,0).rg;
+             vec2 noise = rand2(tiledUV + inTexCoord * 17.0, seed, float(i));
 
             vec3 stochasticNormal = GetHemisphereSample(noise, Normal);
 

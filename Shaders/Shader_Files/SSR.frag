@@ -16,9 +16,16 @@ layout (binding = 5) uniform sampler2D MaterialTexture;
 layout (location = 0) in vec2 inTexCoord;           
 layout (location = 0) out vec4 outFragcolor;
 
-const int MAX_ITERATION = 34;
-const int NUM_BINARY_SEARCH_SAMPLES = 2;
-float MAX_THICKNESS = 0.003;
+const int MAX_ITERATION = 100;
+const int NUM_BINARY_SEARCH_SAMPLES = 5;
+float MAX_THICKNESS = 0.0001;
+
+vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal)
+{
+
+    return ViewPosition + 0.0001 * normal;
+
+}
 
 
 void ComputeReflection(vec4 ViewPosition,vec3 ViewNormal,
@@ -26,12 +33,12 @@ void ComputeReflection(vec4 ViewPosition,vec3 ViewNormal,
                                                         out vec3  outSamplePosInTS,
                                                         out vec3  outReflDirInTS ){
        
+       vec3 viewDir  =  offsetPositionAlongNormal( -normalize(ViewPosition.xyz),ViewNormal);
        //Get The Reflection Direction Of the Position And Normal In ViewSpace.
-       vec3 viewDir   = -normalize(ViewPosition.xyz);
   vec4 ReflectionInVS = vec4(reflect(viewDir, ViewNormal.xyz),0);
 
        //Get End Point Of Reflection In ViewSpace
-  vec4 ReflectionEndPositionInVS = ViewPosition + ReflectionInVS * 300;
+  vec4 ReflectionEndPositionInVS = ViewPosition + ReflectionInVS * 500;
 
        //Convert The End Position From ViewSpace To Clip Space
   vec4 ReflectionEndPosInCS = pc.ProjectionMatrix * vec4(ReflectionEndPositionInVS.xyz, 1);
@@ -93,9 +100,10 @@ float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceD
 
      const float max_dist = max(abs(dp2.x), abs(dp2.y)); //get the maximum possible distance that will be traveled on the X or Y axis
 
-     float stepScale = 8; 
+      vec4  ViewSpacePosition  = textureLod(ViewSpacePositionTexture ,inTexCoord,0).rgba;
+     float stepScale = mix(1.0, 5.0, clamp(abs(ViewSpacePosition.z) / 50.0, 0.0, 1.0));
      vec3 Step       = (ReflectionEndPosInTS.xyz - SamplePosInTS.xyz) / (max_dist / stepScale); // scale down steps !! look into more
-
+     Step *= 3;
      vec4 rayPosInTS  = vec4(SamplePosInTS.xyz + Step, 0);
      vec4 RayDirInTS  = vec4(Step.xyz, 0);
 	 vec4 rayStartPos = rayPosInTS;
@@ -142,9 +150,13 @@ float FindIntersection_Linear(vec3 SamplePosInTS,vec3 RefDirInTS,float MaxTraceD
 
 vec4 ComputeReflectedColor(float intensity, vec3 intersection)
 {
-    vec2         uv = clamp(intersection.xy, vec2(0.0), vec2(1.0));
-    vec4 ssr_color  = textureLod(ColorTexture, uv,0);
-    return ssr_color;
+
+
+    float edgeFade = smoothstep(0.0, 0.05, min(intersection.x, intersection.y)) *
+                     smoothstep(0.0, 0.05, min(1.0 - intersection.x, 1.0 - intersection.y));
+
+     return textureLod(ColorTexture, intersection.xy, 0) * edgeFade;
+
 }
 
 vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
@@ -175,12 +187,15 @@ void main() {
         ComputeReflection(ViewSpacePosition,Normal,MaxDistance_Result,SamplePosInTS_Result,ReflDirInTS_Result);
         float Intensity = FindIntersection_Linear(SamplePosInTS_Result,ReflDirInTS_Result,MaxDistance_Result,Intersection_Result);
 
+        if (Intensity < 0.01) {
+           ReflectionColor = vec4(Color,1);
+         }
          ReflectionColor  = ComputeReflectedColor(Intensity,Intersection_Result);
   }
 
      vec3 viewDir   = -normalize(ViewSpacePosition.xyz);
      float cosTheta = clamp(dot(viewDir, Normal), 0.0, 1.0);
-     vec3 F0        = mix(vec3(0.04),Color,MetalicRoughnessAO.r);
+     vec3 F0        = mix(vec3(0.2),Color,MetalicRoughnessAO.r);
      
      vec3 fresnel = fresnelSchlickRoughness(cosTheta, F0,MetalicRoughnessAO.g);
      vec3 SSR     = ReflectionColor.rgb;
@@ -188,5 +203,5 @@ void main() {
 
      vec3 finalColor = mix(Color, ReflectionColor.rgb, fresnel ); 
 
-     outFragcolor = vec4(finalColor, 1.0);
+     outFragcolor = vec4(finalColor ,1.0);
 }

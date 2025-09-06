@@ -69,47 +69,37 @@ float PCF(sampler2D ShadowMap, int Channel, vec2 texCoord)
 {
     float shadow = 0.0;
     vec2 texelSize = 1.0 / textureSize(ShadowMap, 0);
-    float totalWeight = 0.0;
-    
-    // Gaussian kernel weights for 3x3
+
+    // Gaussian kernel weights for 3x3 (sum = 1.0)
     float weights[9] = float[](
         1.0/16.0, 2.0/16.0, 1.0/16.0,
         2.0/16.0, 4.0/16.0, 2.0/16.0,
         1.0/16.0, 2.0/16.0, 1.0/16.0
     );
-    
+
     int index = 0;
-    for(int x = -1; x <= 1; x = x + 1)
+    for(int x = -1; x <= 1; ++x)
     {
-        for(int y = -1; y <= 1; y = y + 1)
+        for(int y = -1; y <= 1; ++y)
         {
             vec2 sampleCoord = texCoord + vec2(x, y) * texelSize;
             vec4 sampleValues = textureLod(ShadowMap, sampleCoord, 0);
-            float sampleShadow;
-            
-            if(Channel == 0) sampleShadow = sampleValues.r;
-            else if(Channel == 1) sampleShadow = sampleValues.g;
-            else if(Channel == 2) sampleShadow = sampleValues.b;
-            else if(Channel == 3) sampleShadow = sampleValues.a;
-            else sampleShadow = 1.0;
-            
-            float weight = weights[index];
-            if(sampleShadow > 0.5)
-            {
-                shadow += (sampleShadow * weight);
-            }
-            else
-            {
-                shadow += (sampleShadow * weight);
-            }
-            
-            totalWeight = totalWeight + weight;
-            index = index + 1;
+
+            float sampleShadow =
+                (Channel == 0) ? sampleValues.r :
+                (Channel == 1) ? sampleValues.g :
+                (Channel == 2) ? sampleValues.b :
+                (Channel == 3) ? sampleValues.a : 1.0;
+
+            shadow += sampleShadow * weights[index];
+            index++;
         }
     }
-    
-    return shadow / totalWeight;
+
+    return shadow;
 }
+
+
 
 void main() {
 
@@ -149,6 +139,7 @@ void main() {
 
 
 
+
   for (int i = 0; i < 4; i++) {
 
     LightData light = lights[i];
@@ -176,7 +167,7 @@ void main() {
          F0          = mix(F0, Albedo, Metallic);
     vec3 halfwayDir  = normalize(LightDir + ViewDir);
     
-    vec3 F    = fresnelSchlick(max(dot(halfwayDir, ViewDir), 0.0), F0);//Calculates how much light is reflected vs. refracted on a surface based on the view angle.
+    vec3 F    = fresnelSchlick(max(dot(Normal, ViewDir), 0.0), F0);//Calculates how much light is reflected vs. refracted on a surface based on the view angle.
     float NDF = DistributionGGX(Normal, halfwayDir, Roughness); //describes how microfacet normal are distributed on a rough surface       
     float G   = GeometrySmith(Normal, ViewDir, LightDir, Roughness);// models shadowing and masking
 
@@ -192,17 +183,23 @@ void main() {
      float NdotL = max(dot(Normal, LightDir), 0.0);        
      Lo += (kD * Albedo / PI + specular) * radiance * NdotL;
 
+          vec3 envSpecular = vec3(0); 
 
-        float shadow = shadows[i];
+          if(ReflectionMask.x > 0.5){
+          
+             // Compute Fresnel for reflection
+            vec3 F0 = vec3(0.04);
+            F0 = mix(F0, Albedo, Metallic);
+            float NdotV = max(dot(Normal, ViewDir), 0.0);
+            vec3 F = fresnelSchlick(NdotV, F0);
+            
+            // Add environment reflection with Fresnel weighting
+            envSpecular = Reflection * F * 0.01;
+          }
 
-        totalLighting += shadow * Lo * light.CameraPositionAndLightIntensity.a;
-
+     totalLighting +=  ((Lo + envSpecular) * light.CameraPositionAndLightIntensity.a) * shadows[i];
   }
 
-  
-  vec3 finalColor;
 
-   finalColor = totalLighting;
-
-   outFragcolor = vec4(finalColor, 1.0);
+   outFragcolor = vec4(totalLighting, 1.0);
 }
