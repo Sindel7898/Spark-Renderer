@@ -25,7 +25,6 @@
 #include "FXAA_FullScreenQuad.h"
 #include "SSR_FullScreenQuad.h"
 #include "RT_Shadows.h"
-#include "RT_Reflections.h"
 
 #define DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
 

@@ -379,6 +379,7 @@ void SSA0_FullScreenQuad::DrawSSAOBlurVertical(vk::CommandBuffer commandbuffer, 
 void SSA0_FullScreenQuad::CleanUp()
 {
 	bufferManager->DestroyImage(NoiseTexture);
+	vulkanContext->LogicalDevice.destroyDescriptorSetLayout(SSAOBlurDescriptorSetLayout);
 	Drawable::Destructor();
 }
 

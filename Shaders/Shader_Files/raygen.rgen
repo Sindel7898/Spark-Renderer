@@ -38,7 +38,7 @@ bool TraceShadow(vec3 origin, vec3 direction, float MaxDistance) {
                          gl_RayFlagsSkipClosestHitShaderEXT | 
                          gl_RayFlagsCullBackFacingTrianglesEXT;
     const uint cullMask = 0xFF;
-    const float tMin = 0.001;
+    const float tMin = 0.1;
     const float tMax = MaxDistance;
 
     traceRayEXT(

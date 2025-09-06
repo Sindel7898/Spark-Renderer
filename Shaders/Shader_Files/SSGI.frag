@@ -44,6 +44,7 @@ vec3 FindIntersectionPoint(vec3 SamplePosInVS, vec3 DirInVS, float MaxTraceDista
     vec3 rayPosInVS = SamplePosInVS;
     
     for(int i = 0; i < MAX_ITERATION; i++) {
+
         rayPosInVS += Step;
         
         vec4 rayPosPS = ubo.ProjectionMatrix * vec4(rayPosInVS, 1.0);
