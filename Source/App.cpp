@@ -537,45 +537,76 @@ void App::createGBuffer()
 	Raytracing_Reflections->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
 	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, LightingPassImageData,DepthTextureData);
 
+	vk::CommandBuffer cmd =  bufferManger->CreateSingleUseCommandBuffer(commandPool);
+	ImageTransitionData TransitionToGeneral{};
+	TransitionToGeneral.oldlayout = vk::ImageLayout::eUndefined;
+	TransitionToGeneral.newlayout = vk::ImageLayout::eGeneral;
+	TransitionToGeneral.AspectFlag = vk::ImageAspectFlagBits::eColor;
+	TransitionToGeneral.SourceAccessflag = vk::AccessFlagBits::eNone;
+	TransitionToGeneral.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
+	TransitionToGeneral.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
+	TransitionToGeneral.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
+
+	bufferManger->TransitionImage(cmd, &gbuffer.Position, TransitionToGeneral);
+	bufferManger->TransitionImage(cmd, &gbuffer.ViewSpacePosition, TransitionToGeneral);
+	bufferManger->TransitionImage(cmd, &gbuffer.Normal, TransitionToGeneral);
+	bufferManger->TransitionImage(cmd, &gbuffer.ViewSpaceNormal, TransitionToGeneral);
+	bufferManger->TransitionImage(cmd, &gbuffer.Albedo, TransitionToGeneral);
+	bufferManger->TransitionImage(cmd, &gbuffer.Materials, TransitionToGeneral);
+	bufferManger->TransitionImage(cmd, &LightingPassImageData, TransitionToGeneral);
+	bufferManger->TransitionImage(cmd, &ssr_FullScreenQuad->SSRImage, TransitionToGeneral);
+	bufferManger->TransitionImage(cmd, &ReflectionMaskImageData, TransitionToGeneral);
+	bufferManger->TransitionImage(cmd, &Combined_FullScreenQuad->FinalResultImage, TransitionToGeneral);
+	bufferManger->TransitionImage(cmd, &SSGI_FullScreenQuad->HalfRes_SSGIPassImage, TransitionToGeneral);
+	bufferManger->TransitionImage(cmd, &SSGI_FullScreenQuad->HalfRes_SSGIPassLastFrameImage, TransitionToGeneral);
+	bufferManger->TransitionImage(cmd, &SSGI_FullScreenQuad->HalfRes_SSGIAccumilationImage, TransitionToGeneral);
+	bufferManger->TransitionImage(cmd, &SSGI_FullScreenQuad->HalfRes_HorizontalBluredSSGIAccumilationImage, TransitionToGeneral);
+	bufferManger->TransitionImage(cmd, &SSGI_FullScreenQuad->HalfRes_BluredSSGIAccumilationImage, TransitionToGeneral);
+	bufferManger->TransitionImage(cmd, &ssao_FullScreenQuad->SSAOImage, TransitionToGeneral);
+	bufferManger->TransitionImage(cmd, &ssao_FullScreenQuad->BluredSSAOImage, TransitionToGeneral);
+	bufferManger->TransitionImage(cmd, &Raytracing_Reflections->RT_ReflectionPassImage, TransitionToGeneral);
+	bufferManger->TransitionImage(cmd, &fxaa_FullScreenQuad->FxaaImage, TransitionToGeneral);
+
+	bufferManger->SubmitAndDestoyCommandBuffer(commandPool, cmd,vulkanContext->graphicsQueue);
 
 	FinalRenderTextureId = ImGui_ImplVulkan_AddTexture(fxaa_FullScreenQuad->FxaaImage.imageSampler,
 		                                               fxaa_FullScreenQuad->FxaaImage.imageView,
-		                                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		VK_IMAGE_LAYOUT_GENERAL);
 
 	LightingAndReflectionsRenderTextureId = ImGui_ImplVulkan_AddTexture(LightingPassImageData.imageSampler,
 		                                                                LightingPassImageData.imageView,
-		                                                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		VK_IMAGE_LAYOUT_GENERAL);
 
 	Shadow_TextureId       = ImGui_ImplVulkan_AddTexture (Raytracing_Shadows->ShadowPassImages[1].imageSampler,
 		                                                  Raytracing_Shadows->ShadowPassImages[1].imageView,
-		                                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		VK_IMAGE_LAYOUT_GENERAL);
 
 	Reflection_TextureId = ImGui_ImplVulkan_AddTexture(Raytracing_Reflections->RT_ReflectionPassImage.imageSampler,
 		                                               Raytracing_Reflections->RT_ReflectionPassImage.imageView,
-		                                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		VK_IMAGE_LAYOUT_GENERAL);
 
 	
 	SSAOTextureId           = ImGui_ImplVulkan_AddTexture(ssao_FullScreenQuad->BluredSSAOImage.imageSampler,
 		                                                  ssao_FullScreenQuad->BluredSSAOImage.imageView,
-		                                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		VK_IMAGE_LAYOUT_GENERAL);
 
 
 	PositionRenderTextureId = ImGui_ImplVulkan_AddTexture(gbuffer.Position.imageSampler,
 		                                                  gbuffer.Position.imageView,
-		                                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		VK_IMAGE_LAYOUT_GENERAL);
 
 	NormalTextureId         = ImGui_ImplVulkan_AddTexture(gbuffer.Normal.imageSampler,
 		                                                  gbuffer.Normal.imageView,
-		                                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		VK_IMAGE_LAYOUT_GENERAL);
 
 
 	AlbedoTextureId         = ImGui_ImplVulkan_AddTexture(gbuffer.Albedo.imageSampler,
 		                                                  gbuffer.Albedo.imageView,
-		                                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		VK_IMAGE_LAYOUT_GENERAL);
 
 	SSGITextureId            = ImGui_ImplVulkan_AddTexture(SSGI_FullScreenQuad->HalfRes_BluredSSGIAccumilationImage.imageSampler,
 		                                                   SSGI_FullScreenQuad->HalfRes_BluredSSGIAccumilationImage.imageView,
-		                                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		VK_IMAGE_LAYOUT_GENERAL);
 
 	vulkanContext->ResetTemporalAccumilation();
 
@@ -1639,23 +1670,12 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TransitionToGeneral.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
 		TransitionToGeneral.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
 
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Position, TransitionToGeneral);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpacePosition, TransitionToGeneral);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Normal, TransitionToGeneral);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.ViewSpaceNormal, TransitionToGeneral);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Albedo, TransitionToGeneral);
-		bufferManger->TransitionImage(commandBuffer, &gbuffer.Materials, TransitionToGeneral);
-		bufferManger->TransitionImage(commandBuffer, &LightingPassImageData, TransitionToGeneral);
-		bufferManger->TransitionImage(commandBuffer, &ssr_FullScreenQuad->SSRImage, TransitionToGeneral);
-		bufferManger->TransitionImage(commandBuffer, &ReflectionMaskImageData, TransitionToGeneral);
 		bufferManger->TransitionImage(commandBuffer, &Combined_FullScreenQuad->FinalResultImage, TransitionToGeneral);
 		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIPassImage, TransitionToGeneral);
 		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIPassLastFrameImage, TransitionToGeneral);
 		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_SSGIAccumilationImage, TransitionToGeneral);
 		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_HorizontalBluredSSGIAccumilationImage, TransitionToGeneral);
 		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->HalfRes_BluredSSGIAccumilationImage, TransitionToGeneral);
-		bufferManger->TransitionImage(commandBuffer, &ssao_FullScreenQuad->SSAOImage, TransitionToGeneral);
-		bufferManger->TransitionImage(commandBuffer, &ssao_FullScreenQuad->BluredSSAOImage, TransitionToGeneral);
 		bufferManger->TransitionImage(commandBuffer, &Raytracing_Reflections->RT_ReflectionPassImage, TransitionToGeneral);
 
 
