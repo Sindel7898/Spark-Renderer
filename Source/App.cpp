@@ -916,7 +916,7 @@ void App::CreateGraphicsPipeline()
 		vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
 		vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
 
-		vk::PipelineDepthStencilStateCreateInfo depthStencilState;
+		vk::PipelineDepthStencilStateCreateInfo depthStencilState{};
 		                                        depthStencilState.depthTestEnable = VK_TRUE;
 		                                        depthStencilState.depthWriteEnable = VK_TRUE;
 		                                        depthStencilState.depthCompareOp = vk::CompareOp::eLessOrEqual;
@@ -1009,7 +1009,7 @@ void App::CreateGraphicsPipeline()
 		rasterizerinfo.rasterizerDiscardEnable = vk::False;
 		rasterizerinfo.polygonMode = vk::PolygonMode::eFill;
 		rasterizerinfo.lineWidth = 1.0f;
-		rasterizerinfo.cullMode = vk::CullModeFlagBits::eBack;
+		rasterizerinfo.cullMode = vk::CullModeFlagBits::eNone;
 		rasterizerinfo.frontFace = vk::FrontFace::eCounterClockwise;
 		rasterizerinfo.depthBiasEnable = vk::False;
 		rasterizerinfo.depthBiasConstantFactor = 0.0f;
@@ -1968,7 +1968,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TransitionDepthtTOShaderOptimal.oldlayout = vk::ImageLayout::eDepthAttachmentOptimal;
 		TransitionDepthtTOShaderOptimal.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		TransitionDepthtTOShaderOptimal.AspectFlag = vk::ImageAspectFlagBits::eDepth;
-		TransitionDepthtTOShaderOptimal.SourceAccessflag = vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+		TransitionDepthtTOShaderOptimal.SourceAccessflag = vk::AccessFlagBits::eDepthStencilAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentRead;
 		TransitionDepthtTOShaderOptimal.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
 		TransitionDepthtTOShaderOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eEarlyFragmentTests;
 		TransitionDepthtTOShaderOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
@@ -2009,7 +2009,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		DepthAttachInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
 		DepthAttachInfo.imageView = DepthTextureData.imageView;
 		DepthAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
-		DepthAttachInfo.storeOp = vk::AttachmentStoreOp::eDontCare;
+		DepthAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
 		DepthAttachInfo.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 
 		vk::RenderingInfo SkyBoxRenderInfo{};
@@ -2070,9 +2070,9 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TransitionDeptTODepthOptimal.newlayout = vk::ImageLayout::eDepthAttachmentOptimal;
 		TransitionDeptTODepthOptimal.AspectFlag = vk::ImageAspectFlagBits::eDepth;
 		TransitionDeptTODepthOptimal.SourceAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionDeptTODepthOptimal.DestinationAccessflag = vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+		TransitionDeptTODepthOptimal.DestinationAccessflag = vk::AccessFlagBits::eDepthStencilAttachmentWrite |vk::AccessFlagBits::eDepthStencilAttachmentRead;
 		TransitionDeptTODepthOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-		TransitionDeptTODepthOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eEarlyFragmentTests;
+		TransitionDeptTODepthOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests;
 		bufferManger->TransitionImage(commandBuffer, &DepthTextureData, TransitionDeptTODepthOptimal);
 
 	}
@@ -2121,7 +2121,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		};
 
 		bufferManger->CopyImageToAnotherImage(commandBuffer,
-			                                  SSGI_FullScreenQuad->HalfRes_SSGIAccumilationImage, vk::ImageLayout::eTransferSrcOptimal, SrcSubresourceLayers,
+			                                  SSGI_FullScreenQuad->HalfRes_SSGIAccumilationImage,  vk::ImageLayout::eTransferSrcOptimal, SrcSubresourceLayers,
 			                                  SSGI_FullScreenQuad->HalfRes_SSGIPassLastFrameImage, vk::ImageLayout::eTransferDstOptimal, DstSubresourceLayers,
 			                                  swapchainExtenthalf, vulkanContext->graphicsQueue);
 
@@ -2134,7 +2134,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TransitionSrcBack.oldlayout = vk::ImageLayout::eTransferSrcOptimal;
 		TransitionSrcBack.newlayout = vk::ImageLayout::eGeneral;
 		TransitionSrcBack.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionSrcBack.SourceAccessflag = vk::AccessFlagBits::eTransferRead;  // FIXED: Only transfer read, not previous writes
+		TransitionSrcBack.SourceAccessflag = vk::AccessFlagBits::eTransferRead; 
 		TransitionSrcBack.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
 		TransitionSrcBack.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
 		TransitionSrcBack.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
@@ -2160,7 +2160,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TA_ImageAttachInfo.clearValue = clearColor;
 		TA_ImageAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		TA_ImageAttachInfo.imageView = SSGI_FullScreenQuad->HalfRes_SSGIAccumilationImage.imageView;
-		TA_ImageAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+		TA_ImageAttachInfo.loadOp = vk::AttachmentLoadOp::eClear;
 		TA_ImageAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
 
 		vk::RenderingInfo SSGIImageInfo{};
@@ -2296,39 +2296,10 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	}
 
 
-	
-
-	/////////////////// FORWARD PASS END ///////////////////////// 
-	vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
-
-	{
-		vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
-		LightPassColorAttachmentInfo.imageView = fxaa_FullScreenQuad->FxaaImage.imageView;
-		LightPassColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		LightPassColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
-		LightPassColorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
-		LightPassColorAttachmentInfo.clearValue = clearColor;
-
-		vk::RenderingInfo renderingInfo{};
-		renderingInfo.renderArea.offset = imageoffset;
-		renderingInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
-		renderingInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
-		renderingInfo.layerCount = 1;
-		renderingInfo.colorAttachmentCount = 1;
-		renderingInfo.pColorAttachments = &LightPassColorAttachmentInfo;
-
-		commandBuffer.beginRendering(renderingInfo);
-
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, FXAAPassPipeline);
-		fxaa_FullScreenQuad->Draw(commandBuffer, FXAAPassPipelineLayout, currentFrame);
-		commandBuffer.endRendering();
-	}
-
-
 	{
 
 		vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
-		LightPassColorAttachmentInfo.imageView = fxaa_FullScreenQuad->FxaaImage.imageView;
+		LightPassColorAttachmentInfo.imageView = Combined_FullScreenQuad->FinalResultImage.imageView;;
 		LightPassColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		LightPassColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eLoad;
 		LightPassColorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
@@ -2338,7 +2309,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		depthStencilAttachment.imageView = DepthTextureData.imageView;
 		depthStencilAttachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 		depthStencilAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
-		depthStencilAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
+		depthStencilAttachment.storeOp = vk::AttachmentStoreOp::eStore;
 		depthStencilAttachment.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 
 		vk::RenderingInfo renderingInfo{};
@@ -2359,6 +2330,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
 		}
 
+		commandBuffer.setViewport(0, 1, &viewport);
+		commandBuffer.setScissor(0, 1, &scissor);
 		commandBuffer.beginRendering(renderingInfo);
 
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, LightgraphicsPipeline);
@@ -2371,6 +2344,37 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.endRendering();
 
 	}
+
+
+	/////////////////// FORWARD PASS END ///////////////////////// 
+	vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
+
+	{
+		vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
+		LightPassColorAttachmentInfo.imageView = fxaa_FullScreenQuad->FxaaImage.imageView;
+		LightPassColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		LightPassColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
+		LightPassColorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		LightPassColorAttachmentInfo.clearValue = clearColor;
+
+		vk::RenderingInfo renderingInfo{};
+		renderingInfo.renderArea.offset = imageoffset;
+		renderingInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
+		renderingInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
+		renderingInfo.layerCount = 1;
+		renderingInfo.colorAttachmentCount = 1;
+		renderingInfo.pColorAttachments = &LightPassColorAttachmentInfo;
+
+		commandBuffer.setViewport(0, 1, &viewport);
+		commandBuffer.setScissor(0, 1, &scissor);
+
+		commandBuffer.beginRendering(renderingInfo);
+
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, FXAAPassPipeline);
+		fxaa_FullScreenQuad->Draw(commandBuffer, FXAAPassPipelineLayout, currentFrame);
+		commandBuffer.endRendering();
+	}
+
 
 	userinterface->RenderUi(commandBuffer, imageIndex);
 

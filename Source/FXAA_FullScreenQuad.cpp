@@ -34,26 +34,11 @@ void FXAA_FullScreenQuad::CreateVertexAndIndexBuffer()
 
 void FXAA_FullScreenQuad::CreateImage(vk::Extent3D imageExtent)
 {
-	   FxaaImage.ImageID = "Gbuffer FxaaImage Texture";
+	   FxaaImage.ImageID = "FxaaImage Texture";
 	   bufferManager->CreateImage(&FxaaImage,imageExtent, vulkanContext->swapchainformat,vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 
 	   FxaaImage.imageView = bufferManager->CreateImageView(&FxaaImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
 	   FxaaImage.imageSampler = bufferManager->CreateImageSampler();
-
-	   vk::CommandBuffer commandBuffer = bufferManager->CreateSingleUseCommandBuffer(commandPool);
-
-	   ImageTransitionData transitionInfo{};
-	   transitionInfo.oldlayout = vk::ImageLayout::eUndefined;
-	   transitionInfo.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-	   transitionInfo.AspectFlag = vk::ImageAspectFlagBits::eColor;
-	   transitionInfo.SourceAccessflag = vk::AccessFlagBits::eNone;
-	   transitionInfo.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
-	   transitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
-	   transitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-
-	   bufferManager->TransitionImage(commandBuffer, &FxaaImage, transitionInfo);
-
-	   bufferManager->SubmitAndDestoyCommandBuffer(commandPool, commandBuffer, vulkanContext->graphicsQueue);
 }
 
 void FXAA_FullScreenQuad::DestroyImage()
@@ -65,7 +50,6 @@ void FXAA_FullScreenQuad::DestroyImage()
 void FXAA_FullScreenQuad::createDescriptorSetLayout()
 {
 	{
-		//////// Create set for SSAO Pass ////////////
 		vk::DescriptorSetLayoutBinding LightingSamplerBinding{};
 		LightingSamplerBinding.binding = 0;
 		LightingSamplerBinding.descriptorCount = 1;

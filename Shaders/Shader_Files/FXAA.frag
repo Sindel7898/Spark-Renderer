@@ -15,7 +15,7 @@ layout(push_constant) uniform PushConstants {
 
 #define EDGE_THRESHOLD_MIN 0.015
 #define EDGE_THRESHOLD_MAX 0.06
-#define ITERATIONS 22
+#define ITERATIONS 10
 #define SUBPIXEL_QUALITY 0.75
 
 float rgb2luma(vec3 rgb) {
@@ -31,6 +31,9 @@ float QUALITY(int i) {
 }
 
 void main() {
+
+ vec3 finalColor = vec3(textureLod(screenTexture, inTexCoord,0).rgb);
+
  if(pc.bFXAA.x == 1){
 
     vec3 colorCenter = textureLod(screenTexture, inTexCoord,0).rgb;
@@ -219,13 +222,9 @@ void main() {
     }
     
     // Read the color at the new UV coordinates, and use it.
-    vec3 finalColor = textureLod(screenTexture, finalUv,0).rgb;
-    outFragcolor = vec4(finalColor, 1.0);
-  }else{
-     vec3 finalColor = textureLod(screenTexture, inTexCoord,0).rgb;
-          outFragcolor = vec4(finalColor, 1.0);
-
+    finalColor = textureLod(screenTexture, finalUv,0).rgb;
   }
 
+     outFragcolor = vec4(finalColor, 1.0);
 
 }
