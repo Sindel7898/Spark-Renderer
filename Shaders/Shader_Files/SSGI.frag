@@ -15,9 +15,12 @@ layout (binding = 6) uniform SSGIUniformBuffer {
 layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragcolor;
 
-const int MAX_ITERATION = 10;
-const int NUM_RAYS = 2;
-const float MAX_THICKNESS = 0.1; 
+const int MIN_ITERATION = 10;
+const int MAX_ITERATION = 30;
+const int MAX_RAYS = 4;
+const int MIN_RAYS = 2;
+
+const float MAX_THICKNESS = 5; 
 
 vec3 GetPerpendicularVector(vec3 v) {
 
@@ -33,6 +36,10 @@ vec3 GetHemisphereSample(vec2 randVal, vec3 HitNormal) {
     return tangent * (r * cos(phi)) + bitangent * (r * sin(phi)) + HitNormal.xyz * sqrt(max(0.0, 1.0 - randVal.x));
 }
 
+float luminance(vec3 c) {
+    return dot(c, vec3(0.299, 0.587, 0.114)); // standard Rec.601
+}
+
 vec3 FindIntersectionPoint(vec3 SamplePosInVS, vec3 DirInVS, float MaxTraceDistance) {
 
     vec3 EndPosInVS = SamplePosInVS + DirInVS * MaxTraceDistance;
@@ -44,7 +51,11 @@ vec3 FindIntersectionPoint(vec3 SamplePosInVS, vec3 DirInVS, float MaxTraceDista
     
     vec3 rayPosInVS = SamplePosInVS;
     
-    for(int i = 0; i < MAX_ITERATION; i++) {
+    vec3 Color = textureLod(DirectLigtingTexture, inTexCoord,0).rgb;
+    float brightness = luminance(Color);
+    int traceDistance = int(mix(MAX_ITERATION, MIN_ITERATION, brightness));
+
+    for(int i = 0; i < traceDistance; i++) {
 
         rayPosInVS += Step;
         
@@ -75,8 +86,6 @@ vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal)
     return ViewPosition + 0.0001 * normal;
 }
 
-
-
 float rand(in vec2 co, in float seed) {
     // improved hash: combine coords and seed
     float a = 12.9898;
@@ -93,6 +102,7 @@ vec2 rand2(in vec2 co, in float seed, in float idx) {
     float s2 = seed + idx * 1.337;
     return vec2(rand(co, s1), rand(co + vec2(5.2,7.3), s2));
 }
+
 void main() {
 
 
@@ -103,15 +113,23 @@ void main() {
     
     
     ivec2 WindowSize = textureSize(DirectLigtingTexture,0);
-    vec2 tiledUV = inTexCoord * (vec2(WindowSize) /10);
-    float seed = ubo.BlueNoiseImageIndex_DeltaTime_Padding.x;
+
+    vec2 tiledUV = inTexCoord * (vec2(WindowSize) /100);
+
+   // vec2 tiledUV = inTexCoord * (vec2(WindowSize) /10);
+   // float seed = ubo.BlueNoiseImageIndex_DeltaTime_Padding.x;
 
     vec3 giContribution = vec3(0.0);
+
+    float brightness = luminance(Color);
+    int NUM_RAYS = int(mix(MAX_RAYS, MIN_RAYS, brightness));
 
 
        for(int i = 0; i < NUM_RAYS; i++) {
 
-             vec2 noise = rand2(tiledUV + inTexCoord * 17.0, seed, float(i));
+            //vec2 noise = rand2(tiledUV + inTexCoord * 17.0, seed, float(i));
+            int index = int(ubo.BlueNoiseImageIndex_DeltaTime_Padding.x);
+            vec2 noise = textureLod(BlueNoise[index], tiledUV,0).rg;
 
             vec3 stochasticNormal = GetHemisphereSample(noise, Normal);
 
@@ -131,8 +149,11 @@ void main() {
             vec3 radianceB = hitLighting;
             float cosTerm = max(dot(Normal, stochasticNormal), 0.0);
             
-             giContribution += (radianceB *  cosTerm);  
-       }
+            float dist = length(IntersectionPoint - VSposition);
+            float falloff = exp(-dist * 0.6); 
+
+           giContribution += (radianceB * cosTerm);
+        }
     }
 
     outFragcolor = vec4(giContribution,1.0);

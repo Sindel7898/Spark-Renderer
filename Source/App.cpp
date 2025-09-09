@@ -47,72 +47,72 @@
 	skyBox = std::shared_ptr<SkyBox>(new SkyBox(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), SkyBoxDeleter);
 
 
-	//auto model  = std::shared_ptr<Model>(new Model("../Textures/Helmet/Helmet.gltf"   , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	//auto model2 = std::shared_ptr<Model>(new Model("../Textures/Horse/Horse.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	//auto model3 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	//auto model4 = std::shared_ptr<Model>(new Model("../Textures/Wall/Cube.gltf"            , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	//auto model5 = std::shared_ptr<Model>(new Model("../Textures/Wall2/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	//auto model6 = std::shared_ptr<Model>(new Model("../Textures/Wall3/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	//auto model7 = std::shared_ptr<Model>(new Model("../Textures/Wall4/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	//auto model8 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model  = std::shared_ptr<Model>(new Model("../Textures/Helmet/Helmet.gltf"   , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model2 = std::shared_ptr<Model>(new Model("../Textures/Horse/Horse.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model4 = std::shared_ptr<Model>(new Model("../Textures/Wall/Cube.gltf"            , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model5 = std::shared_ptr<Model>(new Model("../Textures/Wall2/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model6 = std::shared_ptr<Model>(new Model("../Textures/Wall3/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model7 = std::shared_ptr<Model>(new Model("../Textures/Wall4/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model8 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	
-	//model.get()->Instances[0]->SetPostion(glm::vec3(1.702, -9.761, 5.964));
-	//model.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
-	//model.get()->Instances[0]->SetScale(glm::vec3(1.500, 1.500, 1.500));
-	//
-	//model2.get()->Instances[0]->SetPostion(glm::vec3(0.024, -11.111, -4.403));
-	//model2.get()->Instances[0]->SetScale(glm::vec3(50.000, 50.000, 50.000));
-	//model2.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
-	//
-	//model3.get()->Instances[0]->SetPostion(glm::vec3(-13.581, -11.309, -0.131));
-	//model3.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
-	//model3.get()->Instances[0]->SetScale(glm::vec3(0.040, 0.040, 0.040));
-	//
-	//model4.get()->Instances[0]->SetPostion(glm::vec3(-21.740, -3.316, -1.843));
-	//model4.get()->Instances[0]->SetRotation(glm::vec3(90.000, 90.000, -180.0));
-	//model4.get()->Instances[0]->SetScale(glm::vec3(0.500, 0.500, 1.000));
-	//
-	//model5.get()->Instances[0]->SetPostion(glm::vec3(24.404, -3.275, -1.251));
-	//model5.get()->Instances[0]->SetRotation(glm::vec3(93.814, 90.000, -180.000));
-	//model5.get()->Instances[0]->SetScale(glm::vec3(0.500, 0.500, 1.000));
-	//
-	//model6.get()->Instances[0]->SetPostion(glm::vec3(3.159, -11.066, -1.801));
-	//model6.get()->Instances[0]->SetRotation(glm::vec3(0.000, -0.000, 0.00));
-	//model6.get()->Instances[0]->SetScale(glm::vec3(1.158, 0.054, 1.270));
-	//
-	//model7.get()->Instances[0]->SetPostion(glm::vec3(2.904, -5.455, -11.447));
-	//model7.get()->Instances[0]->SetRotation(glm::vec3(90.000, 0.003, 0.000));
-	//model7.get()->Instances[0]->SetScale(glm::vec3(1.200, 0.050, 1.270));
-	//
-	//model8.get()->Instances[0]->SetPostion(glm::vec3(14.125, -10.750, 1.885));
-	//model8.get()->Instances[0]->SetScale(glm::vec3(0.070, 0.070, 0.070));
-	//model8.get()->Instances[0]->SetRotation(glm::vec3(0.000, 22.913, 0.000));
+	model.get()->Instances[0]->SetPostion(glm::vec3(1.702, -9.761, 5.964));
+	model.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
+	model.get()->Instances[0]->SetScale(glm::vec3(1.500, 1.500, 1.500));
 	
-	model9.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	model2.get()->Instances[0]->SetPostion(glm::vec3(0.024, -11.111, -4.403));
+	model2.get()->Instances[0]->SetScale(glm::vec3(50.000, 50.000, 50.000));
+	model2.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
+	
+	model3.get()->Instances[0]->SetPostion(glm::vec3(-13.581, -11.309, -0.131));
+	model3.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
+	model3.get()->Instances[0]->SetScale(glm::vec3(0.040, 0.040, 0.040));
+	
+	model4.get()->Instances[0]->SetPostion(glm::vec3(-21.740, -3.316, -1.843));
+	model4.get()->Instances[0]->SetRotation(glm::vec3(90.000, 90.000, -180.0));
+	model4.get()->Instances[0]->SetScale(glm::vec3(0.500, 0.500, 1.000));
+	
+	model5.get()->Instances[0]->SetPostion(glm::vec3(24.404, -3.275, -1.251));
+	model5.get()->Instances[0]->SetRotation(glm::vec3(93.814, 90.000, -180.000));
+	model5.get()->Instances[0]->SetScale(glm::vec3(0.500, 0.500, 1.000));
+	
+	model6.get()->Instances[0]->SetPostion(glm::vec3(3.159, -11.066, -1.801));
+	model6.get()->Instances[0]->SetRotation(glm::vec3(0.000, -0.000, 0.00));
+	model6.get()->Instances[0]->SetScale(glm::vec3(1.158, 0.054, 1.270));
+	
+	model7.get()->Instances[0]->SetPostion(glm::vec3(2.904, -5.455, -11.447));
+	model7.get()->Instances[0]->SetRotation(glm::vec3(90.000, 0.003, 0.000));
+	model7.get()->Instances[0]->SetScale(glm::vec3(1.200, 0.050, 1.270));
+	
+	model8.get()->Instances[0]->SetPostion(glm::vec3(14.125, -10.750, 1.885));
+	model8.get()->Instances[0]->SetScale(glm::vec3(0.070, 0.070, 0.070));
+	model8.get()->Instances[0]->SetRotation(glm::vec3(0.000, 22.913, 0.000));
+	
+	//model9.get()->Instances[0]->CubeMapReflectiveSwitch(false);
 
 	////
 	////
-    //Models.push_back(std::move(model));
-    //Models.push_back(std::move(model2));
-    //Models.push_back(std::move(model3));
-    //Models.push_back(std::move(model4));
-    //Models.push_back(std::move(model5));
-    //Models.push_back(std::move(model6));
-    //Models.push_back(std::move(model7));
-    //Models.push_back(std::move(model8));
-	Models.push_back(std::move(model9));
+    Models.push_back(std::move(model));
+    Models.push_back(std::move(model2));
+    Models.push_back(std::move(model3));
+    Models.push_back(std::move(model4));
+    Models.push_back(std::move(model5));
+    Models.push_back(std::move(model6));
+    Models.push_back(std::move(model7));
+    Models.push_back(std::move(model8));
+	//Models.push_back(std::move(model9));
 	////Models.push_back(std::move(model10));
 	////
 	UserInterfaceItems.push_back(Models[0].get());
-	//UserInterfaceItems.push_back(Models[1].get());
-	//UserInterfaceItems.push_back(Models[2].get());
-	//UserInterfaceItems.push_back(Models[3].get());
-	//UserInterfaceItems.push_back(Models[4].get());
-	//UserInterfaceItems.push_back(Models[5].get());
-	//UserInterfaceItems.push_back(Models[6].get());
-	//UserInterfaceItems.push_back(Models[7].get());
+	UserInterfaceItems.push_back(Models[1].get());
+	UserInterfaceItems.push_back(Models[2].get());
+	UserInterfaceItems.push_back(Models[3].get());
+	UserInterfaceItems.push_back(Models[4].get());
+	UserInterfaceItems.push_back(Models[5].get());
+	UserInterfaceItems.push_back(Models[6].get());
+	UserInterfaceItems.push_back(Models[7].get());
 	//UserInterfaceItems.push_back(Models[8].get());
 
 
@@ -1998,38 +1998,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	}
 
 	{
-		vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
-		SkyBoxRenderAttachInfo.clearValue = clearColor;
-		SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		SkyBoxRenderAttachInfo.imageView = LightingPassImageData.imageView;
-		SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
-		SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
-
-		vk::RenderingAttachmentInfo DepthAttachInfo;
-		DepthAttachInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
-		DepthAttachInfo.imageView = DepthTextureData.imageView;
-		DepthAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
-		DepthAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
-		DepthAttachInfo.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
-
-		vk::RenderingInfo SkyBoxRenderInfo{};
-		SkyBoxRenderInfo.layerCount = 1;
-		SkyBoxRenderInfo.colorAttachmentCount = 1;
-		SkyBoxRenderInfo.pColorAttachments = &SkyBoxRenderAttachInfo;
-		SkyBoxRenderInfo.pDepthAttachment = &DepthAttachInfo;
-		SkyBoxRenderInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
-		SkyBoxRenderInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
-
-
-		commandBuffer.setViewport(0, 1, &viewport);
-		commandBuffer.setScissor(0, 1, &scissor);
-		commandBuffer.beginRendering(SkyBoxRenderInfo);
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
-		skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
-		commandBuffer.endRendering();
-	}
-
-	{
 		vk::RenderingAttachmentInfo SSGIImageAttachInfo;
 		SSGIImageAttachInfo.clearValue = clearColor;
 		SSGIImageAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
@@ -2270,6 +2238,38 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.endRendering();
 	}
 
+
+	{
+		vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
+		SkyBoxRenderAttachInfo.clearValue = clearColor;
+		SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		SkyBoxRenderAttachInfo.imageView = LightingPassImageData.imageView;
+		SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+		SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+
+		vk::RenderingAttachmentInfo DepthAttachInfo;
+		DepthAttachInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+		DepthAttachInfo.imageView = DepthTextureData.imageView;
+		DepthAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+		DepthAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		DepthAttachInfo.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+
+		vk::RenderingInfo SkyBoxRenderInfo{};
+		SkyBoxRenderInfo.layerCount = 1;
+		SkyBoxRenderInfo.colorAttachmentCount = 1;
+		SkyBoxRenderInfo.pColorAttachments = &SkyBoxRenderAttachInfo;
+		SkyBoxRenderInfo.pDepthAttachment = &DepthAttachInfo;
+		SkyBoxRenderInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
+		SkyBoxRenderInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
+
+
+		commandBuffer.setViewport(0, 1, &viewport);
+		commandBuffer.setScissor(0, 1, &scissor);
+		commandBuffer.beginRendering(SkyBoxRenderInfo);
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
+		skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
+		commandBuffer.endRendering();
+	}
 
 
 	{

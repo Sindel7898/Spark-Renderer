@@ -194,7 +194,7 @@ void main() {
             vec3 F = fresnelSchlick(NdotV, F0);
             
             // Add environment reflection with Fresnel weighting
-            envSpecular = Reflection * F * 0.01;
+            envSpecular = Reflection * F * 0.1;
           }
 
      totalLighting +=  ((Lo + envSpecular) * light.CameraPositionAndLightIntensity.a) * shadows[i];
