@@ -31,7 +31,7 @@ void main() {
     vec2 texelSize = vec2(textureSize(samplerta_SSGI, 0));
 
     vec3 color  = texture(samplerta_SSGI,inTexCoord).rgb;
-    //outFragcolor = blur13(samplerta_SSGI, inTexCoord, texelSize, pc.direction);
-    outFragcolor = vec4(color,1);
+    outFragcolor = blur13(samplerta_SSGI, inTexCoord, texelSize, pc.direction);
+    //outFragcolor = vec4(color,1);
 
 }

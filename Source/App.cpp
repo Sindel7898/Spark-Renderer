@@ -12,11 +12,6 @@
 #include "RT_Reflections.h"
 #include "CombinedResult_FullScreenQuad.h"
 #include "SSGI.h"
-#include "NRD.h"
-#include "NRI.h"
-#include "Extensions/NRIHelper.h"
-#include "Extensions/NRIDeviceCreation.h"
-#include "NRDIntegration.hpp"
 #include <crtdbg.h>
 #include "SkyBox.h"
 #include "Model.h"
@@ -26,7 +21,33 @@
 #include "SSR_FullScreenQuad.h"
 #include "RT_Shadows.h"
 
+#include "NRI.h"
+#include "Extensions/NRIRayTracing.h"
+#include "Extensions/NRIWrapperVK.h"
+#include "Extensions/NRIHelper.h"
+#include "Extensions/NRIImgui.h"
+#include "Extensions/NRILowLatency.h"
+#include "Extensions/NRIMeshShader.h"
+#include "Extensions/NRIResourceAllocator.h"
+#include "Extensions/NRIStreamer.h"
+#include "Extensions/NRISwapChain.h"
+#include "Extensions/NRIUpscaler.h"
+
+#include "NRD.h"
+#include "NRDIntegration.hpp"
+
 #define DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
+
+#define NRI_ABORT_ON_FAILURE(result) \
+    if ((result) != nri::Result::SUCCESS) { \
+        exit(1); \
+    }
+
+#define NRD_ID(x) nrd::Identifier(nrd::Denoiser::x)
+constexpr nri::VKBindingOffsets VK_BINDING_OFFSETS = { 0, 128, 32, 64 }; 
+
+nrd::Integration m_NRD;
+nri::Device* m_Device = nullptr;
 
  App::App()
 {
@@ -47,72 +68,72 @@
 	skyBox = std::shared_ptr<SkyBox>(new SkyBox(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), SkyBoxDeleter);
 
 
-	auto model  = std::shared_ptr<Model>(new Model("../Textures/Helmet/Helmet.gltf"   , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model2 = std::shared_ptr<Model>(new Model("../Textures/Horse/Horse.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model4 = std::shared_ptr<Model>(new Model("../Textures/Wall/Cube.gltf"            , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model5 = std::shared_ptr<Model>(new Model("../Textures/Wall2/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model6 = std::shared_ptr<Model>(new Model("../Textures/Wall3/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model7 = std::shared_ptr<Model>(new Model("../Textures/Wall4/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model8 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	//auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model  = std::shared_ptr<Model>(new Model("../Textures/Helmet/Helmet.gltf"   , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model2 = std::shared_ptr<Model>(new Model("../Textures/Horse/Horse.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model3 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model4 = std::shared_ptr<Model>(new Model("../Textures/Wall/Cube.gltf"            , vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model5 = std::shared_ptr<Model>(new Model("../Textures/Wall2/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model6 = std::shared_ptr<Model>(new Model("../Textures/Wall3/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model7 = std::shared_ptr<Model>(new Model("../Textures/Wall4/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model8 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	
-	model.get()->Instances[0]->SetPostion(glm::vec3(1.702, -9.761, 5.964));
-	model.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
-	model.get()->Instances[0]->SetScale(glm::vec3(1.500, 1.500, 1.500));
-	
-	model2.get()->Instances[0]->SetPostion(glm::vec3(0.024, -11.111, -4.403));
-	model2.get()->Instances[0]->SetScale(glm::vec3(50.000, 50.000, 50.000));
-	model2.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
-	
-	model3.get()->Instances[0]->SetPostion(glm::vec3(-13.581, -11.309, -0.131));
-	model3.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
-	model3.get()->Instances[0]->SetScale(glm::vec3(0.040, 0.040, 0.040));
-	
-	model4.get()->Instances[0]->SetPostion(glm::vec3(-21.740, -3.316, -1.843));
-	model4.get()->Instances[0]->SetRotation(glm::vec3(90.000, 90.000, -180.0));
-	model4.get()->Instances[0]->SetScale(glm::vec3(0.500, 0.500, 1.000));
-	
-	model5.get()->Instances[0]->SetPostion(glm::vec3(24.404, -3.275, -1.251));
-	model5.get()->Instances[0]->SetRotation(glm::vec3(93.814, 90.000, -180.000));
-	model5.get()->Instances[0]->SetScale(glm::vec3(0.500, 0.500, 1.000));
-	
-	model6.get()->Instances[0]->SetPostion(glm::vec3(3.159, -11.066, -1.801));
-	model6.get()->Instances[0]->SetRotation(glm::vec3(0.000, -0.000, 0.00));
-	model6.get()->Instances[0]->SetScale(glm::vec3(1.158, 0.054, 1.270));
-	
-	model7.get()->Instances[0]->SetPostion(glm::vec3(2.904, -5.455, -11.447));
-	model7.get()->Instances[0]->SetRotation(glm::vec3(90.000, 0.003, 0.000));
-	model7.get()->Instances[0]->SetScale(glm::vec3(1.200, 0.050, 1.270));
-	
-	model8.get()->Instances[0]->SetPostion(glm::vec3(14.125, -10.750, 1.885));
-	model8.get()->Instances[0]->SetScale(glm::vec3(0.070, 0.070, 0.070));
-	model8.get()->Instances[0]->SetRotation(glm::vec3(0.000, 22.913, 0.000));
+	//model.get()->Instances[0]->SetPostion(glm::vec3(1.702, -9.761, 5.964));
+	//model.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
+	//model.get()->Instances[0]->SetScale(glm::vec3(1.500, 1.500, 1.500));
+	//
+	//model2.get()->Instances[0]->SetPostion(glm::vec3(0.024, -11.111, -4.403));
+	//model2.get()->Instances[0]->SetScale(glm::vec3(50.000, 50.000, 50.000));
+	//model2.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
+	//
+	//model3.get()->Instances[0]->SetPostion(glm::vec3(-13.581, -11.309, -0.131));
+	//model3.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
+	//model3.get()->Instances[0]->SetScale(glm::vec3(0.040, 0.040, 0.040));
+	//
+	//model4.get()->Instances[0]->SetPostion(glm::vec3(-21.740, -3.316, -1.843));
+	//model4.get()->Instances[0]->SetRotation(glm::vec3(90.000, 90.000, -180.0));
+	//model4.get()->Instances[0]->SetScale(glm::vec3(0.500, 0.500, 1.000));
+	//
+	//model5.get()->Instances[0]->SetPostion(glm::vec3(24.404, -3.275, -1.251));
+	//model5.get()->Instances[0]->SetRotation(glm::vec3(93.814, 90.000, -180.000));
+	//model5.get()->Instances[0]->SetScale(glm::vec3(0.500, 0.500, 1.000));
+	//
+	//model6.get()->Instances[0]->SetPostion(glm::vec3(3.159, -11.066, -1.801));
+	//model6.get()->Instances[0]->SetRotation(glm::vec3(0.000, -0.000, 0.00));
+	//model6.get()->Instances[0]->SetScale(glm::vec3(1.158, 0.054, 1.270));
+	//
+	//model7.get()->Instances[0]->SetPostion(glm::vec3(2.904, -5.455, -11.447));
+	//model7.get()->Instances[0]->SetRotation(glm::vec3(90.000, 0.003, 0.000));
+	//model7.get()->Instances[0]->SetScale(glm::vec3(1.200, 0.050, 1.270));
+	//
+	//model8.get()->Instances[0]->SetPostion(glm::vec3(14.125, -10.750, 1.885));
+	//model8.get()->Instances[0]->SetScale(glm::vec3(0.070, 0.070, 0.070));
+	//model8.get()->Instances[0]->SetRotation(glm::vec3(0.000, 22.913, 0.000));
 	
 	//model9.get()->Instances[0]->CubeMapReflectiveSwitch(false);
 
 	////
 	////
-    Models.push_back(std::move(model));
-    Models.push_back(std::move(model2));
-    Models.push_back(std::move(model3));
-    Models.push_back(std::move(model4));
-    Models.push_back(std::move(model5));
-    Models.push_back(std::move(model6));
-    Models.push_back(std::move(model7));
-    Models.push_back(std::move(model8));
-	//Models.push_back(std::move(model9));
+    //Models.push_back(std::move(model));
+    //Models.push_back(std::move(model2));
+    //Models.push_back(std::move(model3));
+    //Models.push_back(std::move(model4));
+    //Models.push_back(std::move(model5));
+    //Models.push_back(std::move(model6));
+    //Models.push_back(std::move(model7));
+    //Models.push_back(std::move(model8));
+	Models.push_back(std::move(model9));
 	////Models.push_back(std::move(model10));
 	////
 	UserInterfaceItems.push_back(Models[0].get());
-	UserInterfaceItems.push_back(Models[1].get());
-	UserInterfaceItems.push_back(Models[2].get());
-	UserInterfaceItems.push_back(Models[3].get());
-	UserInterfaceItems.push_back(Models[4].get());
-	UserInterfaceItems.push_back(Models[5].get());
-	UserInterfaceItems.push_back(Models[6].get());
-	UserInterfaceItems.push_back(Models[7].get());
+	//UserInterfaceItems.push_back(Models[1].get());
+	//UserInterfaceItems.push_back(Models[2].get());
+	//UserInterfaceItems.push_back(Models[3].get());
+	//UserInterfaceItems.push_back(Models[4].get());
+	//UserInterfaceItems.push_back(Models[5].get());
+	//UserInterfaceItems.push_back(Models[6].get());
+	//UserInterfaceItems.push_back(Models[7].get());
 	//UserInterfaceItems.push_back(Models[8].get());
 
 
@@ -226,6 +247,158 @@
 
 	recreateSwapChain();
 }
+
+void App::InitializeNRD(uint32_t renderWidth, uint32_t renderHeight)
+{
+	// 1. Describe which denoiser(s) you want to use.
+	// We'll just use REBLUR for diffuse lighting.
+	const nrd::DenoiserDesc denoiserDesc[] = {
+		{ NRD_ID(REBLUR_DIFFUSE), nrd::Denoiser::REBLUR_DIFFUSE },
+	};
+
+	// 2. Describe the NRD instance itself.
+	nrd::InstanceCreationDesc instanceCreationDesc = {};
+	instanceCreationDesc.denoisers = denoiserDesc;
+	instanceCreationDesc.denoisersNum = 1;
+
+	// 3. Create the NRD Integration library instance.
+	nrd::IntegrationCreationDesc integrationCreationDesc = {};
+	strcpy(integrationCreationDesc.name, "NRD");
+	integrationCreationDesc.enableWholeLifetimeDescriptorCaching = true;
+	integrationCreationDesc.resourceWidth = (uint16_t)renderWidth;
+	integrationCreationDesc.resourceHeight = (uint16_t)renderHeight;
+	integrationCreationDesc.autoWaitForIdle = false;
+
+
+	nri::AdapterDesc bestAdapterDesc = {};
+	uint32_t adapterDescsNum = 1;
+	NRI_ABORT_ON_FAILURE(nri::nriEnumerateAdapters(&bestAdapterDesc, adapterDescsNum));
+	
+	VkInstance instance = static_cast<VkInstance>(vulkanContext->VulkanInstance);
+	VkPhysicalDevice PhysicalDevice = static_cast<VkPhysicalDevice>(vulkanContext->PhysicalDevice);
+	VkDevice LogicalDevice = static_cast<VkDevice>(vulkanContext->LogicalDevice);
+	VkQueue GraphicsQueue = static_cast<VkQueue>(vulkanContext->graphicsQueue);
+
+	nri::QueueFamilyVKDesc queueFamily = {};
+	queueFamily.familyIndex = vulkanContext->graphicsQueueFamilyIndex;
+	queueFamily.queueType = nri::QueueType::GRAPHICS;
+	queueFamily.queueNum = 1;
+
+
+	nri::DeviceCreationVKDesc deviceCreationVKDesc{};
+	deviceCreationVKDesc.vkInstance = (VKHandle)instance;
+	deviceCreationVKDesc.vkPhysicalDevice = (VKHandle)PhysicalDevice;
+	deviceCreationVKDesc.vkDevice = (VKHandle)LogicalDevice;
+	deviceCreationVKDesc.minorVersion = 3;
+	deviceCreationVKDesc.queueFamilies = &queueFamily;
+	deviceCreationVKDesc.queueFamilyNum = 1;
+	deviceCreationVKDesc.enableNRIValidation = true;
+
+
+	if (m_NRD.RecreateVK(integrationCreationDesc, instanceCreationDesc, deviceCreationVKDesc) != nrd::Result::SUCCESS);
+
+}
+
+// In your main render function, every frame...
+void App::DenoiseDiffusePass(vk::CommandBuffer& cmdBuffer, uint32_t frameIndex)
+{
+	// ========================================================================
+	// 1. Fill out the Common Settings
+	// This tells NRD about the camera's state for temporal reprojection.
+	// ========================================================================
+	nrd::CommonSettings commonSettings;
+	commonSettings.frameIndex = frameIndex;
+	commonSettings.accumulationMode = false ? nrd::AccumulationMode::CLEAR_AND_RESTART : nrd::AccumulationMode::CONTINUE;
+
+	uint16_t currentWidth = vulkanContext->swapchainExtent.width;
+	uint16_t currentHeight = vulkanContext->swapchainExtent.height;
+
+	commonSettings.resourceSize[0] = currentWidth;
+	commonSettings.resourceSize[1] = currentHeight;
+
+	commonSettings.resourceSizePrev[0] = currentWidth;
+	commonSettings.resourceSizePrev[1] = currentHeight;
+
+	commonSettings.rectSize[0] = currentWidth;
+	commonSettings.rectSize[1] = currentHeight;
+
+	commonSettings.rectSizePrev[0] = currentWidth;
+	commonSettings.rectSizePrev[1] = currentHeight;
+
+
+	// Fill in your camera matrices
+	memcpy(commonSettings.viewToClipMatrix,  &camera->GetProjectionMatrix(), sizeof(glm::mat4));
+	memcpy(commonSettings.worldToViewMatrix, &camera->GetViewMatrix(), sizeof(glm::mat4));
+
+	// ...and the matrices from the PREVIOUS frame
+	memcpy(commonSettings.viewToClipMatrixPrev, &camera->GetPrevProjectionMatrix(), sizeof(glm::mat4));
+	memcpy(commonSettings.worldToViewMatrixPrev, &camera->GetViewMatrix(), sizeof(glm::mat4));
+	// ... and other settings like jitter, resolution, etc.
+
+	m_NRD.SetCommonSettings(commonSettings);
+
+	// ========================================================================
+	// 2. (Optional) Tweak Denoiser-Specific Settings
+	// ========================================================================
+	nrd::ReblurSettings reblurSettings = {}; // Get defaults
+	//reblurSettings.maxAccumulatedFrameNum = 30; // Example tweak
+	m_NRD.SetDenoiserSettings(NRD_ID(REBLUR_DIFFUSE), &reblurSettings);
+
+	// ========================================================================
+	// 3. Describe Your Resources (The Most Important Part!)
+	// Map NRD's resource types to your application's textures.
+	// ========================================================================
+
+	VkImage Normal = static_cast<VkImage>(gbuffer.Normal.image);
+	VkImage ViewPosition = static_cast<VkImage>(gbuffer.ViewSpacePosition.image);
+
+	VkImage NoisyImage = static_cast<VkImage>(SSGI_FullScreenQuad->HalfRes_SSGIPassImage.image);
+	VkImage DenoisedImage = static_cast<VkImage>(DenoisedGIImageData.image);
+
+	nrd::Resource Normal_Resource = {};
+	nrd::Resource ViewPosition_Resource = {};
+	nrd::Resource NoisyImage_Resource = {};
+	nrd::Resource DenoisedImage_Resource = {};
+
+
+
+	Normal_Resource.vk.format        = VK_FORMAT_R16G16B16_SFLOAT;
+	ViewPosition_Resource.vk.format  = VK_FORMAT_R16G16B16_SFLOAT;
+	NoisyImage_Resource.vk.format    = static_cast<VkFormat>(vulkanContext->swapchainformat);
+	DenoisedImage_Resource.vk.format = static_cast<VkFormat>(vulkanContext->swapchainformat);
+
+	Normal_Resource.vk.image        = reinterpret_cast<VKNonDispatchableHandle>(Normal);
+	ViewPosition_Resource.vk.image  = reinterpret_cast<VKNonDispatchableHandle>(ViewPosition);
+	NoisyImage_Resource.vk.image    = reinterpret_cast<VKNonDispatchableHandle>(NoisyImage);
+	DenoisedImage_Resource.vk.image = reinterpret_cast<VKNonDispatchableHandle>(DenoisedImage);
+
+
+	//nri::TextureBarrierDesc* textureState = &m_TextureStates[(uint32_t)index];
+
+
+	nrd::ResourceSnapshot resourceSnapshot = {};
+
+	resourceSnapshot.restoreInitialState = false;
+
+	resourceSnapshot.SetResource(nrd::ResourceType::IN_NORMAL_ROUGHNESS, Normal_Resource);
+	resourceSnapshot.SetResource(nrd::ResourceType::IN_VIEWZ, ViewPosition_Resource);
+
+	// Denoiser-Specific Inputs & Outputs
+	resourceSnapshot.SetResource(nrd::ResourceType::IN_DIFF_RADIANCE_HITDIST, NoisyImage_Resource);
+	resourceSnapshot.SetResource(nrd::ResourceType::OUT_DIFF_RADIANCE_HITDIST, DenoisedImage_Resource);
+
+	const nrd::Identifier denoiserToRun = NRD_ID(REBLUR_DIFFUSE);
+
+	VkCommandBuffer TempCBuffer = static_cast<VkCommandBuffer>(cmdBuffer);;
+
+	nri::CommandBufferVKDesc commandBufferVKDesc = {};
+	commandBufferVKDesc.vkCommandBuffer = (VKHandle)TempCBuffer;
+	commandBufferVKDesc.queueType = nri::QueueType::GRAPHICS;
+
+	m_NRD.DenoiseVK(&denoiserToRun, 1, commandBufferVKDesc, resourceSnapshot);
+
+}
+
 
  void App::createTLAS()
  {
@@ -556,6 +729,12 @@ void App::createGBuffer()
 	ReflectionMaskImageData.imageView = bufferManger->CreateImageView(&ReflectionMaskImageData, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
 	ReflectionMaskImageData.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
+	//DenoisedGIImageData.ImageID = "ReflectionMask Texture";
+	//bufferManger->CreateImage(&DenoisedGIImageData, swapchainextent, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	//DenoisedGIImageData.imageView = bufferManger->CreateImageView(&DenoisedGIImageData, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	//DenoisedGIImageData.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+
+
 	fxaa_FullScreenQuad->CreateImage(swapchainextent);
 	SSGI_FullScreenQuad->CreateGIImage();
 	ssr_FullScreenQuad->CreateImage(swapchainextent);
@@ -615,7 +794,7 @@ void App::createGBuffer()
 		VK_IMAGE_LAYOUT_GENERAL);
 
 	LightingAndReflectionsRenderTextureId = ImGui_ImplVulkan_AddTexture(LightingPassImageData.imageSampler,
-		                                                                LightingPassImageData.imageView,
+		LightingPassImageData.imageView,
 		VK_IMAGE_LAYOUT_GENERAL);
 
 	Shadow_TextureId       = ImGui_ImplVulkan_AddTexture (Raytracing_Shadows->ShadowPassImages[1].imageSampler,
@@ -651,6 +830,7 @@ void App::createGBuffer()
 
 	vulkanContext->ResetTemporalAccumilation();
 
+	//InitializeNRD(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height);
 }
 
 void App::CreateGraphicsPipeline()
@@ -2340,6 +2520,9 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		{
 			light->Draw(commandBuffer, LightpipelineLayout, currentFrame);
 		}
+
+
+		//DenoiseDiffusePass(commandBuffer, currentFrame);
 
 		commandBuffer.endRendering();
 

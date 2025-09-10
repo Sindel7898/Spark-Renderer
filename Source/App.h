@@ -41,6 +41,8 @@ public:
 	double LasttimeStamp = 0.0f;
 	
 	App();
+	void InitializeNRD(uint32_t renderWidth, uint32_t renderHeight);
+	void DenoiseDiffusePass(vk::CommandBuffer& cmdBuffer, uint32_t frameIndex);
 	void createTLAS();
 	void UpdateTLAS();
 	void UpdateTLASInstanceBuffer();
@@ -196,6 +198,8 @@ private:
 
 	ImageData LightingPassImageData;
 	ImageData ReflectionMaskImageData;
+
+	ImageData DenoisedGIImageData;
 
 	BufferData TLAS_Buffer;
 	BufferData TLAS_SCRATCH_Buffer;

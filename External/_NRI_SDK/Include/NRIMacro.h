@@ -13,13 +13,13 @@
 
 #define _NRI_EXPAND(args) args
 #ifdef _MSC_VER
-    #define _NRI_NARGS(_1, _2, _3, _4, _5, _6_, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, VAL, ...) VAL
-    #define _NRI_NARGS1(...) _NRI_EXPAND(_NRI_NARGS(__VA_ARGS__, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
-    #define _NRI_AUGMENTER(...) unused, __VA_ARGS__
-    #define NRI_NARGS(...) _NRI_NARGS1(_NRI_AUGMENTER(__VA_ARGS__))
+#define _NRI_NARGS(_1, _2, _3, _4, _5, _6_, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, VAL, ...) VAL
+#define _NRI_NARGS1(...) _NRI_EXPAND(_NRI_NARGS(__VA_ARGS__, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0))
+#define _NRI_AUGMENTER(...) unused, __VA_ARGS__
+#define NRI_NARGS(...) _NRI_NARGS1(_NRI_AUGMENTER(__VA_ARGS__))
 #else
-    #define _NRI_NARGS(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, VAL,...) VAL
-    #define NRI_NARGS(...) _NRI_NARGS(0, ## __VA_ARGS__, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+#define _NRI_NARGS(_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, VAL,...) VAL
+#define NRI_NARGS(...) _NRI_NARGS(0, ## __VA_ARGS__, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
 #endif
 
 #define _NRI_MERGE_TOKENS(_0, _1) _0##_1
@@ -177,26 +177,26 @@
 #define NRI_VA_ARGS_AT(index, ...) _NRI_EXPAND(NRI_MERGE_TOKENS(_NRI_VA_ARGS_AT, index)(__VA_ARGS__))
 
 #ifdef NRI_CPP
-    #define Nri(name) name
-    #define NriFunc(name) name
-    #define NriConstant(name) name
-    #define NriNamespaceBegin namespace nri {
-    #define NriNamespaceEnd }
-    #define NriForwardStruct(name) struct name
-    #define NriStruct(name) struct name
-    #define NriUnion(name) union name
-    #define NriMember(name, member) member
-    #define NonNriForwardStruct(name) struct name
+#define Nri(name) name
+#define NriFunc(name) name
+#define NriConstant(name) name
+#define NriNamespaceBegin namespace nri {
+#define NriNamespaceEnd }
+#define NriForwardStruct(name) struct name
+#define NriStruct(name) struct name
+#define NriUnion(name) union name
+#define NriMember(name, member) member
+#define NonNriForwardStruct(name) struct name
 
-    #define _NRI_ENUM_ENTRY(index, ...) NRI_VA_ARGS_AT(index, __VA_ARGS__)
-    #define _NRI_ENUM_EXPAND(...) NRI_SEQN(_NRI_ENUM_ENTRY, NRI_NARGS(__VA_ARGS__), __VA_ARGS__)
-    #define NriEnum(name, type, ...) \
+#define _NRI_ENUM_ENTRY(index, ...) NRI_VA_ARGS_AT(index, __VA_ARGS__)
+#define _NRI_ENUM_EXPAND(...) NRI_SEQN(_NRI_ENUM_ENTRY, NRI_NARGS(__VA_ARGS__), __VA_ARGS__)
+#define NriEnum(name, type, ...) \
         enum class name : type { \
             _NRI_ENUM_EXPAND(__VA_ARGS__), \
             MAX_NUM, \
         }
 
-    #define NriBits(name, type, ...) \
+#define NriBits(name, type, ...) \
         enum class name : type; \
         constexpr name operator ~ (name val) { return (name)(~(type)val); } \
         constexpr type operator & (name val0, name val1) { return (type)val0 & (type)val1; } \
@@ -207,46 +207,46 @@
             _NRI_ENUM_EXPAND(__VA_ARGS__), \
         }
 
-    #define NriDeref(arg) (&arg)
-    #define NriDefault(arg) = arg
-    #define NriZero {}
-    #define NriScopedMember(name, member) name::member
+#define NriDeref(arg) (&arg)
+#define NriDefault(arg) = arg
+#define NriZero {}
+#define NriScopedMember(name, member) name::member
 
-    #define NRI_REF &
+#define NRI_REF &
 #else
-    #define Nri(name) NRI_NAME_C(name)
-    #define NriFunc(name) NRI_FUNC_NAME_C(name)
-    #define NriConstant(name) NRI_CONST_NAME_C(name)
-    #define NriNamespaceBegin
-    #define NriNamespaceEnd
-    #define NriForwardStruct(name) typedef struct Nri(name) Nri(name)
-    #define NriStruct(name) NriForwardStruct(name); struct Nri(name)
-    #define NriUnion(name) typedef union Nri(name) Nri(name); union Nri(name)
-    #define NriMember(name, member) NRI_MERGE_TOKENS(NRI_NAME_(name), member)
-    #define NonNriForwardStruct(name) typedef struct name name
+#define Nri(name) NRI_NAME_C(name)
+#define NriFunc(name) NRI_FUNC_NAME_C(name)
+#define NriConstant(name) NRI_CONST_NAME_C(name)
+#define NriNamespaceBegin
+#define NriNamespaceEnd
+#define NriForwardStruct(name) typedef struct Nri(name) Nri(name)
+#define NriStruct(name) NriForwardStruct(name); struct Nri(name)
+#define NriUnion(name) typedef union Nri(name) Nri(name); union Nri(name)
+#define NriMember(name, member) NRI_MERGE_TOKENS(NRI_NAME_(name), member)
+#define NonNriForwardStruct(name) typedef struct name name
 
-    #define NRI_NAME_(name) NRI_MERGE_TOKENS(Nri(name), _)
-    #define _NRI_ENUM_ENTRY(index, prefix, ...) NRI_MERGE_TOKENS(prefix, NRI_VA_ARGS_AT(index, __VA_ARGS__))
-    #define _NRI_ENUM_EXPAND(prefix, ...) NRI_SEQN(_NRI_ENUM_ENTRY, NRI_NARGS(__VA_ARGS__), prefix, __VA_ARGS__)
-    #define NriEnum(name, type, ...) \
+#define NRI_NAME_(name) NRI_MERGE_TOKENS(Nri(name), _)
+#define _NRI_ENUM_ENTRY(index, prefix, ...) NRI_MERGE_TOKENS(prefix, NRI_VA_ARGS_AT(index, __VA_ARGS__))
+#define _NRI_ENUM_EXPAND(prefix, ...) NRI_SEQN(_NRI_ENUM_ENTRY, NRI_NARGS(__VA_ARGS__), prefix, __VA_ARGS__)
+#define NriEnum(name, type, ...) \
         typedef type Nri(name); \
         typedef enum NRI_NAME_(name) { \
             _NRI_ENUM_EXPAND(NRI_NAME_(name), __VA_ARGS__), \
             NRI_MERGE_TOKENS(NRI_NAME_(name), MAX_NUM), \
         } NRI_NAME_(name)
 
-    #define NriBits(name, type, ...) \
+#define NriBits(name, type, ...) \
         typedef type Nri(name); \
         typedef enum NRI_NAME_(name) { \
             _NRI_ENUM_EXPAND(NRI_NAME_(name), __VA_ARGS__), \
         } NRI_NAME_(name)
 
-    #define NriDeref(arg) (arg)
-    #define NriDefault(arg)
-    #define NriZero {0}
-    #define NriScopedMember(name, member) NriMember(name, member)
+#define NriDeref(arg) (arg)
+#define NriDefault(arg)
+#define NriZero {0}
+#define NriScopedMember(name, member) NriMember(name, member)
 
-    #define NRI_REF *
+#define NRI_REF *
 #endif
 
 #define NriPtr(name) Nri(name)*

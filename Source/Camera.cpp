@@ -115,21 +115,39 @@ void Camera::UpdateCameraVectors() {
 void Camera::UpdateViewMatrix() {
 
     viewMatrix = glm::lookAt(position, position + forward, up);
+
+    if (Prev_viewMatrix != viewMatrix)
+    {
+        Prev_viewMatrix = viewMatrix;
+    }
 }
 
 void Camera::UpdateProjectionMatrix() {
     float aspectRatio = static_cast<float>(swapChainWidth) / static_cast<float>(swapChainHeight);
     projectionMatrix = glm::perspective(glm::radians(fov), aspectRatio, nearClip, farClip);
+
+
+    if (Prev_projectionMatrix != projectionMatrix)
+    {
+        Prev_projectionMatrix = projectionMatrix;
+    }
 }
 
 const glm::mat4& Camera::GetViewMatrix() const {
     return viewMatrix;
 }
 
+const glm::mat4& Camera::GetPrevViewMatrix() const {
+    return Prev_viewMatrix;
+}
+
 const glm::mat4& Camera::GetProjectionMatrix() const {
     return projectionMatrix;
 }
 
+const glm::mat4& Camera::GetPrevProjectionMatrix() const {
+    return Prev_projectionMatrix;
+}
 const glm::vec3& Camera::GetPosition() const {
     return position;
 }

@@ -16,7 +16,7 @@ layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragcolor;
 
 const int MIN_ITERATION = 10;
-const int MAX_ITERATION = 30;
+const int MAX_ITERATION = 50;
 const int MAX_RAYS = 4;
 const int MIN_RAYS = 2;
 
