@@ -111,7 +111,7 @@ nri::Device* m_Device = nullptr;
 	//model8.get()->Instances[0]->SetScale(glm::vec3(0.070, 0.070, 0.070));
 	//model8.get()->Instances[0]->SetRotation(glm::vec3(0.000, 22.913, 0.000));
 	
-	//model9.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	model9.get()->Instances[0]->CubeMapReflectiveSwitch(false);
 
 	////
 	////
@@ -610,7 +610,7 @@ void App::createDescriptorPool()
 {
 	vk::DescriptorPoolSize Uniformpoolsize;
 	Uniformpoolsize.type = vk::DescriptorType::eUniformBuffer;
-	Uniformpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) *  100;
+	Uniformpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) *  15;
 
 	vk::DescriptorPoolSize Samplerpoolsize;
 	Samplerpoolsize.type = vk::DescriptorType::eCombinedImageSampler;
@@ -2419,37 +2419,37 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	}
 
 
-	{
-		vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
-		SkyBoxRenderAttachInfo.clearValue = clearColor;
-		SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		SkyBoxRenderAttachInfo.imageView = LightingPassImageData.imageView;
-		SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
-		SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
-
-		vk::RenderingAttachmentInfo DepthAttachInfo;
-		DepthAttachInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
-		DepthAttachInfo.imageView = DepthTextureData.imageView;
-		DepthAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
-		DepthAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
-		DepthAttachInfo.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
-
-		vk::RenderingInfo SkyBoxRenderInfo{};
-		SkyBoxRenderInfo.layerCount = 1;
-		SkyBoxRenderInfo.colorAttachmentCount = 1;
-		SkyBoxRenderInfo.pColorAttachments = &SkyBoxRenderAttachInfo;
-		SkyBoxRenderInfo.pDepthAttachment = &DepthAttachInfo;
-		SkyBoxRenderInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
-		SkyBoxRenderInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
-
-
-		commandBuffer.setViewport(0, 1, &viewport);
-		commandBuffer.setScissor(0, 1, &scissor);
-		commandBuffer.beginRendering(SkyBoxRenderInfo);
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
-		skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
-		commandBuffer.endRendering();
-	}
+	//{
+	//	vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
+	//	SkyBoxRenderAttachInfo.clearValue = clearColor;
+	//	SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+	//	SkyBoxRenderAttachInfo.imageView = LightingPassImageData.imageView;
+	//	SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+	//	SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+	//
+	//	vk::RenderingAttachmentInfo DepthAttachInfo;
+	//	DepthAttachInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+	//	DepthAttachInfo.imageView = DepthTextureData.imageView;
+	//	DepthAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+	//	DepthAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+	//	DepthAttachInfo.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+	//
+	//	vk::RenderingInfo SkyBoxRenderInfo{};
+	//	SkyBoxRenderInfo.layerCount = 1;
+	//	SkyBoxRenderInfo.colorAttachmentCount = 1;
+	//	SkyBoxRenderInfo.pColorAttachments = &SkyBoxRenderAttachInfo;
+	//	SkyBoxRenderInfo.pDepthAttachment = &DepthAttachInfo;
+	//	SkyBoxRenderInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
+	//	SkyBoxRenderInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
+	//
+	//
+	//	commandBuffer.setViewport(0, 1, &viewport);
+	//	commandBuffer.setScissor(0, 1, &scissor);
+	//	commandBuffer.beginRendering(SkyBoxRenderInfo);
+	//	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
+	//	skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
+	//	commandBuffer.endRendering();
+	//}
 
 
 	{
