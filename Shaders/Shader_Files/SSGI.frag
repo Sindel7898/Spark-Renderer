@@ -15,8 +15,8 @@ layout (binding = 6) uniform SSGIUniformBuffer {
 layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragcolor;
 
-const int MIN_ITERATION = 10;
-const int MAX_ITERATION = 50;
+const int MIN_ITERATION = 5;
+const int MAX_ITERATION = 40;
 const int MAX_RAYS = 4;
 const int MIN_RAYS = 2;
 
@@ -86,23 +86,6 @@ vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal)
     return ViewPosition + 0.0001 * normal;
 }
 
-float rand(in vec2 co, in float seed) {
-    // improved hash: combine coords and seed
-    float a = 12.9898;
-    float b = 78.233;
-    float c = 43758.5453;
-    float dt = dot(co, vec2(a,b)) + seed * 0.61803398875; // golden ratio mix
-    return fract(sin(dt) * c);
-}
-
-// Return two independent random numbers [0,1)
-vec2 rand2(in vec2 co, in float seed, in float idx) {
-    // idx lets us get distinct values for multiple rays (and different channels)
-    float s1 = seed + idx * 0.1273;
-    float s2 = seed + idx * 1.337;
-    return vec2(rand(co, s1), rand(co + vec2(5.2,7.3), s2));
-}
-
 void main() {
 
 
@@ -116,44 +99,42 @@ void main() {
 
     vec2 tiledUV = inTexCoord * (vec2(WindowSize) /100);
 
-   // vec2 tiledUV = inTexCoord * (vec2(WindowSize) /10);
-   // float seed = ubo.BlueNoiseImageIndex_DeltaTime_Padding.x;
-
+   
     vec3 giContribution = vec3(0.0);
-
     float brightness = luminance(Color);
-    int NUM_RAYS = int(mix(MAX_RAYS, MIN_RAYS, brightness));
+    //int NUM_RAYS = int(mix(MAX_RAYS, MIN_RAYS, brightness));
+    int NUM_RAYS = 0;
 
+    if(brightness < 0.001){ NUM_RAYS = 4;}
+    if(brightness > 0.0)  { NUM_RAYS = 2;}
+    if(brightness > 0.2)  { NUM_RAYS = 2;}
 
-       for(int i = 0; i < NUM_RAYS; i++) {
+    for(int i = 0; i < NUM_RAYS; i++) {
+    
+         //vec2 noise = rand2(tiledUV + inTexCoord * 17.0, seed, float(i));
+         int index = int(ubo.BlueNoiseImageIndex_DeltaTime_Padding.x);
+         vec2 noise = textureLod(BlueNoise[index], tiledUV,0).rg;
+    
+         vec3 stochasticNormal = GetHemisphereSample(noise, Normal);
+    
+         if(dot(stochasticNormal, stochasticNormal) > 0.001){
+         
+          vec3 IntersectionPoint = FindIntersectionPoint(
+                                    offsetPositionAlongNormal(VSposition, stochasticNormal), 
+                                     stochasticNormal, 
+                                     100.0);
+         
+         vec4 RayPositionPS = ubo.ProjectionMatrix * vec4(IntersectionPoint, 1.0);
+         RayPositionPS.xyz /= RayPositionPS.w;
+         vec2 uv = RayPositionPS.xy * 0.5 + 0.5;
+         
+         vec3 hitLighting = textureLod(DirectLigtingTexture, uv,0).rgb;
 
-            //vec2 noise = rand2(tiledUV + inTexCoord * 17.0, seed, float(i));
-            int index = int(ubo.BlueNoiseImageIndex_DeltaTime_Padding.x);
-            vec2 noise = textureLod(BlueNoise[index], tiledUV,0).rg;
-
-            vec3 stochasticNormal = GetHemisphereSample(noise, Normal);
-
-            if(dot(stochasticNormal, stochasticNormal) > 0.001){
-            
-             vec3 IntersectionPoint = FindIntersectionPoint(
-                                       offsetPositionAlongNormal(VSposition, stochasticNormal), 
-                                        stochasticNormal, 
-                                        50.0);
-            
-            vec4 RayPositionPS = ubo.ProjectionMatrix * vec4(IntersectionPoint, 1.0);
-            RayPositionPS.xyz /= RayPositionPS.w;
-            vec2 uv = RayPositionPS.xy * 0.5 + 0.5;
-            
-            vec3 hitLighting = textureLod(DirectLigtingTexture, uv,0).rgb;
-            
-            vec3 radianceB = hitLighting;
-            float cosTerm = max(dot(Normal, stochasticNormal), 0.0);
-            
-            float dist = length(IntersectionPoint - VSposition);
-            float falloff = exp(-dist * 0.6); 
-
-           giContribution += (radianceB * cosTerm);
-        }
+         vec3 radianceB = hitLighting;
+         float cosTerm = max(dot(Normal, stochasticNormal),1);
+    
+        giContribution += (radianceB * cosTerm);
+     }
     }
 
     outFragcolor = vec4(giContribution,1.0);

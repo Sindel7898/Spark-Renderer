@@ -155,9 +155,9 @@ nri::Device* m_Device = nullptr;
 		lights.push_back(std::move(light));
 	}
 
-	lights[0]->SetPosition(glm::vec3(-4.351, 5.012, -4.192));
+	lights[0]->SetPosition(glm::vec3(-4.351, -10, -4.192));
 	lights[0]->lightType = 1;
-	lights[0]->lightIntensity = 3.000;
+	lights[0]->lightIntensity = 0;
 	lights[0]->CastShadowsSwitch(true);
 	lights[0]->ambientStrength = 0.1;
 	lights[0]->SetScale(glm::vec3(0.200, 0.200, 0.200));
@@ -165,22 +165,22 @@ nri::Device* m_Device = nullptr;
 	lights[1]->SetPosition(glm::vec3(23.352, -15.081, 24.001));
 	lights[1]->SetScale(glm::vec3(0.200, 0.200, 0.200));
 	lights[1]->CastShadowsSwitch(true);
-	lights[1]->ambientStrength = 0.100;
+	lights[1]->ambientStrength = 0;
 	lights[1]->lightIntensity = 5.000;
 	lights[1]->lightType = 0;
 	
 	
-	lights[2]->SetPosition(glm::vec3(-1.830, 4.918, 10.112));
+	lights[2]->SetPosition(glm::vec3(-1.830, -10, 10.112));
 	lights[2]->lightType = 1;
-	lights[2]->lightIntensity = 3.000;
+	lights[2]->lightIntensity = 0;
 	lights[2]->CastShadowsSwitch(true);
 	lights[2]->ambientStrength = 0.1;
 	lights[2]->SetScale(glm::vec3(0.200, 0.200, 0.200));
 	
 	
-	lights[3]->SetPosition(glm::vec3(3.723, 5.277, -21.320));
+	lights[3]->SetPosition(glm::vec3(3.723, -10, -21.320));
 	lights[3]->lightType = 1;
-	lights[3]->lightIntensity = 3.000;
+	lights[3]->lightIntensity = 0;
 	lights[3]->CastShadowsSwitch(true);
 	lights[3]->ambientStrength = 0.1;
 	lights[3]->SetScale(glm::vec3(0.200, 0.200, 0.200));
@@ -610,7 +610,7 @@ void App::createDescriptorPool()
 {
 	vk::DescriptorPoolSize Uniformpoolsize;
 	Uniformpoolsize.type = vk::DescriptorType::eUniformBuffer;
-	Uniformpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) *  15;
+	Uniformpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) *  100;
 
 	vk::DescriptorPoolSize Samplerpoolsize;
 	Samplerpoolsize.type = vk::DescriptorType::eCombinedImageSampler;
@@ -671,7 +671,7 @@ void App::createDepthTextureImage()
 	DataToTransitionInfo.DestinationAccessflag = vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
 	///////////////////////////////////////////////////////////////////////////////
 	DataToTransitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
-	DataToTransitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eEarlyFragmentTests;
+	DataToTransitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests;
 
 	bufferManger->TransitionImage(commandBuffer, &DepthTextureData, DataToTransitionInfo);
 
@@ -781,7 +781,6 @@ void App::createGBuffer()
 	bufferManger->TransitionImage(cmd, &ssao_FullScreenQuad->BluredSSAOImage, TransitionToGeneral);
 	//bufferManger->TransitionImage(cmd, &Raytracing_Reflections->RT_ReflectionPassImage, TransitionToGeneral);
 	bufferManger->TransitionImage(cmd, &fxaa_FullScreenQuad->FxaaImage, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &Combined_FullScreenQuad->FinalResultImage, TransitionToGeneral);
 	bufferManger->TransitionImage(cmd, &SSGI_FullScreenQuad->HalfRes_SSGIPassImage, TransitionToGeneral);
 	bufferManger->TransitionImage(cmd, &SSGI_FullScreenQuad->HalfRes_HorizontalBluredSSGIAccumilationImage, TransitionToGeneral);
 	bufferManger->TransitionImage(cmd, &SSGI_FullScreenQuad->HalfRes_BluredSSGIAccumilationImage, TransitionToGeneral);
@@ -1775,7 +1774,7 @@ void App::Draw()
 	vk::Semaphore waitSemaphores[] = { presentCompleteSemaphores[currentFrame] };
 
 	vk::PipelineStageFlags waitStages[] = {
-		vk::PipelineStageFlagBits::eColorAttachmentOutput  // Where we'll wait
+		    vk::PipelineStageFlagBits::eAllCommands
 	};
 
 	// This semaphore will be signaled when rendering completes.
@@ -2150,7 +2149,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TransitionDepthtTOShaderOptimal.AspectFlag = vk::ImageAspectFlagBits::eDepth;
 		TransitionDepthtTOShaderOptimal.SourceAccessflag = vk::AccessFlagBits::eDepthStencilAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentRead;
 		TransitionDepthtTOShaderOptimal.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionDepthtTOShaderOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eEarlyFragmentTests;
+		TransitionDepthtTOShaderOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests;
 		TransitionDepthtTOShaderOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 		bufferManger->TransitionImage(commandBuffer, &DepthTextureData, TransitionDepthtTOShaderOptimal);
 
@@ -2419,37 +2418,37 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	}
 
 
-	//{
-	//	vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
-	//	SkyBoxRenderAttachInfo.clearValue = clearColor;
-	//	SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-	//	SkyBoxRenderAttachInfo.imageView = LightingPassImageData.imageView;
-	//	SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
-	//	SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
-	//
-	//	vk::RenderingAttachmentInfo DepthAttachInfo;
-	//	DepthAttachInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
-	//	DepthAttachInfo.imageView = DepthTextureData.imageView;
-	//	DepthAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
-	//	DepthAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
-	//	DepthAttachInfo.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
-	//
-	//	vk::RenderingInfo SkyBoxRenderInfo{};
-	//	SkyBoxRenderInfo.layerCount = 1;
-	//	SkyBoxRenderInfo.colorAttachmentCount = 1;
-	//	SkyBoxRenderInfo.pColorAttachments = &SkyBoxRenderAttachInfo;
-	//	SkyBoxRenderInfo.pDepthAttachment = &DepthAttachInfo;
-	//	SkyBoxRenderInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
-	//	SkyBoxRenderInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
-	//
-	//
-	//	commandBuffer.setViewport(0, 1, &viewport);
-	//	commandBuffer.setScissor(0, 1, &scissor);
-	//	commandBuffer.beginRendering(SkyBoxRenderInfo);
-	//	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
-	//	skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
-	//	commandBuffer.endRendering();
-	//}
+	{
+		//vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
+		//SkyBoxRenderAttachInfo.clearValue = clearColor;
+		//SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		//SkyBoxRenderAttachInfo.imageView = LightingPassImageData.imageView;
+		//SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+		//SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		//
+		//vk::RenderingAttachmentInfo DepthAttachInfo;
+		//DepthAttachInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+		//DepthAttachInfo.imageView = DepthTextureData.imageView;
+		//DepthAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+		//DepthAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		//DepthAttachInfo.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		//
+		//vk::RenderingInfo SkyBoxRenderInfo{};
+		//SkyBoxRenderInfo.layerCount = 1;
+		//SkyBoxRenderInfo.colorAttachmentCount = 1;
+		//SkyBoxRenderInfo.pColorAttachments = &SkyBoxRenderAttachInfo;
+		//SkyBoxRenderInfo.pDepthAttachment = &DepthAttachInfo;
+		//SkyBoxRenderInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
+		//SkyBoxRenderInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
+		//
+		//
+		//commandBuffer.setViewport(0, 1, &viewport);
+		//commandBuffer.setScissor(0, 1, &scissor);
+		//commandBuffer.beginRendering(SkyBoxRenderInfo);
+		//commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
+		//skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
+		//commandBuffer.endRendering();
+	}
 
 
 	{
