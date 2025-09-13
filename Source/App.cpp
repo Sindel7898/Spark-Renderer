@@ -252,8 +252,10 @@ void App::InitializeNRD(uint32_t renderWidth, uint32_t renderHeight)
 {
 	// 1. Describe which denoiser(s) you want to use.
 	// We'll just use REBLUR for diffuse lighting.
+	const nrd::Denoiser denoiser = nrd::Denoiser::REBLUR_DIFFUSE;
+
 	const nrd::DenoiserDesc denoiserDesc[] = {
-		{ NRD_ID(REBLUR_DIFFUSE), nrd::Denoiser::REBLUR_DIFFUSE },
+		{ static_cast<nrd::Identifier>(denoiser), denoiser }
 	};
 
 	// 2. Describe the NRD instance itself.
@@ -264,10 +266,11 @@ void App::InitializeNRD(uint32_t renderWidth, uint32_t renderHeight)
 	// 3. Create the NRD Integration library instance.
 	nrd::IntegrationCreationDesc integrationCreationDesc = {};
 	strcpy(integrationCreationDesc.name, "NRD");
-	integrationCreationDesc.enableWholeLifetimeDescriptorCaching = true;
-	integrationCreationDesc.resourceWidth = (uint16_t)renderWidth;
+	integrationCreationDesc.enableWholeLifetimeDescriptorCaching = false;
+	integrationCreationDesc.resourceWidth  = (uint16_t)renderWidth;
 	integrationCreationDesc.resourceHeight = (uint16_t)renderHeight;
 	integrationCreationDesc.autoWaitForIdle = false;
+	integrationCreationDesc.queuedFrameNum = 2;
 
 
 	nri::AdapterDesc bestAdapterDesc = {};
@@ -282,7 +285,7 @@ void App::InitializeNRD(uint32_t renderWidth, uint32_t renderHeight)
 	nri::QueueFamilyVKDesc queueFamily = {};
 	queueFamily.familyIndex = vulkanContext->graphicsQueueFamilyIndex;
 	queueFamily.queueType = nri::QueueType::GRAPHICS;
-	queueFamily.queueNum = 1;
+	queueFamily.queueNum = 0;
 
 
 	nri::DeviceCreationVKDesc deviceCreationVKDesc{};
@@ -295,7 +298,11 @@ void App::InitializeNRD(uint32_t renderWidth, uint32_t renderHeight)
 	deviceCreationVKDesc.enableNRIValidation = true;
 
 
-	if (m_NRD.RecreateVK(integrationCreationDesc, instanceCreationDesc, deviceCreationVKDesc) != nrd::Result::SUCCESS);
+	const auto result  = m_NRD.RecreateVK(integrationCreationDesc, instanceCreationDesc, deviceCreationVKDesc);
+
+	if (result != nrd::Result::SUCCESS) {
+		throw std::runtime_error{ "Could not create NRD!" };
+	}
 
 }
 
@@ -361,20 +368,32 @@ void App::DenoiseDiffusePass(vk::CommandBuffer& cmdBuffer, uint32_t frameIndex)
 	nrd::Resource DenoisedImage_Resource = {};
 
 
-
-	Normal_Resource.vk.format        = VK_FORMAT_R16G16B16_SFLOAT;
-	ViewPosition_Resource.vk.format  = VK_FORMAT_R16G16B16_SFLOAT;
-	NoisyImage_Resource.vk.format    = static_cast<VkFormat>(vulkanContext->swapchainformat);
-	DenoisedImage_Resource.vk.format = static_cast<VkFormat>(vulkanContext->swapchainformat);
-
 	Normal_Resource.vk.image        = reinterpret_cast<VKNonDispatchableHandle>(Normal);
 	ViewPosition_Resource.vk.image  = reinterpret_cast<VKNonDispatchableHandle>(ViewPosition);
 	NoisyImage_Resource.vk.image    = reinterpret_cast<VKNonDispatchableHandle>(NoisyImage);
 	DenoisedImage_Resource.vk.image = reinterpret_cast<VKNonDispatchableHandle>(DenoisedImage);
 
+	Normal_Resource.vk.format        = VK_FORMAT_R16G16B16A16_SFLOAT;
+	ViewPosition_Resource.vk.format  = VK_FORMAT_R16G16B16A16_SFLOAT;
+	NoisyImage_Resource.vk.format    = static_cast<VkFormat>(vulkanContext->swapchainformat);
+	DenoisedImage_Resource.vk.format = static_cast<VkFormat>(vk::Format::eB8G8R8A8Unorm);
 
-	//nri::TextureBarrierDesc* textureState = &m_TextureStates[(uint32_t)index];
 
+	Normal_Resource.state.access        = nri::AccessBits::SHADER_RESOURCE;
+	ViewPosition_Resource.state.access  = nri::AccessBits::SHADER_RESOURCE;
+	NoisyImage_Resource.state.access    = nri::AccessBits::SHADER_RESOURCE;
+	DenoisedImage_Resource.state.access = nri::AccessBits::SHADER_RESOURCE;
+
+
+	Normal_Resource.state.layout        = nri::Layout::SHADER_RESOURCE;
+	ViewPosition_Resource.state.layout  = nri::Layout::SHADER_RESOURCE;
+	NoisyImage_Resource.state.layout    = nri::Layout::SHADER_RESOURCE;
+	DenoisedImage_Resource.state.layout = nri::Layout::SHADER_RESOURCE_STORAGE;
+
+	Normal_Resource.state.stages        = nri::StageBits::COMPUTE_SHADER;
+	ViewPosition_Resource.state.stages  = nri::StageBits::COMPUTE_SHADER;
+	NoisyImage_Resource.state.stages    = nri::StageBits::COMPUTE_SHADER;
+	DenoisedImage_Resource.state.stages = nri::StageBits::COMPUTE_SHADER;
 
 	nrd::ResourceSnapshot resourceSnapshot = {};
 
@@ -382,6 +401,7 @@ void App::DenoiseDiffusePass(vk::CommandBuffer& cmdBuffer, uint32_t frameIndex)
 
 	resourceSnapshot.SetResource(nrd::ResourceType::IN_NORMAL_ROUGHNESS, Normal_Resource);
 	resourceSnapshot.SetResource(nrd::ResourceType::IN_VIEWZ, ViewPosition_Resource);
+	resourceSnapshot.SetResource(nrd::ResourceType::IN_MV, ViewPosition_Resource);
 
 	// Denoiser-Specific Inputs & Outputs
 	resourceSnapshot.SetResource(nrd::ResourceType::IN_DIFF_RADIANCE_HITDIST, NoisyImage_Resource);
@@ -622,7 +642,7 @@ void App::createDescriptorPool()
 
 	vk::DescriptorPoolSize StorageImagepoolsize;
 	StorageImagepoolsize.type = vk::DescriptorType::eStorageImage;
-	StorageImagepoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 10;
+	StorageImagepoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 20;
 
 	std::array<	vk::DescriptorPoolSize, 4> poolSizes{ Uniformpoolsize ,Samplerpoolsize,
 		                                              AccelerationStructurepoolsize,StorageImagepoolsize };
@@ -729,10 +749,10 @@ void App::createGBuffer()
 	ReflectionMaskImageData.imageView = bufferManger->CreateImageView(&ReflectionMaskImageData, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
 	ReflectionMaskImageData.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
-	//DenoisedGIImageData.ImageID = "ReflectionMask Texture";
-	//bufferManger->CreateImage(&DenoisedGIImageData, swapchainextent, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	//DenoisedGIImageData.imageView = bufferManger->CreateImageView(&DenoisedGIImageData, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
-	//DenoisedGIImageData.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	DenoisedGIImageData.ImageID = "Denoised  Texture";
+	bufferManger->CreateImage(&DenoisedGIImageData, swapchainextent, vk::Format::eB8G8R8A8Unorm, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eColorAttachment);
+	//DenoisedGIImageData.imageView = bufferManger->CreateImageView(&DenoisedGIImageData, vk::Format::eB8G8R8A8Unorm, vk::ImageAspectFlagBits::eColor);
+	DenoisedGIImageData.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 
 	fxaa_FullScreenQuad->CreateImage(swapchainextent);
@@ -829,7 +849,11 @@ void App::createGBuffer()
 
 	vulkanContext->ResetTemporalAccumilation();
 
-	//InitializeNRD(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height);
+	std::cout << "Swapchain size: "
+		<< vulkanContext->swapchainExtent.width << " x "
+		<< vulkanContext->swapchainExtent.height
+		<< std::endl;
+	InitializeNRD(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height);
 }
 
 void App::CreateGraphicsPipeline()
@@ -2520,13 +2544,12 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			light->Draw(commandBuffer, LightpipelineLayout, currentFrame);
 		}
 
-
-		//DenoiseDiffusePass(commandBuffer, currentFrame);
-
 		commandBuffer.endRendering();
 
 	}
 
+
+	DenoiseDiffusePass(commandBuffer, currentFrame);
 
 	/////////////////// FORWARD PASS END ///////////////////////// 
 	vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
@@ -2577,6 +2600,7 @@ void App::destroy_GbufferImages()
 	bufferManger->DestroyImage(gbuffer.Albedo);
 	bufferManger->DestroyImage(LightingPassImageData);
 	bufferManger->DestroyImage(ReflectionMaskImageData);
+	bufferManger->DestroyImage(DenoisedGIImageData);
 
 	ssao_FullScreenQuad->DestroyImage();
 	Raytracing_Shadows->DestroyStorageImage();

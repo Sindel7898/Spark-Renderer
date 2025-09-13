@@ -496,7 +496,9 @@ bool Model::CalcDistanceCulling(glm::mat4 Matrix)
 	glm::vec3 translation = glm::vec3(Matrix[3]);
 	float distance = glm::distance(camera->GetPosition(), translation);
 
-	return distance <= 100.0f;
+	//return distance <= 100.0f;
+
+	return true;
 }
 
 

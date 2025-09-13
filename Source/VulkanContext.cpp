@@ -66,12 +66,13 @@ void VulkanContext::SelectGPU_CreateDevice()
 
 	vkb::PhysicalDevice physicalDevice = physicalDeviceResult.value();
 
+
 	vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelerationFeatures{};
-	accelerationFeatures.accelerationStructure = true;
+	accelerationFeatures.accelerationStructure = vk::True;
 	accelerationFeatures.pNext = nullptr;
 
 	vk::PhysicalDeviceRayTracingPipelineFeaturesKHR   rtPipeLineFeatures{};
-	rtPipeLineFeatures.rayTracingPipeline = true;
+	rtPipeLineFeatures.rayTracingPipeline = vk::True;
 	rtPipeLineFeatures.pNext = &accelerationFeatures;
 
 	vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT extendedDynamicState3Features{};
@@ -83,6 +84,7 @@ void VulkanContext::SelectGPU_CreateDevice()
 	features_1_2.bufferDeviceAddress = vk::True;
 	features_1_2.descriptorIndexing  = vk::True;
 	features_1_2.bufferDeviceAddress = vk::True;
+	features_1_2.descriptorBindingPartiallyBound = vk::True;
 	features_1_2.pNext = &extendedDynamicState3Features;
 
 	vk::PhysicalDeviceVulkan13Features features_1_3{};

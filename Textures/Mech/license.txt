@@ -1,0 +1,11 @@
+Model Information:
+* title:	Scorcher from Horizon Zero Dawn The Frozen Wilds
+* source:	https://sketchfab.com/3d-models/scorcher-from-horizon-zero-dawn-the-frozen-wilds-a0a8fb7f05d5455abcbd9468eee6d909
+* author:	Théo Domon (https://sketchfab.com/Gloomeskk)
+
+Model License:
+* license type:	CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
+* requirements:	Author must be credited. No commercial use.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Scorcher from Horizon Zero Dawn The Frozen Wilds" (https://sketchfab.com/3d-models/scorcher-from-horizon-zero-dawn-the-frozen-wilds-a0a8fb7f05d5455abcbd9468eee6d909) by Théo Domon (https://sketchfab.com/Gloomeskk) licensed under CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
