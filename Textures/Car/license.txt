@@ -1,8 +1,0 @@
-Model Information:
-* title:	Imperfect-black-bmw-e36
-* source:	https://sketchfab.com/3d-models/imperfect-black-bmw-e36-a471598220664ff0b9e419c31ed0142e
-* author:	mohamedhussien (https://sketchfab.com/mohamedhussien)
-
-Model License:
-* license type:	SKETCHFAB Standard (https://sketchfab.com/licenses)
-* requirements:	Under basic restrictions, use worldwide, on all types of media, commercially or not, and in all types of derivative works

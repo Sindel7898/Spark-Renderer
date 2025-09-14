@@ -776,11 +776,21 @@ vk::ImageView BufferManager::CreateImageView(ImageData* imageData, vk::Format Im
    return logicalDevice.createImageView(imageviewinfo);
 }
 
-vk::Sampler BufferManager::CreateImageSampler(vk::SamplerAddressMode addressMode) {
+vk::Sampler BufferManager::CreateImageSampler(vk::SamplerAddressMode addressMode,bool LinearFiltering) {
 
 	vk::SamplerCreateInfo SamplerInfo{};
-	SamplerInfo.magFilter = vk::Filter::eLinear;
-	SamplerInfo.minFilter = vk::Filter::eLinear;
+
+	if (LinearFiltering)
+	{
+		SamplerInfo.magFilter = vk::Filter::eLinear;
+		SamplerInfo.minFilter = vk::Filter::eLinear;
+	}
+	else
+	{
+		SamplerInfo.magFilter = vk::Filter::eNearest;
+		SamplerInfo.minFilter = vk::Filter::eNearest;
+	}
+
 	SamplerInfo.addressModeU = addressMode;
 	SamplerInfo.addressModeV = addressMode;
 	SamplerInfo.addressModeW = addressMode;

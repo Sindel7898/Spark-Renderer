@@ -75,7 +75,7 @@ public:
 
 
     vk::ImageView CreateImageView(ImageData* imageData, vk::Format ImageFormat, vk::ImageAspectFlags ImageAspectBits);
-    vk::Sampler CreateImageSampler(vk::SamplerAddressMode addressMode = vk::SamplerAddressMode::eRepeat);
+    vk::Sampler CreateImageSampler(vk::SamplerAddressMode addressMode = vk::SamplerAddressMode::eRepeat, bool LinearFiltering = true);
 
     void TransitionImage(vk::CommandBuffer CommandBuffer, ImageData* imageData, ImageTransitionData& imagetransinotdata);
 

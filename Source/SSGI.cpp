@@ -88,44 +88,44 @@ void SSGI::CreateGIImage() {
 	BlurPing_DownSampleHalfRes.ImageID = " BlurPing_DownSampleHalfRes  Image";
 	bufferManager->CreateImage(&BlurPing_DownSampleHalfRes, SSGI_ImageHalfResolution, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
 	BlurPing_DownSampleHalfRes.imageView = bufferManager->CreateImageView(&BlurPing_DownSampleHalfRes, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
-	BlurPing_DownSampleHalfRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	BlurPing_DownSampleHalfRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge,false);
 
 	BlurPong_DownSampleHalfRes.ImageID = "BlurPong_DownSampleHalfRes  Image";
 	bufferManager->CreateImage(&BlurPong_DownSampleHalfRes, SSGI_ImageHalfResolution, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
 	BlurPong_DownSampleHalfRes.imageView = bufferManager->CreateImageView(&BlurPong_DownSampleHalfRes, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
-	BlurPong_DownSampleHalfRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	BlurPong_DownSampleHalfRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 	////////////////////////////////////////////////
 	BlurPing_DownSampleQuaterRes.ImageID = " BlurPing_DownSampleQuaterRes Image";
 	bufferManager->CreateImage(&BlurPing_DownSampleQuaterRes, SSGI_ImageQuaterResolution, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
 	BlurPing_DownSampleQuaterRes.imageView = bufferManager->CreateImageView(&BlurPing_DownSampleQuaterRes, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
-	BlurPing_DownSampleQuaterRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	BlurPing_DownSampleQuaterRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 
 	BlurPong_DownSampleQuaterRes.ImageID = "BlurPong_DownSampleQuaterRes Image";
 	bufferManager->CreateImage(&BlurPong_DownSampleQuaterRes, SSGI_ImageQuaterResolution, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
 	BlurPong_DownSampleQuaterRes.imageView = bufferManager->CreateImageView(&BlurPong_DownSampleQuaterRes, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
-	BlurPong_DownSampleQuaterRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	BlurPong_DownSampleQuaterRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 	////////////////////////////////////////////////
 
 	BlurPing_UPSampleHalfRes.ImageID = " BlurPing_UPSampleHalfRes Image";
 	bufferManager->CreateImage(&BlurPing_UPSampleHalfRes, SSGI_ImageHalfResolution, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
 	BlurPing_UPSampleHalfRes.imageView = bufferManager->CreateImageView(&BlurPing_UPSampleHalfRes, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
-	BlurPing_UPSampleHalfRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	BlurPing_UPSampleHalfRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 
 	BlurPong_UPSampleHalfRes.ImageID = " BlurPong_UPSampleHalfRes Image";
 	bufferManager->CreateImage(&BlurPong_UPSampleHalfRes, SSGI_ImageHalfResolution, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
 	BlurPong_UPSampleHalfRes.imageView = bufferManager->CreateImageView(&BlurPong_UPSampleHalfRes, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
-	BlurPong_UPSampleHalfRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	BlurPong_UPSampleHalfRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 	/////////////////////////////////////////////////////////////////////////
 
 	BlurPing_UPSampleFullRes.ImageID = " BlurPing_UPSampleFullRes Image";
 	bufferManager->CreateImage(&BlurPing_UPSampleFullRes, SSGI_ImageFullResolution, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
 	BlurPing_UPSampleFullRes.imageView = bufferManager->CreateImageView(&BlurPing_UPSampleFullRes, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
-	BlurPing_UPSampleFullRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	BlurPing_UPSampleFullRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 
 	BlurPong_UPSampleFullRes.ImageID = " BlurPing_UPSampleHalfRes Image";
 	bufferManager->CreateImage(&BlurPong_UPSampleFullRes, SSGI_ImageFullResolution, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
 	BlurPong_UPSampleFullRes.imageView = bufferManager->CreateImageView(&BlurPong_UPSampleFullRes, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
-	BlurPong_UPSampleFullRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	BlurPong_UPSampleFullRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 	/////////////////////////////////////////////////////////////////////////
 
 
@@ -269,8 +269,13 @@ void SSGI::createDescriptorSetLayout(){
 		NoiseTASSGISamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		NoiseTASSGISamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
+		vk::DescriptorSetLayoutBinding ViewSpacePositionSamplerLayout{};
+		ViewSpacePositionSamplerLayout.binding = 1;
+		ViewSpacePositionSamplerLayout.descriptorCount = 1;
+		ViewSpacePositionSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		ViewSpacePositionSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-		std::array<vk::DescriptorSetLayoutBinding, 1> bindings = { NoiseTASSGISamplerLayout };
+		std::array<vk::DescriptorSetLayoutBinding, 2> bindings = { NoiseTASSGISamplerLayout,ViewSpacePositionSamplerLayout };
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -514,8 +519,20 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			NoisyTASamplerdescriptorWrite.descriptorCount = 1;
 			NoisyTASamplerdescriptorWrite.pImageInfo = &NoisyTAimageInfo;
 
+			vk::DescriptorImageInfo ViewSpacePositionImage{};
+			ViewSpacePositionImage.imageLayout = vk::ImageLayout::eGeneral;
+			ViewSpacePositionImage.imageView   = gbuffer.ViewSpacePosition.imageView;
+			ViewSpacePositionImage.sampler     = gbuffer.ViewSpacePosition.imageSampler;
 
-			std::array<vk::WriteDescriptorSet, 1> TAGIdescriptorWrites{ NoisyTASamplerdescriptorWrite };
+			vk::WriteDescriptorSet ViewSpacePositionImageSamplerdescriptorWrite{};
+			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = DownSampleHalfRes_PING_SampleDescriptorSets[i];
+			ViewSpacePositionImageSamplerdescriptorWrite.dstBinding = 1;
+			ViewSpacePositionImageSamplerdescriptorWrite.dstArrayElement = 0;
+			ViewSpacePositionImageSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			ViewSpacePositionImageSamplerdescriptorWrite.descriptorCount = 1;
+			ViewSpacePositionImageSamplerdescriptorWrite.pImageInfo = &ViewSpacePositionImage;
+
+			std::array<vk::WriteDescriptorSet, 2> TAGIdescriptorWrites{ NoisyTASamplerdescriptorWrite,ViewSpacePositionImageSamplerdescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(TAGIdescriptorWrites.size(), TAGIdescriptorWrites.data(), 0, nullptr);
 		}
@@ -555,8 +572,20 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			HorizontalBluredSamplerdescriptorWrite.descriptorCount = 1;
 			HorizontalBluredSamplerdescriptorWrite.pImageInfo = &HorizontalBluredimageInfo;
 
+			vk::DescriptorImageInfo ViewSpacePositionImage{};
+			ViewSpacePositionImage.imageLayout = vk::ImageLayout::eGeneral;
+			ViewSpacePositionImage.imageView = gbuffer.ViewSpacePosition.imageView;
+			ViewSpacePositionImage.sampler = gbuffer.ViewSpacePosition.imageSampler;
 
-			std::array<vk::WriteDescriptorSet, 1> BlureddescriptorWrites{ HorizontalBluredSamplerdescriptorWrite };
+			vk::WriteDescriptorSet ViewSpacePositionImageSamplerdescriptorWrite{};
+			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = DownSampleHalfRes_PING_SampleDescriptorSets[i];
+			ViewSpacePositionImageSamplerdescriptorWrite.dstBinding = 1;
+			ViewSpacePositionImageSamplerdescriptorWrite.dstArrayElement = 0;
+			ViewSpacePositionImageSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			ViewSpacePositionImageSamplerdescriptorWrite.descriptorCount = 1;
+			ViewSpacePositionImageSamplerdescriptorWrite.pImageInfo = &ViewSpacePositionImage;
+
+			std::array<vk::WriteDescriptorSet, 2> BlureddescriptorWrites{ HorizontalBluredSamplerdescriptorWrite,ViewSpacePositionImageSamplerdescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(BlureddescriptorWrites.size(), BlureddescriptorWrites.data(), 0, nullptr);
 		}
@@ -595,9 +624,20 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			HorizontalBluredSamplerdescriptorWrite.descriptorCount = 1;
 			HorizontalBluredSamplerdescriptorWrite.pImageInfo = &HorizontalBluredimageInfo;
 
+			vk::DescriptorImageInfo ViewSpacePositionImage{};
+			ViewSpacePositionImage.imageLayout = vk::ImageLayout::eGeneral;
+			ViewSpacePositionImage.imageView = gbuffer.ViewSpacePosition.imageView;
+			ViewSpacePositionImage.sampler = gbuffer.ViewSpacePosition.imageSampler;
 
-			std::array<vk::WriteDescriptorSet, 1> BlureddescriptorWrites{ HorizontalBluredSamplerdescriptorWrite };
+			vk::WriteDescriptorSet ViewSpacePositionImageSamplerdescriptorWrite{};
+			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = DownSampleHalfRes_PING_SampleDescriptorSets[i];
+			ViewSpacePositionImageSamplerdescriptorWrite.dstBinding = 1;
+			ViewSpacePositionImageSamplerdescriptorWrite.dstArrayElement = 0;
+			ViewSpacePositionImageSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			ViewSpacePositionImageSamplerdescriptorWrite.descriptorCount = 1;
+			ViewSpacePositionImageSamplerdescriptorWrite.pImageInfo = &ViewSpacePositionImage;
 
+			std::array<vk::WriteDescriptorSet, 2> BlureddescriptorWrites{ HorizontalBluredSamplerdescriptorWrite,ViewSpacePositionImageSamplerdescriptorWrite };
 			vulkanContext->LogicalDevice.updateDescriptorSets(BlureddescriptorWrites.size(), BlureddescriptorWrites.data(), 0, nullptr);
 		}
 	}
@@ -636,7 +676,20 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			HorizontalBluredSamplerdescriptorWrite.pImageInfo = &HorizontalBluredimageInfo;
 
 
-			std::array<vk::WriteDescriptorSet, 1> BlureddescriptorWrites{ HorizontalBluredSamplerdescriptorWrite };
+			vk::DescriptorImageInfo ViewSpacePositionImage{};
+			ViewSpacePositionImage.imageLayout = vk::ImageLayout::eGeneral;
+			ViewSpacePositionImage.imageView = gbuffer.ViewSpacePosition.imageView;
+			ViewSpacePositionImage.sampler = gbuffer.ViewSpacePosition.imageSampler;
+
+			vk::WriteDescriptorSet ViewSpacePositionImageSamplerdescriptorWrite{};
+			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = DownSampleHalfRes_PING_SampleDescriptorSets[i];
+			ViewSpacePositionImageSamplerdescriptorWrite.dstBinding = 1;
+			ViewSpacePositionImageSamplerdescriptorWrite.dstArrayElement = 0;
+			ViewSpacePositionImageSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			ViewSpacePositionImageSamplerdescriptorWrite.descriptorCount = 1;
+			ViewSpacePositionImageSamplerdescriptorWrite.pImageInfo = &ViewSpacePositionImage;
+
+			std::array<vk::WriteDescriptorSet, 2> BlureddescriptorWrites{ HorizontalBluredSamplerdescriptorWrite,ViewSpacePositionImageSamplerdescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(BlureddescriptorWrites.size(), BlureddescriptorWrites.data(), 0, nullptr);
 		}
@@ -676,7 +729,20 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			HorizontalBluredSamplerdescriptorWrite.pImageInfo = &HorizontalBluredimageInfo;
 
 
-			std::array<vk::WriteDescriptorSet, 1> BlureddescriptorWrites{ HorizontalBluredSamplerdescriptorWrite };
+			vk::DescriptorImageInfo ViewSpacePositionImage{};
+			ViewSpacePositionImage.imageLayout = vk::ImageLayout::eGeneral;
+			ViewSpacePositionImage.imageView = gbuffer.ViewSpacePosition.imageView;
+			ViewSpacePositionImage.sampler = gbuffer.ViewSpacePosition.imageSampler;
+
+			vk::WriteDescriptorSet ViewSpacePositionImageSamplerdescriptorWrite{};
+			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = DownSampleHalfRes_PING_SampleDescriptorSets[i];
+			ViewSpacePositionImageSamplerdescriptorWrite.dstBinding = 1;
+			ViewSpacePositionImageSamplerdescriptorWrite.dstArrayElement = 0;
+			ViewSpacePositionImageSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			ViewSpacePositionImageSamplerdescriptorWrite.descriptorCount = 1;
+			ViewSpacePositionImageSamplerdescriptorWrite.pImageInfo = &ViewSpacePositionImage;
+
+			std::array<vk::WriteDescriptorSet, 2> BlureddescriptorWrites{ HorizontalBluredSamplerdescriptorWrite,ViewSpacePositionImageSamplerdescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(BlureddescriptorWrites.size(), BlureddescriptorWrites.data(), 0, nullptr);
 		}
@@ -716,7 +782,20 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			HorizontalBluredSamplerdescriptorWrite.pImageInfo = &HorizontalBluredimageInfo;
 
 
-			std::array<vk::WriteDescriptorSet, 1> BlureddescriptorWrites{ HorizontalBluredSamplerdescriptorWrite };
+			vk::DescriptorImageInfo ViewSpacePositionImage{};
+			ViewSpacePositionImage.imageLayout = vk::ImageLayout::eGeneral;
+			ViewSpacePositionImage.imageView = gbuffer.ViewSpacePosition.imageView;
+			ViewSpacePositionImage.sampler = gbuffer.ViewSpacePosition.imageSampler;
+
+			vk::WriteDescriptorSet ViewSpacePositionImageSamplerdescriptorWrite{};
+			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = DownSampleHalfRes_PING_SampleDescriptorSets[i];
+			ViewSpacePositionImageSamplerdescriptorWrite.dstBinding = 1;
+			ViewSpacePositionImageSamplerdescriptorWrite.dstArrayElement = 0;
+			ViewSpacePositionImageSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			ViewSpacePositionImageSamplerdescriptorWrite.descriptorCount = 1;
+			ViewSpacePositionImageSamplerdescriptorWrite.pImageInfo = &ViewSpacePositionImage;
+
+			std::array<vk::WriteDescriptorSet, 2> BlureddescriptorWrites{ HorizontalBluredSamplerdescriptorWrite,ViewSpacePositionImageSamplerdescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(BlureddescriptorWrites.size(), BlureddescriptorWrites.data(), 0, nullptr);
 		}
@@ -756,7 +835,20 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			HorizontalBluredSamplerdescriptorWrite.pImageInfo = &HorizontalBluredimageInfo;
 
 
-			std::array<vk::WriteDescriptorSet, 1> BlureddescriptorWrites{ HorizontalBluredSamplerdescriptorWrite };
+			vk::DescriptorImageInfo ViewSpacePositionImage{};
+			ViewSpacePositionImage.imageLayout = vk::ImageLayout::eGeneral;
+			ViewSpacePositionImage.imageView = gbuffer.ViewSpacePosition.imageView;
+			ViewSpacePositionImage.sampler = gbuffer.ViewSpacePosition.imageSampler;
+
+			vk::WriteDescriptorSet ViewSpacePositionImageSamplerdescriptorWrite{};
+			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = DownSampleHalfRes_PING_SampleDescriptorSets[i];
+			ViewSpacePositionImageSamplerdescriptorWrite.dstBinding = 1;
+			ViewSpacePositionImageSamplerdescriptorWrite.dstArrayElement = 0;
+			ViewSpacePositionImageSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			ViewSpacePositionImageSamplerdescriptorWrite.descriptorCount = 1;
+			ViewSpacePositionImageSamplerdescriptorWrite.pImageInfo = &ViewSpacePositionImage;
+
+			std::array<vk::WriteDescriptorSet, 2> BlureddescriptorWrites{ HorizontalBluredSamplerdescriptorWrite,ViewSpacePositionImageSamplerdescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(BlureddescriptorWrites.size(), BlureddescriptorWrites.data(), 0, nullptr);
 		}
@@ -796,7 +888,20 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			HorizontalBluredSamplerdescriptorWrite.pImageInfo = &HorizontalBluredimageInfo;
 
 
-			std::array<vk::WriteDescriptorSet, 1> BlureddescriptorWrites{ HorizontalBluredSamplerdescriptorWrite };
+			vk::DescriptorImageInfo ViewSpacePositionImage{};
+			ViewSpacePositionImage.imageLayout = vk::ImageLayout::eGeneral;
+			ViewSpacePositionImage.imageView = gbuffer.ViewSpacePosition.imageView;
+			ViewSpacePositionImage.sampler = gbuffer.ViewSpacePosition.imageSampler;
+
+			vk::WriteDescriptorSet ViewSpacePositionImageSamplerdescriptorWrite{};
+			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = DownSampleHalfRes_PING_SampleDescriptorSets[i];
+			ViewSpacePositionImageSamplerdescriptorWrite.dstBinding = 1;
+			ViewSpacePositionImageSamplerdescriptorWrite.dstArrayElement = 0;
+			ViewSpacePositionImageSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			ViewSpacePositionImageSamplerdescriptorWrite.descriptorCount = 1;
+			ViewSpacePositionImageSamplerdescriptorWrite.pImageInfo = &ViewSpacePositionImage;
+
+			std::array<vk::WriteDescriptorSet, 2> BlureddescriptorWrites{ HorizontalBluredSamplerdescriptorWrite,ViewSpacePositionImageSamplerdescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(BlureddescriptorWrites.size(), BlureddescriptorWrites.data(), 0, nullptr);
 		}
@@ -858,9 +963,8 @@ void SSGI::DrawDownSampleHalfResFirstPass(vk::CommandBuffer commandbuffer, vk::P
 	vk::DeviceSize offsets[] = { 0 };
 	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
 
-	glm::vec2 Direction = glm::vec2(0, 1);
-
-	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(glm::vec2), &Direction);
+	int Direction = true;
+	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
 	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
@@ -874,8 +978,8 @@ void SSGI::DrawDownSampleHalfResSecondPass(vk::CommandBuffer commandbuffer, vk::
 	vk::DeviceSize offsets[] = { 0 };
 	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
 
-	glm::vec2 Direction = glm::vec2(1, 0);
-	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(glm::vec2), &Direction);
+	int Direction = false;
+	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
 	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
@@ -889,9 +993,8 @@ void SSGI::DrawDownSampleQuaterfResFirstPass(vk::CommandBuffer commandbuffer, vk
 	vk::DeviceSize offsets[] = { 0 };
 	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
 
-	glm::vec2 Direction = glm::vec2(0, 1);
-
-	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(glm::vec2), &Direction);
+	int Direction = true;
+	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
 	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
@@ -905,8 +1008,8 @@ void SSGI::DrawDownSampleQuaterfResSecondPass(vk::CommandBuffer commandbuffer, v
 	vk::DeviceSize offsets[] = { 0 };
 	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
 
-	glm::vec2 Direction = glm::vec2(1, 0);
-	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(glm::vec2), &Direction);
+	int Direction = false;
+	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
 	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
@@ -920,9 +1023,8 @@ void SSGI::DrawUPSampleHalfResFirstPass(vk::CommandBuffer commandbuffer, vk::Pip
 	vk::DeviceSize offsets[] = { 0 };
 	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
 
-	glm::vec2 Direction = glm::vec2(0, 1);
-
-	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(glm::vec2), &Direction);
+	int Direction = true;
+	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
 	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
@@ -936,8 +1038,8 @@ void SSGI::DrawUPSampleHalfResSecondPass(vk::CommandBuffer commandbuffer, vk::Pi
 	vk::DeviceSize offsets[] = { 0 };
 	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
 
-	glm::vec2 Direction = glm::vec2(1, 0);
-	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(glm::vec2), &Direction);
+	int Direction = false;
+	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
 	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
@@ -951,9 +1053,8 @@ void SSGI::DrawUPSampleFullResFirstPass(vk::CommandBuffer commandbuffer, vk::Pip
 	vk::DeviceSize offsets[] = { 0 };
 	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
 
-	glm::vec2 Direction = glm::vec2(0, 1);
-
-	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(glm::vec2), &Direction);
+	int Direction = true;
+	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
 	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
@@ -967,8 +1068,8 @@ void SSGI::DrawUPSampleFullResSecondPass(vk::CommandBuffer commandbuffer, vk::Pi
 	vk::DeviceSize offsets[] = { 0 };
 	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
 
-	glm::vec2 Direction = glm::vec2(1, 0);
-	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(glm::vec2), &Direction);
+	int Direction = false;
+	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
 	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
