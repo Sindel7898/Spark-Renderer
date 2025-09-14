@@ -33,31 +33,57 @@ public:
 
     void DrawTA(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
 
-    void DrawTA_HorizontalBlur(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
+    void DrawDownSampleHalfResFirstPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
+    void DrawDownSampleHalfResSecondPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
+    void DrawDownSampleQuaterfResFirstPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
+    void DrawDownSampleQuaterfResSecondPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
+    void DrawUPSampleHalfResFirstPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
+    void DrawUPSampleHalfResSecondPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
+    void DrawUPSampleFullResFirstPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
+    void DrawUPSampleFullResSecondPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
 
-    void DrawTA_VerticalBlur(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
-
+ 
     void CleanUp() ;
 
     vk::DescriptorSetLayout TemporalAccumilationDescriptorSetLayout;
-    vk::DescriptorSetLayout Blured_TemporalAccumilationDescriptorSetLayout;
-
-
     std::vector<vk::DescriptorSet> TemporalAccumilationFullDescriptorSets;
 
-    std::vector<vk::DescriptorSet> HorizontalBlured_TemporalAccumilationFullDescriptorSets;
-    std::vector<vk::DescriptorSet> FinalBlured_TemporalAccumilationFullDescriptorSets;
+    vk::DescriptorSetLayout Blured_TemporalAccumilationDescriptorSetLayout;
 
+    std::vector<vk::DescriptorSet> DownSampleHalfRes_PING_SampleDescriptorSets;
+    std::vector<vk::DescriptorSet> DownSampleHalfRes_PONG_SampleDescriptorSets;
+
+    std::vector<vk::DescriptorSet> DownSampleQuaterRes_PING_SampleDescriptorSets;
+    std::vector<vk::DescriptorSet> DownSampleQuaterRes_PONG_SampleDescriptorSets;
+
+    std::vector<vk::DescriptorSet> UPSampleHalfRes_PING_SampleDescriptorSets;
+    std::vector<vk::DescriptorSet> UPSampleHalfRes_PONG_SampleDescriptorSets;
+
+    std::vector<vk::DescriptorSet> UPSampleFullRes_PING_SampleDescriptorSets;
+    std::vector<vk::DescriptorSet> UPSampleFullRes_PONG_SampleDescriptorSets;
 
     std::vector<ImageData> BlueNoiseTextures;
 
-    ImageData HalfRes_SSGIPassImage;
-    ImageData HalfRes_SSGIPassLastFrameImage;
-    ImageData HalfRes_SSGIAccumilationImage;
-    ImageData HalfRes_HorizontalBluredSSGIAccumilationImage;
-    ImageData HalfRes_BluredSSGIAccumilationImage;
+    ImageData SSGIPassImage;
+    ImageData SSGIPassLastFrameImage;
+    ImageData SSGIAccumilationImage;
 
-    vk::Extent3D Swapchainextent_Half_Res;
+    ImageData BlurPing_DownSampleHalfRes;
+    ImageData BlurPong_DownSampleHalfRes;
+
+    ImageData BlurPing_DownSampleQuaterRes;
+    ImageData BlurPong_DownSampleQuaterRes;
+
+    ImageData BlurPing_UPSampleHalfRes;
+    ImageData BlurPong_UPSampleHalfRes;
+
+    ImageData BlurPing_UPSampleFullRes;
+    ImageData BlurPong_UPSampleFullRes;
+
+    vk::Extent3D SSGI_ImageFullResolution;
+    vk::Extent3D SSGI_ImageHalfResolution;
+    vk::Extent3D SSGI_ImageQuaterResolution;
+
     int NoiseIndex;
 
     glm::mat4 LastCameraMatrix;
