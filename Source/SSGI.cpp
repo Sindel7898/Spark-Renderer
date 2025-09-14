@@ -64,7 +64,7 @@ void SSGI::CreateUniformBuffer() {
 
 void SSGI::CreateGIImage() {
 
-	SSGI_ImageFullResolution   = vk::Extent3D(vulkanContext->swapchainExtent.width/2, vulkanContext->swapchainExtent.height/2, 1);
+	SSGI_ImageFullResolution   = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 	SSGI_ImageHalfResolution   = vk::Extent3D(SSGI_ImageFullResolution.width /2, SSGI_ImageFullResolution.height/ 2, 1);
 	SSGI_ImageQuaterResolution = vk::Extent3D(SSGI_ImageHalfResolution.width / 2, SSGI_ImageHalfResolution.height / 2, 1);
 
