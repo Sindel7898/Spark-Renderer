@@ -2722,35 +2722,35 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	}
 
 	{
-		//vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
-		//SkyBoxRenderAttachInfo.clearValue = clearColor;
-		//SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		//SkyBoxRenderAttachInfo.imageView = LightingPassImageData.imageView;
-		//SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
-		//SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
-		//
-		//vk::RenderingAttachmentInfo DepthAttachInfo;
-		//DepthAttachInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
-		//DepthAttachInfo.imageView = DepthTextureData.imageView;
-		//DepthAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
-		//DepthAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
-		//DepthAttachInfo.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
-		//
-		//vk::RenderingInfo SkyBoxRenderInfo{};
-		//SkyBoxRenderInfo.layerCount = 1;
-		//SkyBoxRenderInfo.colorAttachmentCount = 1;
-		//SkyBoxRenderInfo.pColorAttachments = &SkyBoxRenderAttachInfo;
-		//SkyBoxRenderInfo.pDepthAttachment = &DepthAttachInfo;
-		//SkyBoxRenderInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
-		//SkyBoxRenderInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
-		//
-		//
-		//commandBuffer.setViewport(0, 1, &viewport);
-		//commandBuffer.setScissor(0, 1, &scissor);
-		//commandBuffer.beginRendering(SkyBoxRenderInfo);
-		//commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
-		//skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
-		//commandBuffer.endRendering();
+		vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
+		SkyBoxRenderAttachInfo.clearValue = clearColor;
+		SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		SkyBoxRenderAttachInfo.imageView = LightingPassImageData.imageView;
+		SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+		SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		
+		vk::RenderingAttachmentInfo DepthAttachInfo;
+		DepthAttachInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+		DepthAttachInfo.imageView = DepthTextureData.imageView;
+		DepthAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+		DepthAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		DepthAttachInfo.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		
+		vk::RenderingInfo SkyBoxRenderInfo{};
+		SkyBoxRenderInfo.layerCount = 1;
+		SkyBoxRenderInfo.colorAttachmentCount = 1;
+		SkyBoxRenderInfo.pColorAttachments = &SkyBoxRenderAttachInfo;
+		SkyBoxRenderInfo.pDepthAttachment = &DepthAttachInfo;
+		SkyBoxRenderInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
+		SkyBoxRenderInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
+		
+		
+		commandBuffer.setViewport(0, 1, &viewport);
+		commandBuffer.setScissor(0, 1, &scissor);
+		commandBuffer.beginRendering(SkyBoxRenderInfo);
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
+		skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
+		commandBuffer.endRendering();
 	}
 
 
