@@ -57,7 +57,7 @@ void RT_Shadows::CreateUniformBuffer() {
 
 void RT_Shadows::CreateStorageImage() {
 
-	 swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
+	 swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width/2, vulkanContext->swapchainExtent.height/2, 1);
 
 
 	for (int i = 0; i < 4; i++)
