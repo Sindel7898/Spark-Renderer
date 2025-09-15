@@ -40,7 +40,7 @@ public:
     int KernelSize = 25;
     int bShouldSSAO = 1;
     float Radius = 1.5f;
-    float Bias = 0.09;
+    float Bias = 0.900;
 
     vk::DescriptorSetLayout SSAOBlurDescriptorSetLayout;
     std::vector<vk::DescriptorSet> SSAOBlurDescriptorSet;

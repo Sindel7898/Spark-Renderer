@@ -125,7 +125,7 @@ void SSGI::CreateGIImage() {
 	BlurPong_UPSampleFullRes.ImageID = " BlurPing_UPSampleHalfRes Image";
 	bufferManager->CreateImage(&BlurPong_UPSampleFullRes, SSGI_ImageFullResolution, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
 	BlurPong_UPSampleFullRes.imageView = bufferManager->CreateImageView(&BlurPong_UPSampleFullRes, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
-	BlurPong_UPSampleFullRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
+	BlurPong_UPSampleFullRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge,true);
 	/////////////////////////////////////////////////////////////////////////
 
 
