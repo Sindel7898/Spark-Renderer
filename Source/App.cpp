@@ -20,34 +20,11 @@
 #include "FXAA_FullScreenQuad.h"
 #include "SSR_FullScreenQuad.h"
 #include "RT_Shadows.h"
-
-#include "NRI.h"
-#include "Extensions/NRIRayTracing.h"
-#include "Extensions/NRIWrapperVK.h"
-#include "Extensions/NRIHelper.h"
-#include "Extensions/NRIImgui.h"
-#include "Extensions/NRILowLatency.h"
-#include "Extensions/NRIMeshShader.h"
-#include "Extensions/NRIResourceAllocator.h"
-#include "Extensions/NRIStreamer.h"
-#include "Extensions/NRISwapChain.h"
-#include "Extensions/NRIUpscaler.h"
-
-#include "NRD.h"
-#include "NRDIntegration.hpp"
+#include "SSAO_FullScreenQuad.h"
+#include "Lighting_FullScreenQuad.h"
 
 #define DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
 
-#define NRI_ABORT_ON_FAILURE(result) \
-    if ((result) != nri::Result::SUCCESS) { \
-        exit(1); \
-    }
-
-#define NRD_ID(x) nrd::Identifier(nrd::Denoiser::x)
-constexpr nri::VKBindingOffsets VK_BINDING_OFFSETS = { 0, 128, 32, 64 }; 
-
-nrd::Integration m_NRD;
-nri::Device* m_Device = nullptr;
 
  App::App()
 {
@@ -76,8 +53,9 @@ nri::Device* m_Device = nullptr;
 	//auto model6 = std::shared_ptr<Model>(new Model("../Textures/Wall4/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	//auto model7 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 
-	auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	
 	//model1.get()->Instances[0]->SetPostion(glm::vec3(-10.443, -11.259, -0.131));
 	//model1.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
@@ -114,7 +92,7 @@ nri::Device* m_Device = nullptr;
 	//model7.get()->Instances[0]->SetRotation(glm::vec3(0.000, 40.000, 0.000));
 	//model7.get()->Instances[0]->CubeMapReflectiveSwitch(false);
 
-	model9.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	//model9.get()->Instances[0]->CubeMapReflectiveSwitch(false);
 
 	////
 	////
@@ -127,8 +105,8 @@ nri::Device* m_Device = nullptr;
     //Models.push_back(std::move(model7));
 
 
-	Models.push_back(std::move(model9));
-	////Models.push_back(std::move(model10));
+	//Models.push_back(std::move(model9));
+	Models.push_back(std::move(model10));
 	////
 	UserInterfaceItems.push_back(Models[0].get());
 	//UserInterfaceItems.push_back(Models[1].get());
@@ -249,220 +227,6 @@ nri::Device* m_Device = nullptr;
 	createGBuffer();
 
 	recreateSwapChain();
-}
-
-void App::InitializeNRD(uint32_t renderWidth, uint32_t renderHeight)
-{
-	// 1. Describe which denoiser(s) you want to use.
-	// We'll just use REBLUR for diffuse lighting.
-	const nrd::Denoiser denoiser = nrd::Denoiser::REBLUR_DIFFUSE;
-
-	const nrd::DenoiserDesc denoiserDesc[] = {
-		{ static_cast<nrd::Identifier>(denoiser), denoiser }
-	};
-
-	// 2. Describe the NRD instance itself.
-	nrd::InstanceCreationDesc instanceCreationDesc = {};
-	instanceCreationDesc.denoisers = denoiserDesc;
-	instanceCreationDesc.denoisersNum = 1;
-
-	// 3. Create the NRD Integration library instance.
-	nrd::IntegrationCreationDesc integrationCreationDesc = {};
-	strcpy(integrationCreationDesc.name, "NRD");
-	integrationCreationDesc.enableWholeLifetimeDescriptorCaching = false;
-	integrationCreationDesc.resourceWidth  = (uint16_t)renderWidth;
-	integrationCreationDesc.resourceHeight = (uint16_t)renderHeight;
-	integrationCreationDesc.autoWaitForIdle = false;
-	integrationCreationDesc.queuedFrameNum = 2;
-
-
-	nri::AdapterDesc bestAdapterDesc = {};
-	uint32_t adapterDescsNum = 1;
-	NRI_ABORT_ON_FAILURE(nri::nriEnumerateAdapters(&bestAdapterDesc, adapterDescsNum));
-	
-	VkInstance instance = static_cast<VkInstance>(vulkanContext->VulkanInstance);
-	VkPhysicalDevice PhysicalDevice = static_cast<VkPhysicalDevice>(vulkanContext->PhysicalDevice);
-	VkDevice LogicalDevice = static_cast<VkDevice>(vulkanContext->LogicalDevice);
-	VkQueue GraphicsQueue = static_cast<VkQueue>(vulkanContext->graphicsQueue);
-
-	nri::QueueFamilyVKDesc queueFamily = {};
-	queueFamily.familyIndex = vulkanContext->graphicsQueueFamilyIndex;
-	queueFamily.queueType = nri::QueueType::GRAPHICS;
-	queueFamily.queueNum = 0;
-
-
-	nri::DeviceCreationVKDesc deviceCreationVKDesc{};
-	deviceCreationVKDesc.vkInstance = (VKHandle)instance;
-	deviceCreationVKDesc.vkPhysicalDevice = (VKHandle)PhysicalDevice;
-	deviceCreationVKDesc.vkDevice = (VKHandle)LogicalDevice;
-	deviceCreationVKDesc.minorVersion = 3;
-	deviceCreationVKDesc.queueFamilies = &queueFamily;
-	deviceCreationVKDesc.queueFamilyNum = 1;
-	deviceCreationVKDesc.enableNRIValidation = true;
-
-
-	const auto result  = m_NRD.RecreateVK(integrationCreationDesc, instanceCreationDesc, deviceCreationVKDesc);
-
-	if (result != nrd::Result::SUCCESS) {
-		throw std::runtime_error{ "Could not create NRD!" };
-	}
-
-}
-
-// In your main render function, every frame...
-void App::DenoiseDiffusePass(vk::CommandBuffer& cmdBuffer, uint32_t frameIndex)
-{
-	// ========================================================================
-	// 1. Fill out the Common Settings
-	// This tells NRD about the camera's state for temporal reprojection.
-	// ========================================================================
-	nrd::CommonSettings commonSettings;
-	commonSettings.frameIndex = frameIndex;
-	commonSettings.accumulationMode = nrd::AccumulationMode::CLEAR_AND_RESTART;
-
-	uint16_t currentWidth = vulkanContext->swapchainExtent.width;
-	uint16_t currentHeight = vulkanContext->swapchainExtent.height;
-
-	commonSettings.resourceSize[0] = currentWidth;
-	commonSettings.resourceSize[1] = currentHeight;
-
-	commonSettings.resourceSizePrev[0] = currentWidth;
-	commonSettings.resourceSizePrev[1] = currentHeight;
-
-	commonSettings.rectSize[0] = currentWidth;
-	commonSettings.rectSize[1] = currentHeight;
-
-	commonSettings.rectSizePrev[0] = currentWidth;
-	commonSettings.rectSizePrev[1] = currentHeight;
-
-
-	// Fill in your camera matrices
-	memcpy(commonSettings.viewToClipMatrix,  &camera->GetProjectionMatrix(), sizeof(glm::mat4));
-	memcpy(commonSettings.worldToViewMatrix, &camera->GetViewMatrix(), sizeof(glm::mat4));
-
-	// ...and the matrices from the PREVIOUS frame
-	memcpy(commonSettings.viewToClipMatrixPrev, &camera->GetPrevProjectionMatrix(), sizeof(glm::mat4));
-	memcpy(commonSettings.worldToViewMatrixPrev, &camera->GetPrevViewMatrix(), sizeof(glm::mat4));
-	// ... and other settings like jitter, resolution, etc.
-	commonSettings.enableValidation = true;
-	commonSettings.denoisingRange = 10000.f;
-
-	m_NRD.SetCommonSettings(commonSettings);
-
-	// ========================================================================
-	// 2. (Optional) Tweak Denoiser-Specific Settings
-	// ========================================================================
-	nrd::ReblurSettings reblurSettings = {}; // Get defaults
-	//reblurSettings.maxAccumulatedFrameNum = 30; // Example tweak
-	m_NRD.SetDenoiserSettings(NRD_ID(REBLUR_DIFFUSE), &reblurSettings);
-
-	// ========================================================================
-	// 3. Describe Your Resources (The Most Important Part!)
-	// Map NRD's resource types to your application's textures.
-	// ========================================================================
-
-	VkImage Normal = static_cast<VkImage>(gbuffer.Normal.image);
-	VkImage ViewPosition = static_cast<VkImage>(gbuffer.ViewSpacePosition.image);
-
-	VkImage NoisyImage = static_cast<VkImage>(SSGI_FullScreenQuad->SSGIPassImage.image);
-	VkImage DenoisedImage = static_cast<VkImage>(DenoisedGIImageData.image);
-
-	nrd::Resource Normal_Resource = {};
-	nrd::Resource ViewPosition_Resource = {};
-	nrd::Resource NoisyImage_Resource = {};
-	nrd::Resource DenoisedImage_Resource = {};
-
-
-	Normal_Resource.vk.image        = reinterpret_cast<VKNonDispatchableHandle>(Normal);
-	ViewPosition_Resource.vk.image  = reinterpret_cast<VKNonDispatchableHandle>(ViewPosition);
-	NoisyImage_Resource.vk.image    = reinterpret_cast<VKNonDispatchableHandle>(NoisyImage);
-	DenoisedImage_Resource.vk.image = reinterpret_cast<VKNonDispatchableHandle>(DenoisedImage);
-
-	Normal_Resource.vk.format        = VK_FORMAT_R16G16B16A16_SFLOAT;
-	ViewPosition_Resource.vk.format  = VK_FORMAT_R16G16B16A16_SFLOAT;
-	NoisyImage_Resource.vk.format    = static_cast<VkFormat>(vk::Format::eR16G16B16A16Sfloat);
-	DenoisedImage_Resource.vk.format = static_cast<VkFormat>(vk::Format::eR16G16B16A16Sfloat);
-
-
-	Normal_Resource.state.access        = nri::AccessBits::SHADER_RESOURCE;
-	ViewPosition_Resource.state.access  = nri::AccessBits::SHADER_RESOURCE;
-	NoisyImage_Resource.state.access    = nri::AccessBits::SHADER_RESOURCE_STORAGE;
-	DenoisedImage_Resource.state.access = nri::AccessBits::SHADER_RESOURCE_STORAGE;
-
-
-	Normal_Resource.state.layout        = nri::Layout::GENERAL;
-	ViewPosition_Resource.state.layout  = nri::Layout::GENERAL;
-	NoisyImage_Resource.state.layout    = nri::Layout::GENERAL;
-	DenoisedImage_Resource.state.layout = nri::Layout::GENERAL;
-
-	Normal_Resource.state.stages        = nri::StageBits::ALL;
-	ViewPosition_Resource.state.stages  = nri::StageBits::ALL;
-	NoisyImage_Resource.state.stages    = nri::StageBits::ALL;
-	DenoisedImage_Resource.state.stages = nri::StageBits::ALL;
-
-	nri::TextureBarrierDesc Normal_ResourceBarrier = {};
-	Normal_ResourceBarrier.texture = ( nri::Texture*)Normal;
-	Normal_ResourceBarrier.before  = { nri::AccessBits::NONE, nri::Layout::GENERAL, nri::StageBits::ALL };
-	Normal_ResourceBarrier.after   = { nri::AccessBits::SHADER_RESOURCE_STORAGE,
-							           nri::Layout::SHADER_RESOURCE_STORAGE,
-							           nri::StageBits::COMPUTE_SHADER };
-
-	nri::TextureBarrierDesc ViewPosition_ResourceBarrier = {};
-	ViewPosition_ResourceBarrier.texture = (nri::Texture*)ViewPosition;
-	ViewPosition_ResourceBarrier.before  = { nri::AccessBits::NONE, nri::Layout::GENERAL, nri::StageBits::ALL };
-	ViewPosition_ResourceBarrier.after   = { nri::AccessBits::SHADER_RESOURCE_STORAGE,
-									         nri::Layout::SHADER_RESOURCE_STORAGE,
-									         nri::StageBits::COMPUTE_SHADER };
-
-
-	nri::TextureBarrierDesc NoisyImage_ResourceBarrier = {};
-	NoisyImage_ResourceBarrier.texture = (nri::Texture*)NoisyImage;
-	NoisyImage_ResourceBarrier.before = { nri::AccessBits::NONE, nri::Layout::GENERAL, nri::StageBits::ALL };
-	NoisyImage_ResourceBarrier.after = { nri::AccessBits::SHADER_RESOURCE_STORAGE,
-											 nri::Layout::SHADER_RESOURCE_STORAGE,
-											 nri::StageBits::COMPUTE_SHADER };
-
-
-	nri::TextureBarrierDesc DenoisedImage_ResourceBarrier = {};
-	DenoisedImage_ResourceBarrier.texture = (nri::Texture*)DenoisedImage;
-	DenoisedImage_ResourceBarrier.before = { nri::AccessBits::NONE, nri::Layout::GENERAL, nri::StageBits::ALL };
-	DenoisedImage_ResourceBarrier.after = { nri::AccessBits::SHADER_RESOURCE_STORAGE,
-											 nri::Layout::SHADER_RESOURCE_STORAGE,
-											 nri::StageBits::COMPUTE_SHADER };
-
-	Normal_Resource.state        = Normal_ResourceBarrier.after;
-	ViewPosition_Resource.state  = ViewPosition_ResourceBarrier.after;
-	NoisyImage_Resource.state    = NoisyImage_ResourceBarrier.after;
-	DenoisedImage_Resource.state = DenoisedImage_ResourceBarrier.after;
-
-	Normal_Resource.userArg        = &Normal_ResourceBarrier;
-	ViewPosition_Resource.userArg  = &ViewPosition_ResourceBarrier;
-	NoisyImage_Resource.userArg    = &NoisyImage_ResourceBarrier;
-	DenoisedImage_Resource.userArg = &DenoisedImage_ResourceBarrier;
-
-
-	nrd::ResourceSnapshot resourceSnapshot = {};
-
-	resourceSnapshot.restoreInitialState = false;
-
-	resourceSnapshot.SetResource(nrd::ResourceType::IN_NORMAL_ROUGHNESS, Normal_Resource);
-	resourceSnapshot.SetResource(nrd::ResourceType::IN_VIEWZ, ViewPosition_Resource);
-	resourceSnapshot.SetResource(nrd::ResourceType::IN_MV, ViewPosition_Resource);
-
-	// Denoiser-Specific Inputs & Outputs
-	resourceSnapshot.SetResource(nrd::ResourceType::IN_DIFF_RADIANCE_HITDIST, NoisyImage_Resource);
-	resourceSnapshot.SetResource(nrd::ResourceType::OUT_DIFF_RADIANCE_HITDIST, DenoisedImage_Resource);
-
-	const nrd::Identifier denoiserToRun = NRD_ID(REBLUR_DIFFUSE);
-
-	VkCommandBuffer TempCBuffer = static_cast<VkCommandBuffer>(cmdBuffer);;
-
-	nri::CommandBufferVKDesc commandBufferVKDesc = {};
-	commandBufferVKDesc.vkCommandBuffer = (VKHandle)TempCBuffer;
-	commandBufferVKDesc.queueType = nri::QueueType::GRAPHICS;
-
-	m_NRD.DenoiseVK(&denoiserToRun, 1, commandBufferVKDesc, resourceSnapshot);
-
 }
 
 
@@ -795,17 +559,11 @@ void App::createGBuffer()
 	ReflectionMaskImageData.imageView = bufferManger->CreateImageView(&ReflectionMaskImageData, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
 	ReflectionMaskImageData.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
-	DenoisedGIImageData.ImageID = "Denoised  Texture";
-	bufferManger->CreateImage(&DenoisedGIImageData, swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eColorAttachment);
-	//DenoisedGIImageData.imageView = bufferManger->CreateImageView(&DenoisedGIImageData, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	DenoisedGIImageData.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
-
 
 	fxaa_FullScreenQuad->CreateImage(swapchainextent);
 	SSGI_FullScreenQuad->CreateGIImage();
 	ssr_FullScreenQuad->CreateImage(swapchainextent);
 	Raytracing_Shadows->CreateStorageImage();
-	//Raytracing_Reflections->CreateStorageImage();
 	Combined_FullScreenQuad->CreateImage(swapchainextent);
 	ssao_FullScreenQuad->CreateImage();
 
@@ -815,7 +573,6 @@ void App::createGBuffer()
 	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, LightingPassImageData, SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo);
 	fxaa_FullScreenQuad->createDescriptorSets(DescriptorPool, Combined_FullScreenQuad->FinalResultImage);
 	Raytracing_Shadows->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
-	//Raytracing_Reflections->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
 	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, LightingPassImageData,DepthTextureData);
 
 	vk::CommandBuffer cmd =  bufferManger->CreateSingleUseCommandBuffer(commandPool);
@@ -851,9 +608,7 @@ void App::createGBuffer()
 	bufferManger->TransitionImage(cmd, &SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, TransitionToGeneral);
 	bufferManger->TransitionImage(cmd, &ssao_FullScreenQuad->SSAOImage, TransitionToGeneral);
 	bufferManger->TransitionImage(cmd, &ssao_FullScreenQuad->BluredSSAOImage, TransitionToGeneral);
-	//bufferManger->TransitionImage(cmd, &Raytracing_Reflections->RT_ReflectionPassImage, TransitionToGeneral);
 	bufferManger->TransitionImage(cmd, &fxaa_FullScreenQuad->FxaaImage, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &DenoisedGIImageData, TransitionToGeneral);
 
 	bufferManger->SubmitAndDestoyCommandBuffer(commandPool, cmd,vulkanContext->graphicsQueue);
 
@@ -869,10 +624,6 @@ void App::createGBuffer()
 	Shadow_TextureId       = ImGui_ImplVulkan_AddTexture (Raytracing_Shadows->ShadowPassImages[1].imageSampler,
 		                                                  Raytracing_Shadows->ShadowPassImages[1].imageView,
 		VK_IMAGE_LAYOUT_GENERAL);
-
-	//Reflection_TextureId = ImGui_ImplVulkan_AddTexture(Raytracing_Reflections->RT_ReflectionPassImage.imageSampler,
-		//                                               Raytracing_Reflections->RT_ReflectionPassImage.imageView,
-		//VK_IMAGE_LAYOUT_GENERAL);
 
 	
 	SSAOTextureId           = ImGui_ImplVulkan_AddTexture(ssao_FullScreenQuad->BluredSSAOImage.imageSampler,
@@ -904,7 +655,6 @@ void App::createGBuffer()
 		<< vulkanContext->swapchainExtent.width << " x "
 		<< vulkanContext->swapchainExtent.height
 		<< std::endl;
-	//InitializeNRD(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height);
 }
 
 void App::CreateGraphicsPipeline()
@@ -1477,88 +1227,6 @@ void App::CreateGraphicsPipeline()
 	}
 
 
-	//{
-	//	auto RayGen_ShaderCode     = readFile("../Shaders/Compiled_Shader_Files/Reflection_Raygen.rgen.spv");
-	//	auto Miss_ShaderCode       = readFile("../Shaders/Compiled_Shader_Files/Reflection_Miss.rmiss.spv"); 
-	//	auto ClosestHit_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/Reflection_ClosestHit.rchit.spv");
-	//
-	//	VkShaderModule RayGen_ShaderModule     = pipelineManager->createShaderModule(RayGen_ShaderCode);
-	//	VkShaderModule Miss_ShaderModule = pipelineManager->createShaderModule(Miss_ShaderCode);
-	//	VkShaderModule ClosestHit_ShaderModule = pipelineManager->createShaderModule(ClosestHit_ShaderCode);
-	//
-	//
-	//	vk::PipelineShaderStageCreateInfo RayGen_ShaderStageInfo{};
-	//	RayGen_ShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
-	//	RayGen_ShaderStageInfo.stage = vk::ShaderStageFlagBits::eRaygenKHR;
-	//	RayGen_ShaderStageInfo.module = RayGen_ShaderModule;
-	//	RayGen_ShaderStageInfo.pName = "main";
-	//
-	//	vk::PipelineShaderStageCreateInfo Miss_ShaderStageInfo{};
-	//	Miss_ShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
-	//	Miss_ShaderStageInfo.stage = vk::ShaderStageFlagBits::eMissKHR;
-	//	Miss_ShaderStageInfo.module = Miss_ShaderModule;
-	//	Miss_ShaderStageInfo.pName = "main";
-	//
-	//	vk::PipelineShaderStageCreateInfo ClosestHit_ShaderStageInfo{};
-	//	ClosestHit_ShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
-	//	ClosestHit_ShaderStageInfo.stage = vk::ShaderStageFlagBits::eClosestHitKHR;
-	//	ClosestHit_ShaderStageInfo.module = ClosestHit_ShaderModule;
-	//	ClosestHit_ShaderStageInfo.pName = "main";
-	//
-	//
-	//
-	//
-	//	std::vector<vk::PipelineShaderStageCreateInfo> ShaderStages = { RayGen_ShaderStageInfo ,
-	//																	Miss_ShaderStageInfo,
-	//																	ClosestHit_ShaderStageInfo };
-	//
-	//	vk::RayTracingShaderGroupCreateInfoKHR RayGen_GroupInfo{};
-	//	RayGen_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
-	//	RayGen_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
-	//	RayGen_GroupInfo.generalShader = 0;
-	//	RayGen_GroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
-	//	RayGen_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
-	//	RayGen_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
-	//
-	//	vk::RayTracingShaderGroupCreateInfoKHR Miss_GroupInfo{}; 
-	//	Miss_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
-	//	Miss_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
-	//	Miss_GroupInfo.generalShader = 1;
-	//	Miss_GroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
-	//	Miss_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
-	//	Miss_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
-	//
-	//	vk::RayTracingShaderGroupCreateInfoKHR Hit_GroupInfo{};
-	//	Hit_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
-	//	Hit_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup;
-	//	Hit_GroupInfo.generalShader = VK_SHADER_UNUSED_KHR;
-	//	Hit_GroupInfo.closestHitShader = 2;
-	//	Hit_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
-	//	Hit_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
-	//
-	//
-	//	std::vector<vk::RayTracingShaderGroupCreateInfoKHR> ShaderGroups = {
-	//		RayGen_GroupInfo,
-	//		Miss_GroupInfo,
-	//		Hit_GroupInfo
-	//	};
-	//
-	//	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-	//	pipelineLayoutInfo.setLayoutCount = 1;
-	//	pipelineLayoutInfo.pSetLayouts = &Raytracing_Reflections->RayTracingDescriptorSetLayout;
-	//	pipelineLayoutInfo.pushConstantRangeCount = 0;
-	//	pipelineLayoutInfo.pPushConstantRanges = nullptr;
-	//
-	//	RT_ReflectionPipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
-	//
-	//	RT_ReflectionPipeline = pipelineManager->createRayTracingGraphicsPipeline(RT_ReflectionPipelineLayout, ShaderStages, ShaderGroups);
-	//
-	//	vulkanContext->LogicalDevice.destroyShaderModule(RayGen_ShaderModule);
-	//	vulkanContext->LogicalDevice.destroyShaderModule(Miss_ShaderModule);
-	//	vulkanContext->LogicalDevice.destroyShaderModule(ClosestHit_ShaderModule);
-	//}
-
-
 	{	
 		vk::Format formats[1] = { vk::Format::eR16G16B16A16Sfloat };
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
@@ -1672,39 +1340,6 @@ void App::createShaderBindingTable() {
 		bufferManger->CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned * 2, hitShaderBindingTableBuffer);
 	}
 
-
-
-	//{
-	//	const size_t   handleSize = vulkanContext->RayTracingPipelineProperties.shaderGroupHandleSize;
-	//	const size_t   handleSizeAligned = alignedSize(handleSize, vulkanContext->RayTracingPipelineProperties.shaderGroupHandleAlignment);
-	//	const uint32_t groupCount = 3;
-	//	const uint32_t sbtSize = groupCount * handleSizeAligned;
-	//
-	//	// Get shader group handles
-	//	std::vector<uint8_t> shaderHandleStorage(sbtSize);
-	//
-	//	vulkanContext->vkGetRayTracingShaderGroupHandlesKHR(
-	//		static_cast<VkDevice>(vulkanContext->LogicalDevice),
-	//		static_cast<VkPipeline>(RT_ReflectionPipeline),
-	//		0,  // First group
-	//		groupCount,
-	//		shaderHandleStorage.size(),
-	//		shaderHandleStorage.data());
-	//
-	//	Reflection_raygenShaderBindingTableBuffer.BufferID = "raygen Shader Binding Table Buffer";
-	//	Reflection_missShaderBindingTableBuffer.BufferID = "miss Shader Binding Table Buffer";
-	//	Reflection_hitShaderBindingTableBuffer.BufferID = "hit Shader Binding Table Buffer";
-	//
-	//	bufferManger->CreateBuffer(&Reflection_raygenShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext->graphicsQueue);
-	//	bufferManger->CreateBuffer(&Reflection_missShaderBindingTableBuffer,   handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext->graphicsQueue);
-	//	bufferManger->CreateBuffer(&Reflection_hitShaderBindingTableBuffer,    handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext->graphicsQueue);
-	//
-	//	bufferManger->CopyDataToBuffer(shaderHandleStorage.data(), Reflection_raygenShaderBindingTableBuffer);
-	//	bufferManger->CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned, Reflection_missShaderBindingTableBuffer);
-	//	bufferManger->CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned * 2, Reflection_hitShaderBindingTableBuffer);
-	//}
-
-
 }
 
 void App::DestroyShaderBindingTable() {
@@ -1712,11 +1347,6 @@ void App::DestroyShaderBindingTable() {
 	bufferManger->DestroyBuffer(raygenShaderBindingTableBuffer);
 	bufferManger->DestroyBuffer(missShaderBindingTableBuffer);
 	bufferManger->DestroyBuffer(hitShaderBindingTableBuffer);
-
-	//bufferManger->DestroyBuffer(Reflection_raygenShaderBindingTableBuffer);
-	//bufferManger->DestroyBuffer(Reflection_missShaderBindingTableBuffer);
-	//bufferManger->DestroyBuffer(Reflection_hitShaderBindingTableBuffer);
-
 }
 
 
@@ -2176,20 +1806,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	}
 
 
-	//{
-	//
-	//	commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_ReflectionPipeline);
-	//
-	//	Raytracing_Reflections->Draw(
-	//		Reflection_raygenShaderBindingTableBuffer,
-	//		Reflection_hitShaderBindingTableBuffer,
-	//		Reflection_missShaderBindingTableBuffer,
-	//		commandBuffer,
-	//		RT_ReflectionPipelineLayout,
-	//		currentFrame);
-	//}
-
-
     /////////////////// LIGHTING PASS ///////////////////////// 
 	{
 		vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
@@ -2414,8 +2030,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.endRendering();
 	}
 
-
-
 	{
 		vk::RenderingAttachmentInfo Blured_TA_ImageAttachInfo;
 		Blured_TA_ImageAttachInfo.clearValue = clearColor;
@@ -2454,7 +2068,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.endRendering();
 	}
 
-
 	{
 		vk::RenderingAttachmentInfo Blured_TA_ImageAttachInfo;
 		Blured_TA_ImageAttachInfo.clearValue = clearColor;
@@ -2487,7 +2100,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.setScissor(0, 1, &scissor50);
 		commandBuffer.beginRendering(BluredSSGIImageInfo);
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, BluredSSGIPipeline);
-
 
 		SSGI_FullScreenQuad->DrawDownSampleHalfResSecondPass(commandBuffer, BluredSSGIPipelineLayout, currentFrame);
 		commandBuffer.endRendering();
@@ -2830,9 +2442,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	}
 
-
-	//DenoiseDiffusePass(commandBuffer, currentFrame);
-
 	/////////////////// FORWARD PASS END ///////////////////////// 
 	vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
 
@@ -2882,7 +2491,6 @@ void App::destroy_GbufferImages()
 	bufferManger->DestroyImage(gbuffer.Albedo);
 	bufferManger->DestroyImage(LightingPassImageData);
 	bufferManger->DestroyImage(ReflectionMaskImageData);
-	bufferManger->DestroyImage(DenoisedGIImageData);
 
 	ssao_FullScreenQuad->DestroyImage();
 	Raytracing_Shadows->DestroyStorageImage();
@@ -2890,7 +2498,6 @@ void App::destroy_GbufferImages()
 	ssr_FullScreenQuad->DestroyImage();
 	SSGI_FullScreenQuad->DestroyImage();
 	Combined_FullScreenQuad->DestroyImage();
-	//Raytracing_Reflections->DestroyStorageImage();
 }
 
 void App::recreateSwapChain() {
@@ -2992,7 +2599,6 @@ void App::destroyPipeline()
 	vulkanContext->LogicalDevice.destroyPipeline(SSAOBlurPipeline);
 	vulkanContext->LogicalDevice.destroyPipeline(SSRPipeline);
 	vulkanContext->LogicalDevice.destroyPipeline(RT_ShadowsPassPipeline);
-	//vulkanContext->LogicalDevice.destroyPipeline(RT_ReflectionPipeline);
 	vulkanContext->LogicalDevice.destroyPipeline(SSGIPipeline);
 	vulkanContext->LogicalDevice.destroyPipeline(BluredSSGIPipeline);
 	vulkanContext->LogicalDevice.destroyPipeline(TA_SSGIPipeline);
@@ -3007,7 +2613,6 @@ void App::destroyPipeline()
 	vulkanContext->LogicalDevice.destroyPipelineLayout(SSAOBlurPipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(SSRPipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(RT_ShadowsPipelineLayout);
-	//vulkanContext->LogicalDevice.destroyPipelineLayout(RT_ReflectionPipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(SSGIPipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(TA_SSGIPipelineLayout);
 	vulkanContext->LogicalDevice.destroyPipelineLayout(BluredSSGIPipelineLayout);

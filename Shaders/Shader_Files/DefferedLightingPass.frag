@@ -159,7 +159,7 @@ void main() {
                vec3 LightPos     = light.positionAndLightType.xyz;
                LightDir          = normalize(LightPos - WorldPos);
                float Distance    = length(LightPos -  WorldPos);
-             float Attenuation       = 1.0 / (Constant + Linear * Distance + Quadratic * (Distance * Distance));
+             float Attenuation   = 1.0 / (Constant + Linear * Distance + Quadratic * (Distance * Distance));
                radiance          = light.colorAndAmbientStrength.rgb * Attenuation;
     }  
 
@@ -181,7 +181,7 @@ void main() {
     kD *= 1.0 - Metallic;	
 
      float NdotL = max(dot(Normal, LightDir), 0.0);        
-     Lo += (kD * Albedo / PI + specular) * radiance * NdotL;
+     Lo += (kD * (Albedo / PI) + specular) * radiance * NdotL;
 
           vec3 envSpecular = vec3(0); 
 
