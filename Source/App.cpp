@@ -9,7 +9,6 @@
 #include "VulkanContext.h"
 #include "FramesPerSecondCounter.h"
 #include "Light.h"
-#include "RT_Reflections.h"
 #include "CombinedResult_FullScreenQuad.h"
 #include "SSGI.h"
 #include <crtdbg.h>
