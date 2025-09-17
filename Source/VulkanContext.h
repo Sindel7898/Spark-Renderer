@@ -69,6 +69,10 @@ public:
 	PFN_vkGetRayTracingShaderGroupHandlesKHR           vkGetRayTracingShaderGroupHandlesKHR = nullptr;
 	PFN_vkCmdTraceRaysKHR                              vkCmdTraceRaysKHR = nullptr;
 	PFN_vkSetDebugUtilsObjectNameEXT                   vkSetDebugUtilsObjectNameEXT = nullptr;
+	PFN_vkCmdBeginDebugUtilsLabelEXT                   vkCmdBeginDebugUtilsLabelEXT = nullptr;
+	PFN_vkCmdEndDebugUtilsLabelEXT                     vkCmdEndDebugUtilsLabelEXT = nullptr;
+
+
 };
 
 static inline void VulkanContextDeleter(VulkanContext* vulkanContext)

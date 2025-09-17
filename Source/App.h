@@ -28,7 +28,6 @@ class Model;
 class PipelineManager;
 class SSR_FullScreenQuad;
 class FXAA_FullScreenQuad;
-//class RT_Reflections;
 
 struct GBuffer;
 
@@ -41,8 +40,7 @@ public:
 	double LasttimeStamp = 0.0f;
 	
 	App();
-	void InitializeNRD(uint32_t renderWidth, uint32_t renderHeight);
-	void DenoiseDiffusePass(vk::CommandBuffer& cmdBuffer, uint32_t frameIndex);
+	void CreateDebugUtils();
 	void createTLAS();
 	void UpdateTLAS();
 	void UpdateTLASInstanceBuffer();
@@ -107,7 +105,6 @@ public:
 	std::shared_ptr<FXAA_FullScreenQuad>                fxaa_FullScreenQuad = nullptr;
 	std::shared_ptr<SSR_FullScreenQuad>                 ssr_FullScreenQuad = nullptr;
 	std::shared_ptr<RT_Shadows>                         Raytracing_Shadows = nullptr;
-	//std::shared_ptr<RT_Reflections>                     Raytracing_Reflections = nullptr;
 	std::shared_ptr<SSGI>                               SSGI_FullScreenQuad = nullptr;
 	std::shared_ptr<CombinedResult_FullScreenQuad>      Combined_FullScreenQuad = nullptr;
 	std::shared_ptr<PipelineManager>                    pipelineManager = nullptr;
@@ -115,7 +112,6 @@ public:
 	VkDescriptorSet FinalRenderTextureId;
 	VkDescriptorSet LightingAndReflectionsRenderTextureId;
 	VkDescriptorSet Shadow_TextureId;
-	//VkDescriptorSet Reflection_TextureId;
 	VkDescriptorSet PositionRenderTextureId;
 	VkDescriptorSet NormalTextureId;
 	VkDescriptorSet AlbedoTextureId;
@@ -154,7 +150,6 @@ private:
 	vk::PipelineLayout         SSAOBlurPipelineLayout = nullptr;
 	vk::PipelineLayout         SSRPipelineLayout = nullptr;
 	vk::PipelineLayout         RT_ShadowsPipelineLayout = nullptr;
-	//vk::PipelineLayout         RT_ReflectionPipelineLayout = nullptr;
 	vk::PipelineLayout         SSGIPipelineLayout = nullptr;
 	vk::PipelineLayout         TA_SSGIPipelineLayout = nullptr;
 	vk::PipelineLayout         BluredSSGIPipelineLayout = nullptr;
@@ -169,7 +164,6 @@ private:
 	vk::Pipeline               SSAOBlurPipeline = nullptr;
 	vk::Pipeline               SSRPipeline = nullptr;
 	vk::Pipeline               RT_ShadowsPassPipeline = nullptr;
-	//vk::Pipeline               RT_ReflectionPipeline = nullptr;
 	vk::Pipeline               SSGIPipeline = nullptr;
 	vk::Pipeline               TA_SSGIPipeline = nullptr;
 	vk::Pipeline               BluredSSGIPipeline = nullptr;
@@ -199,7 +193,6 @@ private:
 	ImageData LightingPassImageData;
 	ImageData ReflectionMaskImageData;
 
-	ImageData DenoisedGIImageData;
 
 	BufferData TLAS_Buffer;
 	BufferData TLAS_SCRATCH_Buffer;
@@ -211,7 +204,12 @@ private:
 	BufferData hitShaderBindingTableBuffer;
 
 
-	//BufferData Reflection_raygenShaderBindingTableBuffer;
-	//BufferData Reflection_missShaderBindingTableBuffer;
-	//BufferData Reflection_hitShaderBindingTableBuffer;
+	////DEBUGS
+	vk::DebugUtilsLabelEXT Gbuffer_Label;
+	vk::DebugUtilsLabelEXT SSAO_Label;
+	vk::DebugUtilsLabelEXT RTShadows_Label;
+	vk::DebugUtilsLabelEXT DirectLighting_Label;
+	vk::DebugUtilsLabelEXT SSR_Label;
+	vk::DebugUtilsLabelEXT SSGI_Label;
+	vk::DebugUtilsLabelEXT FXAA_Label;
 };

@@ -22,6 +22,7 @@
 #include "RT_Shadows.h"
 #include "SSAO_FullScreenQuad.h"
 #include "Lighting_FullScreenQuad.h"
+#include <pix.h>
 
 #define DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
 
@@ -53,8 +54,8 @@
 	//auto model6 = std::shared_ptr<Model>(new Model("../Textures/Wall4/Cube.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	//auto model7 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 
-	//auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	//auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	
 	//model1.get()->Instances[0]->SetPostion(glm::vec3(-10.443, -11.259, -0.131));
@@ -105,8 +106,8 @@
     //Models.push_back(std::move(model7));
 
 
-	//Models.push_back(std::move(model9));
-	Models.push_back(std::move(model10));
+	Models.push_back(std::move(model9));
+	//Models.push_back(std::move(model10));
 	////
 	UserInterfaceItems.push_back(Models[0].get());
 	//UserInterfaceItems.push_back(Models[1].get());
@@ -227,8 +228,22 @@
 	createGBuffer();
 
 	recreateSwapChain();
+	CreateDebugUtils();
 }
 
+void App::CreateDebugUtils()
+{
+
+	Gbuffer_Label.pLabelName        = "Gbuffer Pass";
+	SSAO_Label.pLabelName           = "SSAO Pass";
+	RTShadows_Label.pLabelName      = "RTShadow Pass";
+	DirectLighting_Label.pLabelName = "DirectLighting Pass";
+	SSR_Label.pLabelName            = "SSR  Pass";
+	SSGI_Label.pLabelName           = "SSGI Pass";
+	FXAA_Label.pLabelName           = "FXAA Pass";
+
+
+}
 
  void App::createTLAS()
  {
@@ -1585,6 +1600,9 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	vk::DeviceSize offsets[] = { 0 };
 
+	
+	vulkanContext->vkCmdBeginDebugUtilsLabelEXT(commandBuffer,Gbuffer_Label);
+
 	 /////////////////// GBUFFER PASS ///////////////////////// 
 	{
 		ImageTransitionData TransitionToGeneral{};
@@ -1694,10 +1712,15 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.endRendering();
 
 	}
+
+	vulkanContext->vkCmdEndDebugUtilsLabelEXT(commandBuffer);
+
 	/////////////////// GBUFFER PASS END ///////////////////////// 
 
 	vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
 
+
+	vulkanContext->vkCmdBeginDebugUtilsLabelEXT(commandBuffer, SSAO_Label);
 	{
 		vk::RenderingAttachmentInfo SSAOColorAttachment{};
 		SSAOColorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
@@ -1777,6 +1800,11 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.endRendering();
 	}
 
+	vulkanContext->vkCmdEndDebugUtilsLabelEXT(commandBuffer);
+
+
+	vulkanContext->vkCmdBeginDebugUtilsLabelEXT(commandBuffer, RTShadows_Label);
+
 	{
 		ImageTransitionData TransitiontoGeneralRT{};
 		TransitiontoGeneralRT.oldlayout = vk::ImageLayout::eUndefined;
@@ -1805,7 +1833,10 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			currentFrame);
 	}
 
+	vulkanContext->vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
+
+	vulkanContext->vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DirectLighting_Label);
     /////////////////// LIGHTING PASS ///////////////////////// 
 	{
 		vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
@@ -1833,7 +1864,9 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.endRendering();
 	}
 	 /////////////////// LIGHTING PASS END ///////////////////////// 
+	vulkanContext->vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
+	vulkanContext->vkCmdBeginDebugUtilsLabelEXT(commandBuffer, SSR_Label);
 	{	
 		ImageTransitionData TransitionDepthtTOShaderOptimal{};
 		TransitionDepthtTOShaderOptimal.oldlayout = vk::ImageLayout::eDepthAttachmentOptimal;
@@ -1867,7 +1900,9 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		ssr_FullScreenQuad->Draw(commandBuffer, SSRPipelineLayout, currentFrame);
 		commandBuffer.endRendering();
 	}
+	vulkanContext->vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
+	vulkanContext->vkCmdBeginDebugUtilsLabelEXT(commandBuffer, SSGI_Label);
 	{
 		vk::RenderingAttachmentInfo SSGIImageAttachInfo;
 		SSGIImageAttachInfo.clearValue = clearColor;
@@ -2336,6 +2371,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.endRendering();
 	}
 
+	vulkanContext->vkCmdEndDebugUtilsLabelEXT(commandBuffer);
+
 	//{
 	//	vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
 	//	SkyBoxRenderAttachInfo.clearValue = clearColor;
@@ -2445,6 +2482,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	/////////////////// FORWARD PASS END ///////////////////////// 
 	vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
 
+	vulkanContext->vkCmdBeginDebugUtilsLabelEXT(commandBuffer, FXAA_Label);
 	{
 		vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
 		LightPassColorAttachmentInfo.imageView = fxaa_FullScreenQuad->FxaaImage.imageView;
@@ -2470,6 +2508,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		fxaa_FullScreenQuad->Draw(commandBuffer, FXAAPassPipelineLayout, currentFrame);
 		commandBuffer.endRendering();
 	}
+	vulkanContext->vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 
 	userinterface->RenderUi(commandBuffer, imageIndex);
