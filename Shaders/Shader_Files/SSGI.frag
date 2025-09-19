@@ -16,11 +16,17 @@ layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragcolor;
 
 const int MIN_ITERATION = 5;
-const int MAX_ITERATION = 40;
+const int MAX_ITERATION = 20;
 const int MAX_RAYS = 4;
 const int MIN_RAYS = 2;
 
-const float MAX_THICKNESS = 5; 
+const float MAX_THICKNESS = 0.1; 
+
+struct RayHit {
+    vec3 position;
+    float Distance;
+    bool hit;
+};
 
 vec3 GetPerpendicularVector(vec3 v) {
 
@@ -40,7 +46,7 @@ float luminance(vec3 c) {
     return dot(c, vec3(0.299, 0.587, 0.114)); // standard Rec.601
 }
 
-vec3 FindIntersectionPoint(vec3 SamplePosInVS, vec3 DirInVS, float MaxTraceDistance) {
+RayHit  FindIntersectionPoint(vec3 SamplePosInVS, vec3 DirInVS, float MaxTraceDistance) {
 
     vec3 EndPosInVS = SamplePosInVS + DirInVS * MaxTraceDistance;
     vec3 dp2 = EndPosInVS - SamplePosInVS;
@@ -74,11 +80,12 @@ vec3 FindIntersectionPoint(vec3 SamplePosInVS, vec3 DirInVS, float MaxTraceDista
         float sceneDepth = -scenePosVS.z;
         
         if(rayDepth >= sceneDepth && rayDepth - sceneDepth < MAX_THICKNESS) {
-            return rayPosInVS; // Early return
+             float hitDistance = length(rayPosInVS - SamplePosInVS);
+            return RayHit(rayPosInVS, hitDistance, true);
         }
     }
     
-    return SamplePosInVS; // No intersection
+    return RayHit(SamplePosInVS, 0.0, false);
 }
 
 vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal)
@@ -100,14 +107,12 @@ void main() {
     vec2 tiledUV = inTexCoord * (vec2(WindowSize) /100);
 
    
-    vec3 giContribution = vec3(0.0);
+    vec3 giContribution = vec3(0.00);
     float brightness = luminance(Color);
     //int NUM_RAYS = int(mix(MAX_RAYS, MIN_RAYS, brightness));
-    int NUM_RAYS = 0;
+    int NUM_RAYS = 2;
 
-    if(brightness < 0.001){ NUM_RAYS = 4;}
-    if(brightness > 0.0)  { NUM_RAYS = 2;}
-    if(brightness > 0.2)  { NUM_RAYS = 2;}
+     if(brightness < 0.05) { NUM_RAYS = 4; }
 
     for(int i = 0; i < NUM_RAYS; i++) {
     
@@ -119,23 +124,30 @@ void main() {
     
          if(dot(stochasticNormal, stochasticNormal) > 0.001){
          
-          vec3 IntersectionPoint = FindIntersectionPoint(
-                                    offsetPositionAlongNormal(VSposition, stochasticNormal), 
-                                     stochasticNormal, 
-                                     100.0);
-         
-         vec4 RayPositionPS = ubo.ProjectionMatrix * vec4(IntersectionPoint, 1.0);
-         RayPositionPS.xyz /= RayPositionPS.w;
-         vec2 uv = RayPositionPS.xy * 0.5 + 0.5;
-         
-         vec3 hitLighting = textureLod(DirectLigtingTexture, uv,0).rgb;
+           RayHit hit  = FindIntersectionPoint(
+                         offsetPositionAlongNormal(VSposition, stochasticNormal), 
+                         stochasticNormal, 
+                         200.0);
 
-         vec3 radianceB = hitLighting;
-         float cosTerm = max(dot(Normal, stochasticNormal),1);
-    
-        giContribution += (radianceB * cosTerm);
+         if(hit.hit) {
+            vec4 RayPositionPS = ubo.ProjectionMatrix * vec4(hit.position, 1.0);
+            RayPositionPS.xyz /= RayPositionPS.w;
+            vec2 uv = RayPositionPS.xy * 0.5 + 0.5;
+            
+            vec3 hitAlbedo  = textureLod(AlbedoTexture, uv,0).rgb;
+            vec3 hitDirect   = textureLod(DirectLigtingTexture, uv, 0).rgb;
+
+            float falloff = 1.0 / (1.0 + hit.Distance * hit.Distance * 0.002);
+
+            float cosTerm = max(dot(Normal, stochasticNormal),0);
+          
+            vec3 contribution = hitAlbedo * hitDirect * cosTerm * falloff / float(NUM_RAYS);
+            giContribution += contribution;
+
+         }
      }
     }
 
-    outFragcolor = vec4(giContribution,1.0);
+
+    outFragcolor = vec4(giContribution ,1.0);
 }

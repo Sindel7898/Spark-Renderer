@@ -70,11 +70,10 @@ float PCF(sampler2D ShadowMap, int Channel, vec2 texCoord)
     float shadow = 0.0;
     vec2 texelSize = 1.0 / textureSize(ShadowMap, 0);
 
-    // Gaussian kernel weights for 3x3 (sum = 1.0)
     float weights[9] = float[](
-        1.0/16.0, 2.0/16.0, 1.0/16.0,
-        2.0/16.0, 4.0/16.0, 2.0/16.0,
-        1.0/16.0, 2.0/16.0, 1.0/16.0
+        0.0625, 0.125, 0.0625,
+        0.125,  0.25,  0.125,
+        0.0625, 0.125, 0.0625
     );
 
     int index = 0;
@@ -110,19 +109,18 @@ void main() {
     const float Linear     = 0.09;
     const float Quadratic  = 0.032;
 
-    vec3 radiance      = vec3(0.0);
-    vec3 totalLighting = vec3(0.0);
+    vec3 radiance          = vec3(0.0);
+    vec3 totalLighting     = vec3(0.0);
     ///////////////////////////////////////
 
-    vec3  WorldPos     = textureLod(samplerPosition,inTexCoord,0).rgb;
-    vec3  Normal       = normalize(textureLod(samplerNormal,inTexCoord,0).rgb);
-    vec3  Albedo       = textureLod(samplerAlbedo,inTexCoord,0).rgb;
-    float Metallic     = textureLod(samplerMaterials,inTexCoord,0).g;
-    float Roughness    = textureLod(samplerMaterials,inTexCoord,0).r;
-    vec2  ReflectionMask     = textureLod(samplerReflectionMask,inTexCoord,0).rg;
+    vec3  WorldPos       = textureLod(samplerPosition,inTexCoord,0).rgb;
+    vec3  Normal         = normalize(textureLod(samplerNormal,inTexCoord,0).rgb);
+    vec3  Albedo         = textureLod(samplerAlbedo,inTexCoord,0).rgb;
+    float Metallic       = textureLod(samplerMaterials,inTexCoord,0).g;
+    float Roughness      = textureLod(samplerMaterials,inTexCoord,0).r;
+    vec2  ReflectionMask = textureLod(samplerReflectionMask,inTexCoord,0).rg;
 
     vec3  ViewDir    = normalize(lights[0].CameraPositionAndLightIntensity.xyz -  WorldPos);
-
 
     //Reflection Calc
     vec3 cR = reflect (-ViewDir, normalize(Normal));
@@ -139,7 +137,6 @@ void main() {
 
 
 
-
   for (int i = 0; i < 4; i++) {
 
     LightData light = lights[i];
@@ -148,20 +145,20 @@ void main() {
      vec3 Lo      = vec3(0.0);
 
 
-      if(light.positionAndLightType.w == 0){
+      if(light.positionAndLightType.w < 0.5){
 
          LightDir = normalize(-light.positionAndLightType.xyz);
          radiance = light.colorAndAmbientStrength.rgb ;
 
        }
-      else if (light.positionAndLightType.w == 1){
+      else if (light.positionAndLightType.w > 0.5){
                
-               vec3 LightPos     = light.positionAndLightType.xyz;
-               LightDir          = normalize(LightPos - WorldPos);
-               float Distance    = length(LightPos -  WorldPos);
-             float Attenuation   = 1.0 / (Constant + Linear * Distance + Quadratic * (Distance * Distance));
-               radiance          = light.colorAndAmbientStrength.rgb * Attenuation;
-    }  
+           vec3 LightPos   = light.positionAndLightType.xyz;
+               LightDir    = normalize(LightPos - WorldPos);
+         float Distance    = length(LightPos -  WorldPos);
+         float Attenuation = 1.0 / (Constant + Linear * Distance + Quadratic * (Distance * Distance));
+               radiance    = light.colorAndAmbientStrength.rgb * Attenuation;
+       }  
 
     vec3 F0          = vec3(0.04); 
          F0          = mix(F0, Albedo, Metallic);
@@ -171,31 +168,27 @@ void main() {
     float NDF = DistributionGGX(Normal, halfwayDir, Roughness); //describes how microfacet normal are distributed on a rough surface       
     float G   = GeometrySmith(Normal, ViewDir, LightDir, Roughness);// models shadowing and masking
 
-    vec3 numerator    = NDF * G * F;
-    float denominator = 4.0 * max(dot(Normal, ViewDir), 0.0) * max(dot(Normal, LightDir), 0.0)  + 0.0001;
-    vec3 specular = (numerator / denominator) ;
+    vec3  numerator    = NDF * G * F;
+    float denominator  = 4.0 * max(dot(Normal, ViewDir), 0.0) * max(dot(Normal, LightDir), 0.0)  + 0.0001;
+    vec3  specular     = (numerator / denominator) ;
     
     vec3 kS = F;
     vec3 kD = vec3(1.0) - kS;
   
-    kD *= 1.0 - Metallic;	
+         kD *= 1.0 - Metallic;	
 
      float NdotL = max(dot(Normal, LightDir), 0.0);        
-     Lo += (kD * (Albedo / PI) + specular) * radiance * NdotL;
+             Lo += (kD * (Albedo / PI) + specular) * radiance * NdotL;
 
-          vec3 envSpecular = vec3(0); 
+     vec3 envSpecular = vec3(0); 
 
-          if(ReflectionMask.x > 0.5){
-          
-             // Compute Fresnel for reflection
-            vec3 F0 = vec3(0.04);
-            F0 = mix(F0, Albedo, Metallic);
-            float NdotV = max(dot(Normal, ViewDir), 0.0);
-            vec3 F = fresnelSchlick(NdotV, F0);
-            
-            // Add environment reflection with Fresnel weighting
-            envSpecular = Reflection * F * 0.1;
-          }
+     if(ReflectionMask.x > 0.5){
+     
+       float NdotV = max(dot(Normal, ViewDir), 0.0);
+       vec3 F      = fresnelSchlick(NdotV, F0);
+       
+       envSpecular = Reflection * F * 0.1;
+     }
 
      totalLighting +=  ((Lo + envSpecular) * light.CameraPositionAndLightIntensity.a) * shadows[i];
   }
