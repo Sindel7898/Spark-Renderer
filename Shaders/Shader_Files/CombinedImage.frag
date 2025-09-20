@@ -46,7 +46,7 @@ void main() {
      clamp(FinalAO, 0.001, 1.0);
 
      vec3 FinalColor = (DirectLighting + (GI * Albedo)) * FinalAO;
-     vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, 1.0, 1.7, 1.0);
+     vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, 1.0, 1.0, 1.0);
      
      outFragColor = vec4( CorrectedColor, 1.0);
 }

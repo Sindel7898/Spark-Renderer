@@ -16,9 +16,9 @@ layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragcolor;
 
 const int MIN_ITERATION = 5;
-const int MAX_ITERATION = 20;
+const int MAX_ITERATION = 50;
 const int MAX_RAYS = 4;
-const int MIN_RAYS = 2;
+const int MIN_RAYS = 1;
 
 const float MAX_THICKNESS = 0.1; 
 
@@ -109,10 +109,8 @@ void main() {
    
     vec3 giContribution = vec3(0.00);
     float brightness = luminance(Color);
-    //int NUM_RAYS = int(mix(MAX_RAYS, MIN_RAYS, brightness));
-    int NUM_RAYS = 2;
-
-     if(brightness < 0.05) { NUM_RAYS = 4; }
+    
+    int NUM_RAYS = int(mix(MAX_RAYS, MIN_RAYS, brightness));
 
     for(int i = 0; i < NUM_RAYS; i++) {
     
@@ -141,7 +139,7 @@ void main() {
 
             float cosTerm = max(dot(Normal, stochasticNormal),0);
           
-            vec3 contribution = hitAlbedo * hitDirect * cosTerm * falloff / float(NUM_RAYS);
+            vec3 contribution = hitAlbedo * hitDirect * cosTerm * falloff;
             giContribution += contribution;
 
          }

@@ -578,7 +578,7 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			ViewSpacePositionImage.sampler = gbuffer.ViewSpacePosition.imageSampler;
 
 			vk::WriteDescriptorSet ViewSpacePositionImageSamplerdescriptorWrite{};
-			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = DownSampleHalfRes_PING_SampleDescriptorSets[i];
+			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = DownSampleHalfRes_PONG_SampleDescriptorSets[i];
 			ViewSpacePositionImageSamplerdescriptorWrite.dstBinding = 1;
 			ViewSpacePositionImageSamplerdescriptorWrite.dstArrayElement = 0;
 			ViewSpacePositionImageSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -630,7 +630,7 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			ViewSpacePositionImage.sampler = gbuffer.ViewSpacePosition.imageSampler;
 
 			vk::WriteDescriptorSet ViewSpacePositionImageSamplerdescriptorWrite{};
-			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = DownSampleHalfRes_PING_SampleDescriptorSets[i];
+			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = DownSampleQuaterRes_PING_SampleDescriptorSets[i];
 			ViewSpacePositionImageSamplerdescriptorWrite.dstBinding = 1;
 			ViewSpacePositionImageSamplerdescriptorWrite.dstArrayElement = 0;
 			ViewSpacePositionImageSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -682,7 +682,7 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			ViewSpacePositionImage.sampler = gbuffer.ViewSpacePosition.imageSampler;
 
 			vk::WriteDescriptorSet ViewSpacePositionImageSamplerdescriptorWrite{};
-			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = DownSampleHalfRes_PING_SampleDescriptorSets[i];
+			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = DownSampleQuaterRes_PONG_SampleDescriptorSets[i];
 			ViewSpacePositionImageSamplerdescriptorWrite.dstBinding = 1;
 			ViewSpacePositionImageSamplerdescriptorWrite.dstArrayElement = 0;
 			ViewSpacePositionImageSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -735,7 +735,7 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			ViewSpacePositionImage.sampler = gbuffer.ViewSpacePosition.imageSampler;
 
 			vk::WriteDescriptorSet ViewSpacePositionImageSamplerdescriptorWrite{};
-			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = DownSampleHalfRes_PING_SampleDescriptorSets[i];
+			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = UPSampleHalfRes_PING_SampleDescriptorSets[i];
 			ViewSpacePositionImageSamplerdescriptorWrite.dstBinding = 1;
 			ViewSpacePositionImageSamplerdescriptorWrite.dstArrayElement = 0;
 			ViewSpacePositionImageSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -788,7 +788,7 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			ViewSpacePositionImage.sampler = gbuffer.ViewSpacePosition.imageSampler;
 
 			vk::WriteDescriptorSet ViewSpacePositionImageSamplerdescriptorWrite{};
-			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = DownSampleHalfRes_PING_SampleDescriptorSets[i];
+			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = UPSampleHalfRes_PONG_SampleDescriptorSets[i];
 			ViewSpacePositionImageSamplerdescriptorWrite.dstBinding = 1;
 			ViewSpacePositionImageSamplerdescriptorWrite.dstArrayElement = 0;
 			ViewSpacePositionImageSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -841,7 +841,7 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			ViewSpacePositionImage.sampler = gbuffer.ViewSpacePosition.imageSampler;
 
 			vk::WriteDescriptorSet ViewSpacePositionImageSamplerdescriptorWrite{};
-			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = DownSampleHalfRes_PING_SampleDescriptorSets[i];
+			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = UPSampleFullRes_PING_SampleDescriptorSets[i];
 			ViewSpacePositionImageSamplerdescriptorWrite.dstBinding = 1;
 			ViewSpacePositionImageSamplerdescriptorWrite.dstArrayElement = 0;
 			ViewSpacePositionImageSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
@@ -894,7 +894,7 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			ViewSpacePositionImage.sampler = gbuffer.ViewSpacePosition.imageSampler;
 
 			vk::WriteDescriptorSet ViewSpacePositionImageSamplerdescriptorWrite{};
-			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = DownSampleHalfRes_PING_SampleDescriptorSets[i];
+			ViewSpacePositionImageSamplerdescriptorWrite.dstSet = UPSampleFullRes_PONG_SampleDescriptorSets[i];
 			ViewSpacePositionImageSamplerdescriptorWrite.dstBinding = 1;
 			ViewSpacePositionImageSamplerdescriptorWrite.dstArrayElement = 0;
 			ViewSpacePositionImageSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;

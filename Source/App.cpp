@@ -46,12 +46,8 @@
 
 
 	auto model1 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf" ,vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model2 = std::shared_ptr<Model>(new Model("../Textures/Wall/Cube.gltf"   ,vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Wall2/Cube.gltf"  ,vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model4 = std::shared_ptr<Model>(new Model("../Textures/Wall3/Cube.gltf"  ,vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model5 = std::shared_ptr<Model>(new Model("../Textures/Wall4/Cube.gltf"  ,vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model6 = std::shared_ptr<Model>(new Model("../Textures/Wall4/Cube.gltf"  ,vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model7 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf",vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+
 
 	//auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
@@ -63,41 +59,12 @@
 	model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
 	model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
-	model2.get()->Instances[0]->SetPostion(glm::vec3(-20.673, -3.361, -1.501));
-	model2.get()->Instances[0]->SetRotation(glm::vec3(-90.000, 90.000, 0.000));
-	model2.get()->Instances[0]->SetScale(glm::vec3(0.495, 0.300, 0.983));
+	model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
+	model2.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
 	model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
 	model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
-	model3.get()->Instances[0]->SetPostion(glm::vec3(-2.449, -3.294, -1.618));
-	model3.get()->Instances[0]->SetRotation(glm::vec3(-90.000, 90.000, 0.000));
-	model3.get()->Instances[0]->SetScale(glm::vec3(0.500, 0.500, 1.000));
-	model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
-	model4.get()->Instances[0]->SetPostion(glm::vec3(-1.808, -11.066, -1.801));
-	model4.get()->Instances[0]->SetRotation(glm::vec3(0.000, -0.000, 0.00));
-	model4.get()->Instances[0]->SetScale(glm::vec3(0.922, 0.054, 1.270));
-	model4.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	model4.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-
-	model5.get()->Instances[0]->SetPostion(glm::vec3(-0.704, -5.281, -11.374));
-	model5.get()->Instances[0]->SetRotation(glm::vec3(90.000, 0.003, 0.000));
-	model5.get()->Instances[0]->SetScale(glm::vec3(1.200, 0.050, 1.270));
-	model5.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	model5.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-
-	model6.get()->Instances[0]->SetPostion(glm::vec3(15.720, -3.315, -1.688));
-	model6.get()->Instances[0]->SetScale(glm::vec3(0.500, 0.500, 0.992));
-	model6.get()->Instances[0]->SetRotation(glm::vec3(93.814, 90.000, -176.186));
-	model6.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	model6.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-
-	model7.get()->Instances[0]->SetPostion(glm::vec3(8.850, -11.411, -0.895));
-	model7.get()->Instances[0]->SetScale(glm::vec3(0.100, 0.100, 0.100));
-	model7.get()->Instances[0]->SetRotation(glm::vec3(0.000, 40.000, 0.000));
-	model7.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	model7.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
 	//model9.get()->Instances[0]->CubeMapReflectiveSwitch(false);
 
@@ -105,11 +72,7 @@
 	////
     Models.push_back(std::move(model1));
     Models.push_back(std::move(model2));
-    Models.push_back(std::move(model3));
-    Models.push_back(std::move(model4));
-    Models.push_back(std::move(model5));
-    Models.push_back(std::move(model6));
-    Models.push_back(std::move(model7));
+  
 
 
 	//Models.push_back(std::move(model9));
@@ -117,11 +80,7 @@
 	////
 	UserInterfaceItems.push_back(Models[0].get());
 	UserInterfaceItems.push_back(Models[1].get());
-	UserInterfaceItems.push_back(Models[2].get());
-	UserInterfaceItems.push_back(Models[3].get());
-	UserInterfaceItems.push_back(Models[4].get());
-	UserInterfaceItems.push_back(Models[5].get());
-	UserInterfaceItems.push_back(Models[6].get());
+	
 	//UserInterfaceItems.push_back(Models[7].get());
 
 
@@ -571,8 +530,8 @@ void App::createGBuffer()
 	gbuffer.Albedo.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	LightingPassImageData.ImageID = "Gbuffer LightingPass Texture";
-	bufferManger->CreateImage(&LightingPassImageData,swapchainextent, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	LightingPassImageData.imageView = bufferManger->CreateImageView(&LightingPassImageData, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	bufferManger->CreateImage(&LightingPassImageData,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	LightingPassImageData.imageView = bufferManger->CreateImageView(&LightingPassImageData, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	LightingPassImageData.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	ReflectionMaskImageData.ImageID = "ReflectionMask Texture";
@@ -772,9 +731,11 @@ void App::CreateGraphicsPipeline()
 
 
 	{
+		std::array<vk::Format, 1> colorFormats = { vk::Format::eR16G16B16A16Sfloat };
+
 	   vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 	   pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-	   pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext->swapchainformat;
+	   pipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats.data();
 
 	   vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
 
@@ -892,9 +853,12 @@ void App::CreateGraphicsPipeline()
 	}
 
 	{
+
+		std::array<vk::Format, 1> colorFormats = { vk::Format::eR16G16B16A16Sfloat };
+
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-		pipelineRenderingCreateInfo.pColorAttachmentFormats = & vulkanContext->swapchainformat;
+		pipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats.data();;
 
 		vk::PushConstantRange range{};
 		range.setOffset(0);
