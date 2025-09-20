@@ -9,7 +9,7 @@ layout (binding = 3) uniform KernelData{
      mat4 CameraProjMatrix;
      mat4 CameraViewMatrix;
      vec4 KernelSizeRadiusBiasAndBool;
-     vec4 samples[10];
+     vec4 samples[32];
 }KD;
 
 layout(location = 0) in vec2 inTexCoord;           
@@ -19,6 +19,8 @@ layout (location = 0) out vec4 outFragcolor;
 
 void main() {
     
+    float occlusion = 0.0f;
+
     if(KD.KernelSizeRadiusBiasAndBool.w == 1){
         
         vec2 TextureSize       = vec2(textureSize(samplerposition,0));
@@ -30,7 +32,6 @@ void main() {
         vec3 bitangent = cross(ViewSpaceNormal,tangent);
         mat3 TBN       = mat3(tangent, bitangent, ViewSpaceNormal);  
         
-        float occlusion = 0.0f;
         float radius = KD.KernelSizeRadiusBiasAndBool.y;
 
        for(int i = 0; i < KD.KernelSizeRadiusBiasAndBool.x; ++i){
@@ -56,7 +57,5 @@ void main() {
     outFragcolor =  vec4(occlusion,occlusion,occlusion,1.0f);
 
     }
-    else { 
-    outFragcolor =  vec4(1.0f);
-    }   
+
 }

@@ -170,7 +170,7 @@ void SSA0_FullScreenQuad::CreateKernel()
 	std::uniform_real_distribution<float> randomFloats(0.0f, 1.0f);
 	std::default_random_engine generator;
 
-	for (unsigned int i = 0; i < KernelSize; i++)
+	for (unsigned int i = 0; i < 32; i++)
 	{
 		glm::vec4 sample(randomFloats(generator) * 2.0 - 1.0,
 			             randomFloats(generator) * 2.0 - 1.0,

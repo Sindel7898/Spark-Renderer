@@ -40,7 +40,7 @@ void main() {
         float w = weights[idx];
 
         float Difference = abs(MainDepth - OffsetDepth);
-        if(Difference < 1){
+        if(Difference < 1.2){
             result += texture(samplerta_SSGI, inTexCoord + offset).rgb * w; 
             totalWeight += w;
         }

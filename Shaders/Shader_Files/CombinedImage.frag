@@ -34,6 +34,17 @@ vec3 ContrastSaturationBrightness(vec3 color, float brt, float sat, float con)
 	return conColor;
 }
 
+vec3 aces_approx(vec3 v)
+{
+    v *= 0.6f;
+    float a = 2.51f;
+    float b = 0.03f;
+    float c = 2.43f;
+    float d = 0.59f;
+    float e = 0.14f;
+    return clamp((v*(a*v+b))/(v*(c*v+d)+e), 0.0f, 1.0f);
+}
+
 void main() {
      vec3 DirectLighting   = texture(LightingReflectionTexture, inTexCoord).rgb;
      vec3 GI               = texture(GITexture, inTexCoord).rgb;
@@ -46,7 +57,8 @@ void main() {
      clamp(FinalAO, 0.001, 1.0);
 
      vec3 FinalColor = (DirectLighting + (GI * Albedo)) * FinalAO;
-     vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, 1.0, 1.0, 1.0);
-     
-     outFragColor = vec4( CorrectedColor, 1.0);
+     vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, 1.0, 1.7, 1.0);
+     vec3 tonemapped = aces_approx(CorrectedColor);
+
+     outFragColor = vec4(tonemapped, 1.0);
 }

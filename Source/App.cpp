@@ -798,14 +798,6 @@ void App::CreateGraphicsPipeline()
 
 	{
 
-		vk::PipelineDepthStencilStateCreateInfo depthStencilState;
-		depthStencilState.depthTestEnable = vk::False;
-		depthStencilState.depthWriteEnable = vk::False;
-		depthStencilState.depthCompareOp = vk::CompareOp::eLessOrEqual;
-		depthStencilState.minDepthBounds = 0.0f;
-		depthStencilState.maxDepthBounds = 1.0f;
-		depthStencilState.stencilTestEnable = vk::False;
-
 		std::array<vk::Format, 1> colorFormats = { vk::Format::eR8G8B8A8Unorm };
 
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
@@ -1766,8 +1758,33 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SSAOBlurPipeline);
 
 		ssao_FullScreenQuad->DrawSSAOBlurHorizontal(commandBuffer, SSAOBlurPipelineLayout, currentFrame);
-		ssao_FullScreenQuad->DrawSSAOBlurVertical(commandBuffer, SSAOBlurPipelineLayout, currentFrame);
 		commandBuffer.endRendering();
+
+		{
+			vk::RenderingAttachmentInfo SSAOBluredColorAttachment{};
+			SSAOBluredColorAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
+			SSAOBluredColorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+			SSAOBluredColorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			SSAOBluredColorAttachment.imageView = ssao_FullScreenQuad->BluredSSAOImage.imageView;
+			SSAOBluredColorAttachment.clearValue = clearColor;
+
+			vk::RenderingInfo renderingInfo{};
+			renderingInfo.renderArea.offset = imageoffset;
+			renderingInfo.renderArea.extent.height = ssao_FullScreenQuad->BluredSSAOImageSize.height;
+			renderingInfo.renderArea.extent.width = ssao_FullScreenQuad->BluredSSAOImageSize.width;
+			renderingInfo.layerCount = 1;
+			renderingInfo.colorAttachmentCount = 1;
+			renderingInfo.pColorAttachments = &SSAOBluredColorAttachment;
+
+			commandBuffer.beginRendering(renderingInfo);
+			commandBuffer.setViewport(0, 1, &SSAOviewport);
+			commandBuffer.setScissor(0, 1, &SSAOscissor);
+			commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SSAOBlurPipeline);
+
+			ssao_FullScreenQuad->DrawSSAOBlurVertical(commandBuffer, SSAOBlurPipelineLayout, currentFrame);
+
+			commandBuffer.endRendering();
+		}
 	}
 
 	vulkanContext->vkCmdEndDebugUtilsLabelEXT(commandBuffer);

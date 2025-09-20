@@ -193,6 +193,8 @@ void main() {
      totalLighting +=  ((Lo + envSpecular) * light.CameraPositionAndLightIntensity.a) * shadows[i];
   }
 
+ 
+  vec3 gammaCorrected = pow(clamp(totalLighting, 0.0, 1.0), vec3(1.0/2.2));
 
-   outFragcolor = vec4(totalLighting, 1.0);
+   outFragcolor = vec4(gammaCorrected, 1.0);
 }

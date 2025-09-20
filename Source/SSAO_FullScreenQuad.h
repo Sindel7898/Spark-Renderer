@@ -37,7 +37,7 @@ public:
 
     ImageData NoiseTexture;
 
-    int KernelSize = 25;
+    int KernelSize = 24;
     int bShouldSSAO = 1;
     float Radius = 1.5f;
     float Bias = 0.900;
