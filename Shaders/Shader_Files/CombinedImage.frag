@@ -54,11 +54,13 @@ void main() {
      
 
      float FinalAO         = SSAO * MaterialAO;
-     clamp(FinalAO, 0.001, 1.0);
+     if(FinalAO < 0.1){FinalAO = 1;}
 
      vec3 FinalColor = (DirectLighting + (GI * Albedo)) * FinalAO;
      vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, 1.0, 1.7, 1.0);
-     vec3 tonemapped = aces_approx(CorrectedColor);
+
+     vec3 gammaCorrected = pow(clamp(CorrectedColor, 0.0, 1.0), vec3(1.3/1.2));
+     vec3 tonemapped = aces_approx(gammaCorrected);
 
      outFragColor = vec4(tonemapped, 1.0);
 }

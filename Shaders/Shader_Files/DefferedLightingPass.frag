@@ -174,11 +174,11 @@ void main() {
     
     vec3 kS = F;
     vec3 kD = vec3(1.0) - kS;
-  
-         kD *= 1.0 - Metallic;	
+    kD *= 1.0 - Metallic;	
+    vec3 diffuse = kD * (Albedo / PI);
 
      float NdotL = max(dot(Normal, LightDir), 0.0);        
-             Lo += (kD * (Albedo / PI) + specular) * radiance * NdotL;
+             Lo += (diffuse + specular) * radiance * NdotL;
 
      vec3 envSpecular = vec3(0); 
 

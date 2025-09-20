@@ -47,15 +47,19 @@
 
 	auto model1 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf" ,vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+
+	auto model4 = std::shared_ptr<Model>(new Model("../Textures/EmptyCornelBox/Cornel.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model5 = std::shared_ptr<Model>(new Model("../Textures/Dragon2/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 
 
 	//auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	//auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	
-	model1.get()->Instances[0]->SetPostion(glm::vec3(-10.443, -11.259, -0.131));
-	model1.get()->Instances[0]->SetRotation(glm::vec3(0.000, 0.000, 0.00));
-	model1.get()->Instances[0]->SetScale(glm::vec3(0.100, 0.100, 0.100));
+	model1.get()->Instances[0]->SetPostion(glm::vec3(-4.282, 2.172, -6.313));
+	model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
+	model1.get()->Instances[0]->SetScale(glm::vec3(0.050, 0.050, 0.050));
 	model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
 	model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
@@ -64,7 +68,22 @@
 	model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
 	model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
+	model3.get()->Instances[0]->SetPostion(glm::vec3(4.047, 8.914, 2.195));
+	model3.get()->Instances[0]->SetRotation(glm::vec3(-180.000, -44.147, 180.000));
+	model3.get()->Instances[0]->SetScale(glm::vec3(0.050, 0.050, 0.050));
+	model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
+	model4.get()->Instances[0]->SetPostion(glm::vec3(-44.980, 0, 0));
+	model4.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
+	model4.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	model4.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+
+	model5.get()->Instances[0]->SetPostion(glm::vec3(-44.144, -2.428, -2.953));
+	model5.get()->Instances[0]->SetRotation(glm::vec3(-0.003, -65.028, 0.002));
+	model5.get()->Instances[0]->SetScale(glm::vec3(0.100, 0.100, 0.100));
+	model5.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	model5.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
 	//model9.get()->Instances[0]->CubeMapReflectiveSwitch(false);
 
@@ -72,7 +91,10 @@
 	////
     Models.push_back(std::move(model1));
     Models.push_back(std::move(model2));
-  
+	Models.push_back(std::move(model3));
+	Models.push_back(std::move(model4));
+	Models.push_back(std::move(model5));
+
 
 
 	//Models.push_back(std::move(model9));
@@ -80,7 +102,10 @@
 	////
 	UserInterfaceItems.push_back(Models[0].get());
 	UserInterfaceItems.push_back(Models[1].get());
-	
+	UserInterfaceItems.push_back(Models[2].get());
+	UserInterfaceItems.push_back(Models[3].get());
+	UserInterfaceItems.push_back(Models[4].get());
+
 	//UserInterfaceItems.push_back(Models[7].get());
 
 
@@ -1762,7 +1787,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 		{
 			vk::RenderingAttachmentInfo SSAOBluredColorAttachment{};
-			SSAOBluredColorAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
+			SSAOBluredColorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
 			SSAOBluredColorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
 			SSAOBluredColorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 			SSAOBluredColorAttachment.imageView = ssao_FullScreenQuad->BluredSSAOImage.imageView;
@@ -2360,37 +2385,37 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	vulkanContext->vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
-	//{
-	//	vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
-	//	SkyBoxRenderAttachInfo.clearValue = clearColor;
-	//	SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-	//	SkyBoxRenderAttachInfo.imageView = LightingPassImageData.imageView;
-	//	SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
-	//	SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
-	//	
-	//	vk::RenderingAttachmentInfo DepthAttachInfo;
-	//	DepthAttachInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
-	//	DepthAttachInfo.imageView = DepthTextureData.imageView;
-	//	DepthAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
-	//	DepthAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
-	//	DepthAttachInfo.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
-	//	
-	//	vk::RenderingInfo SkyBoxRenderInfo{};
-	//	SkyBoxRenderInfo.layerCount = 1;
-	//	SkyBoxRenderInfo.colorAttachmentCount = 1;
-	//	SkyBoxRenderInfo.pColorAttachments = &SkyBoxRenderAttachInfo;
-	//	SkyBoxRenderInfo.pDepthAttachment = &DepthAttachInfo;
-	//	SkyBoxRenderInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
-	//	SkyBoxRenderInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
-	//	
-	//	
-	//	commandBuffer.setViewport(0, 1, &viewport);
-	//	commandBuffer.setScissor(0, 1, &scissor);
-	//	commandBuffer.beginRendering(SkyBoxRenderInfo);
-	//	commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
-	//	skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
-	//	commandBuffer.endRendering();
-	//}
+	{
+		vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
+		SkyBoxRenderAttachInfo.clearValue = clearColor;
+		SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		SkyBoxRenderAttachInfo.imageView = LightingPassImageData.imageView;
+		SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+		SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		
+		vk::RenderingAttachmentInfo DepthAttachInfo;
+		DepthAttachInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+		DepthAttachInfo.imageView = DepthTextureData.imageView;
+		DepthAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+		DepthAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		DepthAttachInfo.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		
+		vk::RenderingInfo SkyBoxRenderInfo{};
+		SkyBoxRenderInfo.layerCount = 1;
+		SkyBoxRenderInfo.colorAttachmentCount = 1;
+		SkyBoxRenderInfo.pColorAttachments = &SkyBoxRenderAttachInfo;
+		SkyBoxRenderInfo.pDepthAttachment = &DepthAttachInfo;
+		SkyBoxRenderInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
+		SkyBoxRenderInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
+		
+		
+		commandBuffer.setViewport(0, 1, &viewport);
+		commandBuffer.setScissor(0, 1, &scissor);
+		commandBuffer.beginRendering(SkyBoxRenderInfo);
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
+		skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
+		commandBuffer.endRendering();
+	}
 
 
 	{

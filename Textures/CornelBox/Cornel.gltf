@@ -343,9 +343,9 @@
 	],
 	"images":[
 		{
-			"mimeType": "image/png",
-			"name": "BumpMapFlatColour",
-			"uri": "BumpMapFlatColour.png"
+			"mimeType":"image/png",
+			"name":"BumpMapFlatColour",
+			"uri":"BumpMapFlatColour.png"
 		},
 		{
 			"mimeType":"image/jpeg",
@@ -585,12 +585,12 @@
 			"count":36,
 			"max":[
 				-0.4382362365722656,
-				3.169923782348633,
+				2.1731927394866943,
 				-2.965475082397461
 			],
 			"min":[
 				-7.42102575302124,
-				-1.8300766944885254,
+				-2.826807737350464,
 				-9.948265075683594
 			],
 			"type":"VEC3"
