@@ -7,6 +7,7 @@
 #include "SSAO_FullScreenQuad.h"
 #include "App.h"
 #include "FXAA_FullScreenQuad.h"
+#include "CombinedResult_FullScreenQuad.h"
 
 UserInterface::UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef, BufferManager* Buffermanager)
 {
@@ -68,6 +69,33 @@ void UserInterface::InitImgui()
 		colors[ImGuiCol_TitleBgActive] = ImVec4{ 0.02f, 0.02f, 0.02f, 1.0f };
 		colors[ImGuiCol_TitleBgCollapsed] = ImVec4{ 0.00f, 0.00f, 0.00f, 1.0f };
 
+		// Borders
+		colors[ImGuiCol_Border] = ImVec4{ 0.08f, 0.08f, 0.08f, 1.0f };
+		colors[ImGuiCol_BorderShadow] = ImVec4{ 0.00f, 0.00f, 0.00f, 0.0f };
+
+		// Scrollbars
+		colors[ImGuiCol_ScrollbarBg] = ImVec4{ 0.01f, 0.01f, 0.01f, 1.0f };
+		colors[ImGuiCol_ScrollbarGrab] = ImVec4{ 0.10f, 0.10f, 0.10f, 1.0f };
+		colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4{ 0.15f, 0.15f, 0.15f, 1.0f };
+		colors[ImGuiCol_ScrollbarGrabActive] = ImVec4{ 0.20f, 0.20f, 0.20f, 1.0f };
+
+		colors[ImGuiCol_CheckMark] = ImVec4{ 0.80f, 0.80f, 0.80f, 1.0f };
+		colors[ImGuiCol_SliderGrab] = ImVec4{ 0.35f, 0.35f, 0.35f, 1.0f };
+		colors[ImGuiCol_SliderGrabActive] = ImVec4{ 0.50f, 0.50f, 0.50f, 1.0f };
+
+		colors[ImGuiCol_Separator] = ImVec4{ 0.20f, 0.20f, 0.20f, 1.0f };
+		colors[ImGuiCol_SeparatorHovered] = ImVec4{ 0.35f, 0.35f, 0.35f, 1.0f };
+		colors[ImGuiCol_SeparatorActive] = ImVec4{ 0.50f, 0.50f, 0.50f, 1.0f };
+
+		colors[ImGuiCol_ResizeGrip] = ImVec4{ 0.25f, 0.25f, 0.25f, 1.0f };
+		colors[ImGuiCol_ResizeGripHovered] = ImVec4{ 0.40f, 0.40f, 0.40f, 1.0f };
+		colors[ImGuiCol_ResizeGripActive] = ImVec4{ 0.60f, 0.60f, 0.60f, 1.0f };
+
+
+		colors[ImGuiCol_MenuBarBg] = ImVec4{ 0.02f, 0.02f, 0.02f, 1.0f };
+
+		// Popup
+		colors[ImGuiCol_PopupBg] = ImVec4{ 0.05f, 0.05f, 0.05f, 0.94f };
 
 
 		// Style adjustments
@@ -333,8 +361,24 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 			ImGui::EndCombo();
 		}
 
+
 		ImGui::Dummy(ImVec2(0.0f, 20.0f));
 
+		// --- Color Settings ---
+		if (ImGui::CollapsingHeader("Color Settings", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::BeginChild("ColorSettings", ImVec2(0, 200), true, ImGuiWindowFlags_AlwaysUseWindowPadding);
+
+			ImGui::TextDisabled("Adjust post-processing parameters:");
+
+			ImGui::SliderFloat("Brightness", &appref->Combined_FullScreenQuad->Brightness, 0.0f, 2.0f, "%.2f");
+			ImGui::SliderFloat("Saturation", &appref->Combined_FullScreenQuad->Saturation, 0.0f, 2.0f, "%.2f");
+			ImGui::SliderFloat("Concentration", &appref->Combined_FullScreenQuad->Concentration, 0.0f, 2.0f, "%.2f");
+			ImGui::SliderFloat("Max Gamma", &appref->Combined_FullScreenQuad->MaxGamma, 0.1f, 4.0f, "%.2f");
+			ImGui::SliderFloat("Min Gamma", &appref->Combined_FullScreenQuad->MinGamma, 0.1f, 4.0f, "%.2f");
+
+			ImGui::EndChild();
+		}
 
 		ImGui::End();
 	}

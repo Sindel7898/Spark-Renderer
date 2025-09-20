@@ -9,6 +9,12 @@ layout (binding = 4) uniform sampler2D AlbedoTexture;
 layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragColor;
 
+layout(push_constant) uniform PushConstants {
+    vec4 Brightness_Saturation_Concentration_Padding;
+    vec4 MaxGamma_MinGamma_Padding;
+} pc;
+
+
 float rgb2luma(vec3 rgb) {
     return dot(rgb, vec3(0.299, 0.587, 0.114));
 }
@@ -46,6 +52,13 @@ vec3 aces_approx(vec3 v)
 }
 
 void main() {
+
+     float Brightness    = pc.Brightness_Saturation_Concentration_Padding.x;
+     float Saturation    = pc.Brightness_Saturation_Concentration_Padding.y;
+     float Concentration = pc.Brightness_Saturation_Concentration_Padding.z;
+     float MaxGamma      = pc.MaxGamma_MinGamma_Padding.x;
+     float MinGamma      = pc.MaxGamma_MinGamma_Padding.y;
+
      vec3 DirectLighting   = texture(LightingReflectionTexture, inTexCoord).rgb;
      vec3 GI               = texture(GITexture, inTexCoord).rgb;
      float SSAO            = texture(SSAOTexture, inTexCoord).r;
@@ -57,12 +70,12 @@ void main() {
      if(FinalAO < 0.1){FinalAO = 1;}
 
      vec3 FinalColor = (DirectLighting + (GI * Albedo)) * FinalAO;
-     vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, 1.0, 1.7, 1.0);
+     vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, Brightness, Saturation, Concentration);
 
     float luma = rgb2luma(CorrectedColor);
 // If the pixel is darker than ~0.2, apply gamma; otherwise, leave it at 1.0 (no correction)
     float darkFactor   = smoothstep(0.0, 0.2, luma); // 0 when dark, 1 when bright
-    float dynamicGamma = mix(0.7, 1.0, darkFactor);  // gamma = 0.7 in darks, 1.0 in brights
+    float dynamicGamma = mix(MinGamma, MaxGamma, darkFactor);  // gamma = 0.7 in darks, 1.0 in brights
 
     vec3 gammaCorrected = pow(clamp(CorrectedColor, 0.0, 1.0), vec3(dynamicGamma));
     vec3 tonemapped = aces_approx(gammaCorrected);

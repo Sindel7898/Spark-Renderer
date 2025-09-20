@@ -206,6 +206,12 @@ void CombinedResult_FullScreenQuad::Draw(vk::CommandBuffer commandbuffer, vk::Pi
 	vk::DeviceSize offsets[] = { 0 };
 	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
 
+	PostProcessSettings PPS;
+	PPS.Brightness_Saturation_Concentration_Padding = glm::vec4(Brightness, Saturation, Concentration,0);
+	PPS.MaxGamma_MinGamma_Padding = glm::vec4(MaxGamma, MinGamma, 0, 0);
+
+	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(PostProcessSettings), &PPS);
+
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
 	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);

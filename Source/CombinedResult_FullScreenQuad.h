@@ -6,6 +6,10 @@
 #include "Drawable.h"
 #include "Structs.h"
 
+struct PostProcessSettings {
+    glm::vec4 Brightness_Saturation_Concentration_Padding;
+    glm::vec4 MaxGamma_MinGamma_Padding;
+};
 class CombinedResult_FullScreenQuad : public Drawable
 {
 public:
@@ -22,6 +26,13 @@ public:
     void CleanUp();
 
     ImageData FinalResultImage;
+
+    float Brightness = 1.0;
+    float Saturation = 1.7;
+    float Concentration = 1.0;
+    float MaxGamma = 1.0;
+    float MinGamma = 0.7;
+
 private:
 
     std::vector<Vertex> quad = {
