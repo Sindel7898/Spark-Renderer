@@ -59,8 +59,13 @@ void main() {
      vec3 FinalColor = (DirectLighting + (GI * Albedo)) * FinalAO;
      vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, 1.0, 1.7, 1.0);
 
-     vec3 gammaCorrected = pow(clamp(CorrectedColor, 0.0, 1.0), vec3(1.3/1.2));
-     vec3 tonemapped = aces_approx(gammaCorrected);
+    float luma = rgb2luma(CorrectedColor);
+// If the pixel is darker than ~0.2, apply gamma; otherwise, leave it at 1.0 (no correction)
+    float darkFactor   = smoothstep(0.0, 0.2, luma); // 0 when dark, 1 when bright
+    float dynamicGamma = mix(0.7, 1.0, darkFactor);  // gamma = 0.7 in darks, 1.0 in brights
+
+    vec3 gammaCorrected = pow(clamp(CorrectedColor, 0.0, 1.0), vec3(dynamicGamma));
+    vec3 tonemapped = aces_approx(gammaCorrected);
 
      outFragColor = vec4(tonemapped, 1.0);
 }
