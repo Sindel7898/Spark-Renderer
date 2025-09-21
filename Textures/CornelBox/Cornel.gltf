@@ -14,7 +14,8 @@
 				3,
 				4,
 				5,
-				6
+				6,
+				7
 			]
 		}
 	],
@@ -46,6 +47,10 @@
 		{
 			"mesh":6,
 			"name":"Cube.007"
+		},
+		{
+			"mesh":7,
+			"name":"Cube.008"
 		}
 	],
 	"materials":[
@@ -134,16 +139,33 @@
 			}
 		},
 		{
+			"emissiveTexture":{
+				"index":18
+			},
 			"name":"Cube.007",
 			"normalTexture":{
-				"index":18
+				"index":19
 			},
 			"pbrMetallicRoughness":{
 				"baseColorTexture":{
-					"index":19
+					"index":20
 				},
 				"metallicRoughnessTexture":{
-					"index":20
+					"index":21
+				}
+			}
+		},
+		{
+			"name":"Cube.008",
+			"normalTexture":{
+				"index":22
+			},
+			"pbrMetallicRoughness":{
+				"baseColorTexture":{
+					"index":23
+				},
+				"metallicRoughnessTexture":{
+					"index":24
 				}
 			}
 		}
@@ -253,6 +275,21 @@
 					"material":6
 				}
 			]
+		},
+		{
+			"name":"Cube.001",
+			"primitives":[
+				{
+					"attributes":{
+						"POSITION":29,
+						"NORMAL":30,
+						"TEXCOORD_0":31,
+						"TANGENT":32
+					},
+					"indices":4,
+					"material":7
+				}
+			]
 		}
 	],
 	"textures":[
@@ -315,6 +352,22 @@
 		{
 			"sampler":0,
 			"source":2
+		},
+		{
+			"sampler":0,
+			"source":0
+		},
+		{
+			"sampler":0,
+			"source":1
+		},
+		{
+			"sampler":0,
+			"source":2
+		},
+		{
+			"sampler":0,
+			"source":4
 		},
 		{
 			"sampler":0,
@@ -584,14 +637,14 @@
 			"componentType":5126,
 			"count":36,
 			"max":[
-				-0.4382362365722656,
-				2.1731927394866943,
-				-2.965475082397461
+				1.6368789672851562,
+				16.879392623901367,
+				0.4044480323791504
 			],
 			"min":[
-				-7.42102575302124,
-				-2.826807737350464,
-				-9.948265075683594
+				-3.392706871032715,
+				16.318618774414062,
+				-4.625139236450195
 			],
 			"type":"VEC3"
 		},
@@ -609,6 +662,40 @@
 		},
 		{
 			"bufferView":28,
+			"componentType":5126,
+			"count":36,
+			"type":"VEC4"
+		},
+		{
+			"bufferView":29,
+			"componentType":5126,
+			"count":36,
+			"max":[
+				-0.4382362365722656,
+				2.1731927394866943,
+				-2.965475082397461
+			],
+			"min":[
+				-7.42102575302124,
+				-2.826807737350464,
+				-9.948265075683594
+			],
+			"type":"VEC3"
+		},
+		{
+			"bufferView":30,
+			"componentType":5126,
+			"count":36,
+			"type":"VEC3"
+		},
+		{
+			"bufferView":31,
+			"componentType":5126,
+			"count":36,
+			"type":"VEC2"
+		},
+		{
+			"bufferView":32,
 			"componentType":5126,
 			"count":36,
 			"type":"VEC4"
@@ -788,6 +875,30 @@
 			"byteLength":576,
 			"byteOffset":11592,
 			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":432,
+			"byteOffset":12168,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":432,
+			"byteOffset":12600,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":288,
+			"byteOffset":13032,
+			"target":34962
+		},
+		{
+			"buffer":0,
+			"byteLength":576,
+			"byteOffset":13320,
+			"target":34962
 		}
 	],
 	"samplers":[
@@ -798,7 +909,7 @@
 	],
 	"buffers":[
 		{
-			"byteLength":12168,
+			"byteLength":13896,
 			"uri":"Cornel.bin"
 		}
 	]

@@ -8,6 +8,7 @@ layout (binding = 3) uniform sampler2D samplerMaterials;
 layout (binding = 4) uniform samplerCube samplerReflectiveCubeMap;
 layout (binding = 5) uniform sampler2D samplerReflectionMask;
 layout (binding = 6) uniform sampler2D samplerShadowMap[4];
+layout (binding = 7) uniform sampler2D samplerEmisive;
 
 layout(location = 0) in vec2 inTexCoord;           
 
@@ -18,7 +19,7 @@ struct LightData{
     mat4    LightProjectionViewMatrix;
 
 };
-layout (binding = 7) uniform LightUniformBuffer {
+layout (binding = 8) uniform LightUniformBuffer {
    
    LightData lights[4];
 };
@@ -119,6 +120,7 @@ void main() {
     float Metallic       = textureLod(samplerMaterials,inTexCoord,0).g;
     float Roughness      = textureLod(samplerMaterials,inTexCoord,0).r;
     vec2  ReflectionMask = textureLod(samplerReflectionMask,inTexCoord,0).rg;
+    vec3  Emmisive       = textureLod(samplerEmisive,inTexCoord,0).rgb;
 
     vec3  ViewDir    = normalize(lights[0].CameraPositionAndLightIntensity.xyz -  WorldPos);
 
@@ -190,7 +192,7 @@ void main() {
        envSpecular = Reflection * F * 0.1;
      }
 
-     totalLighting +=  ((Lo + envSpecular) * light.CameraPositionAndLightIntensity.a) * shadows[i];
+     totalLighting +=  ((Lo + envSpecular) * light.CameraPositionAndLightIntensity.a) * shadows[i] + (Emmisive * 100);
   }
 
  

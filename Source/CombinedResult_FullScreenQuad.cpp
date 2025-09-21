@@ -36,9 +36,9 @@ void CombinedResult_FullScreenQuad::CreateVertexAndIndexBuffer()
 void CombinedResult_FullScreenQuad::CreateImage(vk::Extent3D imageExtent)
 {
 	FinalResultImage.ImageID = "FinalResult  Image  Texture";
-	bufferManager->CreateImage(&FinalResultImage, imageExtent, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	bufferManager->CreateImage(&FinalResultImage, imageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 
-	FinalResultImage.imageView = bufferManager->CreateImageView(&FinalResultImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	FinalResultImage.imageView = bufferManager->CreateImageView(&FinalResultImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	FinalResultImage.imageSampler = bufferManager->CreateImageSampler();
 }
 

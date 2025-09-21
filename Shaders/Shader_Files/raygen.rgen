@@ -38,7 +38,7 @@ bool TraceShadow(vec3 origin, vec3 direction, float MaxDistance) {
                          gl_RayFlagsSkipClosestHitShaderEXT | 
                          gl_RayFlagsCullBackFacingTrianglesEXT;
     const uint cullMask = 0xFF;
-    const float tMin = 0.2;
+    const float tMin = 0.1;
     const float tMax = MaxDistance;
 
     traceRayEXT(
@@ -61,7 +61,7 @@ bool TraceShadow(vec3 origin, vec3 direction, float MaxDistance) {
 vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal)
 {
 
-    return ViewPosition + 0.1 * normal;
+    return ViewPosition + 0.001 * normal;
 
 }
 
@@ -70,7 +70,7 @@ void main() {
     float shadowFactor[MAX_LIGHTS] = {1.0, 1.0,1.0,1.0};
     
     ivec2 halfCoord  = ivec2(gl_LaunchIDEXT.xy);
-    ivec2 fullCoord = halfCoord; 
+    ivec2 fullCoord = halfCoord *2; 
     vec3 hitPosition = texelFetch(Position, fullCoord, 0).xyz;
     
     // Add small bias to avoid self-intersection

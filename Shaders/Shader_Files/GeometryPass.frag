@@ -4,6 +4,7 @@ layout (binding = 2) uniform sampler2D   samplerColor;
 layout (binding = 3) uniform sampler2D   samplerNormal;
 layout (binding = 4) uniform sampler2D   samplerMetallicRoughness;
 layout (binding = 5) uniform sampler2D   samplerAO;
+layout (binding = 6) uniform sampler2D   samplerEmisive;
 
 layout(location = 0) in vec4 WorldSpacePosition;   
 layout(location = 1) in vec4 ViewSpacePosition;        
@@ -17,8 +18,9 @@ layout (location = 1) out vec4 outViewSpacePosition;
 layout (location = 2) out vec4 outNormal;
 layout (location = 3) out vec4 outViewSpaceNormal;
 layout (location = 4) out vec4 outAlbedo;
-layout (location = 5) out vec4 outMetallicRoughnessMapAO;
-layout (location = 6) out vec4 outReflectionMask;
+layout (location = 5) out vec4 outEmisive;
+layout (location = 6) out vec4 outMetallicRoughnessMapAO;
+layout (location = 7) out vec4 outReflectionMask;
 
 
 
@@ -46,5 +48,9 @@ void main() {
   outAlbedo   = vec4(Albedo,1.0);
 
   outReflectionMask   = vec4(bCubeMapReflection_bScreenSpaceReflection_Padding.rgb,1.0);
+
+
+  vec3 Emisive = textureLod(samplerEmisive,fragTexCoord,0).rgb;
+  outEmisive   = vec4(Emisive * 3,1);
 
 }

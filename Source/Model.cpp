@@ -27,7 +27,7 @@ void Model::LoadTextures()
 
 	std::vector<StoredImageData> ModelTextures = AssetManager::GetInstance().GetStoredImageData(FilePath);
 
-    materialCount = ModelTextures.size() / 4;
+    materialCount = ModelTextures.size() / 5;
 
 	for (size_t i = 0; i < materialCount; i++) {
 
@@ -36,7 +36,7 @@ void Model::LoadTextures()
 
 		albedoTextureData.ImageID = FilePath + "Albedo Image" + std::to_string(i);
 
-		StoredImageData AlbedoImageData = ModelTextures[i * 4 + 0];
+		StoredImageData AlbedoImageData = ModelTextures[i * 5 + 0];
 		vk::DeviceSize AlbedoImagesize = AlbedoImageData.imageWidth * AlbedoImageData.imageHeight * 4;
 
 		bufferManager->CreateTextureImage(&albedoTextureData,AlbedoImageData.imageData, AlbedoImagesize, AlbedoImageData.imageWidth, AlbedoImageData.imageHeight, vk::Format::eR8G8B8A8Srgb, commandPool, vulkanContext->graphicsQueue);
@@ -47,7 +47,7 @@ void Model::LoadTextures()
 		ImageData  normalTextureData;
 		normalTextureData.ImageID = FilePath + "Normal Image" + std::to_string(i);
 
-		StoredImageData NormalImageData = ModelTextures[i * 4 + 1];
+		StoredImageData NormalImageData = ModelTextures[i * 5 + 1];
 		vk::DeviceSize NormalImagesize = NormalImageData.imageWidth * NormalImageData.imageHeight * 4;
 
 		 bufferManager->CreateTextureImage(&normalTextureData,NormalImageData.imageData, NormalImagesize, NormalImageData.imageWidth, NormalImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
@@ -58,7 +58,7 @@ void Model::LoadTextures()
 		ImageData  MetallicRoughnessTextureData;
 		MetallicRoughnessTextureData.ImageID = FilePath + "Metallic Roughness Image" + std::to_string(i);
 
-		StoredImageData MetallicRoughnessImageData = ModelTextures[i * 4 + 2];
+		StoredImageData MetallicRoughnessImageData = ModelTextures[i * 5 + 2];
 		vk::DeviceSize  MetallicRoughnessImagesize = MetallicRoughnessImageData.imageWidth * MetallicRoughnessImageData.imageHeight * 4;
 
 		bufferManager->CreateTextureImage(&MetallicRoughnessTextureData,MetallicRoughnessImageData.imageData, MetallicRoughnessImagesize, MetallicRoughnessImageData.imageWidth, MetallicRoughnessImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
@@ -69,12 +69,24 @@ void Model::LoadTextures()
 		ImageData  AOTextureData;
 		AOTextureData.ImageID = FilePath + "AO Image" + std::to_string(i);
 
-		StoredImageData AOImageData = ModelTextures[i * 4 + 3];
+		StoredImageData AOImageData = ModelTextures[i * 5 + 3];
 		vk::DeviceSize  AOImagesize = AOImageData.imageWidth * AOImageData.imageHeight * 4;
 
 		bufferManager->CreateTextureImage(&AOTextureData,AOImageData.imageData, AOImagesize, AOImageData.imageWidth, AOImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
 
 		AOTextures.push_back(AOTextureData);
+
+
+		ImageData  EmissiveTextureData;
+		EmissiveTextureData.ImageID = FilePath + "Emissive Image" + std::to_string(i);
+
+		StoredImageData EmissiveImageData = ModelTextures[i * 5 + 4];
+		vk::DeviceSize  EmissiveImagesize = EmissiveImageData.imageWidth * EmissiveImageData.imageHeight * 4;
+
+		bufferManager->CreateTextureImage(&EmissiveTextureData, EmissiveImageData.imageData, EmissiveImagesize, EmissiveImageData.imageWidth, EmissiveImageData.imageHeight, vk::Format::eR8G8B8A8Srgb, commandPool, vulkanContext->graphicsQueue);
+
+		EmissiveTextures.push_back(EmissiveTextureData);
+
 	}
 
 
@@ -334,9 +346,15 @@ void Model::createDescriptorSetLayout()
 	AOSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	AOSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
+	vk::DescriptorSetLayoutBinding EmissiveSamplerLayout{};
+	EmissiveSamplerLayout.binding = 6;
+	EmissiveSamplerLayout.descriptorCount = 1;
+	EmissiveSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	EmissiveSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-	std::array<vk::DescriptorSetLayoutBinding, 6> bindings = { VertexUniformBufferBinding,
-																ModelUniformBufferBinding,AlbedoSamplerLayout,NormalSamplerLayout,MetallicRoughnessSamplerLayout,AOSamplerLayout
+	std::array<vk::DescriptorSetLayoutBinding, 7> bindings = { VertexUniformBufferBinding,ModelUniformBufferBinding,
+		                                                       AlbedoSamplerLayout,NormalSamplerLayout,
+		                                                       MetallicRoughnessSamplerLayout,AOSamplerLayout,EmissiveSamplerLayout
 	                                                            };
 
 	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
@@ -459,11 +477,26 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 				AOSamplerdescriptorWrite.descriptorCount = 1;
 				AOSamplerdescriptorWrite.pImageInfo = &AOimageInfo;
 
+
+				vk::DescriptorImageInfo EmissiveimageInfo{};
+				EmissiveimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+				EmissiveimageInfo.imageView   = EmissiveTextures[j].imageView;
+				EmissiveimageInfo.sampler     = EmissiveTextures[j].imageSampler;
+
+				vk::WriteDescriptorSet EmissiveSamplerdescriptorWrite{};
+				EmissiveSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+				EmissiveSamplerdescriptorWrite.dstBinding = 6;
+				EmissiveSamplerdescriptorWrite.dstArrayElement = 0;
+				EmissiveSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+				EmissiveSamplerdescriptorWrite.descriptorCount = 1;
+				EmissiveSamplerdescriptorWrite.pImageInfo = &EmissiveimageInfo;
+
 				/////////////////////////////////////////////////////////////////////////////////////
 
 
-				std::array<vk::WriteDescriptorSet, 6> descriptorWrites{ VertexUniformdescriptorWrite,
-																		ModelUniformdescriptorWrite,SamplerdescriptorWrite,NormalSamplerdescriptorWrite,MetallicRoughnessSamplerdescriptorWrite,AOSamplerdescriptorWrite };
+				std::array<vk::WriteDescriptorSet, 7> descriptorWrites{ VertexUniformdescriptorWrite,ModelUniformdescriptorWrite,SamplerdescriptorWrite,
+					                                                    NormalSamplerdescriptorWrite,MetallicRoughnessSamplerdescriptorWrite,
+					                                                    AOSamplerdescriptorWrite,EmissiveSamplerdescriptorWrite };
 
 				vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 			
@@ -574,7 +607,15 @@ void Model::CleanUp()
 		{
 			bufferManager->DestroyImage(AOTexture);
 		}
+
 		AOTextures.clear();
+
+		for (auto& EmissiveTexture : EmissiveTextures)
+		{
+			bufferManager->DestroyImage(EmissiveTexture);
+		}
+
+		EmissiveTextures.clear();
 
 
 	    bufferManager->DestroyBuffer(BLAS_Buffer);

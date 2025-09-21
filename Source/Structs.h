@@ -13,6 +13,8 @@ struct GBuffer {
     ImageData ViewSpaceNormal;
     ImageData Materials;
     ImageData Albedo;
+    ImageData Emissive;
+
 };
 
 struct VertexUniformData

@@ -295,6 +295,59 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
                     Textures.push_back(TextureData);
                 }
             }
+
+
+            {
+                //check if the material group has the normal texture in its map. 
+                if (gltfMaterial.additionalValues.find("emissiveTexture") != gltfMaterial.additionalValues.end())
+                {
+                    StoredImageData TextureData;
+                    //get the texture from the material map
+                    tinygltf::Texture& occlusiontex = model.textures[gltfMaterial.additionalValues["emissiveTexture"].TextureIndex()];
+                    //get the image from the texture
+                    const tinygltf::Image& image = model.images[occlusiontex.source];
+
+                    size_t occlusionmageSize = image.width * image.height * 4;
+                    TextureData.imageData = static_cast<stbi_uc*>(malloc(occlusionmageSize));
+                    std::memcpy(TextureData.imageData, image.image.data(), occlusionmageSize);
+                    TextureData.imageHeight = image.height;
+                    TextureData.imageWidth = image.width;
+
+                    Textures.push_back(TextureData);
+                }
+                else
+                {
+                    std::vector<stbi_uc> DefaultImage;
+                    const int ImageSize = 4;
+
+                    DefaultImage.resize(ImageSize * ImageSize * 4);
+
+                    for (int i = 0; i < ImageSize * ImageSize * 4; i += 4) {
+
+                        DefaultImage[i + 0] = 0; // R
+                        DefaultImage[i + 1] = 0; // G
+                        DefaultImage[i + 2] = 0; // B
+                        DefaultImage[i + 3] = 255; // A
+                    }
+
+                    size_t DefaultimageSize = DefaultImage.size();
+
+                    StoredImageData TextureData;
+                    TextureData.imageData = static_cast<stbi_uc*>(malloc(DefaultimageSize));
+
+                    // Copy pixel data
+                    std::memcpy(TextureData.imageData, DefaultImage.data(), DefaultimageSize);
+
+                    TextureData.imageHeight = ImageSize;
+                    TextureData.imageWidth = ImageSize;
+
+                    // Store in your textures array
+                    Textures.push_back(TextureData);
+                }
+            }
+
+
+
         }
 
         AssetManager::GetInstance().ParseTextureData(pFile, Textures);

@@ -45,9 +45,10 @@
 	skyBox = std::shared_ptr<SkyBox>(new SkyBox(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), SkyBoxDeleter);
 
 
-	//auto model1 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf" ,vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	//auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	//auto model3 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model1 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf" ,vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	
+	auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	//
 	//auto model4 = std::shared_ptr<Model>(new Model("../Textures/EmptyCornelBox/Cornel.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	//auto model5 = std::shared_ptr<Model>(new Model("../Textures/Dragon2/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
@@ -55,24 +56,24 @@
 
 	//auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
 	
-	//model1.get()->Instances[0]->SetPostion(glm::vec3(-4.282, 2.172, -6.313));
-	//model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
-	//model1.get()->Instances[0]->SetScale(glm::vec3(0.050, 0.050, 0.050));
-	//model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	//model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-	//
-	//model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
-	//model2.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
-	//model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	//model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-	//
-	//model3.get()->Instances[0]->SetPostion(glm::vec3(4.047, 8.914, 2.195));
-	//model3.get()->Instances[0]->SetRotation(glm::vec3(-180.000, -44.147, 180.000));
-	//model3.get()->Instances[0]->SetScale(glm::vec3(0.050, 0.050, 0.050));
-	//model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	//model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+    model1.get()->Instances[0]->SetPostion(glm::vec3(-4.282, 2.172, -6.313));
+    model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
+    model1.get()->Instances[0]->SetScale(glm::vec3(0.050, 0.050, 0.050));
+    model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+    model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+    
+    model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
+    model2.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
+    model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+    model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+    
+    model3.get()->Instances[0]->SetPostion(glm::vec3(4.047, 8.914, 2.195));
+    model3.get()->Instances[0]->SetRotation(glm::vec3(-180.000, -44.147, 180.000));
+    model3.get()->Instances[0]->SetScale(glm::vec3(0.050, 0.050, 0.050));
+    model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+    model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 	//
 	//model4.get()->Instances[0]->SetPostion(glm::vec3(-44.980, 0, 0));
 	//model4.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
@@ -89,12 +90,12 @@
 
 	////
 	////
-    //Models.push_back(std::move(model1));
-    //Models.push_back(std::move(model2));
-	//Models.push_back(std::move(model3));
+    Models.push_back(std::move(model1));
+    Models.push_back(std::move(model2));
+	Models.push_back(std::move(model3));
 	//Models.push_back(std::move(model4));
 	//Models.push_back(std::move(model5));
-	Models.push_back(std::move(model11));
+	//Models.push_back(std::move(model11));
 
 
 
@@ -102,8 +103,8 @@
 	//Models.push_back(std::move(model10));
 	////
 	UserInterfaceItems.push_back(Models[0].get());
-	//UserInterfaceItems.push_back(Models[1].get());
-	//UserInterfaceItems.push_back(Models[2].get());
+	UserInterfaceItems.push_back(Models[1].get());
+	UserInterfaceItems.push_back(Models[2].get());
 	//UserInterfaceItems.push_back(Models[3].get());
 	//UserInterfaceItems.push_back(Models[4].get());
 
@@ -555,6 +556,11 @@ void App::createGBuffer()
 	gbuffer.Albedo.imageView = bufferManger->CreateImageView(&gbuffer.Albedo, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor);
 	gbuffer.Albedo.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
+	gbuffer.Emissive.ImageID = "Gbuffer Emissive Texture";
+	bufferManger->CreateImage(&gbuffer.Emissive, swapchainextent, vk::Format::eR8G8B8A8Srgb, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.Emissive.imageView = bufferManger->CreateImageView(&gbuffer.Emissive, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor);
+	gbuffer.Emissive.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+
 	LightingPassImageData.ImageID = "Gbuffer LightingPass Texture";
 	bufferManger->CreateImage(&LightingPassImageData,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	LightingPassImageData.imageView = bufferManger->CreateImageView(&LightingPassImageData, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
@@ -596,6 +602,7 @@ void App::createGBuffer()
 	bufferManger->TransitionImage(cmd, &gbuffer.Normal, TransitionToGeneral);
 	bufferManger->TransitionImage(cmd, &gbuffer.ViewSpaceNormal, TransitionToGeneral);
 	bufferManger->TransitionImage(cmd, &gbuffer.Albedo, TransitionToGeneral);
+	bufferManger->TransitionImage(cmd, &gbuffer.Emissive, TransitionToGeneral);
 	bufferManger->TransitionImage(cmd, &gbuffer.Materials, TransitionToGeneral);
 	bufferManger->TransitionImage(cmd, &LightingPassImageData, TransitionToGeneral);
 	bufferManger->TransitionImage(cmd, &ssr_FullScreenQuad->SSRImage, TransitionToGeneral);
@@ -851,7 +858,7 @@ void App::CreateGraphicsPipeline()
 
 
 	{
-		std::array<vk::Format, 1> colorFormats = { vulkanContext->swapchainformat };
+		std::array<vk::Format, 1> colorFormats = { vk::Format::eR16G16B16A16Sfloat };
 
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
@@ -867,7 +874,7 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.setSetLayouts(Combined_FullScreenQuad->descriptorSetLayout);
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
 		pipelineLayoutInfo.pPushConstantRanges = &range;
-
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
 
 		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/CombinedImage.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
@@ -949,6 +956,9 @@ void App::CreateGraphicsPipeline()
         
 		LightpipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 		
+		vk::Format lightPassFormat = vk::Format::eR16G16B16A16Sfloat;
+		pipelineRenderingCreateInfo.pColorAttachmentFormats = &lightPassFormat;
+
 		LightgraphicsPipeline = pipelineManager->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
 			                                  viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, LightpipelineLayout);
 
@@ -1002,6 +1012,8 @@ void App::CreateGraphicsPipeline()
 		 pipelineLayoutInfo.pushConstantRangeCount = 0;
 		 pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
+		 vk::Format skyBoxFormat = vk::Format::eR16G16B16A16Sfloat;
+		 pipelineRenderingCreateInfo.pColorAttachmentFormats = &skyBoxFormat;
 
 		 SkyBoxpipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 
@@ -1065,12 +1077,13 @@ void App::CreateGraphicsPipeline()
 		vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
 		vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
 
-		std::array<vk::Format, 7> colorFormats = {
+		std::array<vk::Format, 8> colorFormats = {
 	                             vk::Format::eR16G16B16A16Sfloat, // Position
 								 vk::Format::eR16G16B16A16Sfloat, // ViewSpacePosition
 	                             vk::Format::eR16G16B16A16Sfloat, // Normal
 					             vk::Format::eR16G16B16A16Sfloat, // // ViewSpaceNormal
 	                             vk::Format::eR8G8B8A8Srgb,       // Albedo
+								 vk::Format::eR8G8B8A8Srgb,       // Emmisive
 								 vk::Format::eR8G8B8A8Unorm,      //Material
 								 vk::Format::eR8G8B8A8Unorm       //ReflectionMask
 	                             };
@@ -1095,7 +1108,7 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges = &range;
 
-		std::array<vk::PipelineColorBlendAttachmentState, 7> colorBlendAttachments = {
+		std::array<vk::PipelineColorBlendAttachmentState, 8> colorBlendAttachments = {
 			// Position attachment blend state
 			vk::PipelineColorBlendAttachmentState{}
 				.setColorWriteMask(vk::ColorComponentFlagBits::eR |
@@ -1141,6 +1154,13 @@ void App::CreateGraphicsPipeline()
 			.setBlendEnable(VK_FALSE),
 			// Albedo attachment blend state
 		vk::PipelineColorBlendAttachmentState{}
+			.setColorWriteMask(vk::ColorComponentFlagBits::eR |
+							  vk::ColorComponentFlagBits::eG |
+							  vk::ColorComponentFlagBits::eB |
+							  vk::ColorComponentFlagBits::eA)
+			.setBlendEnable(VK_FALSE),
+
+					vk::PipelineColorBlendAttachmentState{}
 			.setColorWriteMask(vk::ColorComponentFlagBits::eR |
 							  vk::ColorComponentFlagBits::eG |
 							  vk::ColorComponentFlagBits::eB |
@@ -1610,7 +1630,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionToGeneral);
 		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionToGeneral);
 
-	
 
 
 		vk::RenderingAttachmentInfo PositioncolorAttachmentInfo{};
@@ -1648,6 +1667,13 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		AlbedocolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
 		AlbedocolorAttachmentInfo.clearValue = clearColor;
 
+		vk::RenderingAttachmentInfo EmmisivAttachmentInfo{};
+		EmmisivAttachmentInfo.imageView = gbuffer.Emissive.imageView;
+		EmmisivAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		EmmisivAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
+		EmmisivAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		EmmisivAttachmentInfo.clearValue = clearColor;
+
 		vk::RenderingAttachmentInfo MaterialscolorAttachmentInfo{};
 		MaterialscolorAttachmentInfo.imageView = gbuffer.Materials.imageView;
 		MaterialscolorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
@@ -1662,9 +1688,10 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		ReflectionMaskcolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
 		ReflectionMaskcolorAttachmentInfo.clearValue = clearColor;
 
-		std::array<vk::RenderingAttachmentInfo, 7> ColorAttachments{ PositioncolorAttachmentInfo,ViewSpacePositioncolorAttachmentInfo,
+		std::array<vk::RenderingAttachmentInfo, 8> ColorAttachments{ PositioncolorAttachmentInfo,ViewSpacePositioncolorAttachmentInfo,
 			                                                         NormalcolorAttachmentInfo, ViewSpaceNormalcolorAttachmentInfo,
-			                                                         AlbedocolorAttachmentInfo,MaterialscolorAttachmentInfo,ReflectionMaskcolorAttachmentInfo };
+			                                                         AlbedocolorAttachmentInfo,EmmisivAttachmentInfo,
+			                                                         MaterialscolorAttachmentInfo,ReflectionMaskcolorAttachmentInfo };
 
 		vk::RenderingAttachmentInfo depthStencilAttachment;
 		depthStencilAttachment.imageView = DepthTextureData.imageView;
@@ -2546,6 +2573,7 @@ void App::destroy_GbufferImages()
 	bufferManger->DestroyImage(gbuffer.ViewSpaceNormal);
 	bufferManger->DestroyImage(gbuffer.Materials);
 	bufferManger->DestroyImage(gbuffer.Albedo);
+	bufferManger->DestroyImage(gbuffer.Emissive);
 	bufferManger->DestroyImage(LightingPassImageData);
 	bufferManger->DestroyImage(ReflectionMaskImageData);
 

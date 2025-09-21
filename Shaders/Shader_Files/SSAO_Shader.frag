@@ -52,10 +52,9 @@ void main() {
                }
           }
 
-    occlusion = 1.0 - (occlusion / KD.KernelSizeRadiusBiasAndBool.x);
-   
-    outFragcolor =  vec4(occlusion,occlusion,occlusion,1.0f);
-
+        occlusion = 1.0 - (occlusion / KD.KernelSizeRadiusBiasAndBool.x);
     }
+ 
+     outFragcolor =  vec4(occlusion,occlusion,occlusion,1.0f);
 
 }

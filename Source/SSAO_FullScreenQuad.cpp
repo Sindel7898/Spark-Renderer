@@ -77,7 +77,7 @@ void SSA0_FullScreenQuad::CreateUniformBuffer()
 
 void SSA0_FullScreenQuad::CreateImage() {
 
-	SSAOImageSize = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
+	SSAOImageSize = vk::Extent3D(vulkanContext->swapchainExtent.width/2, vulkanContext->swapchainExtent.height/2, 1);
 	BluredSSAOImageSize = vk::Extent3D(vulkanContext->swapchainExtent.width , vulkanContext->swapchainExtent.height , 1);
 
 	SSAOImage.ImageID = "SSAO Image Pass Image";

@@ -168,6 +168,7 @@ public:
     std::vector<ImageData> NormalTextures;
     std::vector<ImageData> MetallicRoughnessTextures;
     std::vector<ImageData> AOTextures;
+    std::vector<ImageData> EmissiveTextures;
 
 
     vk::AccelerationStructureKHR BLAS;
