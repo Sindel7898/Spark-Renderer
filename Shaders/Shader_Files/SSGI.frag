@@ -20,7 +20,7 @@ const int MAX_ITERATION = 25;
 const int MAX_RAYS = 3;
 const int MIN_RAYS = 2;
 
-const float MAX_THICKNESS = 0.1; 
+const float MAX_THICKNESS = 0.5; 
 
 struct RayHit {
     vec3 position;
@@ -90,7 +90,7 @@ RayHit  FindIntersectionPoint(vec3 SamplePosInVS, vec3 DirInVS, float MaxTraceDi
 
 vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal)
 {
-    return ViewPosition + 0.0001 * normal;
+    return ViewPosition + normal * 0.001;
 }
 
 void main() {
@@ -123,7 +123,7 @@ void main() {
          if(dot(stochasticNormal, stochasticNormal) > 0.001){
          
            RayHit hit  = FindIntersectionPoint(
-                         offsetPositionAlongNormal(VSposition, stochasticNormal), 
+                         offsetPositionAlongNormal(VSposition, Normal), 
                          stochasticNormal, 
                          200.0);
 
@@ -133,13 +133,12 @@ void main() {
             vec2 uv = RayPositionPS.xy * 0.5 + 0.5;
             
             vec3 hitAlbedo  = textureLod(AlbedoTexture, uv,0).rgb;
-            vec3 hitDirect   = textureLod(DirectLigtingTexture, uv, 0).rgb;
 
             float falloff = 1.0 / (1.0 + hit.Distance * hit.Distance * 0.002);
 
             float cosTerm = max(dot(Normal, stochasticNormal),0);
           
-            vec3 contribution = hitAlbedo * hitDirect * cosTerm * falloff;
+            vec3 contribution = (hitAlbedo * falloff)  * cosTerm;
             giContribution += contribution;
 
          }
@@ -147,5 +146,5 @@ void main() {
     }
 
 
-    outFragcolor = vec4(giContribution ,1.0);
+    outFragcolor = vec4(giContribution / NUM_RAYS ,1.0);
 }
