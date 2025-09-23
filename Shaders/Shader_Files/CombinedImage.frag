@@ -1,4 +1,5 @@
 #version 450
+const float PI = 3.14159265359;
 
 layout (binding = 0) uniform sampler2D LightingReflectionTexture;
 layout (binding = 1) uniform sampler2D GITexture;                
@@ -67,13 +68,15 @@ void main() {
      
 
      float FinalAO         = SSAO * MaterialAO;
+     vec3 IndirectLighting = GI * Albedo / PI;
+     IndirectLighting *= FinalAO;
+
      if(FinalAO < 0.1){FinalAO = 1;}
 
-     vec3 FinalColor = (DirectLighting + (GI * Albedo)) * FinalAO;
+     vec3 FinalColor = (DirectLighting + IndirectLighting);
      vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, Brightness, Saturation, Concentration);
 
     float luma = rgb2luma(CorrectedColor);
-// If the pixel is darker than ~0.2, apply gamma; otherwise, leave it at 1.0 (no correction)
     float darkFactor   = smoothstep(0.0, 0.2, luma); // 0 when dark, 1 when bright
     float dynamicGamma = mix(MinGamma, MaxGamma, darkFactor);  // gamma = 0.7 in darks, 1.0 in brights
 

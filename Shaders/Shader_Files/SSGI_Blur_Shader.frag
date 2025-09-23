@@ -28,6 +28,8 @@ void main() {
 
     if(pc.Direction == 0){ Direction = false;}
     float MainDepth   = texture(samplerViewSpacePosition, inTexCoord,0).b ;
+    
+    float depthScale = clamp(abs(MainDepth) * 0.05, 0.01, 1.2);
 
     for(int i = -4; i <= 4; i++)
     {
@@ -40,7 +42,8 @@ void main() {
         float w = weights[idx];
 
         float Difference = abs(MainDepth - OffsetDepth);
-        if(Difference < 1.2){
+        
+        if(Difference < depthScale){
             result += texture(samplerta_SSGI, inTexCoord + offset).rgb * w; 
             totalWeight += w;
         }
