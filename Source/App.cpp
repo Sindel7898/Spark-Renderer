@@ -26,14 +26,18 @@
 #define DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
 
 
- App::App()
+ App::App() :window(1920, 1080, "Spark Renderer"),           
+	         vulkanContext(window),                                  
+	         bufferManger(&vulkanContext),                           
+	         camera(vulkanContext.swapchainExtent.width,vulkanContext.swapchainExtent.height,window.GetWindow()),
+	         userinterface(&vulkanContext, &window, &bufferManger) 
 {
-	window        = std::shared_ptr<Window>(new Window(1920, 1080, "Spark Renderer"), WindowDeleter);
-	vulkanContext = std::shared_ptr<VulkanContext>(new VulkanContext(*window), VulkanContextDeleter);
-	bufferManger  = std::shared_ptr<BufferManager>(new BufferManager (vulkanContext.get()), BufferManagerDeleter);
-  	camera        = std::shared_ptr<Camera>(new Camera (vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, window->GetWindow()));
-	userinterface = std::shared_ptr<UserInterface>(new UserInterface(vulkanContext.get(), window.get(), bufferManger.get()),UserInterfaceDeleter);
-	glfwSetWindowUserPointer(window->GetWindow(), this);
+	//window        = std::shared_ptr<Window>(new Window(1920, 1080, "Spark Renderer"), WindowDeleter);
+	//vulkanContext = std::shared_ptr<VulkanContext>(new VulkanContext(window), VulkanContextDeleter);
+	//bufferManger  = std::shared_ptr<BufferManager>(new BufferManager (&vulkanContext), BufferManagerDeleter);
+  	//camera        = std::shared_ptr<Camera>(new Camera (vulkanContext.swapchainExtent.width, vulkanContext.swapchainExtent.height, window.GetWindow()));
+	//userinterface = std::shared_ptr<UserInterface>(new UserInterface(&vulkanContext, &window, &bufferManger),UserInterfaceDeleter);
+	glfwSetWindowUserPointer(window.GetWindow(), this);
 
 	createSyncObjects();	
 	//////////////////////////
@@ -42,21 +46,21 @@
 
 
 
-	skyBox = std::shared_ptr<SkyBox>(new SkyBox(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), SkyBoxDeleter);
+	skyBox = std::shared_ptr<SkyBox>(new SkyBox(&vulkanContext, commandPool, &camera, &bufferManger), SkyBoxDeleter);
 
 
-	auto model1 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf" ,vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model1 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf" ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	
-	auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	//
-	//auto model4 = std::shared_ptr<Model>(new Model("../Textures/EmptyCornelBox/Cornel.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	//auto model5 = std::shared_ptr<Model>(new Model("../Textures/Dragon2/scene.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model4 = std::shared_ptr<Model>(new Model("../Textures/EmptyCornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	//auto model5 = std::shared_ptr<Model>(new Model("../Textures/Dragon2/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 
 
-	//auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
-	//auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), ModelDeleter);
+	//auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	//auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	
     model1.get()->Instances[0]->SetPostion(glm::vec3(-4.282, 2.172, -6.313));
     model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
@@ -111,21 +115,21 @@
 	//UserInterfaceItems.push_back(Models[7].get());
 
 
-	Raytracing_Shadows      =  std::shared_ptr<RT_Shadows>(new RT_Shadows(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), RT_ShadowsDeleter);
-	//Raytracing_Reflections   = std::shared_ptr<RT_Reflections>(new RT_Reflections(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), RT_ReflectionsDeleter);
+	Raytracing_Shadows      =  std::shared_ptr<RT_Shadows>(new RT_Shadows(&vulkanContext, commandPool, &camera, &bufferManger), RT_ShadowsDeleter);
+	//Raytracing_Reflections   = std::shared_ptr<RT_Reflections>(new RT_Reflections(&vulkanContext, commandPool, &camera, &bufferManger), RT_ReflectionsDeleter);
 
-	lighting_FullScreenQuad = std::shared_ptr<Lighting_FullScreenQuad>(new Lighting_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool, skyBox.get(), Raytracing_Shadows.get()), Lighting_FullScreenQuadDeleter);
-	ssao_FullScreenQuad     = std::shared_ptr<SSA0_FullScreenQuad>(new SSA0_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSA0_FullScreenQuadDeleter);
-	fxaa_FullScreenQuad     = std::shared_ptr<FXAA_FullScreenQuad>(new FXAA_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), FXAA_FullScreenQuadDeleter);
-	ssr_FullScreenQuad      = std::shared_ptr<SSR_FullScreenQuad>(new SSR_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSR_FullScreenQuadDeleter);
-	Combined_FullScreenQuad = std::shared_ptr<CombinedResult_FullScreenQuad>(new CombinedResult_FullScreenQuad(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), CombinedResult_FullScreenQuadDeleter);
-	SSGI_FullScreenQuad     = std::shared_ptr<SSGI>(new SSGI(bufferManger.get(), vulkanContext.get(), camera.get(), commandPool), SSGIDeleter);
-	pipelineManager         = std::shared_ptr<PipelineManager>(new PipelineManager(vulkanContext.get()));
+	lighting_FullScreenQuad = std::shared_ptr<Lighting_FullScreenQuad>(new Lighting_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool, skyBox.get(), Raytracing_Shadows.get()), Lighting_FullScreenQuadDeleter);
+	ssao_FullScreenQuad     = std::shared_ptr<SSA0_FullScreenQuad>(new SSA0_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), SSA0_FullScreenQuadDeleter);
+	fxaa_FullScreenQuad     = std::shared_ptr<FXAA_FullScreenQuad>(new FXAA_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), FXAA_FullScreenQuadDeleter);
+	ssr_FullScreenQuad      = std::shared_ptr<SSR_FullScreenQuad>(new SSR_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), SSR_FullScreenQuadDeleter);
+	Combined_FullScreenQuad = std::shared_ptr<CombinedResult_FullScreenQuad>(new CombinedResult_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), CombinedResult_FullScreenQuadDeleter);
+	SSGI_FullScreenQuad     = std::shared_ptr<SSGI>(new SSGI(&bufferManger, &vulkanContext, &camera, commandPool), SSGIDeleter);
+	pipelineManager         = std::shared_ptr<PipelineManager>(new PipelineManager(&vulkanContext));
 
 	lights.reserve(4);
 
 	for (int i = 0; i < 4; i++) {
-		std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(vulkanContext.get(), commandPool, camera.get(), bufferManger.get()), LightDeleter);
+		std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(&vulkanContext, commandPool, &camera, &bufferManger), LightDeleter);
 		lights.push_back(std::move(light));
 	}
 
@@ -243,9 +247,9 @@ void App::CreateDebugUtils()
 	 TLAS_InstanceData.BufferID = "Scene TLAS InstanceData Buffer";
 	 size_t totalSize = sizeof(vk::AccelerationStructureInstanceKHR) * Models.size();
 
-	 bufferManger->CreateBuffer(&TLAS_InstanceData, totalSize,
+	 bufferManger.CreateBuffer(&TLAS_InstanceData, totalSize,
 		 vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR |
-		 vk::BufferUsageFlagBits::eShaderDeviceAddress, commandPool, vulkanContext->graphicsQueue);
+		 vk::BufferUsageFlagBits::eShaderDeviceAddress, commandPool, vulkanContext.graphicsQueue);
 
 	 UpdateTLASInstanceBuffer();
 
@@ -255,7 +259,7 @@ void App::CreateDebugUtils()
 	 InstanceInfo.buffer = TLAS_InstanceData.buffer;
 
 	 vk::DeviceOrHostAddressConstKHR instanceDataDeviceAddresstance{};
-	 instanceDataDeviceAddresstance.deviceAddress = vulkanContext->LogicalDevice.getBufferAddress(InstanceInfo); // pass instance buffer address
+	 instanceDataDeviceAddresstance.deviceAddress = vulkanContext.LogicalDevice.getBufferAddress(InstanceInfo); // pass instance buffer address
 	 
 
 	 vk::AccelerationStructureGeometryKHR accelerationStructureGeometry{};
@@ -281,7 +285,7 @@ void App::CreateDebugUtils()
 	 TEMP_ACCELERATION_STRUCTURE_BUILD_SIZE.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
 	 TEMP_ACCELERATION_STRUCTURE_BUILD_SIZE.pNext = nullptr;
 
-	 vulkanContext->vkGetAccelerationStructureBuildSizesKHR(vulkanContext->LogicalDevice, 
+	 vulkanContext.vkGetAccelerationStructureBuildSizesKHR(vulkanContext.LogicalDevice, 
 		                                                    VkAccelerationStructureBuildTypeKHR::VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, 
 		                                                     &TEMP_ACCELERATION_INFO, &primitive_count, &TEMP_ACCELERATION_STRUCTURE_BUILD_SIZE);
 
@@ -291,12 +295,12 @@ void App::CreateDebugUtils()
 	                                               ///////CREATE TLAS BUFFER////////
 	 TLAS_Buffer.BufferID = "Scene TLAS Buffer";
 
-	 bufferManger->CreateDeviceBuffer(&TLAS_Buffer,
+	 bufferManger.CreateDeviceBuffer(&TLAS_Buffer,
 		                              accelerationStructureBuildSizesInfo.accelerationStructureSize,
 		                              vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
 		                              vk::BufferUsageFlagBits::eShaderDeviceAddress,
 		                              commandPool,
-		                              vulkanContext->graphicsQueue);
+		                              vulkanContext.graphicsQueue);
 
 	 // Acceleration structure
      vk::AccelerationStructureCreateInfoKHR accelerationStructureCreate_info{};
@@ -306,32 +310,32 @@ void App::CreateDebugUtils()
 
 	 VkAccelerationStructureCreateInfoKHR TEMP_ACCELERATION_STRUCTURE_CREATE_INFO = accelerationStructureCreate_info;
 	 VkAccelerationStructureKHR TEMP_TLAS;
-	 vulkanContext->vkCreateAccelerationStructureKHR(vulkanContext->LogicalDevice, &TEMP_ACCELERATION_STRUCTURE_CREATE_INFO, nullptr, &TEMP_TLAS);
+	 vulkanContext.vkCreateAccelerationStructureKHR(vulkanContext.LogicalDevice, &TEMP_ACCELERATION_STRUCTURE_CREATE_INFO, nullptr, &TEMP_TLAS);
 	 TLAS = TEMP_TLAS;
 	 
 	 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 											///////CREATE TLAS SCRATCH BUFFER////////
 
 	 TLAS_SCRATCH_Buffer.BufferID = "TLAS_ScratchBuffer Buffer";
-	 bufferManger->CreateDeviceBuffer(&TLAS_SCRATCH_Buffer,
+	 bufferManger.CreateDeviceBuffer(&TLAS_SCRATCH_Buffer,
 		                               accelerationStructureBuildSizesInfo.buildScratchSize,
 		                               vk::BufferUsageFlagBits::eStorageBuffer |
 		                               vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
 		                               vk::BufferUsageFlagBits::eShaderDeviceAddress,
 		                               commandPool,
-		                               vulkanContext->graphicsQueue);
+		                               vulkanContext.graphicsQueue);
 
 	 vk::BufferDeviceAddressInfo TLAS_ScratchBufferAdress;
 	 TLAS_ScratchBufferAdress.buffer = TLAS_SCRATCH_Buffer.buffer;
 
 	 accelerationStructureBuildGeometryInfo.dstAccelerationStructure = TLAS;
-	 accelerationStructureBuildGeometryInfo.scratchData.deviceAddress = vulkanContext->LogicalDevice.getBufferAddress(TLAS_ScratchBufferAdress);
+	 accelerationStructureBuildGeometryInfo.scratchData.deviceAddress = vulkanContext.LogicalDevice.getBufferAddress(TLAS_ScratchBufferAdress);
 	 accelerationStructureBuildGeometryInfo.mode = vk::BuildAccelerationStructureModeKHR::eBuild;
 	 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 												///////BUILD TLAS ON THE GPU ////////
 
-	 vk::CommandBuffer cmd = bufferManger->CreateSingleUseCommandBuffer(commandPool);
+	 vk::CommandBuffer cmd = bufferManger.CreateSingleUseCommandBuffer(commandPool);
 
 	 vk::AccelerationStructureBuildRangeInfoKHR BuildRangeInfo;
 	 BuildRangeInfo.firstVertex     = 0;
@@ -344,11 +348,11 @@ void App::CreateDebugUtils()
 
 	 VkAccelerationStructureBuildGeometryInfoKHR tempGeometryInfo = accelerationStructureBuildGeometryInfo;
 
-	 vulkanContext->vkCmdBuildAccelerationStructuresKHR(cmd, 1,
+	 vulkanContext.vkCmdBuildAccelerationStructuresKHR(cmd, 1,
 		 &tempGeometryInfo,
 		 accelerationBuildStructureRangeInfos.data());
 
-	 bufferManger->SubmitAndDestoyCommandBuffer(commandPool, cmd, vulkanContext->graphicsQueue);
+	 bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd, vulkanContext.graphicsQueue);
 	 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
  }
 
@@ -362,7 +366,7 @@ void App::CreateDebugUtils()
 	 instanceInfo.buffer = TLAS_InstanceData.buffer;
 
 	 vk::DeviceOrHostAddressConstKHR instanceDeviceAddress{};
-	 instanceDeviceAddress.deviceAddress = vulkanContext->LogicalDevice.getBufferAddress(instanceInfo);
+	 instanceDeviceAddress.deviceAddress = vulkanContext.LogicalDevice.getBufferAddress(instanceInfo);
 
 	 // 3. Setup geometry
 	 vk::AccelerationStructureGeometryKHR geometry{};
@@ -386,7 +390,7 @@ void App::CreateDebugUtils()
 	 // 5. Scratch buffer address
 	 vk::BufferDeviceAddressInfo scratchAddrInfo{};
 	 scratchAddrInfo.buffer = TLAS_SCRATCH_Buffer.buffer;
-	 buildInfo.scratchData.deviceAddress = vulkanContext->LogicalDevice.getBufferAddress(scratchAddrInfo);
+	 buildInfo.scratchData.deviceAddress = vulkanContext.LogicalDevice.getBufferAddress(scratchAddrInfo);
 
 	 // 6. Build range info
 	 vk::AccelerationStructureBuildRangeInfoKHR buildRange{};
@@ -399,11 +403,11 @@ void App::CreateDebugUtils()
 	 std::vector<VkAccelerationStructureBuildRangeInfoKHR*> rangeInfos = { &tempRange };
 
 	 // 7. Record and submit command buffer
-	 vk::CommandBuffer cmd = bufferManger->CreateSingleUseCommandBuffer(commandPool);
+	 vk::CommandBuffer cmd = bufferManger.CreateSingleUseCommandBuffer(commandPool);
 	 VkAccelerationStructureBuildGeometryInfoKHR tempBuildInfo = buildInfo;
 
-	 vulkanContext->vkCmdBuildAccelerationStructuresKHR(cmd, 1, &tempBuildInfo, rangeInfos.data());
-	 bufferManger->SubmitAndDestoyCommandBuffer(commandPool, cmd, vulkanContext->graphicsQueue);
+	 vulkanContext.vkCmdBuildAccelerationStructuresKHR(cmd, 1, &tempBuildInfo, rangeInfos.data());
+	 bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd, vulkanContext.graphicsQueue);
  }
 
 
@@ -434,12 +438,12 @@ void App::CreateDebugUtils()
 		 instance.mask = 0xFF;
 		 instance.instanceShaderBindingTableRecordOffset = 0;
 		 instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
-		 instance.accelerationStructureReference = vulkanContext->vkGetAccelerationStructureDeviceAddressKHR(vulkanContext->LogicalDevice, &Temp);
+		 instance.accelerationStructureReference = vulkanContext.vkGetAccelerationStructureDeviceAddressKHR(vulkanContext.LogicalDevice, &Temp);
 
 		 Instances.push_back(instance);
 	 }
 	 // send all instance data into the buffer
-	 bufferManger->CopyDataToBuffer(Instances.data(), TLAS_InstanceData);
+	 bufferManger.CopyDataToBuffer(Instances.data(), TLAS_InstanceData);
  }
 
 
@@ -470,7 +474,7 @@ void App::createDescriptorPool()
 	poolInfo.pPoolSizes = poolSizes.data();
 	poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 1000;
 
-	DescriptorPool = vulkanContext->LogicalDevice.createDescriptorPool(poolInfo, nullptr);
+	DescriptorPool = vulkanContext.LogicalDevice.createDescriptorPool(poolInfo, nullptr);
 
 	for(auto& model : Models)
 	{
@@ -488,15 +492,15 @@ void App::createDescriptorPool()
 
 void App::createDepthTextureImage()
 {
-	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
+	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext.swapchainExtent.width, vulkanContext.swapchainExtent.height, 1);
 
 
 	DepthTextureData.ImageID = "Depth Texture";
-	bufferManger->CreateImage(&DepthTextureData,swapchainextent, vulkanContext->FindCompatableDepthFormat(), vk::ImageUsageFlagBits::eDepthStencilAttachment |vk::ImageUsageFlagBits::eSampled);
-	DepthTextureData.imageView = bufferManger->CreateImageView(&DepthTextureData, vulkanContext->FindCompatableDepthFormat(), vk::ImageAspectFlagBits::eDepth);
-	DepthTextureData.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	bufferManger.CreateImage(&DepthTextureData,swapchainextent, vulkanContext.FindCompatableDepthFormat(), vk::ImageUsageFlagBits::eDepthStencilAttachment |vk::ImageUsageFlagBits::eSampled);
+	DepthTextureData.imageView = bufferManger.CreateImageView(&DepthTextureData, vulkanContext.FindCompatableDepthFormat(), vk::ImageAspectFlagBits::eDepth);
+	DepthTextureData.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
-	vk::CommandBuffer commandBuffer = bufferManger->CreateSingleUseCommandBuffer(commandPool);
+	vk::CommandBuffer commandBuffer = bufferManger.CreateSingleUseCommandBuffer(commandPool);
 
 	ImageTransitionData DataToTransitionInfo;
 	DataToTransitionInfo.oldlayout = vk::ImageLayout::eUndefined;
@@ -510,66 +514,66 @@ void App::createDepthTextureImage()
 	DataToTransitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
 	DataToTransitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests;
 
-	bufferManger->TransitionImage(commandBuffer, &DepthTextureData, DataToTransitionInfo);
+	bufferManger.TransitionImage(commandBuffer, &DepthTextureData, DataToTransitionInfo);
 
-	bufferManger->SubmitAndDestoyCommandBuffer(commandPool, commandBuffer, vulkanContext->graphicsQueue);
+	bufferManger.SubmitAndDestoyCommandBuffer(commandPool, commandBuffer, vulkanContext.graphicsQueue);
 
 }
 
 
 void App::createGBuffer()
 {
-	vulkanContext->ResetTemporalAccumilation();
+	vulkanContext.ResetTemporalAccumilation();
 
-	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
+	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext.swapchainExtent.width, vulkanContext.swapchainExtent.height, 1);
 
 	gbuffer.Position.ImageID = "Gbuffer Position Texture";
-	bufferManger->CreateImage(&gbuffer.Position,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	gbuffer.Position.imageView = bufferManger->CreateImageView(&gbuffer.Position, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	gbuffer.Position.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	bufferManger.CreateImage(&gbuffer.Position,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.Position.imageView = bufferManger.CreateImageView(&gbuffer.Position, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	gbuffer.Position.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	gbuffer.ViewSpacePosition.ImageID = "Gbuffer Position Texture";
-	bufferManger->CreateImage(&gbuffer.ViewSpacePosition,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	gbuffer.ViewSpacePosition.imageView = bufferManger->CreateImageView(&gbuffer.ViewSpacePosition, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	gbuffer.ViewSpacePosition.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	bufferManger.CreateImage(&gbuffer.ViewSpacePosition,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.ViewSpacePosition.imageView = bufferManger.CreateImageView(&gbuffer.ViewSpacePosition, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	gbuffer.ViewSpacePosition.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	gbuffer.Normal.ImageID = "Gbuffer WorldSpaceNormal Texture";
-	bufferManger->CreateImage(&gbuffer.Normal,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	gbuffer.Normal.imageView = bufferManger->CreateImageView(&gbuffer.Normal, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	gbuffer.Normal.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	bufferManger.CreateImage(&gbuffer.Normal,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.Normal.imageView = bufferManger.CreateImageView(&gbuffer.Normal, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	gbuffer.Normal.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	gbuffer.ViewSpaceNormal.ImageID = "Gbuffer ViewSpaceNormal Texture";
-	bufferManger->CreateImage(&gbuffer.ViewSpaceNormal,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	gbuffer.ViewSpaceNormal.imageView = bufferManger->CreateImageView(&gbuffer.ViewSpaceNormal, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	gbuffer.ViewSpaceNormal.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	bufferManger.CreateImage(&gbuffer.ViewSpaceNormal,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.ViewSpaceNormal.imageView = bufferManger.CreateImageView(&gbuffer.ViewSpaceNormal, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	gbuffer.ViewSpaceNormal.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	gbuffer.Materials.ImageID = "Gbuffer Materials Texture";
-	bufferManger->CreateImage(&gbuffer.Materials ,swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	gbuffer.Materials.imageView = bufferManger->CreateImageView(&gbuffer.Materials, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
-	gbuffer.Materials.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	bufferManger.CreateImage(&gbuffer.Materials ,swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.Materials.imageView = bufferManger.CreateImageView(&gbuffer.Materials, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
+	gbuffer.Materials.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	gbuffer.Albedo.ImageID = "Gbuffer Albedo Texture";
-	bufferManger->CreateImage(&gbuffer.Albedo,swapchainextent, vk::Format::eR8G8B8A8Srgb, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	gbuffer.Albedo.imageView = bufferManger->CreateImageView(&gbuffer.Albedo, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor);
-	gbuffer.Albedo.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	bufferManger.CreateImage(&gbuffer.Albedo,swapchainextent, vk::Format::eR8G8B8A8Srgb, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.Albedo.imageView = bufferManger.CreateImageView(&gbuffer.Albedo, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor);
+	gbuffer.Albedo.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	gbuffer.Emissive.ImageID = "Gbuffer Emissive Texture";
-	bufferManger->CreateImage(&gbuffer.Emissive, swapchainextent, vk::Format::eR8G8B8A8Srgb, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	gbuffer.Emissive.imageView = bufferManger->CreateImageView(&gbuffer.Emissive, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor);
-	gbuffer.Emissive.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	bufferManger.CreateImage(&gbuffer.Emissive, swapchainextent, vk::Format::eR8G8B8A8Srgb, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.Emissive.imageView = bufferManger.CreateImageView(&gbuffer.Emissive, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor);
+	gbuffer.Emissive.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	LightingPassImageData.ImageID = "Gbuffer LightingPass Texture";
-	bufferManger->CreateImage(&LightingPassImageData,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	LightingPassImageData.imageView = bufferManger->CreateImageView(&LightingPassImageData, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	LightingPassImageData.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	bufferManger.CreateImage(&LightingPassImageData,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	LightingPassImageData.imageView = bufferManger.CreateImageView(&LightingPassImageData, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	LightingPassImageData.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	ReflectionMaskImageData.ImageID = "ReflectionMask Texture";
-	bufferManger->CreateImage(&ReflectionMaskImageData, swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	ReflectionMaskImageData.imageView = bufferManger->CreateImageView(&ReflectionMaskImageData, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
-	ReflectionMaskImageData.imageSampler = bufferManger->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	bufferManger.CreateImage(&ReflectionMaskImageData, swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	ReflectionMaskImageData.imageView = bufferManger.CreateImageView(&ReflectionMaskImageData, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
+	ReflectionMaskImageData.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 
 	fxaa_FullScreenQuad->CreateImage(swapchainextent);
@@ -587,7 +591,7 @@ void App::createGBuffer()
 	Raytracing_Shadows->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
 	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, LightingPassImageData,DepthTextureData);
 
-	vk::CommandBuffer cmd =  bufferManger->CreateSingleUseCommandBuffer(commandPool);
+	vk::CommandBuffer cmd =  bufferManger.CreateSingleUseCommandBuffer(commandPool);
 	ImageTransitionData TransitionToGeneral{};
 	TransitionToGeneral.oldlayout = vk::ImageLayout::eUndefined;
 	TransitionToGeneral.newlayout = vk::ImageLayout::eGeneral;
@@ -597,33 +601,33 @@ void App::createGBuffer()
 	TransitionToGeneral.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
 	TransitionToGeneral.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
 
-	bufferManger->TransitionImage(cmd, &gbuffer.Position, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &gbuffer.ViewSpacePosition, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &gbuffer.Normal, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &gbuffer.ViewSpaceNormal, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &gbuffer.Albedo, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &gbuffer.Emissive, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &gbuffer.Materials, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &LightingPassImageData, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &ssr_FullScreenQuad->SSRImage, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &ReflectionMaskImageData, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &Combined_FullScreenQuad->FinalResultImage, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &SSGI_FullScreenQuad->SSGIPassImage, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &SSGI_FullScreenQuad->BlurPing_DownSampleHalfRes, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &SSGI_FullScreenQuad->BlurPong_DownSampleHalfRes, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &SSGI_FullScreenQuad->BlurPing_DownSampleQuaterRes, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &SSGI_FullScreenQuad->BlurPong_DownSampleQuaterRes, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &SSGI_FullScreenQuad->BlurPing_UPSampleHalfRes, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &SSGI_FullScreenQuad->BlurPong_UPSampleHalfRes, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &SSGI_FullScreenQuad->BlurPing_UPSampleFullRes, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &ssao_FullScreenQuad->SSAOImage, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &ssao_FullScreenQuad->BluredSSAOImage, TransitionToGeneral);
-	bufferManger->TransitionImage(cmd, &fxaa_FullScreenQuad->FxaaImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &gbuffer.Position, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &gbuffer.ViewSpacePosition, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &gbuffer.Normal, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &gbuffer.ViewSpaceNormal, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &gbuffer.Albedo, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &gbuffer.Emissive, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &gbuffer.Materials, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &LightingPassImageData, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &ssr_FullScreenQuad->SSRImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &ReflectionMaskImageData, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &Combined_FullScreenQuad->FinalResultImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->SSGIPassImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->BlurPing_DownSampleHalfRes, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->BlurPong_DownSampleHalfRes, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->BlurPing_DownSampleQuaterRes, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->BlurPong_DownSampleQuaterRes, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->BlurPing_UPSampleHalfRes, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->BlurPong_UPSampleHalfRes, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->BlurPing_UPSampleFullRes, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &ssao_FullScreenQuad->SSAOImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &ssao_FullScreenQuad->BluredSSAOImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &fxaa_FullScreenQuad->FxaaImage, TransitionToGeneral);
 
-	bufferManger->SubmitAndDestoyCommandBuffer(commandPool, cmd,vulkanContext->graphicsQueue);
+	bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd,vulkanContext.graphicsQueue);
 
 	
 	FinalRenderTextureId = ImGui_ImplVulkan_AddTexture(fxaa_FullScreenQuad->FxaaImage.imageSampler,
@@ -662,11 +666,11 @@ void App::createGBuffer()
 		VK_IMAGE_LAYOUT_GENERAL);
 
 
-	vulkanContext->ResetTemporalAccumilation();
+	vulkanContext.ResetTemporalAccumilation();
 
 	std::cout << "Swapchain size: "
-		<< vulkanContext->swapchainExtent.width << " x "
-		<< vulkanContext->swapchainExtent.height
+		<< vulkanContext.swapchainExtent.width << " x "
+		<< vulkanContext.swapchainExtent.height
 		<< std::endl;
 }
 
@@ -676,8 +680,8 @@ void App::CreateGraphicsPipeline()
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 	vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 	pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-	pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext->swapchainformat;
-	pipelineRenderingCreateInfo.depthAttachmentFormat = vulkanContext->FindCompatableDepthFormat();
+	pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext.swapchainformat;
+	pipelineRenderingCreateInfo.depthAttachmentFormat = vulkanContext.FindCompatableDepthFormat();
 
 
 	vk::PipelineInputAssemblyStateCreateInfo inputAssembleInfo{};
@@ -688,8 +692,8 @@ void App::CreateGraphicsPipeline()
 	vk::Viewport viewport{};
 	viewport.setX(0.0f);
 	viewport.setY(0.0f);
-	viewport.setHeight((float)vulkanContext->swapchainExtent.height);
-	viewport.setWidth((float)vulkanContext->swapchainExtent.width);
+	viewport.setHeight((float)vulkanContext.swapchainExtent.height);
+	viewport.setWidth((float)vulkanContext.swapchainExtent.width);
 	viewport.setMinDepth(0.0f);
 	viewport.setMaxDepth(1.0f);
 
@@ -697,7 +701,7 @@ void App::CreateGraphicsPipeline()
 
 	vk::Rect2D scissor{};
 	scissor.setOffset(scissorOffset);
-	scissor.setExtent(vulkanContext->swapchainExtent);
+	scissor.setExtent(vulkanContext.swapchainExtent);
 
 	vk::PipelineViewportStateCreateInfo viewportState{};
 	viewportState.setViewportCount(1);
@@ -787,7 +791,7 @@ void App::CreateGraphicsPipeline()
 	{
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-		pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext->swapchainformat;
+		pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext.swapchainformat;
 
 		vk::PushConstantRange range{};
 		range.setOffset(0);
@@ -954,7 +958,7 @@ void App::CreateGraphicsPipeline()
                                      pipelineLayoutInfo.pushConstantRangeCount = 1;
                                      pipelineLayoutInfo.pPushConstantRanges = &range;
         
-		LightpipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+		LightpipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 		
 		vk::Format lightPassFormat = vk::Format::eR16G16B16A16Sfloat;
 		pipelineRenderingCreateInfo.pColorAttachmentFormats = &lightPassFormat;
@@ -962,8 +966,8 @@ void App::CreateGraphicsPipeline()
 		LightgraphicsPipeline = pipelineManager->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
 			                                  viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, LightpipelineLayout);
 
-		vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
-		vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
+		vulkanContext.LogicalDevice.destroyShaderModule(VertShaderModule);
+		vulkanContext.LogicalDevice.destroyShaderModule(FragShaderModule);
 
 	}
 
@@ -1015,13 +1019,13 @@ void App::CreateGraphicsPipeline()
 		 vk::Format skyBoxFormat = vk::Format::eR16G16B16A16Sfloat;
 		 pipelineRenderingCreateInfo.pColorAttachmentFormats = &skyBoxFormat;
 
-		 SkyBoxpipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+		 SkyBoxpipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 
 		 SkyBoxgraphicsPipeline = pipelineManager->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
 			                                  viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, SkyBoxpipelineLayout);
 
-		 vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
-		 vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
+		 vulkanContext.LogicalDevice.destroyShaderModule(VertShaderModule);
+		 vulkanContext.LogicalDevice.destroyShaderModule(FragShaderModule);
 
 	}
 
@@ -1092,7 +1096,7 @@ void App::CreateGraphicsPipeline()
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 		pipelineRenderingCreateInfo.colorAttachmentCount = colorFormats.size();
 		pipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats.data();
-		pipelineRenderingCreateInfo.depthAttachmentFormat = vulkanContext->FindCompatableDepthFormat();
+		pipelineRenderingCreateInfo.depthAttachmentFormat = vulkanContext.FindCompatableDepthFormat();
 
 
 		vk::DescriptorSetLayout setLayouts[] = { Models[0]->descriptorSetLayout };
@@ -1173,13 +1177,13 @@ void App::CreateGraphicsPipeline()
 		colorBlend.setAttachmentCount(colorBlendAttachments.size());
 		colorBlend.setPAttachments(colorBlendAttachments.data());
 
-		geometryPassPipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+		geometryPassPipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 
 		geometryPassPipeline = pipelineManager->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
 			viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, geometryPassPipelineLayout);
 
-		vulkanContext->LogicalDevice.destroyShaderModule(VertShaderModule);
-		vulkanContext->LogicalDevice.destroyShaderModule(FragShaderModule);
+		vulkanContext.LogicalDevice.destroyShaderModule(VertShaderModule);
+		vulkanContext.LogicalDevice.destroyShaderModule(FragShaderModule);
 	}
 
 	///////////////////////////////////////////RAY TRACING PIPELINES////////////////////////////////////////////////////////////////
@@ -1245,12 +1249,12 @@ void App::CreateGraphicsPipeline()
 	   pipelineLayoutInfo.pushConstantRangeCount = 0;
 	   pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
-	   RT_ShadowsPipelineLayout = vulkanContext->LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+	   RT_ShadowsPipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 	   
 	   RT_ShadowsPassPipeline = pipelineManager->createRayTracingGraphicsPipeline(RT_ShadowsPipelineLayout, ShaderStages, ShaderGroups);
 	   
-	   vulkanContext->LogicalDevice.destroyShaderModule(RayGen_ShaderModule);
-	   vulkanContext->LogicalDevice.destroyShaderModule(RayMiss_ShaderModule);
+	   vulkanContext.LogicalDevice.destroyShaderModule(RayGen_ShaderModule);
+	   vulkanContext.LogicalDevice.destroyShaderModule(RayMiss_ShaderModule);
 
 	}
 
@@ -1285,7 +1289,7 @@ void App::CreateGraphicsPipeline()
 
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-		pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext->swapchainformat;
+		pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext.swapchainformat;
 
 		vk::PushConstantRange range{};
 		range.setOffset(0);
@@ -1309,7 +1313,7 @@ void App::CreateGraphicsPipeline()
 	{
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-		pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext->swapchainformat;
+		pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext.swapchainformat;
 
 		vk::PushConstantRange range{};
 		range.setOffset(0);
@@ -1339,16 +1343,16 @@ uint32_t App::alignedSize(uint32_t value, uint32_t alignment)
 void App::createShaderBindingTable() {
 
 	{
-		const size_t   handleSize = vulkanContext->RayTracingPipelineProperties.shaderGroupHandleSize;
-		const size_t   handleSizeAligned = alignedSize(handleSize, vulkanContext->RayTracingPipelineProperties.shaderGroupHandleAlignment);
+		const size_t   handleSize = vulkanContext.RayTracingPipelineProperties.shaderGroupHandleSize;
+		const size_t   handleSizeAligned = alignedSize(handleSize, vulkanContext.RayTracingPipelineProperties.shaderGroupHandleAlignment);
 		const uint32_t groupCount = 3;
 		const uint32_t sbtSize = groupCount * handleSizeAligned;
 
 		// Get shader group handles
 		std::vector<uint8_t> shaderHandleStorage(sbtSize);
 
-		vulkanContext->vkGetRayTracingShaderGroupHandlesKHR(
-			static_cast<VkDevice>(vulkanContext->LogicalDevice),
+		vulkanContext.vkGetRayTracingShaderGroupHandlesKHR(
+			static_cast<VkDevice>(vulkanContext.LogicalDevice),
 			static_cast<VkPipeline>(RT_ShadowsPassPipeline),
 			0,  // First group
 			groupCount,
@@ -1359,22 +1363,22 @@ void App::createShaderBindingTable() {
 		missShaderBindingTableBuffer.BufferID = "miss Shader Binding Table Buffer";
 		hitShaderBindingTableBuffer.BufferID = "hit Shader Binding Table Buffer";
 
-		bufferManger->CreateBuffer(&raygenShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext->graphicsQueue);
-		bufferManger->CreateBuffer(&missShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext->graphicsQueue);
-		bufferManger->CreateBuffer(&hitShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext->graphicsQueue);
+		bufferManger.CreateBuffer(&raygenShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
+		bufferManger.CreateBuffer(&missShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
+		bufferManger.CreateBuffer(&hitShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
 
-		bufferManger->CopyDataToBuffer(shaderHandleStorage.data(), raygenShaderBindingTableBuffer);
-		bufferManger->CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned, missShaderBindingTableBuffer);
-		bufferManger->CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned * 2, hitShaderBindingTableBuffer);
+		bufferManger.CopyDataToBuffer(shaderHandleStorage.data(), raygenShaderBindingTableBuffer);
+		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned, missShaderBindingTableBuffer);
+		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned * 2, hitShaderBindingTableBuffer);
 	}
 
 }
 
 void App::DestroyShaderBindingTable() {
 
-	bufferManger->DestroyBuffer(raygenShaderBindingTableBuffer);
-	bufferManger->DestroyBuffer(missShaderBindingTableBuffer);
-	bufferManger->DestroyBuffer(hitShaderBindingTableBuffer);
+	bufferManger.DestroyBuffer(raygenShaderBindingTableBuffer);
+	bufferManger.DestroyBuffer(missShaderBindingTableBuffer);
+	bufferManger.DestroyBuffer(hitShaderBindingTableBuffer);
 }
 
 
@@ -1384,9 +1388,9 @@ void App::createCommandPool()
 { 
 	vk::CommandPoolCreateInfo poolInfo{};
 	poolInfo.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
-	poolInfo.queueFamilyIndex = vulkanContext->graphicsQueueFamilyIndex;
+	poolInfo.queueFamilyIndex = vulkanContext.graphicsQueueFamilyIndex;
 
-	commandPool = vulkanContext->LogicalDevice.createCommandPool(poolInfo);
+	commandPool = vulkanContext.LogicalDevice.createCommandPool(poolInfo);
 
 	if (!commandPool)
 	{
@@ -1407,7 +1411,7 @@ void App::createCommandBuffer()
 	allocateInfo.level = vk::CommandBufferLevel::ePrimary;
 	allocateInfo.commandBufferCount = (uint32_t)commandBuffers.size();
 
-	commandBuffers = vulkanContext->LogicalDevice.allocateCommandBuffers(allocateInfo);
+	commandBuffers = vulkanContext.LogicalDevice.allocateCommandBuffers(allocateInfo);
 
 	if (commandBuffers.empty())
 	{
@@ -1419,24 +1423,24 @@ void App::createCommandBuffer()
 }
 void App::createSyncObjects() {
 	// Present complete semaphores - one per swapchain image
-	presentCompleteSemaphores.resize(vulkanContext->swapchainImageData.size());
+	presentCompleteSemaphores.resize(vulkanContext.swapchainImageData.size());
 
 	// Render complete semaphores 
-	renderCompleteSemaphores.resize(vulkanContext->swapchainImageData.size());
+	renderCompleteSemaphores.resize(vulkanContext.swapchainImageData.size());
 
 	// Fences - one per frame in flight
 	waitFences.resize(MAX_FRAMES_IN_FLIGHT);
 
-	for (size_t i = 0; i < vulkanContext->swapchainImageData.size(); i++) {
+	for (size_t i = 0; i < vulkanContext.swapchainImageData.size(); i++) {
 		vk::SemaphoreCreateInfo semaphoreInfo{};
-		vulkanContext->LogicalDevice.createSemaphore(&semaphoreInfo, nullptr, &presentCompleteSemaphores[i]);
-		vulkanContext->LogicalDevice.createSemaphore(&semaphoreInfo, nullptr, &renderCompleteSemaphores[i]);
+		vulkanContext.LogicalDevice.createSemaphore(&semaphoreInfo, nullptr, &presentCompleteSemaphores[i]);
+		vulkanContext.LogicalDevice.createSemaphore(&semaphoreInfo, nullptr, &renderCompleteSemaphores[i]);
 	}
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		vk::FenceCreateInfo fenceInfo{};
 		fenceInfo.flags = vk::FenceCreateFlagBits::eSignaled;
-		vulkanContext->LogicalDevice.createFence(&fenceInfo, nullptr, &waitFences[i]);
+		vulkanContext.LogicalDevice.createFence(&fenceInfo, nullptr, &waitFences[i]);
 	}
 }
 
@@ -1444,19 +1448,19 @@ void App::Run()
 {
 	FramesPerSecondCounter fpsCounter(0.1f);
 
-	while (!window->shouldClose())
+	while (!window.shouldClose())
 	{
 		//FrameMarkNamed("main"); 
 		glfwPollEvents();
 		CalculateFps(fpsCounter);
-		camera->Update(deltaTime);
+		camera.Update(deltaTime);
 
-		userinterface->DrawUi(this,skyBox.get());
+		userinterface.DrawUi(this,skyBox.get());
 		Draw();		
 
 	}
 
-	vulkanContext->LogicalDevice.waitIdle();
+	vulkanContext.LogicalDevice.waitIdle();
 }
 
 void App::CalculateFps(FramesPerSecondCounter& fpsCounter)
@@ -1475,16 +1479,16 @@ void App::Draw()
 	// Wait for the fence associated with the current frame to ensure the command buffer 
 	// from this frame index is no longer in use before we reuse it.
 	// This prevents the CPU from getting too far ahead of the GPU (frames in flight control)
-	vulkanContext->LogicalDevice.waitForFences(1, &waitFences[currentFrame], vk::True, UINT64_MAX);
-	vulkanContext->LogicalDevice.resetFences(1, &waitFences[currentFrame]);
+	vulkanContext.LogicalDevice.waitForFences(1, &waitFences[currentFrame], vk::True, UINT64_MAX);
+	vulkanContext.LogicalDevice.resetFences(1, &waitFences[currentFrame]);
 
 	// --- Swapchain Acquisition ---
 	uint32_t imageIndex;
 	try {
 		// Request the next available swapchain image.
 		// presentCompleteSemaphores[currentFrame] will be signaled when the image is ready.
-		vulkanContext->LogicalDevice.acquireNextImageKHR(
-			vulkanContext->swapChain,
+		vulkanContext.LogicalDevice.acquireNextImageKHR(
+			vulkanContext.swapChain,
 			UINT64_MAX,
 			presentCompleteSemaphores[currentFrame],
 			nullptr,
@@ -1527,13 +1531,13 @@ void App::Draw()
 	submitInfo.pSignalSemaphores    = submitSemaphores;  // Signal when rendering done
 
 	// Submit to the graphics queue with the current frame's fence
-	if (vulkanContext->graphicsQueue.submit(1, &submitInfo, waitFences[currentFrame]) != vk::Result::eSuccess)
+	if (vulkanContext.graphicsQueue.submit(1, &submitInfo, waitFences[currentFrame]) != vk::Result::eSuccess)
 	{
 		throw std::runtime_error("failed to submit draw commands");
 	}
 
 	// --- Presentation ---
-	vk::SwapchainKHR swapChains[] = { vulkanContext->swapChain };
+	vk::SwapchainKHR swapChains[] = { vulkanContext.swapChain };
 
 	vk::PresentInfoKHR presentInfo{};
 	presentInfo.waitSemaphoreCount = 1;
@@ -1544,7 +1548,7 @@ void App::Draw()
 
 	try {
 		// Present the image - will wait on renderCompleteSemaphores[imageIndex]
-		vk::Result result = vulkanContext->presentQueue.presentKHR(presentInfo);
+		vk::Result result = vulkanContext.presentQueue.presentKHR(presentInfo);
 
 	}
 	catch (const vk::OutOfDateKHRError& e) {
@@ -1595,26 +1599,26 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	VkOffset2D imageoffset = { 0, 0 };
 
-	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
+	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext.swapchainExtent.width, vulkanContext.swapchainExtent.height, 1);
 
 	vk::Viewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width =  vulkanContext->swapchainExtent.width;
-	viewport.height = vulkanContext->swapchainExtent.height;
+	viewport.width =  vulkanContext.swapchainExtent.width;
+	viewport.height = vulkanContext.swapchainExtent.height;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
 	vk::Rect2D scissor{};
 	scissor.offset = imageoffset;
-	scissor.extent.width =  vulkanContext->swapchainExtent.width;
-	scissor.extent.height = vulkanContext->swapchainExtent.height;
+	scissor.extent.width =  vulkanContext.swapchainExtent.width;
+	scissor.extent.height = vulkanContext.swapchainExtent.height;
 
 
 	vk::DeviceSize offsets[] = { 0 };
 
 	
-	vulkanContext->vkCmdBeginDebugUtilsLabelEXT(commandBuffer,Gbuffer_Label);
+	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer,Gbuffer_Label);
 
 	 /////////////////// GBUFFER PASS ///////////////////////// 
 	{
@@ -1627,8 +1631,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TransitionToGeneral.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
 		TransitionToGeneral.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
 
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionToGeneral);
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionToGeneral);
+		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionToGeneral);
+		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionToGeneral);
 
 
 
@@ -1702,8 +1706,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 		vk::RenderingInfo renderingInfo{};
 		renderingInfo.renderArea.offset = imageoffset;
-		renderingInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
-		renderingInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
+		renderingInfo.renderArea.extent.height = vulkanContext.swapchainExtent.height;
+		renderingInfo.renderArea.extent.width = vulkanContext.swapchainExtent.width;
 		renderingInfo.layerCount = 1;
 		renderingInfo.colorAttachmentCount = ColorAttachments.size();
 		renderingInfo.pColorAttachments = ColorAttachments.data();
@@ -1717,11 +1721,11 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 		if (bWireFrame)
 		{
-			vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_LINE);
+			vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_LINE);
 		}
 		else
 		{
-			vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
+			vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
 		}
 
 		for (auto& model : Models)
@@ -1733,14 +1737,14 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	}
 
-	vulkanContext->vkCmdEndDebugUtilsLabelEXT(commandBuffer);
+	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 	/////////////////// GBUFFER PASS END ///////////////////////// 
 
-	vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
+	vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
 
 
-	vulkanContext->vkCmdBeginDebugUtilsLabelEXT(commandBuffer, SSAO_Label);
+	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, SSAO_Label);
 	{
 		vk::RenderingAttachmentInfo SSAOColorAttachment{};
 		SSAOColorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
@@ -1845,10 +1849,10 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		}
 	}
 
-	vulkanContext->vkCmdEndDebugUtilsLabelEXT(commandBuffer);
+	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 
-	vulkanContext->vkCmdBeginDebugUtilsLabelEXT(commandBuffer, RTShadows_Label);
+	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, RTShadows_Label);
 
 	{
 		ImageTransitionData TransitiontoGeneralRT{};
@@ -1862,7 +1866,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 		for (int i = 0; i < Raytracing_Shadows->ShadowPassImages.size(); i++)
 		{
-			bufferManger->TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImages[i], TransitiontoGeneralRT);
+			bufferManger.TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImages[i], TransitiontoGeneralRT);
 
 		}
 
@@ -1878,10 +1882,10 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			currentFrame);
 	}
 
-	vulkanContext->vkCmdEndDebugUtilsLabelEXT(commandBuffer);
+	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 
-	vulkanContext->vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DirectLighting_Label);
+	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DirectLighting_Label);
     /////////////////// LIGHTING PASS ///////////////////////// 
 	{
 		vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
@@ -1893,8 +1897,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 		vk::RenderingInfo renderingInfo{};
 		renderingInfo.renderArea.offset = imageoffset;
-		renderingInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height; 
-		renderingInfo.renderArea.extent.width =  vulkanContext->swapchainExtent.width;
+		renderingInfo.renderArea.extent.height = vulkanContext.swapchainExtent.height; 
+		renderingInfo.renderArea.extent.width =  vulkanContext.swapchainExtent.width;
 		renderingInfo.layerCount = 1;
 		renderingInfo.colorAttachmentCount = 1;
 		renderingInfo.pColorAttachments = &LightPassColorAttachmentInfo;
@@ -1909,9 +1913,9 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.endRendering();
 	}
 	 /////////////////// LIGHTING PASS END ///////////////////////// 
-	vulkanContext->vkCmdEndDebugUtilsLabelEXT(commandBuffer);
+	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
-	vulkanContext->vkCmdBeginDebugUtilsLabelEXT(commandBuffer, SSR_Label);
+	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, SSR_Label);
 	{	
 		ImageTransitionData TransitionDepthtTOShaderOptimal{};
 		TransitionDepthtTOShaderOptimal.oldlayout = vk::ImageLayout::eDepthAttachmentOptimal;
@@ -1921,7 +1925,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TransitionDepthtTOShaderOptimal.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
 		TransitionDepthtTOShaderOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests;
 		TransitionDepthtTOShaderOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-		bufferManger->TransitionImage(commandBuffer, &DepthTextureData, TransitionDepthtTOShaderOptimal);
+		bufferManger.TransitionImage(commandBuffer, &DepthTextureData, TransitionDepthtTOShaderOptimal);
 
 	
 		vk::RenderingAttachmentInfo SSRRenderAttachInfo;
@@ -1935,8 +1939,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		SSRRenderInfo.layerCount = 1;
 		SSRRenderInfo.colorAttachmentCount = 1;
 		SSRRenderInfo.pColorAttachments = &SSRRenderAttachInfo;
-		SSRRenderInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
-		SSRRenderInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
+		SSRRenderInfo.renderArea.extent.width = vulkanContext.swapchainExtent.width;
+		SSRRenderInfo.renderArea.extent.height = vulkanContext.swapchainExtent.height;
 
 		commandBuffer.setViewport(0, 1, &viewport);
 		commandBuffer.setScissor(0, 1, &scissor);
@@ -1945,9 +1949,9 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		ssr_FullScreenQuad->Draw(commandBuffer, SSRPipelineLayout, currentFrame);
 		commandBuffer.endRendering();
 	}
-	vulkanContext->vkCmdEndDebugUtilsLabelEXT(commandBuffer);
+	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
-	vulkanContext->vkCmdBeginDebugUtilsLabelEXT(commandBuffer, SSGI_Label);
+	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, SSGI_Label);
 	{
 		vk::RenderingAttachmentInfo SSGIImageAttachInfo;
 		SSGIImageAttachInfo.clearValue = clearColor;
@@ -1992,7 +1996,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TransitionDeptTODepthOptimal.DestinationAccessflag = vk::AccessFlagBits::eDepthStencilAttachmentWrite |vk::AccessFlagBits::eDepthStencilAttachmentRead;
 		TransitionDeptTODepthOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
 		TransitionDeptTODepthOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests;
-		bufferManger->TransitionImage(commandBuffer, &DepthTextureData, TransitionDeptTODepthOptimal);
+		bufferManger.TransitionImage(commandBuffer, &DepthTextureData, TransitionDeptTODepthOptimal);
 
 	}
 
@@ -2006,7 +2010,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TransitionTOSrc.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
 		TransitionTOSrc.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
 
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionTOSrc);
+		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionTOSrc);
 
 		ImageTransitionData TransitionTODst{};
 		TransitionTODst.oldlayout = vk::ImageLayout::eGeneral;
@@ -2018,7 +2022,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TransitionTODst.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
 
 
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionTODst);
+		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionTODst);
 
 
 		vk::ImageSubresourceLayers SrcSubresourceLayers;
@@ -2039,10 +2043,10 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			1
 		};
 
-		bufferManger->CopyImageToAnotherImage(commandBuffer,
+		bufferManger.CopyImageToAnotherImage(commandBuffer,
 			                                  SSGI_FullScreenQuad->SSGIAccumilationImage,  vk::ImageLayout::eTransferSrcOptimal, SrcSubresourceLayers,
 			                                  SSGI_FullScreenQuad->SSGIPassLastFrameImage, vk::ImageLayout::eTransferDstOptimal, DstSubresourceLayers,
-			                                  swapchainExtenthalf, vulkanContext->graphicsQueue);
+			                                  swapchainExtenthalf, vulkanContext.graphicsQueue);
 
 
 
@@ -2058,7 +2062,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TransitionSrcBack.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
 		TransitionSrcBack.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
 
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionSrcBack);
+		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionSrcBack);
 
 
 		ImageTransitionData TransitionDstToSample{};
@@ -2070,7 +2074,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TransitionDstToSample.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
 		TransitionDstToSample.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
 
-		bufferManger->TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionDstToSample);
+		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionDstToSample);
 
 	}
 
@@ -2416,7 +2420,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.endRendering();
 	}
 
-	vulkanContext->vkCmdEndDebugUtilsLabelEXT(commandBuffer);
+	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 	{
 		vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
@@ -2438,8 +2442,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		SkyBoxRenderInfo.colorAttachmentCount = 1;
 		SkyBoxRenderInfo.pColorAttachments = &SkyBoxRenderAttachInfo;
 		SkyBoxRenderInfo.pDepthAttachment = &DepthAttachInfo;
-		SkyBoxRenderInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
-		SkyBoxRenderInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
+		SkyBoxRenderInfo.renderArea.extent.width = vulkanContext.swapchainExtent.width;
+		SkyBoxRenderInfo.renderArea.extent.height = vulkanContext.swapchainExtent.height;
 		
 		
 		commandBuffer.setViewport(0, 1, &viewport);
@@ -2463,8 +2467,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		CombinedImageInfo.layerCount = 1;
 		CombinedImageInfo.colorAttachmentCount = 1;
 		CombinedImageInfo.pColorAttachments = &CombinedImageAttachInfo;
-		CombinedImageInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
-		CombinedImageInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
+		CombinedImageInfo.renderArea.extent.width = vulkanContext.swapchainExtent.width;
+		CombinedImageInfo.renderArea.extent.height = vulkanContext.swapchainExtent.height;
 
 		commandBuffer.setViewport(0, 1, &viewport);
 		commandBuffer.setScissor(0, 1, &scissor);
@@ -2493,8 +2497,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 		vk::RenderingInfo renderingInfo{};
 		renderingInfo.renderArea.offset = imageoffset;
-		renderingInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
-		renderingInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
+		renderingInfo.renderArea.extent.height = vulkanContext.swapchainExtent.height;
+		renderingInfo.renderArea.extent.width = vulkanContext.swapchainExtent.width;
 		renderingInfo.layerCount = 1;
 		renderingInfo.colorAttachmentCount = 1;
 		renderingInfo.pColorAttachments = &LightPassColorAttachmentInfo;
@@ -2502,11 +2506,11 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 		if (bWireFrame)
 		{
-			vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_LINE);
+			vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_LINE);
 		}
 		else
 		{
-			vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
+			vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
 		}
 
 		commandBuffer.setViewport(0, 1, &viewport);
@@ -2525,9 +2529,9 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	}
 
 	/////////////////// FORWARD PASS END ///////////////////////// 
-	vulkanContext->vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
+	vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
 
-	vulkanContext->vkCmdBeginDebugUtilsLabelEXT(commandBuffer, FXAA_Label);
+	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, FXAA_Label);
 	{
 		vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
 		LightPassColorAttachmentInfo.imageView = fxaa_FullScreenQuad->FxaaImage.imageView;
@@ -2538,8 +2542,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 		vk::RenderingInfo renderingInfo{};
 		renderingInfo.renderArea.offset = imageoffset;
-		renderingInfo.renderArea.extent.height = vulkanContext->swapchainExtent.height;
-		renderingInfo.renderArea.extent.width = vulkanContext->swapchainExtent.width;
+		renderingInfo.renderArea.extent.height = vulkanContext.swapchainExtent.height;
+		renderingInfo.renderArea.extent.width = vulkanContext.swapchainExtent.width;
 		renderingInfo.layerCount = 1;
 		renderingInfo.colorAttachmentCount = 1;
 		renderingInfo.pColorAttachments = &LightPassColorAttachmentInfo;
@@ -2553,29 +2557,29 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		fxaa_FullScreenQuad->Draw(commandBuffer, FXAAPassPipelineLayout, currentFrame);
 		commandBuffer.endRendering();
 	}
-	vulkanContext->vkCmdEndDebugUtilsLabelEXT(commandBuffer);
+	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 
-	userinterface->RenderUi(commandBuffer, imageIndex);
+	userinterface.RenderUi(commandBuffer, imageIndex);
 
 }
 
 void App::destroy_DepthImage()
 {
-	bufferManger->DestroyImage(DepthTextureData);
+	bufferManger.DestroyImage(DepthTextureData);
 }
 
 void App::destroy_GbufferImages()
 {
-	bufferManger->DestroyImage(gbuffer.Position);
-	bufferManger->DestroyImage(gbuffer.ViewSpacePosition);
-	bufferManger->DestroyImage(gbuffer.Normal);
-	bufferManger->DestroyImage(gbuffer.ViewSpaceNormal);
-	bufferManger->DestroyImage(gbuffer.Materials);
-	bufferManger->DestroyImage(gbuffer.Albedo);
-	bufferManger->DestroyImage(gbuffer.Emissive);
-	bufferManger->DestroyImage(LightingPassImageData);
-	bufferManger->DestroyImage(ReflectionMaskImageData);
+	bufferManger.DestroyImage(gbuffer.Position);
+	bufferManger.DestroyImage(gbuffer.ViewSpacePosition);
+	bufferManger.DestroyImage(gbuffer.Normal);
+	bufferManger.DestroyImage(gbuffer.ViewSpaceNormal);
+	bufferManger.DestroyImage(gbuffer.Materials);
+	bufferManger.DestroyImage(gbuffer.Albedo);
+	bufferManger.DestroyImage(gbuffer.Emissive);
+	bufferManger.DestroyImage(LightingPassImageData);
+	bufferManger.DestroyImage(ReflectionMaskImageData);
 
 	ssao_FullScreenQuad->DestroyImage();
 	Raytracing_Shadows->DestroyStorageImage();
@@ -2588,25 +2592,25 @@ void App::destroy_GbufferImages()
 void App::recreateSwapChain() {
 	
 	int width = 0, height = 0;
-	glfwGetFramebufferSize(window->GetWindow(), &width, &height);
+	glfwGetFramebufferSize(window.GetWindow(), &width, &height);
 
 	while (width == 0 || height == 0) {
-		glfwGetFramebufferSize(window->GetWindow(), &width, &height);
+		glfwGetFramebufferSize(window.GetWindow(), &width, &height);
 		glfwWaitEvents();
 	}
 
-	vulkanContext->LogicalDevice.waitIdle();
+	vulkanContext.LogicalDevice.waitIdle();
 
-	vulkanContext->destroy_swapchain();
+	vulkanContext.destroy_swapchain();
 	destroy_DepthImage();
 	destroy_GbufferImages();
 
-	vulkanContext->LogicalDevice.waitIdle();
+	vulkanContext.LogicalDevice.waitIdle();
 
-	vulkanContext->create_swapchain();
+	vulkanContext.create_swapchain();
 
-	camera->SetSwapChainHeight(vulkanContext->swapchainExtent.height);
-	camera->SetSwapChainWidth(vulkanContext->swapchainExtent.width);
+	camera.SetSwapChainHeight(vulkanContext.swapchainExtent.height);
+	camera.SetSwapChainWidth(vulkanContext.swapchainExtent.width);
 	createDepthTextureImage();
 	createGBuffer();
 
@@ -2614,7 +2618,7 @@ void App::recreateSwapChain() {
 
 void App::recreatePipeline()
 {
-	vulkanContext->LogicalDevice.waitIdle();
+	vulkanContext.LogicalDevice.waitIdle();
 	destroyPipeline();
 
 	CreateGraphicsPipeline();
@@ -2625,17 +2629,17 @@ void App::DestroySyncObjects()
 {
 	for (auto& presentSemaphores : presentCompleteSemaphores)
 	{
-		vulkanContext->LogicalDevice.destroySemaphore(presentSemaphores);
+		vulkanContext.LogicalDevice.destroySemaphore(presentSemaphores);
 	}
 
 	for (auto& renderSemaphores : renderCompleteSemaphores)
 	{
-		vulkanContext->LogicalDevice.destroySemaphore(renderSemaphores);
+		vulkanContext.LogicalDevice.destroySemaphore(renderSemaphores);
 	}
 
 	for (auto& Fences : waitFences)
 	{
-		vulkanContext->LogicalDevice.destroyFence(Fences);
+		vulkanContext.LogicalDevice.destroyFence(Fences);
 	}
 }
 
@@ -2665,43 +2669,43 @@ void App::DestroyBuffers()
 	SSGI_FullScreenQuad.reset();
 	Combined_FullScreenQuad.reset();
 
-	bufferManger->DestroyBuffer(TLAS_Buffer);
-	bufferManger->DestroyBuffer(TLAS_SCRATCH_Buffer);
-	bufferManger->DestroyBuffer(TLAS_InstanceData);
-	vulkanContext->vkDestroyAccelerationStructureKHR(vulkanContext->LogicalDevice, static_cast<VkAccelerationStructureKHR>(TLAS),nullptr);
+	bufferManger.DestroyBuffer(TLAS_Buffer);
+	bufferManger.DestroyBuffer(TLAS_SCRATCH_Buffer);
+	bufferManger.DestroyBuffer(TLAS_InstanceData);
+	vulkanContext.vkDestroyAccelerationStructureKHR(vulkanContext.LogicalDevice, static_cast<VkAccelerationStructureKHR>(TLAS),nullptr);
 	DestroyShaderBindingTable();
-	bufferManger.reset();
+	//bufferManger.reset();
 }
 
 void App::destroyPipeline()
 {
-	vulkanContext->LogicalDevice.destroyPipeline(DeferedLightingPassPipeline);
-	vulkanContext->LogicalDevice.destroyPipeline(FXAAPassPipeline);
-	vulkanContext->LogicalDevice.destroyPipeline(LightgraphicsPipeline);
-	vulkanContext->LogicalDevice.destroyPipeline(SkyBoxgraphicsPipeline);
-	vulkanContext->LogicalDevice.destroyPipeline(geometryPassPipeline);
-	vulkanContext->LogicalDevice.destroyPipeline(SSAOPipeline);
-	vulkanContext->LogicalDevice.destroyPipeline(SSAOBlurPipeline);
-	vulkanContext->LogicalDevice.destroyPipeline(SSRPipeline);
-	vulkanContext->LogicalDevice.destroyPipeline(RT_ShadowsPassPipeline);
-	vulkanContext->LogicalDevice.destroyPipeline(SSGIPipeline);
-	vulkanContext->LogicalDevice.destroyPipeline(BluredSSGIPipeline);
-	vulkanContext->LogicalDevice.destroyPipeline(TA_SSGIPipeline);
-	vulkanContext->LogicalDevice.destroyPipeline(CombinedImagePassPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(DeferedLightingPassPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(FXAAPassPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(LightgraphicsPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(SkyBoxgraphicsPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(geometryPassPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(SSAOPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(SSAOBlurPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(SSRPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(RT_ShadowsPassPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(SSGIPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(BluredSSGIPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(TA_SSGIPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(CombinedImagePassPipeline);
 
-	vulkanContext->LogicalDevice.destroyPipelineLayout(DeferedLightingPassPipelineLayout);
-	vulkanContext->LogicalDevice.destroyPipelineLayout(FXAAPassPipelineLayout);
-	vulkanContext->LogicalDevice.destroyPipelineLayout(LightpipelineLayout);
-	vulkanContext->LogicalDevice.destroyPipelineLayout(SkyBoxpipelineLayout);
-	vulkanContext->LogicalDevice.destroyPipelineLayout(geometryPassPipelineLayout);
-	vulkanContext->LogicalDevice.destroyPipelineLayout(SSAOPipelineLayout);
-	vulkanContext->LogicalDevice.destroyPipelineLayout(SSAOBlurPipelineLayout);
-	vulkanContext->LogicalDevice.destroyPipelineLayout(SSRPipelineLayout);
-	vulkanContext->LogicalDevice.destroyPipelineLayout(RT_ShadowsPipelineLayout);
-	vulkanContext->LogicalDevice.destroyPipelineLayout(SSGIPipelineLayout);
-	vulkanContext->LogicalDevice.destroyPipelineLayout(TA_SSGIPipelineLayout);
-	vulkanContext->LogicalDevice.destroyPipelineLayout(BluredSSGIPipelineLayout);
-	vulkanContext->LogicalDevice.destroyPipelineLayout(CombinedImagePipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(DeferedLightingPassPipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(FXAAPassPipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(LightpipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(SkyBoxpipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(geometryPassPipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(SSAOPipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(SSAOBlurPipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(SSRPipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(RT_ShadowsPipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(SSGIPipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(TA_SSGIPipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(BluredSSGIPipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(CombinedImagePipelineLayout);
 
 }
 
@@ -2709,23 +2713,23 @@ void App::destroyPipeline()
  App::~App()
 {
 
-	userinterface.reset();
+	//userinterface.reset();
 	DestroyBuffers();
 
 	if (!commandBuffers.empty()) {
-		vulkanContext->LogicalDevice.freeCommandBuffers(commandPool, commandBuffers);
+		vulkanContext.LogicalDevice.freeCommandBuffers(commandPool, commandBuffers);
 		commandBuffers.clear();
 	}
-	vulkanContext->LogicalDevice.destroyDescriptorPool(DescriptorPool);
-	vulkanContext->LogicalDevice.destroyCommandPool(commandPool);
+	vulkanContext.LogicalDevice.destroyDescriptorPool(DescriptorPool);
+	vulkanContext.LogicalDevice.destroyCommandPool(commandPool);
 
 	destroyPipeline();
 
 	DestroySyncObjects();
-	vkb::destroy_debug_utils_messenger(vulkanContext->VulkanInstance, vulkanContext->Debug_Messenger);
-	vulkanContext.reset();
+	vkb::destroy_debug_utils_messenger(vulkanContext.VulkanInstance, vulkanContext.Debug_Messenger);
+	//vulkanContext.reset();
 
-	window.reset();
+	//window.reset();
 #ifndef NDEBUG
 	_CrtDumpMemoryLeaks();  
 #endif

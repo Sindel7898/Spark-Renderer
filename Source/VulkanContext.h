@@ -19,7 +19,10 @@ public:
 	void SelectGPU_CreateDevice();
 	void createSurface();
 	void create_swapchain();
-	
+	void CleanUp();
+
+	~VulkanContext();
+
 	vk::Format FindCompatableDepthFormat();
 
 	void destroy_swapchain();
@@ -79,37 +82,7 @@ static inline void VulkanContextDeleter(VulkanContext* vulkanContext)
 {
 	if (vulkanContext)
 	{
-		for (auto& imagedata : vulkanContext->swapchainImageData) {
-			vulkanContext->LogicalDevice.destroyImageView(imagedata.imageView);
-
-		}
-
-		if (vulkanContext->swapChain) {
-			vulkanContext->LogicalDevice.destroySwapchainKHR(vulkanContext->swapChain);
-			vulkanContext->swapChain = nullptr;
-		}
-
-		if (vulkanContext->surface) {
-			vulkanContext->VulkanInstance.destroySurfaceKHR(vulkanContext->surface);
-			vulkanContext->surface = nullptr;
-		}
-
-		if (vulkanContext->LogicalDevice)
-		{
-			vulkanContext->LogicalDevice.destroy();
-		}
-
-		if (vulkanContext->VulkanInstance)
-		{
-			vulkanContext->VulkanInstance.destroy();
-		}
-
-		vulkanContext->PhysicalDevice = nullptr;
-		vulkanContext->graphicsQueue = nullptr;
-		vulkanContext->presentQueue = nullptr;
-		vulkanContext->swapchainImageData.clear();
-		vulkanContext->SurfaceFormat.clear();
-
+		vulkanContext->CleanUp();
 		delete vulkanContext;
 	}
 }

@@ -20,7 +20,7 @@ const int MAX_ITERATION = 25;
 const int MAX_RAYS = 3;
 const int MIN_RAYS = 2;
 
-const float MAX_THICKNESS = 0.5; 
+const float MAX_THICKNESS = 0.1; 
 
 struct RayHit {
     vec3 position;
@@ -133,12 +133,13 @@ void main() {
             vec2 uv = RayPositionPS.xy * 0.5 + 0.5;
             
             vec3 hitAlbedo  = textureLod(AlbedoTexture, uv,0).rgb;
+            vec3 hitDirect  = textureLod(DirectLigtingTexture, uv,0).rgb;
 
             float falloff = 1.0 / (1.0 + hit.Distance * hit.Distance * 0.002);
 
             float cosTerm = max(dot(Normal, stochasticNormal),0);
           
-            vec3 contribution = (hitAlbedo * falloff)  * cosTerm;
+            vec3 contribution = ((hitAlbedo * hitDirect))  * cosTerm * falloff;
             giContribution += contribution;
 
          }

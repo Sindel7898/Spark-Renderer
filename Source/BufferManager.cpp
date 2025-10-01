@@ -943,9 +943,41 @@ void BufferManager::DestroyImage(const ImageData& imagedata) {
 	RemoveImageLog(imagedata);
 }
 
+void BufferManager::CleanUp()
+{
+	std::cout << "You have " <<bufferLog.size() << " Unfreed Buffers" << std::endl;
+
+	if (bufferLog.size() != 0)
+	{
+		std::cout << "Unfreed Buffers " << std::endl;
+
+		for (auto Buffer : bufferLog)
+		{
+			std::cout << Buffer.first << std::endl;
+		}
+	}
+
+
+	std::cout << "You have " << imageLog.size() << " Unfreed Images" << std::endl;
+
+	if (imageLog.size() != 0)
+	{
+		std::cout << "Unfreed Images " << std::endl;
+
+		for (auto Images : imageLog)
+		{
+			std::cout << Images.first << std::endl;
+		}
+	}
+
+
+	vmaDestroyAllocator(allocator);
+}
+
+
 BufferManager::~BufferManager()
 {
-	//vmaDestroyAllocator(allocator);
+	CleanUp();
 }
 
 void BufferManager::DeleteAllocation(VmaAllocation allocation)

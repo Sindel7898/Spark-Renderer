@@ -257,3 +257,44 @@ void VulkanContext::destroy_swapchain()
 	swapchainImageData.clear();
 
 }
+
+void VulkanContext::CleanUp()
+{
+
+	for (auto& imagedata : swapchainImageData) {
+		LogicalDevice.destroyImageView(imagedata.imageView);
+					 
+	}				
+					 
+	if (swapChain) {
+		LogicalDevice.destroySwapchainKHR(swapChain);
+		swapChain = nullptr;
+	}				 
+					 
+	if (surface) {
+		VulkanInstance.destroySurfaceKHR(surface);
+		surface = nullptr;
+	}	
+		
+	if (LogicalDevice)
+	{	
+		LogicalDevice.destroy();
+	}	
+		
+	if (VulkanInstance)
+	{	
+		VulkanInstance.destroy();
+	}
+
+	PhysicalDevice = nullptr;
+	graphicsQueue = nullptr;
+	presentQueue = nullptr;
+	swapchainImageData.clear();
+	SurfaceFormat.clear();
+
+}
+
+VulkanContext::~VulkanContext()
+{
+	CleanUp();
+}

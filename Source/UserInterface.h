@@ -39,6 +39,10 @@ class UserInterface
     vk::DescriptorPool  ImGuiDescriptorPool = nullptr;
 
 
+    void CleanUp();
+
+    ~UserInterface();
+
  private:
     void InitImgui();
     void SetupDockingEnvironment();
@@ -76,12 +80,8 @@ static inline void UserInterfaceDeleter(UserInterface* userInterface) {
 
    if (userInterface) {
 
-       userInterface->vulkancontext->LogicalDevice.waitIdle();
-       // ImGui_ImplVulkan_RemoveTexture(userInterface->RenderTextureId);
-        ImGui_ImplVulkan_Shutdown();
-        ImGui_ImplGlfw_Shutdown();
-        ImGui::DestroyContext(); 
-        userInterface->vulkancontext->LogicalDevice.destroyDescriptorPool(userInterface->ImGuiDescriptorPool);
+       userInterface->CleanUp();
+       delete userInterface;
    }
  
 };

@@ -406,13 +406,13 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 	ImGuizmo::SetOrthographic(false);
 	ImGuizmo::SetDrawlist();
 
-	if (!appref->camera || appref->UserInterfaceItems.empty()) {
+	if (appref->UserInterfaceItems.empty()) {
 		ImGui::End();
 		return;
 	}
 
-	glm::mat4 cameraprojection = appref->camera->GetProjectionMatrix();
-	glm::mat4 cameraview = appref->camera->GetViewMatrix();
+	glm::mat4 cameraprojection = appref->camera.GetProjectionMatrix();
+	glm::mat4 cameraview = appref->camera.GetViewMatrix();
 
 	// Handle selection
 	if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0) && !ImGuizmo::IsOver()) {
@@ -641,9 +641,21 @@ float UserInterface::CalculateDistanceInScreenSpace(glm::mat4 CameraProjection, 
 	return distance;
 }
 
-
-
 vk::Extent3D UserInterface::GetRenderTextureExtent()
 {
 	return RenderTextureExtent;
+}
+
+void UserInterface::CleanUp()
+{
+	vulkancontext->LogicalDevice.waitIdle();
+	ImGui_ImplVulkan_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+	vulkancontext->LogicalDevice.destroyDescriptorPool(ImGuiDescriptorPool);
+}
+
+UserInterface::~UserInterface()
+{
+	CleanUp();
 }

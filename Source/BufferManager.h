@@ -114,6 +114,7 @@ public:
 
     int bufferCounts = 0;
 
+    void CleanUp();
 
 private:
 
@@ -128,33 +129,7 @@ static inline void BufferManagerDeleter(BufferManager* bufferManager) {
 
     if (bufferManager)
     {
-        std::cout << "You have " << bufferManager->bufferLog.size() << " Unfreed Buffers" << std::endl;
-
-        if (bufferManager->bufferLog.size() != 0)
-        {
-            std::cout << "Unfreed Buffers "<< std::endl;
-
-            for (auto Buffer : bufferManager->bufferLog)
-            {
-                std::cout << Buffer.first << std::endl;
-            }
-        }
-
-
-        std::cout << "You have " << bufferManager->imageLog.size() << " Unfreed Images" << std::endl;
-
-        if (bufferManager->imageLog.size() != 0)
-        {
-            std::cout << "Unfreed Images " << std::endl;
-
-            for (auto Images : bufferManager->imageLog)
-            {
-                std::cout << Images.first << std::endl;
-            }
-        }
-
-
-        vmaDestroyAllocator(bufferManager->allocator);
+        bufferManager->CleanUp();
         delete bufferManager;
     }
 }

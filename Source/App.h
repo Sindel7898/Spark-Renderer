@@ -11,13 +11,14 @@
 #include "Lighting_FullScreenQuad.h"
 #include "SSAO_FullScreenQuad.h"
 
+#include "Window.h"
+#include "VulkanContext.h"
+#include "BufferManager.h"
+#include "Camera.h"
+#include "UserInterface.h"
 
-class UserInterface;
-class Window;
-class Camera;
+
 class MeshLoader;
-class BufferManager;
-class VulkanContext;
 class FramesPerSecondCounter;
 class Light;
 class RT_Shadows;
@@ -119,19 +120,20 @@ public:
 	VkDescriptorSet SSGITextureId;
 
 
-	std::shared_ptr<Camera>             camera = nullptr;
 	std::vector<std::shared_ptr<Model>> Models;
 	std::vector<std::shared_ptr<Light>> lights;
 	std::vector<Drawable*> UserInterfaceItems;
 
-
 private:
 
-	std::shared_ptr<Window>             window = nullptr;
-	std::shared_ptr<VulkanContext>      vulkanContext = nullptr;
-	std::shared_ptr<BufferManager>      bufferManger = nullptr;
-    std::shared_ptr<UserInterface>      userinterface = nullptr;
-	
+	Window        window;
+	VulkanContext vulkanContext;
+	BufferManager bufferManger ;
+    UserInterface userinterface;
+public:
+	Camera camera;
+private:
+
 	std::shared_ptr<SkyBox> skyBox = nullptr;
 
 
