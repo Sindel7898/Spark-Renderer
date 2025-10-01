@@ -30,13 +30,9 @@
 	         vulkanContext(window),                                  
 	         bufferManger(&vulkanContext),                           
 	         camera(vulkanContext.swapchainExtent.width,vulkanContext.swapchainExtent.height,window.GetWindow()),
-	         userinterface(&vulkanContext, &window, &bufferManger) 
+	         userinterface(&vulkanContext, &window, &bufferManger), pipelineManager(&vulkanContext)
 {
-	//window        = std::shared_ptr<Window>(new Window(1920, 1080, "Spark Renderer"), WindowDeleter);
-	//vulkanContext = std::shared_ptr<VulkanContext>(new VulkanContext(window), VulkanContextDeleter);
-	//bufferManger  = std::shared_ptr<BufferManager>(new BufferManager (&vulkanContext), BufferManagerDeleter);
-  	//camera        = std::shared_ptr<Camera>(new Camera (vulkanContext.swapchainExtent.width, vulkanContext.swapchainExtent.height, window.GetWindow()));
-	//userinterface = std::shared_ptr<UserInterface>(new UserInterface(&vulkanContext, &window, &bufferManger),UserInterfaceDeleter);
+
 	glfwSetWindowUserPointer(window.GetWindow(), this);
 
 	createSyncObjects();	
@@ -115,16 +111,14 @@
 	//UserInterfaceItems.push_back(Models[7].get());
 
 
-	Raytracing_Shadows      =  std::shared_ptr<RT_Shadows>(new RT_Shadows(&vulkanContext, commandPool, &camera, &bufferManger), RT_ShadowsDeleter);
 	//Raytracing_Reflections   = std::shared_ptr<RT_Reflections>(new RT_Reflections(&vulkanContext, commandPool, &camera, &bufferManger), RT_ReflectionsDeleter);
-
-	lighting_FullScreenQuad = std::shared_ptr<Lighting_FullScreenQuad>(new Lighting_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool, skyBox.get(), Raytracing_Shadows.get()), Lighting_FullScreenQuadDeleter);
-	ssao_FullScreenQuad     = std::shared_ptr<SSA0_FullScreenQuad>(new SSA0_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), SSA0_FullScreenQuadDeleter);
-	fxaa_FullScreenQuad     = std::shared_ptr<FXAA_FullScreenQuad>(new FXAA_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), FXAA_FullScreenQuadDeleter);
-	ssr_FullScreenQuad      = std::shared_ptr<SSR_FullScreenQuad>(new SSR_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), SSR_FullScreenQuadDeleter);
-	Combined_FullScreenQuad = std::shared_ptr<CombinedResult_FullScreenQuad>(new CombinedResult_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), CombinedResult_FullScreenQuadDeleter);
-	SSGI_FullScreenQuad     = std::shared_ptr<SSGI>(new SSGI(&bufferManger, &vulkanContext, &camera, commandPool), SSGIDeleter);
-	pipelineManager         = std::shared_ptr<PipelineManager>(new PipelineManager(&vulkanContext));
+	Raytracing_Shadows = std::unique_ptr<RT_Shadows, decltype(&RT_ShadowsDeleter)>(new RT_Shadows(&vulkanContext, commandPool, &camera, &bufferManger),RT_ShadowsDeleter);
+	lighting_FullScreenQuad = std::unique_ptr<Lighting_FullScreenQuad, decltype(&Lighting_FullScreenQuadDeleter)>(new Lighting_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool, skyBox.get(), Raytracing_Shadows.get()),Lighting_FullScreenQuadDeleter);
+	ssao_FullScreenQuad = std::unique_ptr<SSA0_FullScreenQuad, decltype(&SSA0_FullScreenQuadDeleter)>(new SSA0_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),SSA0_FullScreenQuadDeleter);
+	fxaa_FullScreenQuad = std::unique_ptr<FXAA_FullScreenQuad, decltype(&FXAA_FullScreenQuadDeleter)>(new FXAA_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),FXAA_FullScreenQuadDeleter);
+	ssr_FullScreenQuad = std::unique_ptr<SSR_FullScreenQuad, decltype(&SSR_FullScreenQuadDeleter)>(new SSR_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),SSR_FullScreenQuadDeleter);
+	Combined_FullScreenQuad = std::unique_ptr<CombinedResult_FullScreenQuad, decltype(&CombinedResult_FullScreenQuadDeleter)>(new CombinedResult_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),CombinedResult_FullScreenQuadDeleter);
+	SSGI_FullScreenQuad = std::unique_ptr<SSGI, decltype(&SSGIDeleter)>(new SSGI(&bufferManger, &vulkanContext, &camera, commandPool),SSGIDeleter);
 
 	lights.reserve(4);
 
@@ -781,7 +775,7 @@ void App::CreateGraphicsPipeline()
 	   pipelineLayoutInfo.pushConstantRangeCount = 0;
 	   pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
-	   FullScreen_Quad_Pipeline_Data  Lighting = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/DefferedLightingPass.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
+	   FullScreen_Quad_Pipeline_Data  Lighting = pipelineManager.create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/DefferedLightingPass.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
 	   DeferedLightingPassPipelineLayout = Lighting.FQ_PipelineLayout;
 	   DeferedLightingPassPipeline = Lighting.FQ_Pipeline;
@@ -805,7 +799,7 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.pPushConstantRanges = &range;
 
 
-		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/FXAA.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
+		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager.create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/FXAA.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
 		FXAAPassPipelineLayout = Temp.FQ_PipelineLayout;
 		FXAAPassPipeline = Temp.FQ_Pipeline;
@@ -827,7 +821,7 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
 		pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
-		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSAO_Shader.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
+		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager.create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSAO_Shader.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
 		SSAOPipelineLayout = Temp.FQ_PipelineLayout;
 		SSAOPipeline = Temp.FQ_Pipeline;
@@ -853,7 +847,7 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.pPushConstantRanges = &range;
 
 
-		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSAOBlur_Shader.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
+		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager.create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSAOBlur_Shader.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
 		SSAOBlurPipelineLayout = Temp.FQ_PipelineLayout;
 		SSAOBlurPipeline = Temp.FQ_Pipeline;
@@ -880,7 +874,7 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.pPushConstantRanges = &range;
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 
-		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/CombinedImage.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
+		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager.create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/CombinedImage.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
 		CombinedImagePipelineLayout = Temp.FQ_PipelineLayout;
 		CombinedImagePassPipeline = Temp.FQ_Pipeline;
@@ -905,7 +899,7 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges = &range;
 
-		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSR.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
+		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager.create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSR.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
 		SSRPipelineLayout = Temp.FQ_PipelineLayout;
 		SSRPipeline = Temp.FQ_Pipeline;
@@ -915,8 +909,8 @@ void App::CreateGraphicsPipeline()
 		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/Light_Shader.vert.spv");
 		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/Light_Shader.frag.spv");
 
-		VkShaderModule VertShaderModule = pipelineManager->createShaderModule(VertShaderCode);
-		VkShaderModule FragShaderModule = pipelineManager->createShaderModule(FragShaderCode);
+		VkShaderModule VertShaderModule = pipelineManager.createShaderModule(VertShaderCode);
+		VkShaderModule FragShaderModule = pipelineManager.createShaderModule(FragShaderCode);
 
 		vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
 		VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
@@ -963,7 +957,7 @@ void App::CreateGraphicsPipeline()
 		vk::Format lightPassFormat = vk::Format::eR16G16B16A16Sfloat;
 		pipelineRenderingCreateInfo.pColorAttachmentFormats = &lightPassFormat;
 
-		LightgraphicsPipeline = pipelineManager->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
+		LightgraphicsPipeline = pipelineManager.createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
 			                                  viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, LightpipelineLayout);
 
 		vulkanContext.LogicalDevice.destroyShaderModule(VertShaderModule);
@@ -975,8 +969,8 @@ void App::CreateGraphicsPipeline()
 		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/SkyBox_Shader.vert.spv");
 		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/SkyBox_Shader.frag.spv");
 
-		VkShaderModule VertShaderModule = pipelineManager->createShaderModule(VertShaderCode);
-		VkShaderModule FragShaderModule = pipelineManager->createShaderModule(FragShaderCode);
+		VkShaderModule VertShaderModule = pipelineManager.createShaderModule(VertShaderCode);
+		VkShaderModule FragShaderModule = pipelineManager.createShaderModule(FragShaderCode);
 
 		vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
 		VertShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
@@ -1021,7 +1015,7 @@ void App::CreateGraphicsPipeline()
 
 		 SkyBoxpipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 
-		 SkyBoxgraphicsPipeline = pipelineManager->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
+		 SkyBoxgraphicsPipeline = pipelineManager.createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
 			                                  viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, SkyBoxpipelineLayout);
 
 		 vulkanContext.LogicalDevice.destroyShaderModule(VertShaderModule);
@@ -1047,8 +1041,8 @@ void App::CreateGraphicsPipeline()
 		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/GeometryPass.vert.spv");
 		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/GeometryPass.frag.spv");
 
-		VkShaderModule VertShaderModule = pipelineManager->createShaderModule(VertShaderCode);
-		VkShaderModule FragShaderModule = pipelineManager->createShaderModule(FragShaderCode);
+		VkShaderModule VertShaderModule = pipelineManager.createShaderModule(VertShaderCode);
+		VkShaderModule FragShaderModule = pipelineManager.createShaderModule(FragShaderCode);
 
 		vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
 		VertShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
@@ -1179,7 +1173,7 @@ void App::CreateGraphicsPipeline()
 
 		geometryPassPipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 
-		geometryPassPipeline = pipelineManager->createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
+		geometryPassPipeline = pipelineManager.createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
 			viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, geometryPassPipelineLayout);
 
 		vulkanContext.LogicalDevice.destroyShaderModule(VertShaderModule);
@@ -1192,8 +1186,8 @@ void App::CreateGraphicsPipeline()
 		auto RayGen_ShaderCode        = readFile("../Shaders/Compiled_Shader_Files/raygen.rgen.spv");
 		auto RayGenMiss_ShaderCode    = readFile("../Shaders/Compiled_Shader_Files/RayGenMiss.rmiss.spv");
 
-		VkShaderModule RayGen_ShaderModule        = pipelineManager->createShaderModule(RayGen_ShaderCode);
-		VkShaderModule RayMiss_ShaderModule       = pipelineManager->createShaderModule(RayGenMiss_ShaderCode);
+		VkShaderModule RayGen_ShaderModule        = pipelineManager.createShaderModule(RayGen_ShaderCode);
+		VkShaderModule RayMiss_ShaderModule       = pipelineManager.createShaderModule(RayGenMiss_ShaderCode);
 
 
 		vk::PipelineShaderStageCreateInfo RayGen_ShaderStageInfo{};
@@ -1251,7 +1245,7 @@ void App::CreateGraphicsPipeline()
 
 	   RT_ShadowsPipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 	   
-	   RT_ShadowsPassPipeline = pipelineManager->createRayTracingGraphicsPipeline(RT_ShadowsPipelineLayout, ShaderStages, ShaderGroups);
+	   RT_ShadowsPassPipeline = pipelineManager.createRayTracingGraphicsPipeline(RT_ShadowsPipelineLayout, ShaderStages, ShaderGroups);
 	   
 	   vulkanContext.LogicalDevice.destroyShaderModule(RayGen_ShaderModule);
 	   vulkanContext.LogicalDevice.destroyShaderModule(RayMiss_ShaderModule);
@@ -1277,7 +1271,7 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.pPushConstantRanges = &range;
 
 
-		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSGI.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
+		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager.create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSGI.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
 		SSGIPipelineLayout = Temp.FQ_PipelineLayout;
 		SSGIPipeline = Temp.FQ_Pipeline;
@@ -1303,7 +1297,7 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.pPushConstantRanges = &range;
 
 
-		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/TemporalAccumulation.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
+		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager.create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/TemporalAccumulation.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
 		TA_SSGIPipelineLayout = Temp.FQ_PipelineLayout;
 		TA_SSGIPipeline = Temp.FQ_Pipeline;
@@ -1327,7 +1321,7 @@ void App::CreateGraphicsPipeline()
 		pipelineLayoutInfo.pPushConstantRanges = &range;
 
 
-		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager->create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSGI_Blur_Shader.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
+		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager.create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSGI_Blur_Shader.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
 		BluredSSGIPipelineLayout = Temp.FQ_PipelineLayout;
 		BluredSSGIPipeline = Temp.FQ_Pipeline;

@@ -36,7 +36,3 @@ private:
 	VulkanContext* vulkanContext = nullptr;
 };
 
-//static inline PipelineManagerDeleter(PipelineManager* PipelineManager) {
-//
-//    
-//}

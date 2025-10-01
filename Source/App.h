@@ -10,12 +10,18 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "Lighting_FullScreenQuad.h"
 #include "SSAO_FullScreenQuad.h"
+#include "FXAA_FullScreenQuad.h"
+#include "SSR_FullScreenQuad.h"
+#include "RT_Shadows.h"
+#include "SSGI.h"
+#include "CombinedResult_FullScreenQuad.h"
 
 #include "Window.h"
 #include "VulkanContext.h"
 #include "BufferManager.h"
 #include "Camera.h"
 #include "UserInterface.h"
+#include "Pipeline_Manager.h"
 
 
 class MeshLoader;
@@ -26,7 +32,6 @@ class CombinedResult_FullScreenQuad;
 class SSGI;
 class SkyBox;
 class Model;
-class PipelineManager;
 class SSR_FullScreenQuad;
 class FXAA_FullScreenQuad;
 
@@ -101,14 +106,27 @@ public:
 
 	bool bWireFrame = false;
 	//Drawables
-	std::shared_ptr<Lighting_FullScreenQuad>            lighting_FullScreenQuad = nullptr;
-	std::shared_ptr<SSA0_FullScreenQuad>                ssao_FullScreenQuad = nullptr;
-	std::shared_ptr<FXAA_FullScreenQuad>                fxaa_FullScreenQuad = nullptr;
-	std::shared_ptr<SSR_FullScreenQuad>                 ssr_FullScreenQuad = nullptr;
-	std::shared_ptr<RT_Shadows>                         Raytracing_Shadows = nullptr;
-	std::shared_ptr<SSGI>                               SSGI_FullScreenQuad = nullptr;
-	std::shared_ptr<CombinedResult_FullScreenQuad>      Combined_FullScreenQuad = nullptr;
-	std::shared_ptr<PipelineManager>                    pipelineManager = nullptr;
+	std::unique_ptr<Lighting_FullScreenQuad, decltype(&Lighting_FullScreenQuadDeleter)>
+		lighting_FullScreenQuad{ nullptr, &Lighting_FullScreenQuadDeleter };
+
+	std::unique_ptr<SSA0_FullScreenQuad, decltype(&SSA0_FullScreenQuadDeleter)>
+		ssao_FullScreenQuad{ nullptr, &SSA0_FullScreenQuadDeleter };
+
+	std::unique_ptr<FXAA_FullScreenQuad, decltype(&FXAA_FullScreenQuadDeleter)>
+		fxaa_FullScreenQuad{ nullptr, &FXAA_FullScreenQuadDeleter };
+
+	std::unique_ptr<SSR_FullScreenQuad, decltype(&SSR_FullScreenQuadDeleter)>
+		ssr_FullScreenQuad{ nullptr, &SSR_FullScreenQuadDeleter };
+
+	std::unique_ptr<RT_Shadows, decltype(&RT_ShadowsDeleter)>
+		Raytracing_Shadows{ nullptr, &RT_ShadowsDeleter };
+
+	std::unique_ptr<SSGI, decltype(&SSGIDeleter)>
+		SSGI_FullScreenQuad{ nullptr, &SSGIDeleter };
+
+	std::unique_ptr<CombinedResult_FullScreenQuad, decltype(&CombinedResult_FullScreenQuadDeleter)>
+		Combined_FullScreenQuad{ nullptr, &CombinedResult_FullScreenQuadDeleter };
+
 
 	VkDescriptorSet FinalRenderTextureId;
 	VkDescriptorSet LightingAndReflectionsRenderTextureId;
@@ -126,10 +144,11 @@ public:
 
 private:
 
-	Window        window;
-	VulkanContext vulkanContext;
-	BufferManager bufferManger ;
-    UserInterface userinterface;
+	Window          window;
+	VulkanContext   vulkanContext;
+	BufferManager   bufferManger ;
+    UserInterface   userinterface;
+	PipelineManager pipelineManager;
 public:
 	Camera camera;
 private:
