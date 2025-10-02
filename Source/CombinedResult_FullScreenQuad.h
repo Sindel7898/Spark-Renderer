@@ -31,7 +31,7 @@ public:
     float Saturation = 1.7;
     float Concentration = 1.0;
     float MaxGamma = 1.0;
-    float MinGamma = 0.7;
+    float MinGamma = 0.6;
 
 private:
 

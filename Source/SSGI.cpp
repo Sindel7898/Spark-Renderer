@@ -76,55 +76,55 @@ void SSGI::CreateGIImage() {
 	SSGIPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	SSGIPassLastFrameImage.ImageID = "Last SSGI Accumilation Image";
-	bufferManager->CreateImage(&SSGIPassLastFrameImage, SSGI_ImageFullResolution, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled| vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst);
-	SSGIPassLastFrameImage.imageView = bufferManager->CreateImageView(&SSGIPassLastFrameImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	bufferManager->CreateImage(&SSGIPassLastFrameImage, SSGI_ImageFullResolution, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled| vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst);
+	SSGIPassLastFrameImage.imageView = bufferManager->CreateImageView(&SSGIPassLastFrameImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	SSGIPassLastFrameImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	SSGIAccumilationImage.ImageID = "SSGI Accumilation Image";
-	bufferManager->CreateImage(&SSGIAccumilationImage, SSGI_ImageFullResolution, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc, false);
-	SSGIAccumilationImage.imageView = bufferManager->CreateImageView(&SSGIAccumilationImage, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	bufferManager->CreateImage(&SSGIAccumilationImage, SSGI_ImageFullResolution, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc, false);
+	SSGIAccumilationImage.imageView = bufferManager->CreateImageView(&SSGIAccumilationImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	SSGIAccumilationImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 	///////////////////////////////////////////////
 	BlurPing_DownSampleHalfRes.ImageID = " BlurPing_DownSampleHalfRes  Image";
-	bufferManager->CreateImage(&BlurPing_DownSampleHalfRes, SSGI_ImageHalfResolution, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
-	BlurPing_DownSampleHalfRes.imageView = bufferManager->CreateImageView(&BlurPing_DownSampleHalfRes, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	bufferManager->CreateImage(&BlurPing_DownSampleHalfRes, SSGI_ImageHalfResolution, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
+	BlurPing_DownSampleHalfRes.imageView = bufferManager->CreateImageView(&BlurPing_DownSampleHalfRes, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	BlurPing_DownSampleHalfRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge,false);
 
 	BlurPong_DownSampleHalfRes.ImageID = "BlurPong_DownSampleHalfRes  Image";
-	bufferManager->CreateImage(&BlurPong_DownSampleHalfRes, SSGI_ImageHalfResolution, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
-	BlurPong_DownSampleHalfRes.imageView = bufferManager->CreateImageView(&BlurPong_DownSampleHalfRes, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	bufferManager->CreateImage(&BlurPong_DownSampleHalfRes, SSGI_ImageHalfResolution, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
+	BlurPong_DownSampleHalfRes.imageView = bufferManager->CreateImageView(&BlurPong_DownSampleHalfRes, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	BlurPong_DownSampleHalfRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 	////////////////////////////////////////////////
 	BlurPing_DownSampleQuaterRes.ImageID = " BlurPing_DownSampleQuaterRes Image";
-	bufferManager->CreateImage(&BlurPing_DownSampleQuaterRes, SSGI_ImageQuaterResolution, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
-	BlurPing_DownSampleQuaterRes.imageView = bufferManager->CreateImageView(&BlurPing_DownSampleQuaterRes, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	bufferManager->CreateImage(&BlurPing_DownSampleQuaterRes, SSGI_ImageQuaterResolution, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
+	BlurPing_DownSampleQuaterRes.imageView = bufferManager->CreateImageView(&BlurPing_DownSampleQuaterRes, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	BlurPing_DownSampleQuaterRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 
 	BlurPong_DownSampleQuaterRes.ImageID = "BlurPong_DownSampleQuaterRes Image";
-	bufferManager->CreateImage(&BlurPong_DownSampleQuaterRes, SSGI_ImageQuaterResolution, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
-	BlurPong_DownSampleQuaterRes.imageView = bufferManager->CreateImageView(&BlurPong_DownSampleQuaterRes, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	bufferManager->CreateImage(&BlurPong_DownSampleQuaterRes, SSGI_ImageQuaterResolution, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
+	BlurPong_DownSampleQuaterRes.imageView = bufferManager->CreateImageView(&BlurPong_DownSampleQuaterRes, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	BlurPong_DownSampleQuaterRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 	////////////////////////////////////////////////
 
 	BlurPing_UPSampleHalfRes.ImageID = " BlurPing_UPSampleHalfRes Image";
-	bufferManager->CreateImage(&BlurPing_UPSampleHalfRes, SSGI_ImageHalfResolution, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
-	BlurPing_UPSampleHalfRes.imageView = bufferManager->CreateImageView(&BlurPing_UPSampleHalfRes, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	bufferManager->CreateImage(&BlurPing_UPSampleHalfRes, SSGI_ImageHalfResolution, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
+	BlurPing_UPSampleHalfRes.imageView = bufferManager->CreateImageView(&BlurPing_UPSampleHalfRes, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	BlurPing_UPSampleHalfRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 
 	BlurPong_UPSampleHalfRes.ImageID = " BlurPong_UPSampleHalfRes Image";
-	bufferManager->CreateImage(&BlurPong_UPSampleHalfRes, SSGI_ImageHalfResolution, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
-	BlurPong_UPSampleHalfRes.imageView = bufferManager->CreateImageView(&BlurPong_UPSampleHalfRes, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	bufferManager->CreateImage(&BlurPong_UPSampleHalfRes, SSGI_ImageHalfResolution, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
+	BlurPong_UPSampleHalfRes.imageView = bufferManager->CreateImageView(&BlurPong_UPSampleHalfRes, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	BlurPong_UPSampleHalfRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 	/////////////////////////////////////////////////////////////////////////
 
 	BlurPing_UPSampleFullRes.ImageID = " BlurPing_UPSampleFullRes Image";
-	bufferManager->CreateImage(&BlurPing_UPSampleFullRes, SSGI_ImageFullResolution, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
-	BlurPing_UPSampleFullRes.imageView = bufferManager->CreateImageView(&BlurPing_UPSampleFullRes, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	bufferManager->CreateImage(&BlurPing_UPSampleFullRes, SSGI_ImageFullResolution, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
+	BlurPing_UPSampleFullRes.imageView = bufferManager->CreateImageView(&BlurPing_UPSampleFullRes, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	BlurPing_UPSampleFullRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 
 	BlurPong_UPSampleFullRes.ImageID = " BlurPing_UPSampleHalfRes Image";
-	bufferManager->CreateImage(&BlurPong_UPSampleFullRes, SSGI_ImageFullResolution, vulkanContext->swapchainformat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
-	BlurPong_UPSampleFullRes.imageView = bufferManager->CreateImageView(&BlurPong_UPSampleFullRes, vulkanContext->swapchainformat, vk::ImageAspectFlagBits::eColor);
+	bufferManager->CreateImage(&BlurPong_UPSampleFullRes, SSGI_ImageFullResolution, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, false);
+	BlurPong_UPSampleFullRes.imageView = bufferManager->CreateImageView(&BlurPong_UPSampleFullRes, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	BlurPong_UPSampleFullRes.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge,true);
 	/////////////////////////////////////////////////////////////////////////
 

@@ -560,8 +560,8 @@ void App::createGBuffer()
 	gbuffer.Emissive.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	LightingPassImageData.ImageID = "Gbuffer LightingPass Texture";
-	bufferManger.CreateImage(&LightingPassImageData,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	LightingPassImageData.imageView = bufferManger.CreateImageView(&LightingPassImageData, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	bufferManger.CreateImage(&LightingPassImageData,swapchainextent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	LightingPassImageData.imageView = bufferManger.CreateImageView(&LightingPassImageData, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
 	LightingPassImageData.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	ReflectionMaskImageData.ImageID = "ReflectionMask Texture";
@@ -762,7 +762,7 @@ void App::CreateGraphicsPipeline()
 
 
 	{
-		std::array<vk::Format, 1> colorFormats = { vk::Format::eR16G16B16A16Sfloat };
+		std::array<vk::Format, 1> colorFormats = { vk::Format::eR32G32B32A32Sfloat };
 
 	   vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 	   pipelineRenderingCreateInfo.colorAttachmentCount = 1;
@@ -1280,10 +1280,11 @@ void App::CreateGraphicsPipeline()
 
 
 	{
+		vk::Format formats[1] = { vk::Format::eR16G16B16A16Sfloat };
 
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-		pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext.swapchainformat;
+		pipelineRenderingCreateInfo.pColorAttachmentFormats = formats;
 
 		vk::PushConstantRange range{};
 		range.setOffset(0);
@@ -1305,9 +1306,11 @@ void App::CreateGraphicsPipeline()
 
 
 	{
+		vk::Format formats[1] = { vk::Format::eR16G16B16A16Sfloat };
+
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-		pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext.swapchainformat;
+		pipelineRenderingCreateInfo.pColorAttachmentFormats = formats;
 
 		vk::PushConstantRange range{};
 		range.setOffset(0);
