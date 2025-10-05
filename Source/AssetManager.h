@@ -24,7 +24,7 @@ public:
     void ParseTextureData(const std::string& filePath, std::vector<StoredImageData> Textures);
 
     const std::vector<StoredImageData>& GetStoredImageData(const std::string& MeshFilePath);
-    const StoredModelData& GetStoredModelData(const std::string& FilePath);
+    StoredModelData& GetStoredModelData(const std::string& FilePath);
 
 
     std::shared_ptr<MeshLoader> meshloader;

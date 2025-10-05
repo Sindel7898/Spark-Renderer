@@ -38,8 +38,8 @@ void RT_Reflections::CreateStorageImage() {
 	 swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
      ReflectionPassImage.ImageID = "RT Reflection Pass Image";
-     bufferManager->CreateImage(&ReflectionPassImage, swapchainextent, vk::Format::eR16G16B16A16Unorm, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled);
-     ReflectionPassImage.imageView = bufferManager->CreateImageView(&ReflectionPassImage, vk::Format::eR16G16B16A16Unorm, vk::ImageAspectFlagBits::eColor);
+	 bufferManager->CreateImage(&ReflectionPassImage, swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled);
+     ReflectionPassImage.imageView = bufferManager->CreateImageView(&ReflectionPassImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
      ReflectionPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
      
 }
@@ -58,17 +58,19 @@ void RT_Reflections::createRayTracingDescriptorSetLayout(){
 	TLASLayout.descriptorType = vk::DescriptorType::eAccelerationStructureKHR;
 	TLASLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
-	vk::DescriptorSetLayoutBinding PositionSamplerLayout{};
-	PositionSamplerLayout.binding = 1;
-	PositionSamplerLayout.descriptorCount = 1;
-	PositionSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	PositionSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
-	vk::DescriptorSetLayoutBinding NormalSamplerLayout{};
-	NormalSamplerLayout.binding = 2;
-	NormalSamplerLayout.descriptorCount = 1;
-	NormalSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	NormalSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+	vk::DescriptorSetLayoutBinding AlbedoAssetTexturesSamplerLayout{};
+	AlbedoAssetTexturesSamplerLayout.binding = 1;
+	AlbedoAssetTexturesSamplerLayout.descriptorCount = bufferManager->AllScene_Albedo_Images.size();
+	AlbedoAssetTexturesSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	AlbedoAssetTexturesSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+
+	vk::DescriptorSetLayoutBinding NormalAssetTexturesSamplerLayout{};
+	NormalAssetTexturesSamplerLayout.binding = 2;
+	NormalAssetTexturesSamplerLayout.descriptorCount = bufferManager->AllScene_Normal_Images.size();
+	NormalAssetTexturesSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	NormalAssetTexturesSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+
 
 	vk::DescriptorSetLayoutBinding ReflectionResultSamplerLayout{};
 	ReflectionResultSamplerLayout.binding = 3;
@@ -82,9 +84,15 @@ void RT_Reflections::createRayTracingDescriptorSetLayout(){
 	RayGenUniformBufferLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
 	RayGenUniformBufferLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
-	std::array<vk::DescriptorSetLayoutBinding, 5> bindings = { TLASLayout,PositionSamplerLayout, 
-		                                                       NormalSamplerLayout,ReflectionResultSamplerLayout,
-		                                                       RayGenUniformBufferLayout };
+	std::array<vk::DescriptorSetLayoutBinding, 5> bindings = {
+		                                                       TLASLayout,              
+															   AlbedoAssetTexturesSamplerLayout,
+															   NormalAssetTexturesSamplerLayout,
+		                                                       ReflectionResultSamplerLayout,
+		                                                       RayGenUniformBufferLayout
+	};
+
+
 
 	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -132,38 +140,63 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 			TLAS_descriptorWrite.pNext = &descriptorAccelerationStructureInfo;
 			
 			/////////////////////////////////////////////////////////////////////////////////////
-			vk::DescriptorImageInfo PositionImageInfo{};
-			PositionImageInfo.imageLayout = vk::ImageLayout::eGeneral;
-			PositionImageInfo.imageView   = gbuffer.Position.imageView;
-			PositionImageInfo.sampler     = gbuffer.Position.imageSampler;
 
-			vk::WriteDescriptorSet PositionSamplerdescriptorWrite{};
-			PositionSamplerdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
-			PositionSamplerdescriptorWrite.dstBinding = 1;
-			PositionSamplerdescriptorWrite.dstArrayElement = 0;
-			PositionSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-			PositionSamplerdescriptorWrite.descriptorCount = 1;
-			PositionSamplerdescriptorWrite.pImageInfo = &PositionImageInfo;
+
+			std::vector<vk::DescriptorImageInfo>AssetImagesInfos;
+
+			for (int j = 0; j < bufferManager->AllScene_Albedo_Images.size(); j++)
+			{
+				ImageData* imageData = bufferManager->AllScene_Albedo_Images[j];
+				if (imageData) {
+
+					vk::DescriptorImageInfo ASSETImageInfo{};
+					ASSETImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+					ASSETImageInfo.imageView = imageData->imageView;
+					ASSETImageInfo.sampler = imageData->imageSampler;
+
+					AssetImagesInfos.push_back(ASSETImageInfo);
+				};
+			}
+
+			vk::WriteDescriptorSet AssetImagSamplerdescriptorWrite{};
+			AssetImagSamplerdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
+			AssetImagSamplerdescriptorWrite.dstBinding = 1;
+			AssetImagSamplerdescriptorWrite.dstArrayElement = 0;
+			AssetImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			AssetImagSamplerdescriptorWrite.descriptorCount = AssetImagesInfos.size();
+			AssetImagSamplerdescriptorWrite.pImageInfo = AssetImagesInfos.data();
+
+
+			std::vector<vk::DescriptorImageInfo> NormalImageAssetImagesInfos;
+
+			for (int j = 0; j < bufferManager->AllScene_Normal_Images.size(); j++)
+			{
+				ImageData* imageData = bufferManager->AllScene_Normal_Images[j];
+				if (imageData) {
+
+					vk::DescriptorImageInfo NormalASSETImageInfo{};
+					NormalASSETImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+					NormalASSETImageInfo.imageView = imageData->imageView;
+					NormalASSETImageInfo.sampler = imageData->imageSampler;
+
+					NormalImageAssetImagesInfos.push_back(NormalASSETImageInfo);
+				};
+			}
+
+			vk::WriteDescriptorSet NormalAssetImagSamplerdescriptorWrite{};
+			NormalAssetImagSamplerdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
+			NormalAssetImagSamplerdescriptorWrite.dstBinding = 2;
+			NormalAssetImagSamplerdescriptorWrite.dstArrayElement = 0;
+			NormalAssetImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			NormalAssetImagSamplerdescriptorWrite.descriptorCount = NormalImageAssetImagesInfos.size();
+			NormalAssetImagSamplerdescriptorWrite.pImageInfo = NormalImageAssetImagesInfos.data();
+
 			/////////////////////////////////////////////////////////////////////////////////////
 
-			vk::DescriptorImageInfo NormalimageInfo{};
-			NormalimageInfo.imageLayout = vk::ImageLayout::eGeneral;
-			NormalimageInfo.imageView   = gbuffer.Normal.imageView;
-			NormalimageInfo.sampler     = gbuffer.Normal.imageSampler;
-
-			vk::WriteDescriptorSet NormalSamplerdescriptorWrite{};
-			NormalSamplerdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
-			NormalSamplerdescriptorWrite.dstBinding = 2;
-			NormalSamplerdescriptorWrite.dstArrayElement = 0;
-			NormalSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-			NormalSamplerdescriptorWrite.descriptorCount = 1;
-			NormalSamplerdescriptorWrite.pImageInfo = &NormalimageInfo;
-			/////////////////////////////////////////////////////////////////////////////////////
-
-		    vk::DescriptorImageInfo StoreageImageInfo{};
-		    StoreageImageInfo.imageLayout = vk::ImageLayout::eGeneral;
-		    StoreageImageInfo.imageView   = ReflectionPassImage.imageView;
-		    StoreageImageInfo.sampler     = ReflectionPassImage.imageSampler;			
+			vk::DescriptorImageInfo StoreageImageInfo{};
+			StoreageImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			StoreageImageInfo.imageView = ReflectionPassImage.imageView;
+			StoreageImageInfo.sampler = ReflectionPassImage.imageSampler;
 
 			vk::WriteDescriptorSet StoreageImagSamplerdescriptorWrite{};
 			StoreageImagSamplerdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
@@ -190,9 +223,9 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 
 
 			std::array<vk::WriteDescriptorSet, 5> descriptorWrites{ TLAS_descriptorWrite,
-																	PositionSamplerdescriptorWrite,
-				                                                    NormalSamplerdescriptorWrite,
-				                                                    StoreageImagSamplerdescriptorWrite,
+				                                                    AssetImagSamplerdescriptorWrite,
+				                                                    NormalAssetImagSamplerdescriptorWrite,
+																	StoreageImagSamplerdescriptorWrite,
 			                                                        RayUniformdescriptorWrite};
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);

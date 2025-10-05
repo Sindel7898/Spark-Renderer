@@ -115,6 +115,9 @@ public:
     int bufferCounts = 0;
 
     void CleanUp();
+    std::vector<ImageData*> AllScene_Albedo_Images;
+    std::vector<ImageData*> AllScene_Normal_Images;
+
 
 private:
 

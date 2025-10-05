@@ -238,9 +238,14 @@ void App::CreateDebugUtils()
 
  void App::createTLAS()
  {
+	 size_t totalPrimitiveCount = 0;
+	 for (const auto& model : Models) {
+		 totalPrimitiveCount += model->BLAS_Datas.size();
+	 }
+
 	 // Create instance Buffer
 	 TLAS_InstanceData.BufferID = "Scene TLAS InstanceData Buffer";
-	 size_t totalSize = sizeof(vk::AccelerationStructureInstanceKHR) * Models.size();
+	 size_t totalSize = sizeof(vk::AccelerationStructureInstanceKHR) * totalPrimitiveCount;
 
 	 bufferManger.CreateBuffer(&TLAS_InstanceData, totalSize,
 		 vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR |
@@ -273,7 +278,7 @@ void App::CreateDebugUtils()
 
 
 
-	 uint32_t primitive_count = static_cast<uint32_t>(Models.size());
+	 uint32_t primitive_count = totalPrimitiveCount;
 
 	 VkAccelerationStructureBuildGeometryInfoKHR TEMP_ACCELERATION_INFO = accelerationStructureBuildGeometryInfo;
 	 VkAccelerationStructureBuildSizesInfoKHR TEMP_ACCELERATION_STRUCTURE_BUILD_SIZE{};
@@ -356,6 +361,11 @@ void App::CreateDebugUtils()
 	 // 1. Update instance data on the GPU
 	 UpdateTLASInstanceBuffer();
 
+	 size_t totalPrimitiveCount = 0;
+	 for (const auto& model : Models) {
+		 totalPrimitiveCount += model->BLAS_Datas.size();
+	 }
+
 	 // 2. Reuse instance buffer device address
 	 vk::BufferDeviceAddressInfo instanceInfo{};
 	 instanceInfo.buffer = TLAS_InstanceData.buffer;
@@ -389,7 +399,7 @@ void App::CreateDebugUtils()
 
 	 // 6. Build range info
 	 vk::AccelerationStructureBuildRangeInfoKHR buildRange{};
-	 buildRange.primitiveCount = static_cast<uint32_t>(Models.size());
+	 buildRange.primitiveCount = static_cast<uint32_t>(totalPrimitiveCount);
 	 buildRange.primitiveOffset = 0;
 	 buildRange.firstVertex = 0;
 	 buildRange.transformOffset = 0;
@@ -410,32 +420,41 @@ void App::CreateDebugUtils()
  {
 
 	 std::vector< vk::AccelerationStructureInstanceKHR> Instances; // array of instances
+	 uint32_t customInstanceId = 0;
 
 	 // pupulate instance data into the array 
 	 for (int i = 0; i < Models.size(); i++)
 	 {
-		 vk::AccelerationStructureDeviceAddressInfoKHR blasinfo{};
-		 blasinfo.accelerationStructure = Models[i]->BLAS;
+		 glm::mat4 modelInstanceTransform = Models[i]->Instances[0]->GetTransformationMatrix();
 
-		 VkAccelerationStructureDeviceAddressInfoKHR Temp = blasinfo;
+		 for (int j = 0; j < Models[i]->BLAS_Datas.size(); j++)
+		 {
+			 vk::AccelerationStructureDeviceAddressInfoKHR blasinfo{};
+			 blasinfo.accelerationStructure = Models[i]->BLAS_Datas[j].BLAS;
 
-		 glm::mat ModelMatrix = Models[i]->Instances[0]->GetModelMatrix();
+			 VkAccelerationStructureDeviceAddressInfoKHR Temp = blasinfo;
 
-		 VkTransformMatrixKHR transformMatrix = {
-				ModelMatrix[0][0], ModelMatrix[1][0], ModelMatrix[2][0], ModelMatrix[3][0], // Row 0
-				ModelMatrix[0][1], ModelMatrix[1][1], ModelMatrix[2][1], ModelMatrix[3][1], // Row 1
-				ModelMatrix[0][2], ModelMatrix[1][2], ModelMatrix[2][2], ModelMatrix[3][2], // Row 2
-		 };
+			// glm::mat4 localNodeTransform = Models[i]->BLAS_Datas[j].ModelMatrix;
 
-		 vk::AccelerationStructureInstanceKHR instance{};
-		 instance.transform = transformMatrix;
-		 instance.instanceCustomIndex = i;
-		 instance.mask = 0xFF;
-		 instance.instanceShaderBindingTableRecordOffset = 0;
-		 instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
-		 instance.accelerationStructureReference = vulkanContext.vkGetAccelerationStructureDeviceAddressKHR(vulkanContext.LogicalDevice, &Temp);
+			 glm::mat4 finalMatrix = modelInstanceTransform;
 
-		 Instances.push_back(instance);
+			 VkTransformMatrixKHR transformMatrix = {
+					finalMatrix[0][0], finalMatrix[1][0], finalMatrix[2][0], finalMatrix[3][0], // Row 0
+					finalMatrix[0][1], finalMatrix[1][1], finalMatrix[2][1], finalMatrix[3][1], // Row 1
+					finalMatrix[0][2], finalMatrix[1][2], finalMatrix[2][2], finalMatrix[3][2], // Row 2
+			 };
+
+			 vk::AccelerationStructureInstanceKHR instance{};
+			 instance.transform = transformMatrix;
+			 instance.instanceCustomIndex = customInstanceId++;
+			 instance.mask = 0xFF;
+			 instance.instanceShaderBindingTableRecordOffset = 0;
+			 instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+			 instance.accelerationStructureReference = vulkanContext.vkGetAccelerationStructureDeviceAddressKHR(vulkanContext.LogicalDevice, &Temp);
+
+			 Instances.push_back(instance);
+		 }
+	
 	 }
 	 // send all instance data into the buffer
 	 bufferManger.CopyDataToBuffer(Instances.data(), TLAS_InstanceData);
@@ -1332,6 +1351,7 @@ void App::CreateGraphicsPipeline()
 		RT_ReflectionPassPipeline = pipelineManager.createRayTracingGraphicsPipeline(RT_ReflectionPipelineLayout, ShaderStages, ShaderGroups);
 
 		vulkanContext.LogicalDevice.destroyShaderModule(RayGen_ShaderModule);
+		vulkanContext.LogicalDevice.destroyShaderModule(RayClosestHit_ShaderModule);
 		vulkanContext.LogicalDevice.destroyShaderModule(RayMiss_ShaderModule);
 
 	}
@@ -1482,8 +1502,8 @@ void App::createShaderBindingTable() {
 		bufferManger.CreateBuffer(&Reflection_hitShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
 
 		bufferManger.CopyDataToBuffer(shaderHandleStorage.data(), Reflection_raygenShaderBindingTableBuffer);
-		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned,  Reflection_hitShaderBindingTableBuffer);
-		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned * 2,  Reflection_missShaderBindingTableBuffer);
+		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned, Reflection_hitShaderBindingTableBuffer);
+		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned * 2, Reflection_missShaderBindingTableBuffer);
 	}
 }
 
@@ -1703,6 +1723,8 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 	ssao_FullScreenQuad->UpdataeUniformBufferData();
 	Raytracing_Shadows->UpdateUniformBuffer(currentImage, lights);
     SSGI_FullScreenQuad->UpdateUniformBuffer(currentImage, lights,deltaTime);
+	RT_Reflection->UpdateUniformBuffer(currentImage, lights);
+
 
 }
 

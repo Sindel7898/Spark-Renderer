@@ -220,7 +220,7 @@ void RT_Shadows::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool
 			StoreageImagSamplerdescriptorWrite.dstArrayElement = 0;
 			StoreageImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
 			StoreageImagSamplerdescriptorWrite.descriptorCount = ShadowImagesInfos.size();
-			StoreageImagSamplerdescriptorWrite.pImageInfo = ShadowImagesInfos.data();;
+			StoreageImagSamplerdescriptorWrite.pImageInfo = ShadowImagesInfos.data();
 
 			/////////////////////////////////////////////////////////////////////////////////////
 

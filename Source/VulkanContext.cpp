@@ -85,6 +85,8 @@ void VulkanContext::SelectGPU_CreateDevice()
 	features_1_2.descriptorIndexing  = vk::True;
 	features_1_2.bufferDeviceAddress = vk::True;
 	features_1_2.descriptorBindingPartiallyBound = vk::True;
+	features_1_2.runtimeDescriptorArray = vk::True;
+	features_1_2.shaderSampledImageArrayNonUniformIndexing = vk::True;
 	features_1_2.pNext = &extendedDynamicState3Features;
 
 	vk::PhysicalDeviceVulkan13Features features_1_3{};
