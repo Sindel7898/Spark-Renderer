@@ -8,6 +8,7 @@
 #include <algorithm> 
 #include <cmath> 
 #include <cstdint>
+#include "VertexInputLayouts.h"          
 
 struct IDdata {
     int instance;
@@ -46,6 +47,21 @@ struct ImageTransitionData {
     int LayerCount = 1;
 
 };
+
+struct VertexAndIndexOffsets {
+
+    uint32_t VertexOffset;
+    uint32_t IndexOffset;
+};
+
+struct PaddedModelVertex {
+
+    glm::vec4 vert_Padding;
+    glm::vec4 text_Padding;
+    glm::vec4 normal_Padding;
+    glm::vec4 tangent_Padding;
+};
+
 
 class VulkanContext;
 
@@ -115,9 +131,11 @@ public:
     int bufferCounts = 0;
 
     void CleanUp();
-    std::vector<ImageData*> AllScene_Albedo_Images;
-    std::vector<ImageData*> AllScene_Normal_Images;
-
+    std::vector<ImageData*>        AllScene_Albedo_Images;
+    std::vector<ImageData*>        AllScene_Normal_Images;
+    std::vector<PaddedModelVertex> AllScene_VertexGeometryData;
+    std::vector<uint32_t>          AllScene_IndexGeometryData;
+    std::vector<VertexAndIndexOffsets>     AllScene_VertexAndIndexOffsets;
 
 private:
 

@@ -53,6 +53,16 @@ void BufferManager::CreateBuffer(BufferData* bufferData,VkDeviceSize BufferSize,
 	bufferData->usage = BufferUse;
 	bufferData->allocation = allocation;
 
+	VkDebugUtilsObjectNameInfoEXT BuffernameInfo{};
+	BuffernameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+	BuffernameInfo.pNext = nullptr;
+	BuffernameInfo.objectType = VkObjectType::VK_OBJECT_TYPE_BUFFER;
+	BuffernameInfo.objectHandle = reinterpret_cast<uint64_t>(static_cast<VkBuffer>(bufferData->buffer));
+	BuffernameInfo.pObjectName = bufferData->BufferID.c_str();
+
+	vulkanContext->vkSetDebugUtilsObjectNameEXT(logicalDevice, &BuffernameInfo);
+
+
 	AddBufferLog(bufferData);
 }
 
@@ -81,49 +91,16 @@ void BufferManager::CreateDeviceBuffer(BufferData* bufferData, VkDeviceSize Buff
 	bufferData->usage = BufferUse;
 	bufferData->allocation = allocation;
 
+	VkDebugUtilsObjectNameInfoEXT BuffernameInfo{};
+	BuffernameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+	BuffernameInfo.pNext = nullptr;
+	BuffernameInfo.objectType = VkObjectType::VK_OBJECT_TYPE_BUFFER;
+	BuffernameInfo.objectHandle = reinterpret_cast<uint64_t>(static_cast<VkBuffer>(bufferData->buffer));
+	BuffernameInfo.pObjectName = bufferData->BufferID.c_str();
+
+	vulkanContext->vkSetDebugUtilsObjectNameEXT(logicalDevice, &BuffernameInfo);
+
 	AddBufferLog(bufferData);
-}
-
-
-void BufferManager::AddBufferLog(BufferData* bufferData)
-{
-	if (bufferData->BufferID.empty())
-	{
-	  throw	std::runtime_error("A buffer you are trying to create does not have an ID");
-	}
-
-	std::string ConstructedID = bufferData->BufferID;
-
-	auto FoundLog = bufferLog.find(ConstructedID);
-
-	if (FoundLog == bufferLog.end()) {
-		IDdata data;
-		data.instance = 0;
-
-		bufferLog.emplace(bufferData->BufferID,data);
-	}
-	else
-	{
-		IDdata data;
-		data.instance = FoundLog->second.instance + 1;
-
-		auto newLogID = FoundLog->first + "instance" + std::to_string(data.instance);
-		bufferData->BufferID = newLogID;
-		bufferLog.emplace(newLogID, data);
-	}
-}
-
-void BufferManager::RemoveBufferLog(BufferData bufferData)
-{
-	if (bufferData.BufferID.empty())
-	{
-		throw std::runtime_error("A buffer you are trying to destroy does not have an ID");
-	}
-	auto FoundLog = bufferLog.find(bufferData.BufferID);
-
-	if (FoundLog != bufferLog.end()) {
-		bufferLog.erase(FoundLog);
-	}
 }
 
 void BufferManager::CreateGPUOptimisedBuffer(BufferData* bufferData,const void* Data, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue)
@@ -721,6 +698,35 @@ void BufferManager::CreateImage(ImageData* imageData,vk::Extent3D imageExtent, v
 	AddImageLog(imageData);
 }
 
+void BufferManager::AddBufferLog(BufferData* bufferData)
+{
+	if (bufferData->BufferID.empty())
+	{
+		throw	std::runtime_error("A buffer you are trying to create does not have an ID");
+	}
+
+	std::string ConstructedID = bufferData->BufferID;
+
+	auto FoundLog = bufferLog.find(ConstructedID);
+
+	if (FoundLog == bufferLog.end()) {
+		IDdata data;
+		data.instance = 0;
+
+		bufferLog.emplace(bufferData->BufferID, data);
+	}
+	else
+	{
+		IDdata data;
+		data.instance = FoundLog->second.instance + 1;
+
+		auto newLogID = FoundLog->first + "instance" + std::to_string(data.instance);
+		bufferData->BufferID = newLogID;
+		bufferLog.emplace(newLogID, data);
+	}
+}
+
+
 void BufferManager::AddImageLog(ImageData* imageData)
 {
 	if (imageData->ImageID.empty())
@@ -761,6 +767,20 @@ void BufferManager::RemoveImageLog(ImageData imageData)
 		imageLog.erase(FoundLog);
 	}
 }
+
+void BufferManager::RemoveBufferLog(BufferData bufferData)
+{
+	if (bufferData.BufferID.empty())
+	{
+		throw std::runtime_error("A buffer you are trying to destroy does not have an ID");
+	}
+	auto FoundLog = bufferLog.find(bufferData.BufferID);
+
+	if (FoundLog != bufferLog.end()) {
+		bufferLog.erase(FoundLog);
+	}
+}
+
 vk::ImageView BufferManager::CreateImageView(ImageData* imageData, vk::Format ImageFormat = vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlags ImageAspectBits = vk::ImageAspectFlagBits::eColor) {
 
 	vk::ImageViewCreateInfo imageviewinfo{};

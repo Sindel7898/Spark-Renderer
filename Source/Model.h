@@ -189,6 +189,9 @@ public:
 
     std::vector<BLASDATA> BLAS_Datas;
 
+    uint32_t m_baseVertexOffset = 0;
+    uint32_t m_baseIndexOffset = 0;
+
 private:
 
 

@@ -106,6 +106,8 @@ void Model::CreateVertexAndIndexBuffer()
 
 	storedModelData = &AssetManager::GetInstance().GetStoredModelData(FilePath);
 
+	m_baseVertexOffset = static_cast<uint32_t>(bufferManager->AllScene_VertexGeometryData.size());
+	m_baseIndexOffset = static_cast<uint32_t>(bufferManager->AllScene_IndexGeometryData.size());
 
 	VkDeviceSize VertexBufferSize = sizeof(storedModelData->VertexData[0]) * storedModelData->VertexData.size();
 	vertexBufferData.BufferID = "Model Vertex Buffer";
@@ -114,7 +116,25 @@ void Model::CreateVertexAndIndexBuffer()
 	VkDeviceSize indexBufferSize = sizeof(uint32_t) * storedModelData->IndexData.size();
 	indexBufferData.BufferID = "Model Index Buffer";
 	bufferManager->CreateGPUOptimisedBuffer(&indexBufferData,storedModelData->IndexData.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR, commandPool, vulkanContext->graphicsQueue);
+   
 
+
+	for (int i = 0; i < storedModelData->VertexData.size(); i++)
+	{
+		PaddedModelVertex paddedModelVertex;
+		paddedModelVertex.vert_Padding    = glm::vec4(storedModelData->VertexData[i].vert, 0);
+		paddedModelVertex.text_Padding    = glm::vec4(storedModelData->VertexData[i].text, 0,0);
+		paddedModelVertex.normal_Padding  = glm::vec4(storedModelData->VertexData[i].normal, 0);
+		paddedModelVertex.tangent_Padding = glm::vec4(storedModelData->VertexData[i].tangent, 0);
+ 
+		bufferManager->AllScene_VertexGeometryData.push_back(paddedModelVertex);
+	}
+
+	for (int i = 0; i < storedModelData->IndexData.size(); i++)
+	{
+		uint32_t rebasedIndex = m_baseVertexOffset + storedModelData->IndexData[i];
+		bufferManager->AllScene_IndexGeometryData.push_back(rebasedIndex);
+	}
 }
 
 
@@ -128,8 +148,6 @@ void Model::CreateBLAS()
 
 	auto vertexBufferAddress = vulkanContext->LogicalDevice.getBufferAddress(VertexBufferDeviceAdressesInfo);
 	auto indexBufferAddress = vulkanContext->LogicalDevice.getBufferAddress(IndexDeviceAdressesInfo);
-
-
 
 
 	for (const auto& node : storedModelData->nodes) {
@@ -159,6 +177,12 @@ void Model::CreateBLAS()
 				BLAS_TriangleData.indexType = vk::IndexType::eUint32;
 				BLAS_TriangleData.transformData.deviceAddress = 0;
 				BLAS_TriangleData.transformData.hostAddress = nullptr;
+
+				VertexAndIndexOffsets ModelOffset;
+				ModelOffset.VertexOffset = m_baseVertexOffset;
+				ModelOffset.IndexOffset = m_baseIndexOffset + primitive.indicesStart;
+
+				bufferManager->AllScene_VertexAndIndexOffsets.push_back(ModelOffset);
 
 				//Geometry Data
 				vk::AccelerationStructureGeometryDataKHR AccelerationStructureGeometryData;
@@ -659,6 +683,7 @@ void Model::CleanUp()
 				bufferManager->DestroyBuffer(uniformBuffer);
 			}
 		}
+
 
 		SceneDescriptorSets.clear();
 		Model_GPU_DataUniformBuffers.clear();

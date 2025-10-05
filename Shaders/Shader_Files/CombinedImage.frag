@@ -6,6 +6,7 @@ layout (binding = 1) uniform sampler2D GITexture;
 layout (binding = 2) uniform sampler2D SSAOTexture;                
 layout (binding = 3) uniform sampler2D MaterialsTexture;                
 layout (binding = 4) uniform sampler2D AlbedoTexture;                
+layout (binding = 5) uniform sampler2D ReflectionTexture;                
 
 layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragColor;
@@ -78,7 +79,8 @@ void main() {
      float SSAO            = texture(SSAOTexture, inTexCoord).r;
      float MaterialAO      = texture(MaterialsTexture, inTexCoord).b;
      vec3 Albedo           = texture(AlbedoTexture, inTexCoord).rgb;
-     
+     vec3 Reflection           = texture(ReflectionTexture, inTexCoord).rgb;
+
 
      float FinalAO         = SSAO * MaterialAO;
      vec3 IndirectLighting = GI * Albedo / PI;
@@ -86,7 +88,7 @@ void main() {
 
      if(FinalAO < 0.1){FinalAO = 1;}
 
-     vec3 FinalColor = (DirectLighting + IndirectLighting * 1.5);
+     vec3 FinalColor = ((DirectLighting + (Reflection * 0.2) ) + IndirectLighting * 1.5);
      vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, Brightness, Saturation, Concentration);
 
     float luma = rgb2luma(CorrectedColor);
@@ -97,5 +99,5 @@ void main() {
     vec3 tonemapped = aces_approx(gammaCorrected);
     tonemapped += vec3(bayerDither(gl_FragCoord.xy));
 
-    outFragColor = vec4(clamp(tonemapped, 0.0, 1.0), 1.0);
+   outFragColor = vec4(clamp(tonemapped, 0.0, 1.0), 1.0);
 }

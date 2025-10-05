@@ -45,9 +45,8 @@
 	skyBox = std::shared_ptr<SkyBox>(new SkyBox(&vulkanContext, commandPool, &camera, &bufferManger), SkyBoxDeleter);
 
 
-	auto model1 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf" ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	
-	auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	//auto model1 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	//auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	//
 	//auto model4 = std::shared_ptr<Model>(new Model("../Textures/EmptyCornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
@@ -56,25 +55,25 @@
 
 	//auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	//auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	
-    model1.get()->Instances[0]->SetPostion(glm::vec3(-4.282, 2.172, -6.313));
-    model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
-    model1.get()->Instances[0]->SetScale(glm::vec3(0.050, 0.050, 0.050));
-    model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-    model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+   //model1.get()->Instances[0]->SetPostion(glm::vec3(-4.282, 2.172, -6.313));
+   //model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
+   //model1.get()->Instances[0]->SetScale(glm::vec3(0.050, 0.050, 0.050));
+   //model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+   //model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
     
-    model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
-    model2.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
-    model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-    model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+    //model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
+    //model2.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
+    //model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+    //model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
     
     model3.get()->Instances[0]->SetPostion(glm::vec3(4.047, 8.914, 2.195));
     model3.get()->Instances[0]->SetRotation(glm::vec3(-180.000, -44.147, 180.000));
     model3.get()->Instances[0]->SetScale(glm::vec3(0.050, 0.050, 0.050));
     model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
     model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-	//
+	
 	//model4.get()->Instances[0]->SetPostion(glm::vec3(-44.980, 0, 0));
 	//model4.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
 	//model4.get()->Instances[0]->CubeMapReflectiveSwitch(false);
@@ -88,14 +87,19 @@
 
 	//model9.get()->Instances[0]->CubeMapReflectiveSwitch(false);
 
+	model11.get()->Instances[0]->SetPostion(glm::vec3(1));
+	model11.get()->Instances[0]->SetRotation(glm::vec3(0));
+	model11.get()->Instances[0]->SetScale(glm::vec3(6, 6, 6));
+	model11.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	model11.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 	////
 	////
-    Models.push_back(std::move(model1));
-    Models.push_back(std::move(model2));
+    //Models.push_back(std::move(model1));
+    //Models.push_back(std::move(model2));
 	Models.push_back(std::move(model3));
 	//Models.push_back(std::move(model4));
 	//Models.push_back(std::move(model5));
-	//Models.push_back(std::move(model11));
+	Models.push_back(std::move(model11));
 
 
 
@@ -104,7 +108,7 @@
 	////
 	UserInterfaceItems.push_back(Models[0].get());
 	UserInterfaceItems.push_back(Models[1].get());
-	UserInterfaceItems.push_back(Models[2].get());
+	//UserInterfaceItems.push_back(Models[2].get());
 	//UserInterfaceItems.push_back(Models[3].get());
 	//UserInterfaceItems.push_back(Models[4].get());
 
@@ -420,7 +424,9 @@ void App::CreateDebugUtils()
  {
 
 	 std::vector< vk::AccelerationStructureInstanceKHR> Instances; // array of instances
-	 uint32_t customInstanceId = 0;
+	 uint32_t ParentObject = 0;
+	 uint32_t ObjectID = 0;
+	 uint32_t TempID = 0;
 
 	 // pupulate instance data into the array 
 	 for (int i = 0; i < Models.size(); i++)
@@ -444,9 +450,13 @@ void App::CreateDebugUtils()
 					finalMatrix[0][2], finalMatrix[1][2], finalMatrix[2][2], finalMatrix[3][2], // Row 2
 			 };
 
+			 ParentObject = TempID++;
+
+			 uint32_t packedID = (ObjectID << 12) | (ParentObject & 0xFFF); //I have no idea how this works but it packs stuff together... Come back to this
+
 			 vk::AccelerationStructureInstanceKHR instance{};
 			 instance.transform = transformMatrix;
-			 instance.instanceCustomIndex = customInstanceId++;
+			 instance.instanceCustomIndex = packedID;
 			 instance.mask = 0xFF;
 			 instance.instanceShaderBindingTableRecordOffset = 0;
 			 instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
@@ -454,7 +464,7 @@ void App::CreateDebugUtils()
 
 			 Instances.push_back(instance);
 		 }
-	
+		 ObjectID++;
 	 }
 	 // send all instance data into the buffer
 	 bufferManger.CopyDataToBuffer(Instances.data(), TLAS_InstanceData);
@@ -479,8 +489,12 @@ void App::createDescriptorPool()
 	StorageImagepoolsize.type = vk::DescriptorType::eStorageImage;
 	StorageImagepoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 20;
 
-	std::array<	vk::DescriptorPoolSize, 4> poolSizes{ Uniformpoolsize ,Samplerpoolsize,
-		                                              AccelerationStructurepoolsize,StorageImagepoolsize };
+	vk::DescriptorPoolSize StorageBufferpoolsize;
+	StorageBufferpoolsize.type = vk::DescriptorType::eStorageBuffer;
+	StorageBufferpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 5;
+
+	std::array<	vk::DescriptorPoolSize, 5> poolSizes{ Uniformpoolsize ,Samplerpoolsize,
+		                                              AccelerationStructurepoolsize,StorageImagepoolsize,StorageBufferpoolsize };
 
 	vk::DescriptorPoolCreateInfo poolInfo{};
 	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
@@ -600,7 +614,7 @@ void App::createGBuffer()
 	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&ReflectionMaskImageData);
 	ssao_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
 	ssr_FullScreenQuad->createDescriptorSets(DescriptorPool, LightingPassImageData, gbuffer.ViewSpaceNormal,gbuffer.ViewSpacePosition, DepthTextureData, ReflectionMaskImageData,gbuffer.Materials);
-	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, LightingPassImageData, SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo);
+	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, LightingPassImageData, SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo,RT_Reflection->ReflectionPassImage);
 	fxaa_FullScreenQuad->createDescriptorSets(DescriptorPool, Combined_FullScreenQuad->FinalResultImage);
 	Raytracing_Shadows->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
 	RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
@@ -1723,7 +1737,7 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 	ssao_FullScreenQuad->UpdataeUniformBufferData();
 	Raytracing_Shadows->UpdateUniformBuffer(currentImage, lights);
     SSGI_FullScreenQuad->UpdateUniformBuffer(currentImage, lights,deltaTime);
-	RT_Reflection->UpdateUniformBuffer(currentImage, lights);
+	RT_Reflection->UpdateUniformBuffer(currentImage, lights, Models);
 
 
 }

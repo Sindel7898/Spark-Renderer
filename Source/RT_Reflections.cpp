@@ -3,6 +3,7 @@
 #include "BufferManager.h"
 #include "Camera.h"
 #include <stdexcept>
+#include "Model.h"
 
 RT_Reflections::RT_Reflections( VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger)
 {
@@ -31,6 +32,93 @@ void RT_Reflections::CreateUniformBuffer() {
 			RayGen_UniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
 		}
 	}
+
+	{
+		IndexStorageBuffers.resize(1);
+		IndexStorageBuffersMappedMem.resize(1);
+
+		VkDeviceSize RayGenIndexStorageBufferSize = sizeof(uint32_t) * bufferManager->AllScene_IndexGeometryData.size();
+
+		for (size_t i = 0; i < IndexStorageBuffers.size(); i++)
+		{
+			BufferData bufferdata;
+			bufferdata.BufferID = "RayGen Index Storage Buffer" + i;
+			bufferManager->CreateBuffer(&bufferdata, RayGenIndexStorageBufferSize, vk::BufferUsageFlagBits::eStorageBuffer, commandPool, vulkanContext->graphicsQueue);
+			IndexStorageBuffers[i] = bufferdata;
+
+			IndexStorageBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
+
+			memcpy(IndexStorageBuffersMappedMem[i], bufferManager->AllScene_IndexGeometryData.data(), sizeof(uint32_t) * bufferManager->AllScene_IndexGeometryData.size());
+
+			bufferManager->UnmapMemory(bufferdata);
+
+		}
+
+	}
+
+	{
+		VertexStorageBuffers.resize(1);
+		VertexStorageBuffersMappedMem.resize(1);
+
+		VkDeviceSize RayGenIndexStorageBufferSize = sizeof(PaddedModelVertex) * bufferManager->AllScene_VertexGeometryData.size();
+
+		for (size_t i = 0; i < VertexStorageBuffers.size(); i++)
+		{
+			BufferData bufferdata;
+			bufferdata.BufferID = "RayGen Vertex Storage Buffer" + i;
+			bufferManager->CreateBuffer(&bufferdata, RayGenIndexStorageBufferSize, vk::BufferUsageFlagBits::eStorageBuffer, commandPool, vulkanContext->graphicsQueue);
+			VertexStorageBuffers[i] = bufferdata;
+
+			VertexStorageBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
+
+			memcpy(VertexStorageBuffersMappedMem[i], bufferManager->AllScene_VertexGeometryData.data(), sizeof(PaddedModelVertex) * bufferManager->AllScene_VertexGeometryData.size());
+
+			bufferManager->UnmapMemory(bufferdata);
+
+		}
+	}
+
+	{
+		OffsetStorageBuffers.resize(1);
+		OffsetStorageBuffersMappedMem.resize(1);
+
+		VkDeviceSize RayGenIndexStorageBufferSize = sizeof(VertexAndIndexOffsets) * bufferManager->AllScene_VertexAndIndexOffsets.size();
+
+		for (size_t i = 0; i < OffsetStorageBuffers.size(); i++)
+		{
+			BufferData bufferdata;
+			bufferdata.BufferID = "RayGen Offset Storage Buffer" + i;
+			bufferManager->CreateBuffer(&bufferdata, RayGenIndexStorageBufferSize, vk::BufferUsageFlagBits::eStorageBuffer, commandPool, vulkanContext->graphicsQueue);
+			OffsetStorageBuffers[i] = bufferdata;
+
+			OffsetStorageBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
+
+			memcpy(OffsetStorageBuffersMappedMem[i], bufferManager->AllScene_VertexAndIndexOffsets.data(), sizeof(VertexAndIndexOffsets) * bufferManager->AllScene_VertexAndIndexOffsets.size());
+
+			bufferManager->UnmapMemory(bufferdata);
+
+		}
+	}
+
+	{
+		TransformationUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+		TransformationUniformMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
+
+		VkDeviceSize RayGenIndexStorageBufferSize = sizeof(glm::mat4) * 100;
+
+		for (size_t i = 0; i < TransformationUniformBuffers.size(); i++)
+		{
+			BufferData bufferdata;
+			bufferdata.BufferID = "RayGen Transformation Uniform Buffer" + i;
+			bufferManager->CreateBuffer(&bufferdata, RayGenIndexStorageBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
+			TransformationUniformBuffers[i] = bufferdata;
+
+			TransformationUniformMappedMem[i] = bufferManager->MapMemory(bufferdata);
+
+		}
+	}
+
+
 }
 
 void RT_Reflections::CreateStorageImage() {
@@ -42,6 +130,7 @@ void RT_Reflections::CreateStorageImage() {
      ReflectionPassImage.imageView = bufferManager->CreateImageView(&ReflectionPassImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
      ReflectionPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
      
+
 }
 
 
@@ -71,7 +160,6 @@ void RT_Reflections::createRayTracingDescriptorSetLayout(){
 	NormalAssetTexturesSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	NormalAssetTexturesSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
 
-
 	vk::DescriptorSetLayoutBinding ReflectionResultSamplerLayout{};
 	ReflectionResultSamplerLayout.binding = 3;
 	ReflectionResultSamplerLayout.descriptorCount = 1;
@@ -84,12 +172,40 @@ void RT_Reflections::createRayTracingDescriptorSetLayout(){
 	RayGenUniformBufferLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
 	RayGenUniformBufferLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
-	std::array<vk::DescriptorSetLayoutBinding, 5> bindings = {
+	vk::DescriptorSetLayoutBinding IndexStorageBuffersLayout{};
+	IndexStorageBuffersLayout.binding = 5;
+	IndexStorageBuffersLayout.descriptorCount = 1;
+	IndexStorageBuffersLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
+	IndexStorageBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+
+	vk::DescriptorSetLayoutBinding VertexStorageBuffersLayout{};
+	VertexStorageBuffersLayout.binding = 6;
+	VertexStorageBuffersLayout.descriptorCount = 1;
+	VertexStorageBuffersLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
+	VertexStorageBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+
+	vk::DescriptorSetLayoutBinding offsetStorageBuffersLayout{};
+	offsetStorageBuffersLayout.binding = 7;
+	offsetStorageBuffersLayout.descriptorCount = 1;
+	offsetStorageBuffersLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
+	offsetStorageBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+
+	vk::DescriptorSetLayoutBinding trasnformationUniformBuffersLayout{};
+	trasnformationUniformBuffersLayout.binding = 8;
+	trasnformationUniformBuffersLayout.descriptorCount = 1;
+	trasnformationUniformBuffersLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
+	trasnformationUniformBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR; 
+
+	std::array<vk::DescriptorSetLayoutBinding, 9> bindings = {
 		                                                       TLASLayout,              
 															   AlbedoAssetTexturesSamplerLayout,
 															   NormalAssetTexturesSamplerLayout,
 		                                                       ReflectionResultSamplerLayout,
-		                                                       RayGenUniformBufferLayout
+		                                                       RayGenUniformBufferLayout,
+															   IndexStorageBuffersLayout,
+															   VertexStorageBuffersLayout,
+															   offsetStorageBuffersLayout,
+															   trasnformationUniformBuffersLayout
 	};
 
 
@@ -221,12 +337,67 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 			RayUniformdescriptorWrite.descriptorCount = 1;
 			RayUniformdescriptorWrite.pBufferInfo = &rayuniformbufferInfo;
 
+			vk::DescriptorBufferInfo IndexStorageBuffersInfo{};
+			IndexStorageBuffersInfo.buffer = IndexStorageBuffers[0].buffer;
+			IndexStorageBuffersInfo.offset = 0;
+			IndexStorageBuffersInfo.range  = sizeof(uint32_t) * bufferManager->AllScene_IndexGeometryData.size();;
 
-			std::array<vk::WriteDescriptorSet, 5> descriptorWrites{ TLAS_descriptorWrite,
+			vk::WriteDescriptorSet IndexStorageBufferdescriptorWrite{};
+			IndexStorageBufferdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
+			IndexStorageBufferdescriptorWrite.dstBinding = 5;
+			IndexStorageBufferdescriptorWrite.dstArrayElement = 0;
+			IndexStorageBufferdescriptorWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
+			IndexStorageBufferdescriptorWrite.descriptorCount = 1;
+			IndexStorageBufferdescriptorWrite.pBufferInfo = &IndexStorageBuffersInfo;
+
+			vk::DescriptorBufferInfo VertexStorageBuffersInfo{};
+			VertexStorageBuffersInfo.buffer = VertexStorageBuffers[0].buffer;
+			VertexStorageBuffersInfo.offset = 0;
+			VertexStorageBuffersInfo.range = sizeof(PaddedModelVertex) * bufferManager->AllScene_VertexGeometryData.size();;
+
+			vk::WriteDescriptorSet VertexStorageBufferdescriptorWrite{};
+			VertexStorageBufferdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
+			VertexStorageBufferdescriptorWrite.dstBinding = 6;
+			VertexStorageBufferdescriptorWrite.dstArrayElement = 0;
+			VertexStorageBufferdescriptorWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
+			VertexStorageBufferdescriptorWrite.descriptorCount = 1;
+			VertexStorageBufferdescriptorWrite.pBufferInfo = &VertexStorageBuffersInfo;
+
+			vk::DescriptorBufferInfo OffsetStorageBuffersInfo{};
+			OffsetStorageBuffersInfo.buffer = OffsetStorageBuffers[0].buffer;
+			OffsetStorageBuffersInfo.offset = 0;
+			OffsetStorageBuffersInfo.range = sizeof(VertexAndIndexOffsets) * bufferManager->AllScene_VertexAndIndexOffsets.size();;
+
+			vk::WriteDescriptorSet OffsetStorageBufferdescriptorWrite{};
+			OffsetStorageBufferdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
+			OffsetStorageBufferdescriptorWrite.dstBinding = 7;
+			OffsetStorageBufferdescriptorWrite.dstArrayElement = 0;
+			OffsetStorageBufferdescriptorWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
+			OffsetStorageBufferdescriptorWrite.descriptorCount = 1;
+			OffsetStorageBufferdescriptorWrite.pBufferInfo = &OffsetStorageBuffersInfo;
+
+			vk::DescriptorBufferInfo TransformUniformBuffersInfo{};
+			TransformUniformBuffersInfo.buffer = TransformationUniformBuffers[i].buffer;
+			TransformUniformBuffersInfo.offset = 0;
+			TransformUniformBuffersInfo.range = sizeof(glm::mat4) * 100;
+
+			vk::WriteDescriptorSet TransformUniformBufferdescriptorWrite{};
+			TransformUniformBufferdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
+			TransformUniformBufferdescriptorWrite.dstBinding = 8;
+			TransformUniformBufferdescriptorWrite.dstArrayElement = 0;
+			TransformUniformBufferdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+			TransformUniformBufferdescriptorWrite.descriptorCount = 1;
+			TransformUniformBufferdescriptorWrite.pBufferInfo = &TransformUniformBuffersInfo;
+
+			std::array<vk::WriteDescriptorSet, 9> descriptorWrites{ TLAS_descriptorWrite,
 				                                                    AssetImagSamplerdescriptorWrite,
 				                                                    NormalAssetImagSamplerdescriptorWrite,
 																	StoreageImagSamplerdescriptorWrite,
-			                                                        RayUniformdescriptorWrite};
+			                                                        RayUniformdescriptorWrite,
+			                                                        IndexStorageBufferdescriptorWrite,
+			                                                        VertexStorageBufferdescriptorWrite,
+			                                                        OffsetStorageBufferdescriptorWrite,
+			                                                        TransformUniformBufferdescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 		}
@@ -235,7 +406,7 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 }
 
 
-void RT_Reflections::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref)
+void RT_Reflections::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref, std::vector<std::shared_ptr<Model>>& Modelref)
 {
 
 	Reflection_RayGen_UniformBufferData RayGent_UniformBufferData;
@@ -244,6 +415,22 @@ void RT_Reflections::UpdateUniformBuffer(uint32_t currentImage, std::vector<std:
 	RayGent_UniformBufferData.ProjectionMatrix[1][1] *= -1;
 
 	memcpy(RayGen_UniformBuffersMappedMem[currentImage], &RayGent_UniformBufferData, sizeof(RayGent_UniformBufferData));
+
+	std::vector<glm::mat4> ModelTransfomations;
+
+	for (int i = 0; i < Modelref.size(); i++)
+	{
+
+		if (Modelref[i])
+		{
+			glm::mat4 projmodelInstanceTransformection = Modelref[i]->Instances[0]->GetTransformationMatrix();
+
+			ModelTransfomations.push_back(projmodelInstanceTransformection);
+		}
+	}
+
+	memcpy(TransformationUniformMappedMem[currentImage], ModelTransfomations.data(), ModelTransfomations.size() * sizeof(glm::mat4));
+
 }
 
 
@@ -325,6 +512,38 @@ void RT_Reflections::CleanUp()
 			{
 				bufferManager->UnmapMemory(RayGen_Buffer);
 				bufferManager->DestroyBuffer(RayGen_Buffer);
+			}
+		}
+
+		for (auto& Buffer : IndexStorageBuffers)
+		{
+			if (Buffer.buffer)
+			{
+				bufferManager->DestroyBuffer(Buffer);
+			}
+		}
+
+		for (auto& Buffer : VertexStorageBuffers)
+		{
+			if (Buffer.buffer)
+			{
+				bufferManager->DestroyBuffer(Buffer);
+			}
+		}
+
+		for (auto& Buffer : OffsetStorageBuffers)
+		{
+			if (Buffer.buffer)
+			{
+				bufferManager->DestroyBuffer(Buffer);
+			}
+		}
+
+		for (auto& Buffer : TransformationUniformBuffers)
+		{
+			if (Buffer.buffer)
+			{
+				bufferManager->DestroyBuffer(Buffer);
 			}
 		}
 

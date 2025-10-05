@@ -8,12 +8,12 @@
 class  Camera;
 class  VulkanContext;
 class  BufferManager;
+class  Model;
 
 struct Reflection_RayGen_UniformBufferData {
     glm::mat4 ViewMatrix;
     glm::mat4 ProjectionMatrix;
 };
-
 
 class RT_Reflections
 {
@@ -24,7 +24,7 @@ public:
     void DestroyStorageImage();
     void createRayTracingDescriptorSetLayout();
     void createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, GBuffer gbuffer);
-    void UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref);
+    void UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref, std::vector<std::shared_ptr<Model>>& Modelref);
     void CreateUniformBuffer();
     uint32_t alignedSize(uint32_t value, uint32_t alignment);
     void Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferData RayMisBuffer, vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
@@ -33,9 +33,21 @@ public:
     std::vector<BufferData> RayGen_UniformBuffers;
     std::vector<void*> RayGen_UniformBuffersMappedMem;
 
+    std::vector<BufferData> IndexStorageBuffers;
+    std::vector<void*>      IndexStorageBuffersMappedMem;
+
+    std::vector<BufferData> VertexStorageBuffers;
+    std::vector<void*>      VertexStorageBuffersMappedMem;
+
+    std::vector<BufferData> OffsetStorageBuffers;
+    std::vector<void*>      OffsetStorageBuffersMappedMem;
+
+    std::vector<BufferData> TransformationUniformBuffers;
+    std::vector<void*>       TransformationUniformMappedMem;
 
     vk::DescriptorSetLayout  RayTracingDescriptorSetLayout;
     std::vector<vk::DescriptorSet> RayTracingDescriptorSets;
+
 
     ImageData ReflectionPassImage;
 
