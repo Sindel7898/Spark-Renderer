@@ -9,6 +9,7 @@ layout (binding = 4) uniform samplerCube samplerReflectiveCubeMap;
 layout (binding = 5) uniform sampler2D samplerReflectionMask;
 layout (binding = 6) uniform sampler2D samplerShadowMap[4];
 layout (binding = 7) uniform sampler2D samplerEmisive;
+layout (binding = 8) uniform sampler2D RTreflection;
 
 layout(location = 0) in vec2 inTexCoord;           
 
@@ -19,7 +20,7 @@ struct LightData{
     mat4    LightProjectionViewMatrix;
 
 };
-layout (binding = 8) uniform LightUniformBuffer {
+layout (binding = 9) uniform LightUniformBuffer {
    
    LightData lights[4];
 };
@@ -121,6 +122,7 @@ void main() {
     float Roughness      = textureLod(samplerMaterials,inTexCoord,0).r;
     vec2  ReflectionMask = textureLod(samplerReflectionMask,inTexCoord,0).rg;
     vec3  Emmisive       = textureLod(samplerEmisive,inTexCoord,0).rgb;
+    vec3  rtreflection       = textureLod(RTreflection,inTexCoord,0).rgb;
 
     vec3  ViewDir    = normalize(lights[0].CameraPositionAndLightIntensity.xyz -  WorldPos);
 
@@ -150,7 +152,7 @@ void main() {
       if(light.positionAndLightType.w < 0.5){
 
          LightDir = normalize(-light.positionAndLightType.xyz);
-         radiance = light.colorAndAmbientStrength.rgb ;
+         radiance = light.colorAndAmbientStrength.rgb * light.CameraPositionAndLightIntensity.a ;
 
        }
       else if (light.positionAndLightType.w > 0.5){
@@ -159,7 +161,7 @@ void main() {
                LightDir    = normalize(LightPos - WorldPos);
          float Distance    = length(LightPos -  WorldPos);
          float Attenuation = 1.0 / (Constant + Linear * Distance + Quadratic * (Distance * Distance));
-               radiance    = light.colorAndAmbientStrength.rgb * Attenuation;
+               radiance    = light.colorAndAmbientStrength.rgb * Attenuation * light.CameraPositionAndLightIntensity.a;
        }  
 
     vec3 F0          = vec3(0.04); 
@@ -182,21 +184,23 @@ void main() {
      float NdotL = max(dot(Normal, LightDir), 0.0);        
              Lo += (diffuse + specular) * radiance * NdotL;
 
-     vec3 envSpecular = vec3(0); 
 
-     if(ReflectionMask.x > 0.5){
-     
-       float NdotV = max(dot(Normal, ViewDir), 0.0);
-       vec3 F      = fresnelSchlick(NdotV, F0);
-       
-       envSpecular = Reflection * F * 0.1;
-     }
-
-     totalLighting +=  ((Lo + envSpecular) * light.CameraPositionAndLightIntensity.a) * shadows[i] + (Emmisive * 100);
+     totalLighting +=  Lo  * shadows[i];
   }
 
  
-  vec3 gammaCorrected = pow(clamp(totalLighting, 0.0, 1.0), vec3(1.4 / 2.2));
+     vec3 F0          = vec3(0.04); 
+          F0          = mix(F0, Albedo, Metallic);
 
-   outFragcolor = vec4(gammaCorrected, 1.0);
+    vec3 reflectionSource = texture(RTreflection, inTexCoord).rgb;
+    
+    float NdotV = max(dot(Normal, ViewDir), 0.0);
+
+    vec3 F_indirect = fresnelSchlick(NdotV, F0);
+
+    vec3 finalColor = totalLighting + ((reflectionSource * 0.01) * F_indirect) + Emmisive ;
+
+    finalColor = pow(finalColor, vec3(1.4/2.2));
+    
+    outFragcolor = vec4(clamp(finalColor, 0.0, 1.0), 1.0);
 }

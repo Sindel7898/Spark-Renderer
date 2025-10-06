@@ -45,7 +45,7 @@
 	skyBox = std::shared_ptr<SkyBox>(new SkyBox(&vulkanContext, commandPool, &camera, &bufferManger), SkyBoxDeleter);
 
 
-	//auto model1 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto model1 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	//auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	//
@@ -57,11 +57,11 @@
 	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	
-   //model1.get()->Instances[0]->SetPostion(glm::vec3(-4.282, 2.172, -6.313));
-   //model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
-   //model1.get()->Instances[0]->SetScale(glm::vec3(0.050, 0.050, 0.050));
-   //model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-   //model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+   model1.get()->Instances[0]->SetPostion(glm::vec3(-4.282, 2.172, -6.313));
+   model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
+   model1.get()->Instances[0]->SetScale(glm::vec3(0.050, 0.050, 0.050));
+   model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+   model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
     
     //model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
     //model2.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
@@ -94,8 +94,8 @@
 	model11.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 	////
 	////
-    //Models.push_back(std::move(model1));
-    //Models.push_back(std::move(model2));
+    Models.push_back(std::move(model1));
+   // Models.push_back(std::move(model2));
 	Models.push_back(std::move(model3));
 	//Models.push_back(std::move(model4));
 	//Models.push_back(std::move(model5));
@@ -108,7 +108,7 @@
 	////
 	UserInterfaceItems.push_back(Models[0].get());
 	UserInterfaceItems.push_back(Models[1].get());
-	//UserInterfaceItems.push_back(Models[2].get());
+	UserInterfaceItems.push_back(Models[2].get());
 	//UserInterfaceItems.push_back(Models[3].get());
 	//UserInterfaceItems.push_back(Models[4].get());
 
@@ -611,10 +611,10 @@ void App::createGBuffer()
 	Combined_FullScreenQuad->CreateImage(swapchainextent);
 	ssao_FullScreenQuad->CreateImage();
 	RT_Reflection->CreateStorageImage();
-	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&ReflectionMaskImageData);
+	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&ReflectionMaskImageData, &RT_Reflection->ReflectionPassImage);
 	ssao_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
 	ssr_FullScreenQuad->createDescriptorSets(DescriptorPool, LightingPassImageData, gbuffer.ViewSpaceNormal,gbuffer.ViewSpacePosition, DepthTextureData, ReflectionMaskImageData,gbuffer.Materials);
-	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, LightingPassImageData, SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo,RT_Reflection->ReflectionPassImage);
+	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, LightingPassImageData, SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo);
 	fxaa_FullScreenQuad->createDescriptorSets(DescriptorPool, Combined_FullScreenQuad->FinalResultImage);
 	Raytracing_Shadows->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
 	RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);

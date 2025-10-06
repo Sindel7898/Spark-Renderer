@@ -83,14 +83,8 @@ void CombinedResult_FullScreenQuad::createDescriptorSetLayout()
 		AlbedoDescriptorBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		AlbedoDescriptorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-		vk::DescriptorSetLayoutBinding ReflectionDescriptorBinding{};
-		ReflectionDescriptorBinding.binding = 5;
-		ReflectionDescriptorBinding.descriptorCount = 1;
-		ReflectionDescriptorBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		ReflectionDescriptorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-
-		std::array<vk::DescriptorSetLayoutBinding, 6> ImageResultPassBinding = { LightingResultDescriptorBinding,SSGIDescriptorBinding,SSAODescriptorBinding,MaterialsDescriptorBinding,AlbedoDescriptorBinding,ReflectionDescriptorBinding };
+		std::array<vk::DescriptorSetLayoutBinding, 5> ImageResultPassBinding = { LightingResultDescriptorBinding,SSGIDescriptorBinding,SSAODescriptorBinding,MaterialsDescriptorBinding,AlbedoDescriptorBinding };
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.bindingCount = static_cast<uint32_t>(ImageResultPassBinding.size());
@@ -109,7 +103,7 @@ void CombinedResult_FullScreenQuad::UpdataeUniformBufferData()
 }
 
 
-void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData SSGIImage, ImageData SSAOIImage, ImageData MaterialImage, ImageData AlbedoImage, ImageData ReflectionImage)
+void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData SSGIImage, ImageData SSAOIImage, ImageData MaterialImage, ImageData AlbedoImage)
 {
 	// create sets from the pool based on the layout
 	std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
@@ -198,21 +192,9 @@ void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::Descr
 		AlbedoSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		AlbedoSamplerdescriptorWrite.pImageInfo = &AlbedoImageResultimageInfo;
 
-		vk::DescriptorImageInfo  ReflectionImageResultimageInfo{};
-		ReflectionImageResultimageInfo.imageLayout = vk::ImageLayout::eGeneral;
-		ReflectionImageResultimageInfo.imageView = ReflectionImage.imageView;
-		ReflectionImageResultimageInfo.sampler = ReflectionImage.imageSampler;
 
-		vk::WriteDescriptorSet ReflectionSamplerdescriptorWrite{};
-		ReflectionSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		ReflectionSamplerdescriptorWrite.dstBinding = 5;
-		ReflectionSamplerdescriptorWrite.descriptorCount = 1;
-		ReflectionSamplerdescriptorWrite.dstArrayElement = 0;
-		ReflectionSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		ReflectionSamplerdescriptorWrite.pImageInfo = &ReflectionImageResultimageInfo;
-
-		std::array<vk::WriteDescriptorSet, 6> descriptorWrites = { LightingResultSamplerdescriptorWrite,
-																	SSGISamplerdescriptorWrite,SSAOSamplerdescriptorWrite,MaterialsSamplerdescriptorWrite,AlbedoSamplerdescriptorWrite,ReflectionSamplerdescriptorWrite };
+		std::array<vk::WriteDescriptorSet, 5> descriptorWrites = { LightingResultSamplerdescriptorWrite,
+																	SSGISamplerdescriptorWrite,SSAOSamplerdescriptorWrite,MaterialsSamplerdescriptorWrite,AlbedoSamplerdescriptorWrite };
 
 		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	}
