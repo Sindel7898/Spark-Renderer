@@ -9,7 +9,6 @@ layout (binding = 4) uniform samplerCube samplerReflectiveCubeMap;
 layout (binding = 5) uniform sampler2D samplerReflectionMask;
 layout (binding = 6) uniform sampler2D samplerShadowMap[4];
 layout (binding = 7) uniform sampler2D samplerEmisive;
-layout (binding = 8) uniform sampler2D RTreflection;
 
 layout(location = 0) in vec2 inTexCoord;           
 
@@ -20,7 +19,7 @@ struct LightData{
     mat4    LightProjectionViewMatrix;
 
 };
-layout (binding = 9) uniform LightUniformBuffer {
+layout (binding = 8) uniform LightUniformBuffer {
    
    LightData lights[4];
 };
@@ -122,7 +121,7 @@ void main() {
     float Roughness      = textureLod(samplerMaterials,inTexCoord,0).r;
     vec2  ReflectionMask = textureLod(samplerReflectionMask,inTexCoord,0).rg;
     vec3  Emmisive       = textureLod(samplerEmisive,inTexCoord,0).rgb;
-    vec3  rtreflection       = textureLod(RTreflection,inTexCoord,0).rgb;
+   // vec3  rtreflection       = textureLod(RTreflection,inTexCoord,0).rgb;
 
     vec3  ViewDir    = normalize(lights[0].CameraPositionAndLightIntensity.xyz -  WorldPos);
 
@@ -189,18 +188,18 @@ void main() {
   }
 
  
-     vec3 F0          = vec3(0.04); 
-          F0          = mix(F0, Albedo, Metallic);
-
-    vec3 reflectionSource = texture(RTreflection, inTexCoord).rgb;
-    
-    float NdotV = max(dot(Normal, ViewDir), 0.0);
-
-    vec3 F_indirect = fresnelSchlick(NdotV, F0);
-
-    vec3 finalColor = totalLighting + ((reflectionSource * 0.01) * F_indirect) + Emmisive ;
-
-    finalColor = pow(finalColor, vec3(1.4/2.2));
+   //  vec3 F0          = vec3(0.04); 
+   //       F0          = mix(F0, Albedo, Metallic);
+   //
+   // vec3 reflectionSource = texture(RTreflection, inTexCoord).rgb;
+   // 
+   // float NdotV = max(dot(Normal, ViewDir), 0.0);
+   //
+   // vec3 F_indirect = fresnelSchlick(NdotV, F0);
+   //
+    vec3 finalColor = totalLighting  + Emmisive ;
+   //
+   finalColor = pow(finalColor, vec3(1.4/2.2));
     
     outFragcolor = vec4(clamp(finalColor, 0.0, 1.0), 1.0);
 }

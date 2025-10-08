@@ -927,7 +927,13 @@ void SSGI::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_pt
 		LastCameraMatrix = camera->GetViewMatrix();
 	}
 
-	vulkanContext->AccumilationCount++;
+	if (vulkanContext->bAccumulationWasReset) {
+		vulkanContext->AccumilationCount = 1;
+		vulkanContext->bAccumulationWasReset = false; 
+	}
+	else {
+		vulkanContext->AccumilationCount++;
+	}
 }
 
 

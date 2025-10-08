@@ -6,6 +6,7 @@ layout (binding = 1) uniform sampler2D GITexture;
 layout (binding = 2) uniform sampler2D SSAOTexture;                
 layout (binding = 3) uniform sampler2D MaterialsTexture;                
 layout (binding = 4) uniform sampler2D AlbedoTexture;                
+layout (binding = 5) uniform sampler2D RTreflection;                
 
 layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragColor;
@@ -97,5 +98,5 @@ void main() {
     vec3 tonemapped = aces_approx(gammaCorrected);
     tonemapped += vec3(bayerDither(gl_FragCoord.xy));
 
-   outFragColor = vec4(clamp(tonemapped, 0.0, 1.0), 1.0);
+   outFragColor = vec4(clamp(GI * 100, 0.0, 1.0), 1.0);
 }

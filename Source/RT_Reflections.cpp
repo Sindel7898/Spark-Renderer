@@ -543,6 +543,7 @@ void RT_Reflections::CleanUp()
 		{
 			if (Buffer.buffer)
 			{
+				bufferManager->UnmapMemory(Buffer);
 				bufferManager->DestroyBuffer(Buffer);
 			}
 		}

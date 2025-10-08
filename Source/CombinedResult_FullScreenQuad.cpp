@@ -83,8 +83,18 @@ void CombinedResult_FullScreenQuad::createDescriptorSetLayout()
 		AlbedoDescriptorBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		AlbedoDescriptorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
+		vk::DescriptorSetLayoutBinding RTReflectionSamplerLayout{};
+		RTReflectionSamplerLayout.binding = 5;
+		RTReflectionSamplerLayout.descriptorCount = 1;
+		RTReflectionSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		RTReflectionSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-		std::array<vk::DescriptorSetLayoutBinding, 5> ImageResultPassBinding = { LightingResultDescriptorBinding,SSGIDescriptorBinding,SSAODescriptorBinding,MaterialsDescriptorBinding,AlbedoDescriptorBinding };
+		std::array<vk::DescriptorSetLayoutBinding, 6> ImageResultPassBinding = { LightingResultDescriptorBinding,
+			                                                                     SSGIDescriptorBinding,
+			                                                                     SSAODescriptorBinding,
+			                                                                     MaterialsDescriptorBinding,
+			                                                                     AlbedoDescriptorBinding,
+			                                                                     RTReflectionSamplerLayout };
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.bindingCount = static_cast<uint32_t>(ImageResultPassBinding.size());
@@ -103,7 +113,7 @@ void CombinedResult_FullScreenQuad::UpdataeUniformBufferData()
 }
 
 
-void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData SSGIImage, ImageData SSAOIImage, ImageData MaterialImage, ImageData AlbedoImage)
+void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData SSGIImage, ImageData SSAOIImage, ImageData MaterialImage, ImageData AlbedoImage, ImageData ReflectionsImage)
 {
 	// create sets from the pool based on the layout
 	std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
@@ -192,9 +202,25 @@ void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::Descr
 		AlbedoSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		AlbedoSamplerdescriptorWrite.pImageInfo = &AlbedoImageResultimageInfo;
 
+		vk::DescriptorImageInfo RTReflectionimageInfo{};
+		RTReflectionimageInfo.imageLayout = vk::ImageLayout::eGeneral;
+		RTReflectionimageInfo.imageView = ReflectionsImage.imageView;
+		RTReflectionimageInfo.sampler = ReflectionsImage.imageSampler;
 
-		std::array<vk::WriteDescriptorSet, 5> descriptorWrites = { LightingResultSamplerdescriptorWrite,
-																	SSGISamplerdescriptorWrite,SSAOSamplerdescriptorWrite,MaterialsSamplerdescriptorWrite,AlbedoSamplerdescriptorWrite };
+		vk::WriteDescriptorSet RTReflectionSamplerdescriptorWrite{};
+		RTReflectionSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+		RTReflectionSamplerdescriptorWrite.dstBinding = 5;
+		RTReflectionSamplerdescriptorWrite.dstArrayElement = 0;
+		RTReflectionSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		RTReflectionSamplerdescriptorWrite.descriptorCount = 1;
+		RTReflectionSamplerdescriptorWrite.pImageInfo = &RTReflectionimageInfo;
+
+		std::array<vk::WriteDescriptorSet, 6> descriptorWrites = { LightingResultSamplerdescriptorWrite,
+																	SSGISamplerdescriptorWrite,
+			                                                        SSAOSamplerdescriptorWrite,
+			                                                        MaterialsSamplerdescriptorWrite,
+			                                                        AlbedoSamplerdescriptorWrite,
+		                                                            RTReflectionSamplerdescriptorWrite };
 
 		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	}

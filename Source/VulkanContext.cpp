@@ -244,6 +244,7 @@ vk::Format VulkanContext::FindCompatableDepthFormat()
 void VulkanContext::ResetTemporalAccumilation()
 {
 	AccumilationCount = 0;
+	bAccumulationWasReset = true; 
 }
 
 void VulkanContext::destroy_swapchain()

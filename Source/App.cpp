@@ -611,10 +611,10 @@ void App::createGBuffer()
 	Combined_FullScreenQuad->CreateImage(swapchainextent);
 	ssao_FullScreenQuad->CreateImage();
 	RT_Reflection->CreateStorageImage();
-	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&ReflectionMaskImageData, &RT_Reflection->ReflectionPassImage);
+	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&ReflectionMaskImageData);
 	ssao_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
 	ssr_FullScreenQuad->createDescriptorSets(DescriptorPool, LightingPassImageData, gbuffer.ViewSpaceNormal,gbuffer.ViewSpacePosition, DepthTextureData, ReflectionMaskImageData,gbuffer.Materials);
-	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, LightingPassImageData, SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo);
+	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, LightingPassImageData, SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo, RT_Reflection->ReflectionPassImage);
 	fxaa_FullScreenQuad->createDescriptorSets(DescriptorPool, Combined_FullScreenQuad->FinalResultImage);
 	Raytracing_Shadows->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
 	RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
@@ -690,8 +690,8 @@ void App::createGBuffer()
 		                                                  gbuffer.Albedo.imageView,
 		VK_IMAGE_LAYOUT_GENERAL);
 
-	SSGITextureId            = ImGui_ImplVulkan_AddTexture(SSGI_FullScreenQuad->BlurPong_UPSampleFullRes.imageSampler,
-		                                                   SSGI_FullScreenQuad->BlurPong_UPSampleFullRes.imageView,
+	SSGITextureId            = ImGui_ImplVulkan_AddTexture(SSGI_FullScreenQuad->SSGIPassLastFrameImage.imageSampler,
+		                                                   SSGI_FullScreenQuad->SSGIPassLastFrameImage.imageView,
 		VK_IMAGE_LAYOUT_GENERAL);
 
 	RT_ReflectionTextureId = ImGui_ImplVulkan_AddTexture(RT_Reflection->ReflectionPassImage.imageSampler,
@@ -2182,83 +2182,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	}
 
-	{
-		ImageTransitionData TransitionTOSrc{};
-		TransitionTOSrc.oldlayout = vk::ImageLayout::eGeneral;
-		TransitionTOSrc.newlayout = vk::ImageLayout::eTransferSrcOptimal;
-		TransitionTOSrc.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionTOSrc.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
-		TransitionTOSrc.DestinationAccessflag = vk::AccessFlagBits::eTransferRead;
-		TransitionTOSrc.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
-		TransitionTOSrc.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
-
-		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionTOSrc);
-
-		ImageTransitionData TransitionTODst{};
-		TransitionTODst.oldlayout = vk::ImageLayout::eGeneral;
-		TransitionTODst.newlayout = vk::ImageLayout::eTransferDstOptimal;
-		TransitionTODst.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionTODst.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
-		TransitionTODst.DestinationAccessflag = vk::AccessFlagBits::eTransferWrite;
-		TransitionTODst.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
-		TransitionTODst.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
-
-
-		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionTODst);
-
-
-		vk::ImageSubresourceLayers SrcSubresourceLayers;
-		SrcSubresourceLayers.mipLevel = 0;
-		SrcSubresourceLayers.baseArrayLayer = 0;
-	    SrcSubresourceLayers.layerCount = 1;
-		SrcSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
-
-		vk::ImageSubresourceLayers DstSubresourceLayers;
-		DstSubresourceLayers.mipLevel = 0;
-		DstSubresourceLayers.baseArrayLayer = 0;
-		DstSubresourceLayers.layerCount = 1;
-		DstSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
-
-		vk::Extent3D swapchainExtenthalf = {
-			SSGI_FullScreenQuad->SSGI_ImageFullResolution.width ,
-			SSGI_FullScreenQuad->SSGI_ImageFullResolution.height,
-			1
-		};
-
-		bufferManger.CopyImageToAnotherImage(commandBuffer,
-			                                  SSGI_FullScreenQuad->SSGIAccumilationImage,  vk::ImageLayout::eTransferSrcOptimal, SrcSubresourceLayers,
-			                                  SSGI_FullScreenQuad->SSGIPassLastFrameImage, vk::ImageLayout::eTransferDstOptimal, DstSubresourceLayers,
-			                                  swapchainExtenthalf, vulkanContext.graphicsQueue);
-
-
-
-
-
-
-		ImageTransitionData TransitionSrcBack{};
-		TransitionSrcBack.oldlayout = vk::ImageLayout::eTransferSrcOptimal;
-		TransitionSrcBack.newlayout = vk::ImageLayout::eGeneral;
-		TransitionSrcBack.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionSrcBack.SourceAccessflag = vk::AccessFlagBits::eTransferRead; 
-		TransitionSrcBack.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
-		TransitionSrcBack.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
-		TransitionSrcBack.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
-
-		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionSrcBack);
-
-
-		ImageTransitionData TransitionDstToSample{};
-		TransitionDstToSample.oldlayout = vk::ImageLayout::eTransferDstOptimal;
-		TransitionDstToSample.newlayout = vk::ImageLayout::eGeneral;
-		TransitionDstToSample.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionDstToSample.SourceAccessflag = vk::AccessFlagBits::eTransferWrite;
-		TransitionDstToSample.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
-		TransitionDstToSample.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
-		TransitionDstToSample.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
-
-		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionDstToSample);
-
-	}
 
 	{
 		vk::RenderingAttachmentInfo TA_ImageAttachInfo;
@@ -2294,6 +2217,84 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, TA_SSGIPipeline);
 		SSGI_FullScreenQuad->DrawTA(commandBuffer, TA_SSGIPipelineLayout, currentFrame);
 		commandBuffer.endRendering();
+	}
+
+	{
+		ImageTransitionData TransitionTOSrc{};
+		TransitionTOSrc.oldlayout = vk::ImageLayout::eGeneral;
+		TransitionTOSrc.newlayout = vk::ImageLayout::eTransferSrcOptimal;
+		TransitionTOSrc.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitionTOSrc.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
+		TransitionTOSrc.DestinationAccessflag = vk::AccessFlagBits::eTransferRead;
+		TransitionTOSrc.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
+		TransitionTOSrc.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
+
+		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionTOSrc);
+
+		ImageTransitionData TransitionTODst{};
+		TransitionTODst.oldlayout = vk::ImageLayout::eGeneral;
+		TransitionTODst.newlayout = vk::ImageLayout::eTransferDstOptimal;
+		TransitionTODst.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitionTODst.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
+		TransitionTODst.DestinationAccessflag = vk::AccessFlagBits::eTransferWrite;
+		TransitionTODst.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
+		TransitionTODst.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
+
+
+		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionTODst);
+
+
+		vk::ImageSubresourceLayers SrcSubresourceLayers;
+		SrcSubresourceLayers.mipLevel = 0;
+		SrcSubresourceLayers.baseArrayLayer = 0;
+		SrcSubresourceLayers.layerCount = 1;
+		SrcSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
+
+		vk::ImageSubresourceLayers DstSubresourceLayers;
+		DstSubresourceLayers.mipLevel = 0;
+		DstSubresourceLayers.baseArrayLayer = 0;
+		DstSubresourceLayers.layerCount = 1;
+		DstSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
+
+		vk::Extent3D swapchainExtenthalf = {
+			SSGI_FullScreenQuad->SSGI_ImageFullResolution.width ,
+			SSGI_FullScreenQuad->SSGI_ImageFullResolution.height,
+			1
+		};
+
+		bufferManger.CopyImageToAnotherImage(commandBuffer,
+			SSGI_FullScreenQuad->SSGIAccumilationImage, vk::ImageLayout::eTransferSrcOptimal, SrcSubresourceLayers,
+			SSGI_FullScreenQuad->SSGIPassLastFrameImage, vk::ImageLayout::eTransferDstOptimal, DstSubresourceLayers,
+			swapchainExtenthalf, vulkanContext.graphicsQueue);
+
+
+
+
+
+
+		ImageTransitionData TransitionSrcBack{};
+		TransitionSrcBack.oldlayout = vk::ImageLayout::eTransferSrcOptimal;
+		TransitionSrcBack.newlayout = vk::ImageLayout::eGeneral;
+		TransitionSrcBack.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitionSrcBack.SourceAccessflag = vk::AccessFlagBits::eTransferRead;
+		TransitionSrcBack.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
+		TransitionSrcBack.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
+		TransitionSrcBack.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
+
+		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionSrcBack);
+
+
+		ImageTransitionData TransitionDstToSample{};
+		TransitionDstToSample.oldlayout = vk::ImageLayout::eTransferDstOptimal;
+		TransitionDstToSample.newlayout = vk::ImageLayout::eGeneral;
+		TransitionDstToSample.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitionDstToSample.SourceAccessflag = vk::AccessFlagBits::eTransferWrite;
+		TransitionDstToSample.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
+		TransitionDstToSample.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
+		TransitionDstToSample.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
+
+		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionDstToSample);
+
 	}
 
 	{

@@ -50,7 +50,8 @@ public:
 	vk::SwapchainKHR           swapChain = nullptr;
 
 	void ResetTemporalAccumilation();
-	int AccumilationCount = 1;
+	int AccumilationCount = 0;
+	bool bAccumulationWasReset = false; 
 
 	std::vector<ImageData>   swapchainImageData = {};
 
