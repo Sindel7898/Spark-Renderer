@@ -24,7 +24,7 @@ public:
     void CreateVertexAndIndexBuffer() override;
     void CreateUniformBuffer() override;
     void createDescriptorSetLayout() override;
-    void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer* Gbuffer, ImageData* ReflectionMask);
+    void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer* Gbuffer, ImageData* ReflectionMask, ImageData* RT_Reflection);
     void UpdateDescrptorSets();
     void UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
@@ -35,6 +35,7 @@ public:
     ImageData* ReflectionMaskRef = nullptr;
     RT_Shadows* raytracingRef = nullptr;
     SkyBox* SkyBoxRef = nullptr;
+    ImageData* RT_ReflectionRef = nullptr;
 
    private:
 

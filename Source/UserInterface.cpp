@@ -37,7 +37,7 @@ void UserInterface::InitImgui()
 	{
 		ImGuiStyle& style = ImGui::GetStyle();
 		style.WindowRounding = 10.0f;
-	
+
 		ImVec4* colors = style.Colors;
 
 		colors[ImGuiCol_WindowBg] = ImVec4{ 0.01f, 0.01f, 0.01f, 1.0f };
@@ -215,7 +215,7 @@ void UserInterface::SetupDockingEnvironment()
 		ImGuiID dock_Bottom_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.2f, nullptr, &dock_main_id);
 
 		ImGuiID dock_DetailsPanel_Top_id;
-		ImGuiID dock_DetailsPanel_Bottom_id = ImGui::DockBuilderSplitNode(dock_right_id, ImGuiDir_Down, 0.5, nullptr,&dock_DetailsPanel_Top_id);
+		ImGuiID dock_DetailsPanel_Bottom_id = ImGui::DockBuilderSplitNode(dock_right_id, ImGuiDir_Down, 0.5, nullptr, &dock_DetailsPanel_Top_id);
 		// Dock windows
 		ImGui::DockBuilderDockWindow("Global Settings", dock_DetailsPanel_Bottom_id);
 		ImGui::DockBuilderDockWindow("Details Panel", dock_DetailsPanel_Top_id);
@@ -244,10 +244,10 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex)
 	ImGui::Render();
 
 	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-		 {
-			ImGui::UpdatePlatformWindows();
-			ImGui::RenderPlatformWindowsDefault();
-		 }
+	{
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
+	}
 	//// Begin rendering for ImGui
 	vk::RenderingAttachmentInfo imguiColorAttachment{};
 	imguiColorAttachment.imageView = vulkancontext->swapchainImageData[imageIndex].imageView;
@@ -302,7 +302,7 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex)
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 
-void UserInterface::DrawUi(App* appref, SkyBox* skyBox) 
+void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 {
 	SetupDockingEnvironment();
 
@@ -399,8 +399,8 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 	case 4: ImGui::Image((ImTextureID)appref->Shadow_TextureId, viewportSize); break;
 	case 5: ImGui::Image((ImTextureID)appref->LightingAndReflectionsRenderTextureId, viewportSize); break;
 	case 6: ImGui::Image((ImTextureID)appref->SSGITextureId, viewportSize); break;
-	//case 7: ImGui::Image((ImTextureID)appref->Reflection_TextureId, viewportSize); break;
-	case 7: ImGui::Image((ImTextureID)appref->FinalRenderTextureId, viewportSize); break;
+	case 7: ImGui::Image((ImTextureID)appref->RT_ReflectionTextureId, viewportSize); break;
+	case 8: ImGui::Image((ImTextureID)appref->FinalRenderTextureId, viewportSize); break;
 	}
 
 	ImGuizmo::SetOrthographic(false);
@@ -528,7 +528,7 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 
 					LastModelMatrix = model->Instances[SelectedInstanceIndex]->GetTransformationMatrix();
 				}
-				
+
 
 				glm::vec3 pos = model->Instances[SelectedInstanceIndex]->GetPostion();
 				glm::vec3 rot = model->Instances[SelectedInstanceIndex]->GetRotation();
@@ -549,13 +549,13 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 
 				ImGui::Checkbox("Cube Map Reflections", (bool*)&model->Instances[SelectedInstanceIndex]->bCubeMapReflection);
 				ImGui::Checkbox("Screen Space Reflections", (bool*)&model->Instances[SelectedInstanceIndex]->bScreenSpaceReflection);
-				
+
 				model->Instances[SelectedInstanceIndex]->UpdateGPU_ReflectionFlags();
 
 				if (ImGui::Button("Instantiate"))
-			     {
+				{
 					model->Instantiate();
-			     }
+				}
 
 				if (ImGui::Button("Destroy"))
 				{
@@ -618,7 +618,7 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 
 float UserInterface::CalculateDistanceInScreenSpace(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position)
 {
-    float windowWidth = (float)ImGui::GetWindowWidth();
+	float windowWidth = (float)ImGui::GetWindowWidth();
 	float windowHeight = (float)ImGui::GetWindowHeight();
 
 	ImVec2 viewportPos = ImGui::GetWindowPos();

@@ -14,7 +14,12 @@ struct PushConstantData {
    glm::vec4 MaterialIndex_Padding;
 };
 
-
+struct BLASDATA {
+    vk::AccelerationStructureKHR  BLAS;
+    BufferData BLAS_Buffer;
+    BufferData BLAS_ScratchBuffer;
+    glm::mat4 ModelMatrix = glm::mat4(0);
+};
 
 struct VertexData {
     alignas(16) glm::mat4 ViewMatrix;
@@ -24,6 +29,7 @@ struct VertexData {
 struct GPU_InstanceData {
     glm::vec4 bCubeMapReflection_bScreenSpaceReflectionWithPadding;
 };
+
 
 struct InstanceData {
     bool bCubeMapReflection = true;
@@ -171,8 +177,6 @@ public:
     std::vector<ImageData> EmissiveTextures;
 
 
-    vk::AccelerationStructureKHR BLAS;
-
     std::vector<std::unique_ptr<InstanceData>>     Instances;
     std::vector<std::shared_ptr<GPU_InstanceData>> GPU_InstancesData;
 
@@ -183,14 +187,16 @@ public:
 
     std::vector<std::vector<vk::DescriptorSet>> SceneDescriptorSets;
 
+    std::vector<BLASDATA> BLAS_Datas;
+
+    uint32_t m_baseVertexOffset = 0;
+    uint32_t m_baseIndexOffset = 0;
+
 private:
 
 
     std::string FilePath;
     const StoredModelData* storedModelData = nullptr;
-    BufferData BLAS_Buffer;
-    BufferData BLAS_ScratchBuffer;
-
 };
 
 

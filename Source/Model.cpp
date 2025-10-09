@@ -86,14 +86,19 @@ void Model::LoadTextures()
 		bufferManager->CreateTextureImage(&EmissiveTextureData, EmissiveImageData.imageData, EmissiveImagesize, EmissiveImageData.imageWidth, EmissiveImageData.imageHeight, vk::Format::eR8G8B8A8Srgb, commandPool, vulkanContext->graphicsQueue);
 
 		EmissiveTextures.push_back(EmissiveTextureData);
+	}
+
+	for (ImageData& albedo : AlbedoTextures)
+	{
+		bufferManager->AllScene_Albedo_Images.push_back(&albedo);
 
 	}
 
+	for (ImageData& normal : NormalTextures)
+	{
+		bufferManager->AllScene_Normal_Images.push_back(&normal);
 
-
-
-
-
+	}
 }
 
 void Model::CreateVertexAndIndexBuffer()
@@ -101,6 +106,8 @@ void Model::CreateVertexAndIndexBuffer()
 
 	storedModelData = &AssetManager::GetInstance().GetStoredModelData(FilePath);
 
+	m_baseVertexOffset = static_cast<uint32_t>(bufferManager->AllScene_VertexGeometryData.size());
+	m_baseIndexOffset = static_cast<uint32_t>(bufferManager->AllScene_IndexGeometryData.size());
 
 	VkDeviceSize VertexBufferSize = sizeof(storedModelData->VertexData[0]) * storedModelData->VertexData.size();
 	vertexBufferData.BufferID = "Model Vertex Buffer";
@@ -109,130 +116,172 @@ void Model::CreateVertexAndIndexBuffer()
 	VkDeviceSize indexBufferSize = sizeof(uint32_t) * storedModelData->IndexData.size();
 	indexBufferData.BufferID = "Model Index Buffer";
 	bufferManager->CreateGPUOptimisedBuffer(&indexBufferData,storedModelData->IndexData.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR, commandPool, vulkanContext->graphicsQueue);
+   
 
+
+	for (int i = 0; i < storedModelData->VertexData.size(); i++)
+	{
+		PaddedModelVertex paddedModelVertex;
+		paddedModelVertex.vert_Padding    = glm::vec4(storedModelData->VertexData[i].vert, 0);
+		paddedModelVertex.text_Padding    = glm::vec4(storedModelData->VertexData[i].text, 0,0);
+		paddedModelVertex.normal_Padding  = glm::vec4(storedModelData->VertexData[i].normal, 0);
+		paddedModelVertex.tangent_Padding = glm::vec4(storedModelData->VertexData[i].tangent, 0);
+ 
+		bufferManager->AllScene_VertexGeometryData.push_back(paddedModelVertex);
+	}
+
+	for (int i = 0; i < storedModelData->IndexData.size(); i++)
+	{
+		uint32_t rebasedIndex = m_baseVertexOffset + storedModelData->IndexData[i];
+		bufferManager->AllScene_IndexGeometryData.push_back(rebasedIndex);
+	}
 }
 
 
 void Model::CreateBLAS()
 {
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	vk::BufferDeviceAddressInfo VertexBufferDeviceAdressesInfo;
 	VertexBufferDeviceAdressesInfo.buffer = vertexBufferData.buffer;
 
 	vk::BufferDeviceAddressInfo IndexDeviceAdressesInfo;
 	IndexDeviceAdressesInfo.buffer = indexBufferData.buffer;
 
-	//Add an offset so we always point to the address of the verticies
 	auto vertexBufferAddress = vulkanContext->LogicalDevice.getBufferAddress(VertexBufferDeviceAdressesInfo);
-	auto indexBufferAddress  = vulkanContext->LogicalDevice.getBufferAddress(IndexDeviceAdressesInfo);
-
-	//Triangle Data
-	vk::AccelerationStructureGeometryTrianglesDataKHR BLAS_TriangleData {};
-	BLAS_TriangleData.vertexFormat = vk::Format::eR32G32B32Sfloat;
-	BLAS_TriangleData.vertexData.deviceAddress = vertexBufferAddress;
-	BLAS_TriangleData.vertexStride = sizeof(ModelVertex);
-	BLAS_TriangleData.maxVertex    = storedModelData->VertexData.size() - 1;
-	BLAS_TriangleData.indexData.deviceAddress = indexBufferAddress;
-	BLAS_TriangleData.indexType = vk::IndexType::eUint32;
-	BLAS_TriangleData.transformData.deviceAddress = 0;
-	BLAS_TriangleData.transformData.hostAddress = nullptr;
-
-	//Geometry Data
-	vk::AccelerationStructureGeometryDataKHR AccelerationStructureGeometryData; 
-	AccelerationStructureGeometryData.triangles = BLAS_TriangleData;
-	
-	//Geometry
-	vk::AccelerationStructureGeometryKHR AccelerationStructureGeometry;
-	AccelerationStructureGeometry.geometryType = vk::GeometryTypeKHR::eTriangles;
-	AccelerationStructureGeometry.flags = vk::GeometryFlagBitsKHR::eOpaque;
-	AccelerationStructureGeometry.geometry = AccelerationStructureGeometryData;
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	auto indexBufferAddress = vulkanContext->LogicalDevice.getBufferAddress(IndexDeviceAdressesInfo);
 
 
-	uint32_t maxPrimitiveCount = storedModelData->IndexData.size() / 3;
+	for (const auto& node : storedModelData->nodes) {
 
-	vk::AccelerationStructureBuildRangeInfoKHR BuildRangeInfo;
-	BuildRangeInfo.firstVertex = 0;
-	BuildRangeInfo.primitiveCount = maxPrimitiveCount;
-	BuildRangeInfo.primitiveOffset = 0;
-	BuildRangeInfo.transformOffset = 0;
+		if (node) {
 
-	vk::AccelerationStructureBuildGeometryInfoKHR AccelerationStructureBuildGeometryInfo;
-	AccelerationStructureBuildGeometryInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
-	AccelerationStructureBuildGeometryInfo.mode = vk::BuildAccelerationStructureModeKHR::eBuild;
-	AccelerationStructureBuildGeometryInfo.geometryCount = 1;
-	AccelerationStructureBuildGeometryInfo.pGeometries = &AccelerationStructureGeometry;
-	AccelerationStructureBuildGeometryInfo.type = vk::AccelerationStructureTypeKHR::eBottomLevel; 
-	
-	//Temp Holders
-	VkAccelerationStructureBuildGeometryInfoKHR TempGI = AccelerationStructureBuildGeometryInfo;
-	VkAccelerationStructureBuildSizesInfoKHR TempASBuildSizeInfo;
-	TempASBuildSizeInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
-	TempASBuildSizeInfo.pNext = nullptr;
-
-	vulkanContext->vkGetAccelerationStructureBuildSizesKHR(vulkanContext->LogicalDevice, VkAccelerationStructureBuildTypeKHR::VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &TempGI, &maxPrimitiveCount, &TempASBuildSizeInfo);
-	vk::AccelerationStructureBuildSizesInfoKHR ASBuildSizeInfo = TempASBuildSizeInfo;
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	// 
-	// 
-	// Create Scratch buffer and BLAS buffer based on the size calculated  
-	BLAS_ScratchBuffer.BufferID = "Model BLAS_ScratchBuffer Buffer";
-	bufferManager->CreateDeviceBuffer(&BLAS_ScratchBuffer,
-		                               ASBuildSizeInfo.buildScratchSize,
-		                               vk::BufferUsageFlagBits::eStorageBuffer |
-		                               vk::BufferUsageFlagBits::eShaderDeviceAddress,
-		                               commandPool,
-		                               vulkanContext->graphicsQueue);
+			const auto& primitives = !node->meshPrimitives.empty() ? node->meshPrimitives :
+				std::vector<Primitive>{ Primitive{
+					0,
+					static_cast<uint32_t>(storedModelData->IndexData.size()),
+					0
+				} };
 
 
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	BLAS_Buffer.BufferID = "Model bottomLevelASBuffer Buffer";
-	bufferManager->CreateDeviceBuffer(&BLAS_Buffer,
-		ASBuildSizeInfo.accelerationStructureSize,
-		vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
-		vk::BufferUsageFlagBits::eShaderDeviceAddress,
-		commandPool,
-		vulkanContext->graphicsQueue);
+			for (const auto& primitive : primitives) {
 
-	vk::BufferDeviceAddressInfo BLAS_ScratchBufferAdress;
-	BLAS_ScratchBufferAdress.buffer = BLAS_ScratchBuffer.buffer;
+				BLASDATA  BLAS_Data;
+				BLAS_Data.ModelMatrix = node->matrix;
 
+				//Triangle Data
+				vk::AccelerationStructureGeometryTrianglesDataKHR BLAS_TriangleData{};
+				BLAS_TriangleData.vertexFormat = vk::Format::eR32G32B32Sfloat;
+				BLAS_TriangleData.vertexData.deviceAddress = vertexBufferAddress;
+				BLAS_TriangleData.vertexStride = sizeof(ModelVertex);
+				BLAS_TriangleData.maxVertex = storedModelData->VertexData.size() - 1;
+				BLAS_TriangleData.indexData.deviceAddress = indexBufferAddress + (primitive.indicesStart * sizeof(uint32_t));
+				BLAS_TriangleData.indexType = vk::IndexType::eUint32;
+				BLAS_TriangleData.transformData.deviceAddress = 0;
+				BLAS_TriangleData.transformData.hostAddress = nullptr;
 
-	vk::AccelerationStructureCreateInfoKHR AccelerationStructureCreateInfo;
-	AccelerationStructureCreateInfo.buffer = BLAS_Buffer.buffer;
-	AccelerationStructureCreateInfo.offset = 0;
-	AccelerationStructureCreateInfo.size = ASBuildSizeInfo.accelerationStructureSize;
-	AccelerationStructureCreateInfo.type = vk::AccelerationStructureTypeKHR::eBottomLevel;
+				VertexAndIndexOffsets ModelOffset;
+				ModelOffset.VertexOffset = m_baseVertexOffset;
+				ModelOffset.IndexOffset = m_baseIndexOffset + primitive.indicesStart;
 
-	//Temp hold
-	VkAccelerationStructureCreateInfoKHR tempASCI = AccelerationStructureCreateInfo;
-	VkAccelerationStructureKHR tempBLAS = BLAS;
+				bufferManager->AllScene_VertexAndIndexOffsets.push_back(ModelOffset);
 
-	vulkanContext->vkCreateAccelerationStructureKHR(vulkanContext->LogicalDevice, &tempASCI, nullptr, &tempBLAS);
-
-	//Reassighn vulkan hpp types
-	AccelerationStructureCreateInfo = tempASCI;
-	BLAS = tempBLAS;
+				//Geometry Data
+				vk::AccelerationStructureGeometryDataKHR AccelerationStructureGeometryData;
+				AccelerationStructureGeometryData.triangles = BLAS_TriangleData;
 
 
-	AccelerationStructureBuildGeometryInfo.dstAccelerationStructure  = BLAS;
-	AccelerationStructureBuildGeometryInfo.scratchData.deviceAddress = vulkanContext->LogicalDevice.getBufferAddress(BLAS_ScratchBufferAdress);
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				//Geometry
+				vk::AccelerationStructureGeometryKHR AccelerationStructureGeometry;
+				AccelerationStructureGeometry.geometryType = vk::GeometryTypeKHR::eTriangles;
+				AccelerationStructureGeometry.flags = vk::GeometryFlagBitsKHR::eOpaque;
+				AccelerationStructureGeometry.geometry = AccelerationStructureGeometryData;
+				///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				uint32_t maxPrimitiveCount = primitive.numIndices / 3;
 
-	vk::CommandBuffer cmd =  bufferManager->CreateSingleUseCommandBuffer(commandPool);
+				vk::AccelerationStructureBuildRangeInfoKHR BuildRangeInfo;
+				BuildRangeInfo.firstVertex = 0;
+				BuildRangeInfo.primitiveCount = maxPrimitiveCount;
+				BuildRangeInfo.primitiveOffset = 0;
+				BuildRangeInfo.transformOffset = 0;
 
-	VkAccelerationStructureBuildRangeInfoKHR tempRange = BuildRangeInfo;
-	std::vector<VkAccelerationStructureBuildRangeInfoKHR*> accelerationBuildStructureRangeInfos = { &tempRange };
+				vk::AccelerationStructureBuildGeometryInfoKHR AccelerationStructureBuildGeometryInfo;
+				AccelerationStructureBuildGeometryInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace;
+				AccelerationStructureBuildGeometryInfo.mode = vk::BuildAccelerationStructureModeKHR::eBuild;
+				AccelerationStructureBuildGeometryInfo.geometryCount = 1;
+				AccelerationStructureBuildGeometryInfo.pGeometries = &AccelerationStructureGeometry;
+				AccelerationStructureBuildGeometryInfo.type = vk::AccelerationStructureTypeKHR::eBottomLevel;
 
-	VkAccelerationStructureBuildGeometryInfoKHR tempGeometryInfo = AccelerationStructureBuildGeometryInfo;
+				//Temp Holders
+				VkAccelerationStructureBuildGeometryInfoKHR TempGI = AccelerationStructureBuildGeometryInfo;
+				VkAccelerationStructureBuildSizesInfoKHR TempASBuildSizeInfo;
+				TempASBuildSizeInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+				TempASBuildSizeInfo.pNext = nullptr;
 
-	vulkanContext->vkCmdBuildAccelerationStructuresKHR(cmd, 1,
-		                                               &tempGeometryInfo, 
-		                                               accelerationBuildStructureRangeInfos.data());
+				vulkanContext->vkGetAccelerationStructureBuildSizesKHR(vulkanContext->LogicalDevice, VkAccelerationStructureBuildTypeKHR::VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &TempGI, &maxPrimitiveCount, &TempASBuildSizeInfo);
+				vk::AccelerationStructureBuildSizesInfoKHR ASBuildSizeInfo = TempASBuildSizeInfo;
 
-	bufferManager->SubmitAndDestoyCommandBuffer(commandPool, cmd, vulkanContext->graphicsQueue);
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+				// Create Scratch buffer and BLAS buffer based on the size calculated  
+				BLAS_Data.BLAS_ScratchBuffer.BufferID = "Model BLAS_ScratchBuffer Buffer";
+				bufferManager->CreateDeviceBuffer(&BLAS_Data.BLAS_ScratchBuffer,
+					ASBuildSizeInfo.buildScratchSize,
+					vk::BufferUsageFlagBits::eStorageBuffer |
+					vk::BufferUsageFlagBits::eShaderDeviceAddress,
+					commandPool,
+					vulkanContext->graphicsQueue);
+
+
+				//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+				BLAS_Data.BLAS_Buffer.BufferID = "Model bottomLevelASBuffer Buffer";
+				bufferManager->CreateDeviceBuffer(&BLAS_Data.BLAS_Buffer,
+					ASBuildSizeInfo.accelerationStructureSize,
+					vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
+					vk::BufferUsageFlagBits::eShaderDeviceAddress,
+					commandPool,
+					vulkanContext->graphicsQueue);
+
+				vk::BufferDeviceAddressInfo BLAS_ScratchBufferAdress;
+				BLAS_ScratchBufferAdress.buffer = BLAS_Data.BLAS_ScratchBuffer.buffer;
+
+				vk::AccelerationStructureCreateInfoKHR AccelerationStructureCreateInfo;
+				AccelerationStructureCreateInfo.buffer = BLAS_Data.BLAS_Buffer.buffer;
+				AccelerationStructureCreateInfo.offset = 0;
+				AccelerationStructureCreateInfo.size = ASBuildSizeInfo.accelerationStructureSize;
+				AccelerationStructureCreateInfo.type = vk::AccelerationStructureTypeKHR::eBottomLevel;
+
+				//Temp hold
+				VkAccelerationStructureCreateInfoKHR tempASCI = AccelerationStructureCreateInfo;
+				VkAccelerationStructureKHR tempBLAS = BLAS_Data.BLAS;
+
+				vulkanContext->vkCreateAccelerationStructureKHR(vulkanContext->LogicalDevice, &tempASCI, nullptr, &tempBLAS);
+
+				//Reassighn vulkan hpp types
+				AccelerationStructureCreateInfo = tempASCI;
+				BLAS_Data.BLAS = tempBLAS;
+
+
+				AccelerationStructureBuildGeometryInfo.dstAccelerationStructure = BLAS_Data.BLAS;
+				AccelerationStructureBuildGeometryInfo.scratchData.deviceAddress = vulkanContext->LogicalDevice.getBufferAddress(BLAS_ScratchBufferAdress);
+				//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+				vk::CommandBuffer cmd = bufferManager->CreateSingleUseCommandBuffer(commandPool);
+
+				VkAccelerationStructureBuildRangeInfoKHR tempRange = BuildRangeInfo;
+				std::vector<VkAccelerationStructureBuildRangeInfoKHR*> accelerationBuildStructureRangeInfos = { &tempRange };
+
+				VkAccelerationStructureBuildGeometryInfoKHR tempGeometryInfo = AccelerationStructureBuildGeometryInfo;
+
+				vulkanContext->vkCmdBuildAccelerationStructuresKHR(cmd, 1,
+					&tempGeometryInfo,
+					accelerationBuildStructureRangeInfos.data());
+
+				bufferManager->SubmitAndDestoyCommandBuffer(commandPool, cmd, vulkanContext->graphicsQueue);
+
+				BLAS_Datas.push_back(BLAS_Data);
+			}
+		}
+	}
+
 
 }
 
@@ -546,20 +595,20 @@ void Model::DrawNode(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipeline
 		Instances[0]->SetModelMatrix(worldMatrix);
 
 
-		if (CalcDistanceCulling(worldMatrix))
+		for (int i = 0; i < node->meshPrimitives.size(); i++)
 		{
-			for (const auto& primitive : node->meshPrimitives) {
-
-				if (primitive.numIndices > 0) {
-
-					commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &SceneDescriptorSets[primitive.materialIndex][imageIndex], 0, nullptr);
-
-					commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4), &worldMatrix);
-
-					commandBuffer.drawIndexed(primitive.numIndices, 1, primitive.indicesStart, 0, 0);
-				}
+			
+			if (node->meshPrimitives[i].numIndices > 0) {
+				
+				commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &SceneDescriptorSets[node->meshPrimitives[i].materialIndex][imageIndex], 0, nullptr);
+				
+				commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4), &worldMatrix);
+				
+				commandBuffer.drawIndexed(node->meshPrimitives[i].numIndices, 1, node->meshPrimitives[i].indicesStart, 0, 0);
 			}
 		}
+			
+		
 
 		DrawNode(commandBuffer, pipelineLayout, imageIndex,node->children, worldMatrix);
 	}
@@ -618,11 +667,14 @@ void Model::CleanUp()
 		EmissiveTextures.clear();
 
 
-	    bufferManager->DestroyBuffer(BLAS_Buffer);
-		bufferManager->DestroyBuffer(BLAS_ScratchBuffer);
+		for (auto BLAS_Data : BLAS_Datas)
+		{
+			bufferManager->DestroyBuffer(BLAS_Data.BLAS_Buffer);
+			bufferManager->DestroyBuffer(BLAS_Data.BLAS_ScratchBuffer);
+			vulkanContext->vkDestroyAccelerationStructureKHR(vulkanContext->LogicalDevice, static_cast<VkAccelerationStructureKHR>(BLAS_Data.BLAS), nullptr);
 
-		vulkanContext->vkDestroyAccelerationStructureKHR(vulkanContext->LogicalDevice, static_cast<VkAccelerationStructureKHR>(BLAS), nullptr);
-
+		}
+	  
 		for (auto& uniformBuffer : Model_GPU_DataUniformBuffers)
 		{
 			if (uniformBuffer.buffer)
@@ -631,6 +683,7 @@ void Model::CleanUp()
 				bufferManager->DestroyBuffer(uniformBuffer);
 			}
 		}
+
 
 		SceneDescriptorSets.clear();
 		Model_GPU_DataUniformBuffers.clear();

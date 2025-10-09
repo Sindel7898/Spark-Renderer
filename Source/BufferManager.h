@@ -8,10 +8,11 @@
 #include <algorithm> 
 #include <cmath> 
 #include <cstdint>
+#include "VertexInputLayouts.h"          
 
 struct IDdata {
     int instance;
-   // bool IsActive; // not needed anymore 
+    // bool IsActive; // not needed anymore 
 };
 
 struct BufferData {
@@ -47,6 +48,21 @@ struct ImageTransitionData {
 
 };
 
+struct VertexAndIndexOffsets {
+
+    uint32_t VertexOffset;
+    uint32_t IndexOffset;
+};
+
+struct PaddedModelVertex {
+
+    glm::vec4 vert_Padding;
+    glm::vec4 text_Padding;
+    glm::vec4 normal_Padding;
+    glm::vec4 tangent_Padding;
+};
+
+
 class VulkanContext;
 
 class BufferManager
@@ -68,7 +84,7 @@ public:
     ~BufferManager();
 
 
-    void CreateCubeMap(ImageData*  imageData,std::array<const char*,6> FilePaths, vk::CommandPool commandpool, vk::Queue Queue);
+    void CreateCubeMap(ImageData* imageData, std::array<const char*, 6> FilePaths, vk::CommandPool commandpool, vk::Queue Queue);
 
     void GenerateMipMaps(ImageData* imageData, vk::CommandBuffer* cmdBuffer, float width, float height, vk::Queue graphicsqueue, int layerCount);
 
@@ -84,11 +100,11 @@ public:
 
 
 
-    void CreateGPUOptimisedBuffer(BufferData* bufferData,const void* Data, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
+    void CreateGPUOptimisedBuffer(BufferData* bufferData, const void* Data, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
 
     void CreateTextureImage(ImageData* Image, const void* pixeldata, vk::DeviceSize imagesize, int texWidth, int textHeight, vk::Format ImageFormat, vk::CommandPool commandpool, vk::Queue Queue);
 
-    ImageData LoadTextureImage(std::string FilePath,vk::Format ImageFormat, vk::CommandPool commandpool, vk::Queue Queue);
+    ImageData LoadTextureImage(std::string FilePath, vk::Format ImageFormat, vk::CommandPool commandpool, vk::Queue Queue);
 
 
     void DestroyBuffer(BufferData& buffer);
@@ -104,7 +120,7 @@ public:
 
     void* MapMemory(const BufferData& buffer);
     void UnmapMemory(const BufferData& buffer);
-  
+
     VmaAllocator allocator;
 
     void DeleteAllocation(VmaAllocation allocation);
@@ -115,6 +131,11 @@ public:
     int bufferCounts = 0;
 
     void CleanUp();
+    std::vector<ImageData*>        AllScene_Albedo_Images;
+    std::vector<ImageData*>        AllScene_Normal_Images;
+    std::vector<PaddedModelVertex> AllScene_VertexGeometryData;
+    std::vector<uint32_t>          AllScene_IndexGeometryData;
+    std::vector<VertexAndIndexOffsets>     AllScene_VertexAndIndexOffsets;
 
 private:
 

@@ -1,12 +1,18 @@
 #version 460
 #extension GL_EXT_ray_tracing : require
 
-struct ReflectionPayload {
+
+struct Payload {
     vec3 Color;
+    float Distance;
+    vec3 Normal;
 };
 
-layout(location = 0) rayPayloadInEXT ReflectionPayload reflPayload;
+layout(location = 0) rayPayloadInEXT Payload payload;
 
 void main() {
-    reflPayload.Color = vec3(0,0,0);
+    payload.Color     = vec3(0,0,0);
+    payload.Normal    = vec3(0,0,0);
+    payload.Distance  = -1.0f;
+
 }

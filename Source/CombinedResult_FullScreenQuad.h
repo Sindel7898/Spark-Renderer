@@ -28,10 +28,10 @@ public:
     ImageData FinalResultImage;
 
     float Brightness = 1.0;
-    float Saturation = 1.7;
-    float Concentration = 1.0;
-    float MaxGamma = 1.0;
-    float MinGamma = 0.7;
+    float Saturation = 1.0;
+    float Concentration = 1.04;
+    float MaxGamma = 0.98;
+    float MinGamma = 0.92;
 
 private:
 
