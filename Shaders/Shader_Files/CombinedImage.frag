@@ -23,7 +23,7 @@ float rgb2luma(vec3 rgb) {
 vec3 ContrastSaturationBrightness(vec3 color, float brt, float sat, float con) 
 {
    /*
-    * Adapted for Processing by Raphaël de Courville <Twitter: @sableRaph>
+    * Adapted for Processing by Raphaï¿½l de Courville <Twitter: @sableRaph>
    */
 	// Increase or decrease theese values to adjust r, g and b color channels seperately
 	const float AvgLumR = 0.5;

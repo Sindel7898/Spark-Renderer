@@ -17,7 +17,7 @@ layout (location = 0) out vec4 outFragcolor;
 
 const int MIN_ITERATION = 5;
 const int MAX_ITERATION = 25;
-const int MAX_RAYS = 3;
+const int MAX_RAYS = 5;
 const int MIN_RAYS = 2;
 
 const float MAX_THICKNESS = 0.1; 
@@ -147,5 +147,5 @@ void main() {
     }
 
 
-    outFragcolor = vec4(giContribution / NUM_RAYS ,1.0);
+    outFragcolor = vec4(giContribution ,1.0);
 }

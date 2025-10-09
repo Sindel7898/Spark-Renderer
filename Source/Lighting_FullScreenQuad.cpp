@@ -359,11 +359,6 @@ void Lighting_FullScreenQuad::UpdateUniformBuffer(uint32_t currentImage, std::ve
 				                                                  camera->GetPosition().y,
 				                                                  camera->GetPosition().z, 
 				                                                  lightref[i]->lightIntensity);
-
-			glm::mat4 projection = lightref[i]->ProjectionMatrix;
-			projection[1][1] *= -1;
-			LightData.LightViewProjMatrix = projection * lightref[i]->ViewMatrix;
-
 			lightDataspack.push_back(LightData);
 		}
 	}

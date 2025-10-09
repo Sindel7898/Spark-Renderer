@@ -99,6 +99,13 @@ void Model::LoadTextures()
 		bufferManager->AllScene_Normal_Images.push_back(&normal);
 
 	}
+
+	for (ImageData& MetallicRoughnessTexture : MetallicRoughnessTextures)
+	{
+		bufferManager->AllScene_MetalicRoughness_Images.push_back(&MetallicRoughnessTexture);
+
+	}
+
 }
 
 void Model::CreateVertexAndIndexBuffer()

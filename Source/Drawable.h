@@ -29,6 +29,8 @@ public:
 	 virtual ~Drawable();
 	 void Destructor();
 
+	 std::vector<BufferData> fragmentUniformBuffers;
+
 protected:
 	
      virtual void CreateVertexAndIndexBuffer() = 0;
@@ -42,7 +44,6 @@ protected:
 
 
 	 std::vector<BufferData> vertexUniformBuffers;
-	 std::vector<BufferData> fragmentUniformBuffers;
 
 	 std::vector<void*> VertexUniformBuffersMappedMem;
 	 std::vector<void*> FragmentUniformBuffersMappedMem;

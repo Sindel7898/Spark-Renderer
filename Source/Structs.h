@@ -24,3 +24,9 @@ struct VertexUniformData
     glm::mat4 LightProjectionMatrix;
 
 };
+
+struct alignas(16) LightUniformData {
+    alignas(16) glm::vec4  lightPositionAndLightType;
+    alignas(16) glm::vec4  colorAndAmbientStrength;
+    alignas(16) glm::vec4  CameraPositionAndLightIntensity;
+};

@@ -238,7 +238,8 @@ private:
 	vk::DebugUtilsLabelEXT SSAO_Label;
 	vk::DebugUtilsLabelEXT RTShadows_Label;
 	vk::DebugUtilsLabelEXT DirectLighting_Label;
-	vk::DebugUtilsLabelEXT SSR_Label;
 	vk::DebugUtilsLabelEXT SSGI_Label;
 	vk::DebugUtilsLabelEXT FXAA_Label;
+	vk::DebugUtilsLabelEXT RTReflections_Label;
+
 };

@@ -4,6 +4,7 @@
 #include <string>
 #include "structs.h"
 #include <vulkan/vulkan.hpp>
+#include "Structs.h"
 
 class  Camera;
 class  VulkanContext;
@@ -23,7 +24,7 @@ public:
     void CreateStorageImage();
     void DestroyStorageImage();
     void createRayTracingDescriptorSetLayout();
-    void createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, GBuffer gbuffer);
+    void createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, GBuffer gbuffer, std::vector<BufferData>& fragmentUniformBuffers);
     void UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref, std::vector<std::shared_ptr<Model>>& Modelref);
     void CreateUniformBuffer();
     uint32_t alignedSize(uint32_t value, uint32_t alignment);

@@ -8,14 +8,6 @@
 #include "SkyBox.h"
 class RT_Shadows;
 
-struct alignas(16) LightUniformData {
-     alignas(16) glm::vec4  lightPositionAndLightType;
-     alignas(16) glm::vec4  colorAndAmbientStrength;
-     alignas(16) glm::vec4  CameraPositionAndLightIntensity;
-     alignas(16) glm::mat4  LightViewProjMatrix;
-
-};
-
 class Lighting_FullScreenQuad : public Drawable
 {
 public:

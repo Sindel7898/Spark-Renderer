@@ -17,8 +17,6 @@ struct LightData{
     vec4    positionAndLightType;
     vec4    colorAndAmbientStrength;
     vec4    CameraPositionAndLightIntensity;
-    mat4    LightProjectionViewMatrix;
-
 };
 layout (binding = 9) uniform LightUniformBuffer {
    

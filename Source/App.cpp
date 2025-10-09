@@ -47,7 +47,7 @@
 
 	auto model1 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf" ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	
-	//auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+    auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	//
 	//auto model4 = std::shared_ptr<Model>(new Model("../Textures/EmptyCornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
@@ -56,7 +56,7 @@
 
 	//auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	//auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	
     model1.get()->Instances[0]->SetPostion(glm::vec3(-4.282, 2.172, -6.313));
     model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
@@ -64,10 +64,10 @@
     model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
     model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
     
-    //model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
-    //model2.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
-    //model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-    //model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+    model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
+    model2.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
+    model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+    model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
     
     model3.get()->Instances[0]->SetPostion(glm::vec3(4.047, 8.914, 2.195));
     model3.get()->Instances[0]->SetRotation(glm::vec3(-180.000, -44.147, 180.000));
@@ -75,9 +75,9 @@
     model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
     model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 	
-	model11.get()->Instances[0]->SetScale(glm::vec3(5.000, 5.000, 5.000));
-	model11.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	model11.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	//model11.get()->Instances[0]->SetScale(glm::vec3(5.000, 5.000, 5.000));
+	//model11.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	//model11.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
 	//model4.get()->Instances[0]->SetPostion(glm::vec3(-44.980, 0, 0));
 	//model4.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
@@ -95,11 +95,11 @@
 	////
 	////
     Models.push_back(std::move(model1));
-    //Models.push_back(std::move(model2));
+    Models.push_back(std::move(model2));
 	Models.push_back(std::move(model3));
 	//Models.push_back(std::move(model4));
 	//Models.push_back(std::move(model5));
-	Models.push_back(std::move(model11));
+	//Models.push_back(std::move(model11));
 
 
 
@@ -230,11 +230,11 @@ void App::CreateDebugUtils()
 
 	Gbuffer_Label.pLabelName        = "Gbuffer Pass";
 	SSAO_Label.pLabelName           = "SSAO Pass";
-	RTShadows_Label.pLabelName      = "RTShadow Pass";
+	RTShadows_Label.pLabelName      = "Raytraced Shadow Pass";
 	DirectLighting_Label.pLabelName = "DirectLighting Pass";
-	SSR_Label.pLabelName            = "SSR  Pass";
 	SSGI_Label.pLabelName           = "SSGI Pass";
 	FXAA_Label.pLabelName           = "FXAA Pass";
+	RTReflections_Label.pLabelName  = "Raytraced Reflections Pass";
 
 
 }
@@ -618,7 +618,7 @@ void App::createGBuffer()
 	fxaa_FullScreenQuad->createDescriptorSets(DescriptorPool, Combined_FullScreenQuad->FinalResultImage);
 	Raytracing_Shadows->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
 	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, LightingPassImageData,DepthTextureData);
-	RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
+	RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer, lighting_FullScreenQuad->fragmentUniformBuffers);
 
 
 	vk::CommandBuffer cmd =  bufferManger.CreateSingleUseCommandBuffer(commandPool);
@@ -1424,6 +1424,7 @@ void App::CreateGraphicsPipeline()
 
 
 	{
+
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
 		pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext.swapchainformat;
@@ -2035,6 +2036,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
+	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, RTReflections_Label);
 
 	{
 		ImageTransitionData TransitiontoGeneralRT{};
@@ -2061,7 +2063,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			RT_ReflectionPipelineLayout,
 			currentFrame);
 	}
-
+	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DirectLighting_Label);
     /////////////////// LIGHTING PASS ///////////////////////// 
@@ -2092,42 +2094,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	}
 
 	 /////////////////// LIGHTING PASS END ///////////////////////// 
-	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
-
-	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, SSR_Label);
-	{	
-		ImageTransitionData TransitionDepthtTOShaderOptimal{};
-		TransitionDepthtTOShaderOptimal.oldlayout = vk::ImageLayout::eDepthAttachmentOptimal;
-		TransitionDepthtTOShaderOptimal.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		TransitionDepthtTOShaderOptimal.AspectFlag = vk::ImageAspectFlagBits::eDepth;
-		TransitionDepthtTOShaderOptimal.SourceAccessflag = vk::AccessFlagBits::eDepthStencilAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentRead;
-		TransitionDepthtTOShaderOptimal.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
-		TransitionDepthtTOShaderOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests;
-		TransitionDepthtTOShaderOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-		bufferManger.TransitionImage(commandBuffer, &DepthTextureData, TransitionDepthtTOShaderOptimal);
-
-	
-		vk::RenderingAttachmentInfo SSRRenderAttachInfo;
-		SSRRenderAttachInfo.clearValue = clearColor;
-		SSRRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		SSRRenderAttachInfo.imageView = LightingPassImageData.imageView;
-		SSRRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
-		SSRRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
-	
-		vk::RenderingInfo SSRRenderInfo{};
-		SSRRenderInfo.layerCount = 1;
-		SSRRenderInfo.colorAttachmentCount = 1;
-		SSRRenderInfo.pColorAttachments = &SSRRenderAttachInfo;
-		SSRRenderInfo.renderArea.extent.width = vulkanContext.swapchainExtent.width;
-		SSRRenderInfo.renderArea.extent.height = vulkanContext.swapchainExtent.height;
-
-		commandBuffer.setViewport(0, 1, &viewport);
-		commandBuffer.setScissor(0, 1, &scissor);
-		commandBuffer.beginRendering(SSRRenderInfo);
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SSRPipeline);
-		ssr_FullScreenQuad->Draw(commandBuffer, SSRPipelineLayout, currentFrame);
-		commandBuffer.endRendering();
-	}
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, SSGI_Label);

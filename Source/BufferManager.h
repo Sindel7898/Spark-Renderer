@@ -133,6 +133,8 @@ public:
     void CleanUp();
     std::vector<ImageData*>        AllScene_Albedo_Images;
     std::vector<ImageData*>        AllScene_Normal_Images;
+    std::vector<ImageData*>        AllScene_MetalicRoughness_Images;
+
     std::vector<PaddedModelVertex> AllScene_VertexGeometryData;
     std::vector<uint32_t>          AllScene_IndexGeometryData;
     std::vector<VertexAndIndexOffsets>     AllScene_VertexAndIndexOffsets;

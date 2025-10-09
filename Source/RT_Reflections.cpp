@@ -147,7 +147,6 @@ void RT_Reflections::createRayTracingDescriptorSetLayout(){
 	TLASLayout.descriptorType = vk::DescriptorType::eAccelerationStructureKHR;
 	TLASLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
-
 	vk::DescriptorSetLayoutBinding AlbedoAssetTexturesSamplerLayout{};
 	AlbedoAssetTexturesSamplerLayout.binding = 1;
 	AlbedoAssetTexturesSamplerLayout.descriptorCount = bufferManager->AllScene_Albedo_Images.size();
@@ -160,52 +159,67 @@ void RT_Reflections::createRayTracingDescriptorSetLayout(){
 	NormalAssetTexturesSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	NormalAssetTexturesSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
 
+	vk::DescriptorSetLayoutBinding MetalicRoughnessAssetTexturesSamplerLayout{};
+	MetalicRoughnessAssetTexturesSamplerLayout.binding = 3;
+	MetalicRoughnessAssetTexturesSamplerLayout.descriptorCount = bufferManager->AllScene_MetalicRoughness_Images.size();
+	MetalicRoughnessAssetTexturesSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	MetalicRoughnessAssetTexturesSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+
 	vk::DescriptorSetLayoutBinding ReflectionResultSamplerLayout{};
-	ReflectionResultSamplerLayout.binding = 3;
+	ReflectionResultSamplerLayout.binding = 4;
 	ReflectionResultSamplerLayout.descriptorCount = 1;
 	ReflectionResultSamplerLayout.descriptorType = vk::DescriptorType::eStorageImage;
 	ReflectionResultSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
 	vk::DescriptorSetLayoutBinding RayGenUniformBufferLayout{};
-	RayGenUniformBufferLayout.binding = 4;
+	RayGenUniformBufferLayout.binding = 5;
 	RayGenUniformBufferLayout.descriptorCount = 1;
 	RayGenUniformBufferLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
 	RayGenUniformBufferLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
 	vk::DescriptorSetLayoutBinding IndexStorageBuffersLayout{};
-	IndexStorageBuffersLayout.binding = 5;
+	IndexStorageBuffersLayout.binding = 6;
 	IndexStorageBuffersLayout.descriptorCount = 1;
 	IndexStorageBuffersLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
 	IndexStorageBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
 
 	vk::DescriptorSetLayoutBinding VertexStorageBuffersLayout{};
-	VertexStorageBuffersLayout.binding = 6;
+	VertexStorageBuffersLayout.binding = 7;
 	VertexStorageBuffersLayout.descriptorCount = 1;
 	VertexStorageBuffersLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
 	VertexStorageBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
 
 	vk::DescriptorSetLayoutBinding offsetStorageBuffersLayout{};
-	offsetStorageBuffersLayout.binding = 7;
+	offsetStorageBuffersLayout.binding = 8;
 	offsetStorageBuffersLayout.descriptorCount = 1;
 	offsetStorageBuffersLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
 	offsetStorageBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
 
 	vk::DescriptorSetLayoutBinding trasnformationUniformBuffersLayout{};
-	trasnformationUniformBuffersLayout.binding = 8;
+	trasnformationUniformBuffersLayout.binding = 9;
 	trasnformationUniformBuffersLayout.descriptorCount = 1;
 	trasnformationUniformBuffersLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
 	trasnformationUniformBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR; 
 
-	std::array<vk::DescriptorSetLayoutBinding, 9> bindings = {
+	vk::DescriptorSetLayoutBinding LightInformationUniformBuffersLayout{};
+	LightInformationUniformBuffersLayout.binding = 10;
+	LightInformationUniformBuffersLayout.descriptorCount = 1;
+	LightInformationUniformBuffersLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
+	LightInformationUniformBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+
+
+	std::array<vk::DescriptorSetLayoutBinding, 11> bindings = {
 		                                                       TLASLayout,              
 															   AlbedoAssetTexturesSamplerLayout,
 															   NormalAssetTexturesSamplerLayout,
+															   MetalicRoughnessAssetTexturesSamplerLayout,
 		                                                       ReflectionResultSamplerLayout,
 		                                                       RayGenUniformBufferLayout,
 															   IndexStorageBuffersLayout,
 															   VertexStorageBuffersLayout,
 															   offsetStorageBuffersLayout,
-															   trasnformationUniformBuffersLayout
+															   trasnformationUniformBuffersLayout,
+															   LightInformationUniformBuffersLayout
 	};
 
 
@@ -222,7 +236,8 @@ void RT_Reflections::createRayTracingDescriptorSetLayout(){
 
 }
 
-void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS,GBuffer gbuffer)
+void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS,GBuffer gbuffer, 
+	                                               std::vector<BufferData>& fragmentUniformBuffers)
 {
 	{
 		// create sets from the pool based on the layout
@@ -282,30 +297,61 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 			AssetImagSamplerdescriptorWrite.descriptorCount = AssetImagesInfos.size();
 			AssetImagSamplerdescriptorWrite.pImageInfo = AssetImagesInfos.data();
 
+			
+		
+			   std::vector<vk::DescriptorImageInfo> NormalImageAssetImagesInfos;
+			   
+			   for (int j = 0; j < bufferManager->AllScene_Normal_Images.size(); j++)
+			   {
+			   	ImageData* imageData = bufferManager->AllScene_Normal_Images[j];
+			   	if (imageData) {
+			   
+			   		vk::DescriptorImageInfo NormalASSETImageInfo{};
+			   		NormalASSETImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			   		NormalASSETImageInfo.imageView = imageData->imageView;
+			   		NormalASSETImageInfo.sampler = imageData->imageSampler;
+			   
+			   		NormalImageAssetImagesInfos.push_back(NormalASSETImageInfo);
+			   	};
+			   }
+			   
+			   vk::WriteDescriptorSet NormalAssetImagSamplerdescriptorWrite{};
+			   NormalAssetImagSamplerdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
+			   NormalAssetImagSamplerdescriptorWrite.dstBinding = 2;
+			   NormalAssetImagSamplerdescriptorWrite.dstArrayElement = 0;
+			   NormalAssetImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			   NormalAssetImagSamplerdescriptorWrite.descriptorCount = NormalImageAssetImagesInfos.size();
+			   NormalAssetImagSamplerdescriptorWrite.pImageInfo = NormalImageAssetImagesInfos.data();
+			
 
-			std::vector<vk::DescriptorImageInfo> NormalImageAssetImagesInfos;
 
-			for (int j = 0; j < bufferManager->AllScene_Normal_Images.size(); j++)
-			{
-				ImageData* imageData = bufferManager->AllScene_Normal_Images[j];
-				if (imageData) {
+			
 
-					vk::DescriptorImageInfo NormalASSETImageInfo{};
-					NormalASSETImageInfo.imageLayout = vk::ImageLayout::eGeneral;
-					NormalASSETImageInfo.imageView = imageData->imageView;
-					NormalASSETImageInfo.sampler = imageData->imageSampler;
+				std::vector<vk::DescriptorImageInfo> MetalicRoughnessImageAssetImagesInfos;
 
-					NormalImageAssetImagesInfos.push_back(NormalASSETImageInfo);
-				};
-			}
+				for (int j = 0; j < bufferManager->AllScene_MetalicRoughness_Images.size(); j++)
+				{
+					ImageData* imageData = bufferManager->AllScene_MetalicRoughness_Images[j];
+					if (imageData) {
 
-			vk::WriteDescriptorSet NormalAssetImagSamplerdescriptorWrite{};
-			NormalAssetImagSamplerdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
-			NormalAssetImagSamplerdescriptorWrite.dstBinding = 2;
-			NormalAssetImagSamplerdescriptorWrite.dstArrayElement = 0;
-			NormalAssetImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-			NormalAssetImagSamplerdescriptorWrite.descriptorCount = NormalImageAssetImagesInfos.size();
-			NormalAssetImagSamplerdescriptorWrite.pImageInfo = NormalImageAssetImagesInfos.data();
+						vk::DescriptorImageInfo MetalicRoughnessASSETImageInfo{};
+						MetalicRoughnessASSETImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+						MetalicRoughnessASSETImageInfo.imageView = imageData->imageView;
+						MetalicRoughnessASSETImageInfo.sampler = imageData->imageSampler;
+
+						MetalicRoughnessImageAssetImagesInfos.push_back(MetalicRoughnessASSETImageInfo);
+					};
+				}
+
+				vk::WriteDescriptorSet MetalicRoughnessAssetImagSamplerdescriptorWrite{};
+				MetalicRoughnessAssetImagSamplerdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
+				MetalicRoughnessAssetImagSamplerdescriptorWrite.dstBinding = 3;
+				MetalicRoughnessAssetImagSamplerdescriptorWrite.dstArrayElement = 0;
+				MetalicRoughnessAssetImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+				MetalicRoughnessAssetImagSamplerdescriptorWrite.descriptorCount = MetalicRoughnessImageAssetImagesInfos.size();
+				MetalicRoughnessAssetImagSamplerdescriptorWrite.pImageInfo = MetalicRoughnessImageAssetImagesInfos.data();
+			
+
 
 			/////////////////////////////////////////////////////////////////////////////////////
 
@@ -316,7 +362,7 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 
 			vk::WriteDescriptorSet StoreageImagSamplerdescriptorWrite{};
 			StoreageImagSamplerdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
-			StoreageImagSamplerdescriptorWrite.dstBinding = 3;
+			StoreageImagSamplerdescriptorWrite.dstBinding = 4;
 			StoreageImagSamplerdescriptorWrite.dstArrayElement = 0;
 			StoreageImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
 			StoreageImagSamplerdescriptorWrite.descriptorCount = 1;
@@ -331,7 +377,7 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 
 			vk::WriteDescriptorSet RayUniformdescriptorWrite{};
 			RayUniformdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
-			RayUniformdescriptorWrite.dstBinding = 4;
+			RayUniformdescriptorWrite.dstBinding = 5;
 			RayUniformdescriptorWrite.dstArrayElement = 0;
 			RayUniformdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
 			RayUniformdescriptorWrite.descriptorCount = 1;
@@ -344,7 +390,7 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 
 			vk::WriteDescriptorSet IndexStorageBufferdescriptorWrite{};
 			IndexStorageBufferdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
-			IndexStorageBufferdescriptorWrite.dstBinding = 5;
+			IndexStorageBufferdescriptorWrite.dstBinding = 6;
 			IndexStorageBufferdescriptorWrite.dstArrayElement = 0;
 			IndexStorageBufferdescriptorWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
 			IndexStorageBufferdescriptorWrite.descriptorCount = 1;
@@ -357,7 +403,7 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 
 			vk::WriteDescriptorSet VertexStorageBufferdescriptorWrite{};
 			VertexStorageBufferdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
-			VertexStorageBufferdescriptorWrite.dstBinding = 6;
+			VertexStorageBufferdescriptorWrite.dstBinding = 7;
 			VertexStorageBufferdescriptorWrite.dstArrayElement = 0;
 			VertexStorageBufferdescriptorWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
 			VertexStorageBufferdescriptorWrite.descriptorCount = 1;
@@ -370,7 +416,7 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 
 			vk::WriteDescriptorSet OffsetStorageBufferdescriptorWrite{};
 			OffsetStorageBufferdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
-			OffsetStorageBufferdescriptorWrite.dstBinding = 7;
+			OffsetStorageBufferdescriptorWrite.dstBinding = 8;
 			OffsetStorageBufferdescriptorWrite.dstArrayElement = 0;
 			OffsetStorageBufferdescriptorWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
 			OffsetStorageBufferdescriptorWrite.descriptorCount = 1;
@@ -383,21 +429,35 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 
 			vk::WriteDescriptorSet TransformUniformBufferdescriptorWrite{};
 			TransformUniformBufferdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
-			TransformUniformBufferdescriptorWrite.dstBinding = 8;
+			TransformUniformBufferdescriptorWrite.dstBinding = 9;
 			TransformUniformBufferdescriptorWrite.dstArrayElement = 0;
 			TransformUniformBufferdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
 			TransformUniformBufferdescriptorWrite.descriptorCount = 1;
 			TransformUniformBufferdescriptorWrite.pBufferInfo = &TransformUniformBuffersInfo;
 
-			std::array<vk::WriteDescriptorSet, 9> descriptorWrites{ TLAS_descriptorWrite,
+			vk::DescriptorBufferInfo LightUniformBuffersInfo{};
+			LightUniformBuffersInfo.buffer = fragmentUniformBuffers[i].buffer;
+			LightUniformBuffersInfo.offset = 0;
+			LightUniformBuffersInfo.range = sizeof(LightUniformData) * 100;
+
+			vk::WriteDescriptorSet lightUniformBufferdescriptorWrite{};
+			lightUniformBufferdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
+			lightUniformBufferdescriptorWrite.dstBinding = 10;
+			lightUniformBufferdescriptorWrite.dstArrayElement = 0;
+			lightUniformBufferdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+			lightUniformBufferdescriptorWrite.descriptorCount = 1;
+			lightUniformBufferdescriptorWrite.pBufferInfo = &LightUniformBuffersInfo;
+
+			std::array<vk::WriteDescriptorSet, 11> descriptorWrites{ TLAS_descriptorWrite,
 				                                                    AssetImagSamplerdescriptorWrite,
 				                                                    NormalAssetImagSamplerdescriptorWrite,
+				                                                    MetalicRoughnessAssetImagSamplerdescriptorWrite,
 																	StoreageImagSamplerdescriptorWrite,
 			                                                        RayUniformdescriptorWrite,
 			                                                        IndexStorageBufferdescriptorWrite,
 			                                                        VertexStorageBufferdescriptorWrite,
 			                                                        OffsetStorageBufferdescriptorWrite,
-			                                                        TransformUniformBufferdescriptorWrite };
+			                                                        TransformUniformBufferdescriptorWrite,lightUniformBufferdescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 		}
