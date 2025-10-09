@@ -196,7 +196,7 @@ private:
 
 
     std::string FilePath;
-    StoredModelData* storedModelData = nullptr;
+    const StoredModelData* storedModelData = nullptr;
 };
 
 

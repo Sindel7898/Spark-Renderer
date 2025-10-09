@@ -53,7 +53,6 @@ void main() {
        result /= totalWeight;
      }
 
-    //outFragcolor = vec4(result * 2,1);
-        outFragcolor = vec4(result,1);
+    outFragcolor = vec4(result,1);
 
 }

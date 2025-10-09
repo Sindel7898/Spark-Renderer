@@ -12,7 +12,7 @@
 
 struct IDdata {
     int instance;
-   // bool IsActive; // not needed anymore 
+    // bool IsActive; // not needed anymore 
 };
 
 struct BufferData {
@@ -84,7 +84,7 @@ public:
     ~BufferManager();
 
 
-    void CreateCubeMap(ImageData*  imageData,std::array<const char*,6> FilePaths, vk::CommandPool commandpool, vk::Queue Queue);
+    void CreateCubeMap(ImageData* imageData, std::array<const char*, 6> FilePaths, vk::CommandPool commandpool, vk::Queue Queue);
 
     void GenerateMipMaps(ImageData* imageData, vk::CommandBuffer* cmdBuffer, float width, float height, vk::Queue graphicsqueue, int layerCount);
 
@@ -100,11 +100,11 @@ public:
 
 
 
-    void CreateGPUOptimisedBuffer(BufferData* bufferData,const void* Data, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
+    void CreateGPUOptimisedBuffer(BufferData* bufferData, const void* Data, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
 
     void CreateTextureImage(ImageData* Image, const void* pixeldata, vk::DeviceSize imagesize, int texWidth, int textHeight, vk::Format ImageFormat, vk::CommandPool commandpool, vk::Queue Queue);
 
-    ImageData LoadTextureImage(std::string FilePath,vk::Format ImageFormat, vk::CommandPool commandpool, vk::Queue Queue);
+    ImageData LoadTextureImage(std::string FilePath, vk::Format ImageFormat, vk::CommandPool commandpool, vk::Queue Queue);
 
 
     void DestroyBuffer(BufferData& buffer);
@@ -120,7 +120,7 @@ public:
 
     void* MapMemory(const BufferData& buffer);
     void UnmapMemory(const BufferData& buffer);
-  
+
     VmaAllocator allocator;
 
     void DeleteAllocation(VmaAllocation allocation);

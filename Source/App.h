@@ -40,7 +40,7 @@ public:
 	std::chrono::time_point<std::chrono::high_resolution_clock> lastFrameTime;
 	float deltaTime = 0.0f;
 	double LasttimeStamp = 0.0f;
-	
+
 	App();
 	void CreateDebugUtils();
 	void createTLAS();
@@ -48,7 +48,7 @@ public:
 	void UpdateTLASInstanceBuffer();
 	~App();
 
-	
+
 
 	void createDepthTextureImage();
 	void recreateSwapChain();
@@ -146,8 +146,8 @@ private:
 
 	Window          window;
 	VulkanContext   vulkanContext;
-	BufferManager   bufferManger ;
-    UserInterface   userinterface;
+	BufferManager   bufferManger;
+	UserInterface   userinterface;
 	PipelineManager pipelineManager;
 public:
 	Camera camera;
@@ -207,7 +207,7 @@ private:
 	////////////////////////////
 	ImageData DepthTextureData;
 
-	bool bRecreateDepth = false; 
+	bool bRecreateDepth = false;
 
 	bool binitiallayout = true;
 

@@ -9,6 +9,7 @@ layout (binding = 4) uniform samplerCube samplerReflectiveCubeMap;
 layout (binding = 5) uniform sampler2D samplerReflectionMask;
 layout (binding = 6) uniform sampler2D samplerShadowMap[4];
 layout (binding = 7) uniform sampler2D samplerEmisive;
+layout (binding = 8) uniform sampler2D samplerReflections;
 
 layout(location = 0) in vec2 inTexCoord;           
 
@@ -19,7 +20,7 @@ struct LightData{
     mat4    LightProjectionViewMatrix;
 
 };
-layout (binding = 8) uniform LightUniformBuffer {
+layout (binding = 9) uniform LightUniformBuffer {
    
    LightData lights[4];
 };
@@ -121,7 +122,7 @@ void main() {
     float Roughness      = textureLod(samplerMaterials,inTexCoord,0).r;
     vec2  ReflectionMask = textureLod(samplerReflectionMask,inTexCoord,0).rg;
     vec3  Emmisive       = textureLod(samplerEmisive,inTexCoord,0).rgb;
-   // vec3  rtreflection       = textureLod(RTreflection,inTexCoord,0).rgb;
+    vec3  RTReflection       = textureLod(samplerReflections,inTexCoord,0).rgb;
 
     vec3  ViewDir    = normalize(lights[0].CameraPositionAndLightIntensity.xyz -  WorldPos);
 
@@ -139,6 +140,7 @@ void main() {
                         PCF(samplerShadowMap[0],3,inTexCoord)};
 
 
+    vec3 F0          = vec3(0.04); 
 
   for (int i = 0; i < 4; i++) {
 
@@ -151,7 +153,7 @@ void main() {
       if(light.positionAndLightType.w < 0.5){
 
          LightDir = normalize(-light.positionAndLightType.xyz);
-         radiance = light.colorAndAmbientStrength.rgb * light.CameraPositionAndLightIntensity.a ;
+         radiance = light.colorAndAmbientStrength.rgb ;
 
        }
       else if (light.positionAndLightType.w > 0.5){
@@ -160,10 +162,9 @@ void main() {
                LightDir    = normalize(LightPos - WorldPos);
          float Distance    = length(LightPos -  WorldPos);
          float Attenuation = 1.0 / (Constant + Linear * Distance + Quadratic * (Distance * Distance));
-               radiance    = light.colorAndAmbientStrength.rgb * Attenuation * light.CameraPositionAndLightIntensity.a;
+               radiance    = light.colorAndAmbientStrength.rgb * Attenuation;
        }  
 
-    vec3 F0          = vec3(0.04); 
          F0          = mix(F0, Albedo, Metallic);
     vec3 halfwayDir  = normalize(LightDir + ViewDir);
     
@@ -184,22 +185,19 @@ void main() {
              Lo += (diffuse + specular) * radiance * NdotL;
 
 
-     totalLighting +=  Lo  * shadows[i];
+     vec3 kS_env = fresnelSchlick(max(dot(Normal, ViewDir), 0.0), F0);
+     vec3 kD_env = vec3(1.0) - kS_env;
+     kD_env      *= 1.0 - Metallic;
+
+     vec3 reflections = ((RTReflection * kS_env) ) * shadows[i];
+
+     totalLighting +=  ((Lo + reflections) * light.CameraPositionAndLightIntensity.a) * shadows[i];
   }
 
- 
-   //  vec3 F0          = vec3(0.04); 
-   //       F0          = mix(F0, Albedo, Metallic);
-   //
-   // vec3 reflectionSource = texture(RTreflection, inTexCoord).rgb;
-   // 
-   // float NdotV = max(dot(Normal, ViewDir), 0.0);
-   //
-   // vec3 F_indirect = fresnelSchlick(NdotV, F0);
-   //
-    vec3 finalColor = totalLighting  + Emmisive ;
-   //
-   finalColor = pow(finalColor, vec3(1.4/2.2));
-    
-    outFragcolor = vec4(clamp(finalColor, 0.0, 1.0), 1.0);
+   totalLighting +=  Emmisive;
+
+
+  vec3 gammaCorrected = pow(clamp(totalLighting, 0.0, 1.0), vec3(1.4 / 2.2));
+
+   outFragcolor = vec4(gammaCorrected, 1.0);
 }

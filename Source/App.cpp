@@ -45,8 +45,9 @@
 	skyBox = std::shared_ptr<SkyBox>(new SkyBox(&vulkanContext, commandPool, &camera, &bufferManger), SkyBoxDeleter);
 
 
-	auto model1 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	//auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto model1 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf" ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	
+	//auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	//
 	//auto model4 = std::shared_ptr<Model>(new Model("../Textures/EmptyCornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
@@ -57,11 +58,11 @@
 	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	
-   model1.get()->Instances[0]->SetPostion(glm::vec3(-4.282, 2.172, -6.313));
-   model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
-   model1.get()->Instances[0]->SetScale(glm::vec3(0.050, 0.050, 0.050));
-   model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-   model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+    model1.get()->Instances[0]->SetPostion(glm::vec3(-4.282, 2.172, -6.313));
+    model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
+    model1.get()->Instances[0]->SetScale(glm::vec3(0.050, 0.050, 0.050));
+    model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+    model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
     
     //model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
     //model2.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
@@ -74,6 +75,10 @@
     model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
     model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 	
+	model11.get()->Instances[0]->SetScale(glm::vec3(5.000, 5.000, 5.000));
+	model11.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	model11.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+
 	//model4.get()->Instances[0]->SetPostion(glm::vec3(-44.980, 0, 0));
 	//model4.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
 	//model4.get()->Instances[0]->CubeMapReflectiveSwitch(false);
@@ -87,15 +92,10 @@
 
 	//model9.get()->Instances[0]->CubeMapReflectiveSwitch(false);
 
-	model11.get()->Instances[0]->SetPostion(glm::vec3(1));
-	model11.get()->Instances[0]->SetRotation(glm::vec3(0));
-	model11.get()->Instances[0]->SetScale(glm::vec3(6, 6, 6));
-	model11.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	model11.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 	////
 	////
     Models.push_back(std::move(model1));
-   // Models.push_back(std::move(model2));
+    //Models.push_back(std::move(model2));
 	Models.push_back(std::move(model3));
 	//Models.push_back(std::move(model4));
 	//Models.push_back(std::move(model5));
@@ -115,7 +115,7 @@
 	//UserInterfaceItems.push_back(Models[7].get());
 
 
-	//Raytracing_Reflections   = std::shared_ptr<RT_Reflections>(new RT_Reflections(&vulkanContext, commandPool, &camera, &bufferManger), RT_ReflectionsDeleter);
+	RT_Reflection = std::unique_ptr<RT_Reflections, decltype(&RT_ReflectionsDeleter)>(new RT_Reflections(&vulkanContext, commandPool, &camera, &bufferManger), RT_ReflectionsDeleter);
 	Raytracing_Shadows = std::unique_ptr<RT_Shadows, decltype(&RT_ShadowsDeleter)>(new RT_Shadows(&vulkanContext, commandPool, &camera, &bufferManger),RT_ShadowsDeleter);
 	lighting_FullScreenQuad = std::unique_ptr<Lighting_FullScreenQuad, decltype(&Lighting_FullScreenQuadDeleter)>(new Lighting_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool, skyBox.get(), Raytracing_Shadows.get()),Lighting_FullScreenQuadDeleter);
 	ssao_FullScreenQuad = std::unique_ptr<SSA0_FullScreenQuad, decltype(&SSA0_FullScreenQuadDeleter)>(new SSA0_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),SSA0_FullScreenQuadDeleter);
@@ -123,7 +123,6 @@
 	ssr_FullScreenQuad = std::unique_ptr<SSR_FullScreenQuad, decltype(&SSR_FullScreenQuadDeleter)>(new SSR_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),SSR_FullScreenQuadDeleter);
 	Combined_FullScreenQuad = std::unique_ptr<CombinedResult_FullScreenQuad, decltype(&CombinedResult_FullScreenQuadDeleter)>(new CombinedResult_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),CombinedResult_FullScreenQuadDeleter);
 	SSGI_FullScreenQuad = std::unique_ptr<SSGI, decltype(&SSGIDeleter)>(new SSGI(&bufferManger, &vulkanContext, &camera, commandPool),SSGIDeleter);
-	RT_Reflection = std::unique_ptr<RT_Reflections, decltype(&RT_ReflectionsDeleter)>(new RT_Reflections(&vulkanContext, commandPool, &camera, &bufferManger), RT_ReflectionsDeleter);
 
 	lights.reserve(4);
 
@@ -240,242 +239,242 @@ void App::CreateDebugUtils()
 
 }
 
- void App::createTLAS()
- {
-	 size_t totalPrimitiveCount = 0;
-	 for (const auto& model : Models) {
-		 totalPrimitiveCount += model->BLAS_Datas.size();
-	 }
+void App::createTLAS()
+{
+	size_t totalPrimitiveCount = 0;
+	for (const auto& model : Models) {
+		totalPrimitiveCount += model->BLAS_Datas.size();
+	}
 
-	 // Create instance Buffer
-	 TLAS_InstanceData.BufferID = "Scene TLAS InstanceData Buffer";
-	 size_t totalSize = sizeof(vk::AccelerationStructureInstanceKHR) * totalPrimitiveCount;
+	// Create instance Buffer
+	TLAS_InstanceData.BufferID = "Scene TLAS InstanceData Buffer";
+	size_t totalSize = sizeof(vk::AccelerationStructureInstanceKHR) * totalPrimitiveCount;
 
-	 bufferManger.CreateBuffer(&TLAS_InstanceData, totalSize,
-		 vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR |
-		 vk::BufferUsageFlagBits::eShaderDeviceAddress, commandPool, vulkanContext.graphicsQueue);
+	bufferManger.CreateBuffer(&TLAS_InstanceData, totalSize,
+		vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR |
+		vk::BufferUsageFlagBits::eShaderDeviceAddress, commandPool, vulkanContext.graphicsQueue);
 
-	 UpdateTLASInstanceBuffer();
+	UpdateTLASInstanceBuffer();
 
-	 ////////////////////////////////////GEOMETRY INFO /////////////////////////////////////////////////////////////////////
-	 //get instance buffer adddress
-	 vk::BufferDeviceAddressInfo InstanceInfo{};
-	 InstanceInfo.buffer = TLAS_InstanceData.buffer;
+	////////////////////////////////////GEOMETRY INFO /////////////////////////////////////////////////////////////////////
+	//get instance buffer adddress
+	vk::BufferDeviceAddressInfo InstanceInfo{};
+	InstanceInfo.buffer = TLAS_InstanceData.buffer;
 
-	 vk::DeviceOrHostAddressConstKHR instanceDataDeviceAddresstance{};
-	 instanceDataDeviceAddresstance.deviceAddress = vulkanContext.LogicalDevice.getBufferAddress(InstanceInfo); // pass instance buffer address
-	 
-
-	 vk::AccelerationStructureGeometryKHR accelerationStructureGeometry{};
-	 accelerationStructureGeometry.geometryType = vk::GeometryTypeKHR::eInstances;
-	 accelerationStructureGeometry.flags = vk::GeometryFlagBitsKHR::eOpaque;
-	 accelerationStructureGeometry.geometry.instances.sType = vk::StructureType::eAccelerationStructureGeometryInstancesDataKHR;
-	 accelerationStructureGeometry.geometry.instances.arrayOfPointers = vk::False;
-	 accelerationStructureGeometry.geometry.instances.data = instanceDataDeviceAddresstance;
-
-	 // Get size info
-	 vk::AccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo = {};
-	 accelerationStructureBuildGeometryInfo.type = vk::AccelerationStructureTypeKHR::eTopLevel;
-	 accelerationStructureBuildGeometryInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace | vk::BuildAccelerationStructureFlagBitsKHR::eAllowUpdate;
-	 accelerationStructureBuildGeometryInfo.geometryCount = 1;
-	 accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
+	vk::DeviceOrHostAddressConstKHR instanceDataDeviceAddresstance{};
+	instanceDataDeviceAddresstance.deviceAddress = vulkanContext.LogicalDevice.getBufferAddress(InstanceInfo); // pass instance buffer address
 
 
+	vk::AccelerationStructureGeometryKHR accelerationStructureGeometry{};
+	accelerationStructureGeometry.geometryType = vk::GeometryTypeKHR::eInstances;
+	accelerationStructureGeometry.flags = vk::GeometryFlagBitsKHR::eOpaque;
+	accelerationStructureGeometry.geometry.instances.sType = vk::StructureType::eAccelerationStructureGeometryInstancesDataKHR;
+	accelerationStructureGeometry.geometry.instances.arrayOfPointers = vk::False;
+	accelerationStructureGeometry.geometry.instances.data = instanceDataDeviceAddresstance;
 
-	 uint32_t primitive_count = totalPrimitiveCount;
-
-	 VkAccelerationStructureBuildGeometryInfoKHR TEMP_ACCELERATION_INFO = accelerationStructureBuildGeometryInfo;
-	 VkAccelerationStructureBuildSizesInfoKHR TEMP_ACCELERATION_STRUCTURE_BUILD_SIZE{};
-	 TEMP_ACCELERATION_STRUCTURE_BUILD_SIZE.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
-	 TEMP_ACCELERATION_STRUCTURE_BUILD_SIZE.pNext = nullptr;
-
-	 vulkanContext.vkGetAccelerationStructureBuildSizesKHR(vulkanContext.LogicalDevice, 
-		                                                    VkAccelerationStructureBuildTypeKHR::VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, 
-		                                                     &TEMP_ACCELERATION_INFO, &primitive_count, &TEMP_ACCELERATION_STRUCTURE_BUILD_SIZE);
-
-	 vk::AccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo = TEMP_ACCELERATION_STRUCTURE_BUILD_SIZE;
-	 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	                                               ///////CREATE TLAS BUFFER////////
-	 TLAS_Buffer.BufferID = "Scene TLAS Buffer";
-
-	 bufferManger.CreateDeviceBuffer(&TLAS_Buffer,
-		                              accelerationStructureBuildSizesInfo.accelerationStructureSize,
-		                              vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
-		                              vk::BufferUsageFlagBits::eShaderDeviceAddress,
-		                              commandPool,
-		                              vulkanContext.graphicsQueue);
-
-	 // Acceleration structure
-     vk::AccelerationStructureCreateInfoKHR accelerationStructureCreate_info{};
-	 accelerationStructureCreate_info.buffer = TLAS_Buffer.buffer;
-	 accelerationStructureCreate_info.size = accelerationStructureBuildSizesInfo.accelerationStructureSize;
-	 accelerationStructureCreate_info.type = vk::AccelerationStructureTypeKHR::eTopLevel;
-
-	 VkAccelerationStructureCreateInfoKHR TEMP_ACCELERATION_STRUCTURE_CREATE_INFO = accelerationStructureCreate_info;
-	 VkAccelerationStructureKHR TEMP_TLAS;
-	 vulkanContext.vkCreateAccelerationStructureKHR(vulkanContext.LogicalDevice, &TEMP_ACCELERATION_STRUCTURE_CREATE_INFO, nullptr, &TEMP_TLAS);
-	 TLAS = TEMP_TLAS;
-	 
-	 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-											///////CREATE TLAS SCRATCH BUFFER////////
-
-	 TLAS_SCRATCH_Buffer.BufferID = "TLAS_ScratchBuffer Buffer";
-	 bufferManger.CreateDeviceBuffer(&TLAS_SCRATCH_Buffer,
-		                               accelerationStructureBuildSizesInfo.buildScratchSize,
-		                               vk::BufferUsageFlagBits::eStorageBuffer |
-		                               vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
-		                               vk::BufferUsageFlagBits::eShaderDeviceAddress,
-		                               commandPool,
-		                               vulkanContext.graphicsQueue);
-
-	 vk::BufferDeviceAddressInfo TLAS_ScratchBufferAdress;
-	 TLAS_ScratchBufferAdress.buffer = TLAS_SCRATCH_Buffer.buffer;
-
-	 accelerationStructureBuildGeometryInfo.dstAccelerationStructure = TLAS;
-	 accelerationStructureBuildGeometryInfo.scratchData.deviceAddress = vulkanContext.LogicalDevice.getBufferAddress(TLAS_ScratchBufferAdress);
-	 accelerationStructureBuildGeometryInfo.mode = vk::BuildAccelerationStructureModeKHR::eBuild;
-	 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-												///////BUILD TLAS ON THE GPU ////////
-
-	 vk::CommandBuffer cmd = bufferManger.CreateSingleUseCommandBuffer(commandPool);
-
-	 vk::AccelerationStructureBuildRangeInfoKHR BuildRangeInfo;
-	 BuildRangeInfo.firstVertex     = 0;
-	 BuildRangeInfo.primitiveCount  = primitive_count;
-	 BuildRangeInfo.primitiveOffset = 0;
-	 BuildRangeInfo.transformOffset = 0;
-
-	 VkAccelerationStructureBuildRangeInfoKHR tempRange = BuildRangeInfo;
-	 std::vector<VkAccelerationStructureBuildRangeInfoKHR*> accelerationBuildStructureRangeInfos = { &tempRange };
-
-	 VkAccelerationStructureBuildGeometryInfoKHR tempGeometryInfo = accelerationStructureBuildGeometryInfo;
-
-	 vulkanContext.vkCmdBuildAccelerationStructuresKHR(cmd, 1,
-		 &tempGeometryInfo,
-		 accelerationBuildStructureRangeInfos.data());
-
-	 bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd, vulkanContext.graphicsQueue);
-	 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
- }
-
- void App::UpdateTLAS()
- {
-	 // 1. Update instance data on the GPU
-	 UpdateTLASInstanceBuffer();
-
-	 size_t totalPrimitiveCount = 0;
-	 for (const auto& model : Models) {
-		 totalPrimitiveCount += model->BLAS_Datas.size();
-	 }
-
-	 // 2. Reuse instance buffer device address
-	 vk::BufferDeviceAddressInfo instanceInfo{};
-	 instanceInfo.buffer = TLAS_InstanceData.buffer;
-
-	 vk::DeviceOrHostAddressConstKHR instanceDeviceAddress{};
-	 instanceDeviceAddress.deviceAddress = vulkanContext.LogicalDevice.getBufferAddress(instanceInfo);
-
-	 // 3. Setup geometry
-	 vk::AccelerationStructureGeometryKHR geometry{};
-	 geometry.geometryType = vk::GeometryTypeKHR::eInstances;
-	 geometry.flags = vk::GeometryFlagBitsKHR::eOpaque;
-	 geometry.geometry.instances.sType = vk::StructureType::eAccelerationStructureGeometryInstancesDataKHR;
-	 geometry.geometry.instances.arrayOfPointers = VK_FALSE;
-	 geometry.geometry.instances.data = instanceDeviceAddress;
-
-	 // 4. Build geometry info with UPDATE mode
-	 vk::AccelerationStructureBuildGeometryInfoKHR buildInfo{};
-	 buildInfo.type = vk::AccelerationStructureTypeKHR::eTopLevel;
-	 buildInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace |
-		 vk::BuildAccelerationStructureFlagBitsKHR::eAllowUpdate; // Must match initial build flags
-	 buildInfo.geometryCount = 1;
-	 buildInfo.pGeometries = &geometry;
-	 buildInfo.mode = vk::BuildAccelerationStructureModeKHR::eUpdate;
-	 buildInfo.srcAccelerationStructure = TLAS;
-	 buildInfo.dstAccelerationStructure = TLAS;
-
-	 // 5. Scratch buffer address
-	 vk::BufferDeviceAddressInfo scratchAddrInfo{};
-	 scratchAddrInfo.buffer = TLAS_SCRATCH_Buffer.buffer;
-	 buildInfo.scratchData.deviceAddress = vulkanContext.LogicalDevice.getBufferAddress(scratchAddrInfo);
-
-	 // 6. Build range info
-	 vk::AccelerationStructureBuildRangeInfoKHR buildRange{};
-	 buildRange.primitiveCount = static_cast<uint32_t>(totalPrimitiveCount);
-	 buildRange.primitiveOffset = 0;
-	 buildRange.firstVertex = 0;
-	 buildRange.transformOffset = 0;
-
-	 VkAccelerationStructureBuildRangeInfoKHR tempRange = buildRange;
-	 std::vector<VkAccelerationStructureBuildRangeInfoKHR*> rangeInfos = { &tempRange };
-
-	 // 7. Record and submit command buffer
-	 vk::CommandBuffer cmd = bufferManger.CreateSingleUseCommandBuffer(commandPool);
-	 VkAccelerationStructureBuildGeometryInfoKHR tempBuildInfo = buildInfo;
-
-	 vulkanContext.vkCmdBuildAccelerationStructuresKHR(cmd, 1, &tempBuildInfo, rangeInfos.data());
-	 bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd, vulkanContext.graphicsQueue);
- }
+	// Get size info
+	vk::AccelerationStructureBuildGeometryInfoKHR accelerationStructureBuildGeometryInfo = {};
+	accelerationStructureBuildGeometryInfo.type = vk::AccelerationStructureTypeKHR::eTopLevel;
+	accelerationStructureBuildGeometryInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace | vk::BuildAccelerationStructureFlagBitsKHR::eAllowUpdate;
+	accelerationStructureBuildGeometryInfo.geometryCount = 1;
+	accelerationStructureBuildGeometryInfo.pGeometries = &accelerationStructureGeometry;
 
 
- void App::UpdateTLASInstanceBuffer()
- {
 
-	 std::vector< vk::AccelerationStructureInstanceKHR> Instances; // array of instances
-	 uint32_t ParentObject = 0;
-	 uint32_t ObjectID = 0;
-	 uint32_t TempID = 0;
+	uint32_t primitive_count = totalPrimitiveCount;
 
-	 // pupulate instance data into the array 
-	 for (int i = 0; i < Models.size(); i++)
-	 {
-		 glm::mat4 modelInstanceTransform = Models[i]->Instances[0]->GetTransformationMatrix();
+	VkAccelerationStructureBuildGeometryInfoKHR TEMP_ACCELERATION_INFO = accelerationStructureBuildGeometryInfo;
+	VkAccelerationStructureBuildSizesInfoKHR TEMP_ACCELERATION_STRUCTURE_BUILD_SIZE{};
+	TEMP_ACCELERATION_STRUCTURE_BUILD_SIZE.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
+	TEMP_ACCELERATION_STRUCTURE_BUILD_SIZE.pNext = nullptr;
 
-		 for (int j = 0; j < Models[i]->BLAS_Datas.size(); j++)
-		 {
-			 vk::AccelerationStructureDeviceAddressInfoKHR blasinfo{};
-			 blasinfo.accelerationStructure = Models[i]->BLAS_Datas[j].BLAS;
+	vulkanContext.vkGetAccelerationStructureBuildSizesKHR(vulkanContext.LogicalDevice,
+		VkAccelerationStructureBuildTypeKHR::VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+		&TEMP_ACCELERATION_INFO, &primitive_count, &TEMP_ACCELERATION_STRUCTURE_BUILD_SIZE);
 
-			 VkAccelerationStructureDeviceAddressInfoKHR Temp = blasinfo;
+	vk::AccelerationStructureBuildSizesInfoKHR accelerationStructureBuildSizesInfo = TEMP_ACCELERATION_STRUCTURE_BUILD_SIZE;
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+												  ///////CREATE TLAS BUFFER////////
+	TLAS_Buffer.BufferID = "Scene TLAS Buffer";
+
+	bufferManger.CreateDeviceBuffer(&TLAS_Buffer,
+		accelerationStructureBuildSizesInfo.accelerationStructureSize,
+		vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
+		vk::BufferUsageFlagBits::eShaderDeviceAddress,
+		commandPool,
+		vulkanContext.graphicsQueue);
+
+	// Acceleration structure
+	vk::AccelerationStructureCreateInfoKHR accelerationStructureCreate_info{};
+	accelerationStructureCreate_info.buffer = TLAS_Buffer.buffer;
+	accelerationStructureCreate_info.size = accelerationStructureBuildSizesInfo.accelerationStructureSize;
+	accelerationStructureCreate_info.type = vk::AccelerationStructureTypeKHR::eTopLevel;
+
+	VkAccelerationStructureCreateInfoKHR TEMP_ACCELERATION_STRUCTURE_CREATE_INFO = accelerationStructureCreate_info;
+	VkAccelerationStructureKHR TEMP_TLAS;
+	vulkanContext.vkCreateAccelerationStructureKHR(vulkanContext.LogicalDevice, &TEMP_ACCELERATION_STRUCTURE_CREATE_INFO, nullptr, &TEMP_TLAS);
+	TLAS = TEMP_TLAS;
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+										   ///////CREATE TLAS SCRATCH BUFFER////////
+
+	TLAS_SCRATCH_Buffer.BufferID = "TLAS_ScratchBuffer Buffer";
+	bufferManger.CreateDeviceBuffer(&TLAS_SCRATCH_Buffer,
+		accelerationStructureBuildSizesInfo.buildScratchSize,
+		vk::BufferUsageFlagBits::eStorageBuffer |
+		vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
+		vk::BufferUsageFlagBits::eShaderDeviceAddress,
+		commandPool,
+		vulkanContext.graphicsQueue);
+
+	vk::BufferDeviceAddressInfo TLAS_ScratchBufferAdress;
+	TLAS_ScratchBufferAdress.buffer = TLAS_SCRATCH_Buffer.buffer;
+
+	accelerationStructureBuildGeometryInfo.dstAccelerationStructure = TLAS;
+	accelerationStructureBuildGeometryInfo.scratchData.deviceAddress = vulkanContext.LogicalDevice.getBufferAddress(TLAS_ScratchBufferAdress);
+	accelerationStructureBuildGeometryInfo.mode = vk::BuildAccelerationStructureModeKHR::eBuild;
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+											   ///////BUILD TLAS ON THE GPU ////////
+
+	vk::CommandBuffer cmd = bufferManger.CreateSingleUseCommandBuffer(commandPool);
+
+	vk::AccelerationStructureBuildRangeInfoKHR BuildRangeInfo;
+	BuildRangeInfo.firstVertex = 0;
+	BuildRangeInfo.primitiveCount = primitive_count;
+	BuildRangeInfo.primitiveOffset = 0;
+	BuildRangeInfo.transformOffset = 0;
+
+	VkAccelerationStructureBuildRangeInfoKHR tempRange = BuildRangeInfo;
+	std::vector<VkAccelerationStructureBuildRangeInfoKHR*> accelerationBuildStructureRangeInfos = { &tempRange };
+
+	VkAccelerationStructureBuildGeometryInfoKHR tempGeometryInfo = accelerationStructureBuildGeometryInfo;
+
+	vulkanContext.vkCmdBuildAccelerationStructuresKHR(cmd, 1,
+		&tempGeometryInfo,
+		accelerationBuildStructureRangeInfos.data());
+
+	bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd, vulkanContext.graphicsQueue);
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+}
+
+void App::UpdateTLAS()
+{
+	// 1. Update instance data on the GPU
+	UpdateTLASInstanceBuffer();
+
+	size_t totalPrimitiveCount = 0;
+	for (const auto& model : Models) {
+		totalPrimitiveCount += model->BLAS_Datas.size();
+	}
+
+	// 2. Reuse instance buffer device address
+	vk::BufferDeviceAddressInfo instanceInfo{};
+	instanceInfo.buffer = TLAS_InstanceData.buffer;
+
+	vk::DeviceOrHostAddressConstKHR instanceDeviceAddress{};
+	instanceDeviceAddress.deviceAddress = vulkanContext.LogicalDevice.getBufferAddress(instanceInfo);
+
+	// 3. Setup geometry
+	vk::AccelerationStructureGeometryKHR geometry{};
+	geometry.geometryType = vk::GeometryTypeKHR::eInstances;
+	geometry.flags = vk::GeometryFlagBitsKHR::eOpaque;
+	geometry.geometry.instances.sType = vk::StructureType::eAccelerationStructureGeometryInstancesDataKHR;
+	geometry.geometry.instances.arrayOfPointers = VK_FALSE;
+	geometry.geometry.instances.data = instanceDeviceAddress;
+
+	// 4. Build geometry info with UPDATE mode
+	vk::AccelerationStructureBuildGeometryInfoKHR buildInfo{};
+	buildInfo.type = vk::AccelerationStructureTypeKHR::eTopLevel;
+	buildInfo.flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace |
+		vk::BuildAccelerationStructureFlagBitsKHR::eAllowUpdate; // Must match initial build flags
+	buildInfo.geometryCount = 1;
+	buildInfo.pGeometries = &geometry;
+	buildInfo.mode = vk::BuildAccelerationStructureModeKHR::eUpdate;
+	buildInfo.srcAccelerationStructure = TLAS;
+	buildInfo.dstAccelerationStructure = TLAS;
+
+	// 5. Scratch buffer address
+	vk::BufferDeviceAddressInfo scratchAddrInfo{};
+	scratchAddrInfo.buffer = TLAS_SCRATCH_Buffer.buffer;
+	buildInfo.scratchData.deviceAddress = vulkanContext.LogicalDevice.getBufferAddress(scratchAddrInfo);
+
+	// 6. Build range info
+	vk::AccelerationStructureBuildRangeInfoKHR buildRange{};
+	buildRange.primitiveCount = static_cast<uint32_t>(totalPrimitiveCount);
+	buildRange.primitiveOffset = 0;
+	buildRange.firstVertex = 0;
+	buildRange.transformOffset = 0;
+
+	VkAccelerationStructureBuildRangeInfoKHR tempRange = buildRange;
+	std::vector<VkAccelerationStructureBuildRangeInfoKHR*> rangeInfos = { &tempRange };
+
+	// 7. Record and submit command buffer
+	vk::CommandBuffer cmd = bufferManger.CreateSingleUseCommandBuffer(commandPool);
+	VkAccelerationStructureBuildGeometryInfoKHR tempBuildInfo = buildInfo;
+
+	vulkanContext.vkCmdBuildAccelerationStructuresKHR(cmd, 1, &tempBuildInfo, rangeInfos.data());
+	bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd, vulkanContext.graphicsQueue);
+}
+
+
+void App::UpdateTLASInstanceBuffer()
+{
+
+	std::vector< vk::AccelerationStructureInstanceKHR> Instances; // array of instances
+	uint32_t ParentObject = 0;
+	uint32_t ObjectID = 0;
+	uint32_t TempID = 0;
+
+	// pupulate instance data into the array 
+	for (int i = 0; i < Models.size(); i++)
+	{
+		glm::mat4 modelInstanceTransform = Models[i]->Instances[0]->GetTransformationMatrix();
+
+		for (int j = 0; j < Models[i]->BLAS_Datas.size(); j++)
+		{
+			vk::AccelerationStructureDeviceAddressInfoKHR blasinfo{};
+			blasinfo.accelerationStructure = Models[i]->BLAS_Datas[j].BLAS;
+
+			VkAccelerationStructureDeviceAddressInfoKHR Temp = blasinfo;
 
 			// glm::mat4 localNodeTransform = Models[i]->BLAS_Datas[j].ModelMatrix;
 
-			 glm::mat4 finalMatrix = modelInstanceTransform;
+			glm::mat4 finalMatrix = modelInstanceTransform;
 
-			 VkTransformMatrixKHR transformMatrix = {
-					finalMatrix[0][0], finalMatrix[1][0], finalMatrix[2][0], finalMatrix[3][0], // Row 0
-					finalMatrix[0][1], finalMatrix[1][1], finalMatrix[2][1], finalMatrix[3][1], // Row 1
-					finalMatrix[0][2], finalMatrix[1][2], finalMatrix[2][2], finalMatrix[3][2], // Row 2
-			 };
+			VkTransformMatrixKHR transformMatrix = {
+				   finalMatrix[0][0], finalMatrix[1][0], finalMatrix[2][0], finalMatrix[3][0], // Row 0
+				   finalMatrix[0][1], finalMatrix[1][1], finalMatrix[2][1], finalMatrix[3][1], // Row 1
+				   finalMatrix[0][2], finalMatrix[1][2], finalMatrix[2][2], finalMatrix[3][2], // Row 2
+			};
 
-			 ParentObject = TempID++;
+			ParentObject = TempID++;
 
-			 uint32_t packedID = (ObjectID << 12) | (ParentObject & 0xFFF); //I have no idea how this works but it packs stuff together... Come back to this
+			uint32_t packedID = (ObjectID << 12) | (ParentObject & 0xFFF); //I have no idea how this works but it packs stuff together... Come back to this
 
-			 vk::AccelerationStructureInstanceKHR instance{};
-			 instance.transform = transformMatrix;
-			 instance.instanceCustomIndex = packedID;
-			 instance.mask = 0xFF;
-			 instance.instanceShaderBindingTableRecordOffset = 0;
-			 instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
-			 instance.accelerationStructureReference = vulkanContext.vkGetAccelerationStructureDeviceAddressKHR(vulkanContext.LogicalDevice, &Temp);
+			vk::AccelerationStructureInstanceKHR instance{};
+			instance.transform = transformMatrix;
+			instance.instanceCustomIndex = packedID;
+			instance.mask = 0xFF;
+			instance.instanceShaderBindingTableRecordOffset = 0;
+			instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+			instance.accelerationStructureReference = vulkanContext.vkGetAccelerationStructureDeviceAddressKHR(vulkanContext.LogicalDevice, &Temp);
 
-			 Instances.push_back(instance);
-		 }
-		 ObjectID++;
-	 }
-	 // send all instance data into the buffer
-	 bufferManger.CopyDataToBuffer(Instances.data(), TLAS_InstanceData);
- }
+			Instances.push_back(instance);
+		}
+		ObjectID++;
+	}
+	// send all instance data into the buffer
+	bufferManger.CopyDataToBuffer(Instances.data(), TLAS_InstanceData);
+}
 
 
 void App::createDescriptorPool()
 {
 	vk::DescriptorPoolSize Uniformpoolsize;
 	Uniformpoolsize.type = vk::DescriptorType::eUniformBuffer;
-	Uniformpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) *  100;
+	Uniformpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 100;
 
 	vk::DescriptorPoolSize Samplerpoolsize;
 	Samplerpoolsize.type = vk::DescriptorType::eCombinedImageSampler;
@@ -494,7 +493,7 @@ void App::createDescriptorPool()
 	StorageBufferpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 5;
 
 	std::array<	vk::DescriptorPoolSize, 5> poolSizes{ Uniformpoolsize ,Samplerpoolsize,
-		                                              AccelerationStructurepoolsize,StorageImagepoolsize,StorageBufferpoolsize };
+													  AccelerationStructurepoolsize,StorageImagepoolsize,StorageBufferpoolsize };
 
 	vk::DescriptorPoolCreateInfo poolInfo{};
 	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
@@ -504,7 +503,7 @@ void App::createDescriptorPool()
 
 	DescriptorPool = vulkanContext.LogicalDevice.createDescriptorPool(poolInfo, nullptr);
 
-	for(auto& model : Models)
+	for (auto& model : Models)
 	{
 		model->createDescriptorSets(DescriptorPool);
 	}
@@ -594,8 +593,8 @@ void App::createGBuffer()
 	gbuffer.Emissive.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	LightingPassImageData.ImageID = "Gbuffer LightingPass Texture";
-	bufferManger.CreateImage(&LightingPassImageData,swapchainextent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	LightingPassImageData.imageView = bufferManger.CreateImageView(&LightingPassImageData, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
+	bufferManger.CreateImage(&LightingPassImageData,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	LightingPassImageData.imageView = bufferManger.CreateImageView(&LightingPassImageData, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	LightingPassImageData.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	ReflectionMaskImageData.ImageID = "ReflectionMask Texture";
@@ -611,14 +610,16 @@ void App::createGBuffer()
 	Combined_FullScreenQuad->CreateImage(swapchainextent);
 	ssao_FullScreenQuad->CreateImage();
 	RT_Reflection->CreateStorageImage();
-	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&ReflectionMaskImageData);
+
+	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&ReflectionMaskImageData,&RT_Reflection->ReflectionPassImage);
 	ssao_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
 	ssr_FullScreenQuad->createDescriptorSets(DescriptorPool, LightingPassImageData, gbuffer.ViewSpaceNormal,gbuffer.ViewSpacePosition, DepthTextureData, ReflectionMaskImageData,gbuffer.Materials);
-	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, LightingPassImageData, SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo, RT_Reflection->ReflectionPassImage);
+	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, LightingPassImageData, SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo);
 	fxaa_FullScreenQuad->createDescriptorSets(DescriptorPool, Combined_FullScreenQuad->FinalResultImage);
 	Raytracing_Shadows->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
-	RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
 	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, LightingPassImageData,DepthTextureData);
+	RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
+
 
 	vk::CommandBuffer cmd =  bufferManger.CreateSingleUseCommandBuffer(commandPool);
 	ImageTransitionData TransitionToGeneral{};
@@ -690,9 +691,10 @@ void App::createGBuffer()
 		                                                  gbuffer.Albedo.imageView,
 		VK_IMAGE_LAYOUT_GENERAL);
 
-	SSGITextureId            = ImGui_ImplVulkan_AddTexture(SSGI_FullScreenQuad->SSGIPassLastFrameImage.imageSampler,
-		                                                   SSGI_FullScreenQuad->SSGIPassLastFrameImage.imageView,
-		VK_IMAGE_LAYOUT_GENERAL);
+	SSGITextureId            = ImGui_ImplVulkan_AddTexture(SSGI_FullScreenQuad->BlurPong_UPSampleFullRes.imageSampler,
+		                                                   SSGI_FullScreenQuad->BlurPong_UPSampleFullRes.imageView,
+		                                                   VK_IMAGE_LAYOUT_GENERAL);
+
 
 	RT_ReflectionTextureId = ImGui_ImplVulkan_AddTexture(RT_Reflection->ReflectionPassImage.imageSampler,
 		                                                 RT_Reflection->ReflectionPassImage.imageView,
@@ -800,7 +802,7 @@ void App::CreateGraphicsPipeline()
 
 
 	{
-		std::array<vk::Format, 1> colorFormats = { vk::Format::eR32G32B32A32Sfloat };
+		std::array<vk::Format, 1> colorFormats = { vk::Format::eR16G16B16A16Sfloat };
 
 	   vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 	   pipelineRenderingCreateInfo.colorAttachmentCount = 1;
@@ -920,7 +922,7 @@ void App::CreateGraphicsPipeline()
 
 	{
 
-		std::array<vk::Format, 1> colorFormats = { vk::Format::eR32G32B32A32Sfloat };
+		std::array<vk::Format, 1> colorFormats = { vk::Format::eR16G16B16A16Sfloat };
 
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
@@ -1048,7 +1050,7 @@ void App::CreateGraphicsPipeline()
 		 pipelineLayoutInfo.pushConstantRangeCount = 0;
 		 pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
-		 vk::Format skyBoxFormat = vk::Format::eR32G32B32A32Sfloat;
+		 vk::Format skyBoxFormat = vk::Format::eR16G16B16A16Sfloat;
 		 pipelineRenderingCreateInfo.pColorAttachmentFormats = &skyBoxFormat;
 
 		 SkyBoxpipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
@@ -1290,15 +1292,14 @@ void App::CreateGraphicsPipeline()
 
 	}
 
-
 	{
-		auto RayGen_ShaderCode        = readFile("../Shaders/Compiled_Shader_Files/Reflection_Raygen.rgen.spv");
+		auto RayGen_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/Reflection_Raygen.rgen.spv");
 		auto RayClosestHit_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/Reflection_ClosestHit.rchit.spv");
-		auto RayGenMiss_ShaderCode    = readFile("../Shaders/Compiled_Shader_Files/Reflection_Miss.rmiss.spv");
+		auto RayGenMiss_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/Reflection_Miss.rmiss.spv");
 
-		VkShaderModule RayGen_ShaderModule        = pipelineManager.createShaderModule(RayGen_ShaderCode);
+		VkShaderModule RayGen_ShaderModule = pipelineManager.createShaderModule(RayGen_ShaderCode);
 		VkShaderModule RayClosestHit_ShaderModule = pipelineManager.createShaderModule(RayClosestHit_ShaderCode);
-		VkShaderModule RayMiss_ShaderModule       = pipelineManager.createShaderModule(RayGenMiss_ShaderCode);
+		VkShaderModule RayMiss_ShaderModule = pipelineManager.createShaderModule(RayGenMiss_ShaderCode);
 
 
 		vk::PipelineShaderStageCreateInfo RayGen_ShaderStageInfo{};
@@ -1320,8 +1321,8 @@ void App::CreateGraphicsPipeline()
 		RayMiss_ShaderStageInfo.pName = "main";
 
 		std::vector<vk::PipelineShaderStageCreateInfo> ShaderStages = { RayGen_ShaderStageInfo ,
-			                                                            RayClosestHit_ShaderStageInfo,
-																	    RayMiss_ShaderStageInfo };
+																		RayClosestHit_ShaderStageInfo,
+																		RayMiss_ShaderStageInfo };
 
 		vk::RayTracingShaderGroupCreateInfoKHR RayGen_GroupInfo{};
 		RayGen_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
@@ -1352,6 +1353,7 @@ void App::CreateGraphicsPipeline()
 			RayGen_GroupInfo,
 			RayClosestHit_GroupInfo,
 			Miss_GroupInfo,
+			Miss_GroupInfo,
 		};
 
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -1369,8 +1371,6 @@ void App::CreateGraphicsPipeline()
 		vulkanContext.LogicalDevice.destroyShaderModule(RayMiss_ShaderModule);
 
 	}
-
-
 
 	{	
 		vk::Format formats[1] = { vk::Format::eR16G16B16A16Sfloat };
@@ -1399,11 +1399,10 @@ void App::CreateGraphicsPipeline()
 
 
 	{
-		vk::Format formats[1] = { vk::Format::eR16G16B16A16Sfloat };
 
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-		pipelineRenderingCreateInfo.pColorAttachmentFormats = formats;
+		pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext.swapchainformat;
 
 		vk::PushConstantRange range{};
 		range.setOffset(0);
@@ -1425,11 +1424,9 @@ void App::CreateGraphicsPipeline()
 
 
 	{
-		vk::Format formats[1] = { vk::Format::eR16G16B16A16Sfloat };
-
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
 		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-		pipelineRenderingCreateInfo.pColorAttachmentFormats = formats;
+		pipelineRenderingCreateInfo.pColorAttachmentFormats = &vulkanContext.swapchainformat;
 
 		vk::PushConstantRange range{};
 		range.setOffset(0);
@@ -1508,8 +1505,8 @@ void App::createShaderBindingTable() {
 			shaderHandleStorage.data());
 
 		Reflection_raygenShaderBindingTableBuffer.BufferID = "Reflection raygen Shader Binding Table Buffer";
-		Reflection_missShaderBindingTableBuffer.BufferID   = "Reflection miss Shader Binding Table Buffer";
-		Reflection_hitShaderBindingTableBuffer.BufferID    = "Reflection hit Shader Binding Table Buffer";
+		Reflection_missShaderBindingTableBuffer.BufferID = "Reflection miss Shader Binding Table Buffer";
+		Reflection_hitShaderBindingTableBuffer.BufferID = "Reflection hit Shader Binding Table Buffer";
 
 		bufferManger.CreateBuffer(&Reflection_raygenShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
 		bufferManger.CreateBuffer(&Reflection_missShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
@@ -1738,7 +1735,6 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 	Raytracing_Shadows->UpdateUniformBuffer(currentImage, lights);
     SSGI_FullScreenQuad->UpdateUniformBuffer(currentImage, lights,deltaTime);
 	RT_Reflection->UpdateUniformBuffer(currentImage, lights, Models);
-
 
 }
 
@@ -2040,6 +2036,33 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 
+	{
+		ImageTransitionData TransitiontoGeneralRT{};
+		TransitiontoGeneralRT.oldlayout = vk::ImageLayout::eUndefined;
+		TransitiontoGeneralRT.newlayout = vk::ImageLayout::eGeneral;
+		TransitiontoGeneralRT.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitiontoGeneralRT.SourceAccessflag = vk::AccessFlagBits::eNone;
+		TransitiontoGeneralRT.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
+		TransitiontoGeneralRT.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
+		TransitiontoGeneralRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+
+
+		bufferManger.TransitionImage(commandBuffer, &RT_Reflection->ReflectionPassImage, TransitiontoGeneralRT);
+
+
+
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_ReflectionPassPipeline);
+
+		RT_Reflection->Draw(
+			Reflection_raygenShaderBindingTableBuffer,
+			Reflection_hitShaderBindingTableBuffer,
+			Reflection_missShaderBindingTableBuffer,
+			commandBuffer,
+			RT_ReflectionPipelineLayout,
+			currentFrame);
+	}
+
+
 	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DirectLighting_Label);
     /////////////////// LIGHTING PASS ///////////////////////// 
 	{
@@ -2067,35 +2090,9 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 		commandBuffer.endRendering();
 	}
+
 	 /////////////////// LIGHTING PASS END ///////////////////////// 
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
-
-	{
-		ImageTransitionData TransitiontoGeneralRT{};
-		TransitiontoGeneralRT.oldlayout = vk::ImageLayout::eUndefined;
-		TransitiontoGeneralRT.newlayout = vk::ImageLayout::eGeneral;
-		TransitiontoGeneralRT.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitiontoGeneralRT.SourceAccessflag = vk::AccessFlagBits::eNone;
-		TransitiontoGeneralRT.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
-		TransitiontoGeneralRT.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
-		TransitiontoGeneralRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
-
-
-	   bufferManger.TransitionImage(commandBuffer, &RT_Reflection->ReflectionPassImage, TransitiontoGeneralRT);
-
-
-
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_ReflectionPassPipeline);
-
-		RT_Reflection->Draw(
-			Reflection_raygenShaderBindingTableBuffer,
-			Reflection_hitShaderBindingTableBuffer,
-			Reflection_missShaderBindingTableBuffer,
-			commandBuffer,
-			RT_ReflectionPipelineLayout,
-			currentFrame);
-	}
-
 
 	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, SSR_Label);
 	{	
@@ -2182,6 +2179,83 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	}
 
+	{
+		ImageTransitionData TransitionTOSrc{};
+		TransitionTOSrc.oldlayout = vk::ImageLayout::eGeneral;
+		TransitionTOSrc.newlayout = vk::ImageLayout::eTransferSrcOptimal;
+		TransitionTOSrc.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitionTOSrc.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
+		TransitionTOSrc.DestinationAccessflag = vk::AccessFlagBits::eTransferRead;
+		TransitionTOSrc.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
+		TransitionTOSrc.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
+
+		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionTOSrc);
+
+		ImageTransitionData TransitionTODst{};
+		TransitionTODst.oldlayout = vk::ImageLayout::eGeneral;
+		TransitionTODst.newlayout = vk::ImageLayout::eTransferDstOptimal;
+		TransitionTODst.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitionTODst.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
+		TransitionTODst.DestinationAccessflag = vk::AccessFlagBits::eTransferWrite;
+		TransitionTODst.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
+		TransitionTODst.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
+
+
+		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionTODst);
+
+
+		vk::ImageSubresourceLayers SrcSubresourceLayers;
+		SrcSubresourceLayers.mipLevel = 0;
+		SrcSubresourceLayers.baseArrayLayer = 0;
+	    SrcSubresourceLayers.layerCount = 1;
+		SrcSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
+
+		vk::ImageSubresourceLayers DstSubresourceLayers;
+		DstSubresourceLayers.mipLevel = 0;
+		DstSubresourceLayers.baseArrayLayer = 0;
+		DstSubresourceLayers.layerCount = 1;
+		DstSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
+
+		vk::Extent3D swapchainExtenthalf = {
+			SSGI_FullScreenQuad->SSGI_ImageFullResolution.width ,
+			SSGI_FullScreenQuad->SSGI_ImageFullResolution.height,
+			1
+		};
+
+		bufferManger.CopyImageToAnotherImage(commandBuffer,
+			                                  SSGI_FullScreenQuad->SSGIAccumilationImage,  vk::ImageLayout::eTransferSrcOptimal, SrcSubresourceLayers,
+			                                  SSGI_FullScreenQuad->SSGIPassLastFrameImage, vk::ImageLayout::eTransferDstOptimal, DstSubresourceLayers,
+			                                  swapchainExtenthalf, vulkanContext.graphicsQueue);
+
+
+
+
+
+
+		ImageTransitionData TransitionSrcBack{};
+		TransitionSrcBack.oldlayout = vk::ImageLayout::eTransferSrcOptimal;
+		TransitionSrcBack.newlayout = vk::ImageLayout::eGeneral;
+		TransitionSrcBack.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitionSrcBack.SourceAccessflag = vk::AccessFlagBits::eTransferRead; 
+		TransitionSrcBack.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
+		TransitionSrcBack.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
+		TransitionSrcBack.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
+
+		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionSrcBack);
+
+
+		ImageTransitionData TransitionDstToSample{};
+		TransitionDstToSample.oldlayout = vk::ImageLayout::eTransferDstOptimal;
+		TransitionDstToSample.newlayout = vk::ImageLayout::eGeneral;
+		TransitionDstToSample.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitionDstToSample.SourceAccessflag = vk::AccessFlagBits::eTransferWrite;
+		TransitionDstToSample.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
+		TransitionDstToSample.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
+		TransitionDstToSample.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
+
+		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionDstToSample);
+
+	}
 
 	{
 		vk::RenderingAttachmentInfo TA_ImageAttachInfo;
@@ -2217,84 +2291,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, TA_SSGIPipeline);
 		SSGI_FullScreenQuad->DrawTA(commandBuffer, TA_SSGIPipelineLayout, currentFrame);
 		commandBuffer.endRendering();
-	}
-
-	{
-		ImageTransitionData TransitionTOSrc{};
-		TransitionTOSrc.oldlayout = vk::ImageLayout::eGeneral;
-		TransitionTOSrc.newlayout = vk::ImageLayout::eTransferSrcOptimal;
-		TransitionTOSrc.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionTOSrc.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
-		TransitionTOSrc.DestinationAccessflag = vk::AccessFlagBits::eTransferRead;
-		TransitionTOSrc.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
-		TransitionTOSrc.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
-
-		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionTOSrc);
-
-		ImageTransitionData TransitionTODst{};
-		TransitionTODst.oldlayout = vk::ImageLayout::eGeneral;
-		TransitionTODst.newlayout = vk::ImageLayout::eTransferDstOptimal;
-		TransitionTODst.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionTODst.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
-		TransitionTODst.DestinationAccessflag = vk::AccessFlagBits::eTransferWrite;
-		TransitionTODst.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
-		TransitionTODst.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
-
-
-		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionTODst);
-
-
-		vk::ImageSubresourceLayers SrcSubresourceLayers;
-		SrcSubresourceLayers.mipLevel = 0;
-		SrcSubresourceLayers.baseArrayLayer = 0;
-		SrcSubresourceLayers.layerCount = 1;
-		SrcSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
-
-		vk::ImageSubresourceLayers DstSubresourceLayers;
-		DstSubresourceLayers.mipLevel = 0;
-		DstSubresourceLayers.baseArrayLayer = 0;
-		DstSubresourceLayers.layerCount = 1;
-		DstSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
-
-		vk::Extent3D swapchainExtenthalf = {
-			SSGI_FullScreenQuad->SSGI_ImageFullResolution.width ,
-			SSGI_FullScreenQuad->SSGI_ImageFullResolution.height,
-			1
-		};
-
-		bufferManger.CopyImageToAnotherImage(commandBuffer,
-			SSGI_FullScreenQuad->SSGIAccumilationImage, vk::ImageLayout::eTransferSrcOptimal, SrcSubresourceLayers,
-			SSGI_FullScreenQuad->SSGIPassLastFrameImage, vk::ImageLayout::eTransferDstOptimal, DstSubresourceLayers,
-			swapchainExtenthalf, vulkanContext.graphicsQueue);
-
-
-
-
-
-
-		ImageTransitionData TransitionSrcBack{};
-		TransitionSrcBack.oldlayout = vk::ImageLayout::eTransferSrcOptimal;
-		TransitionSrcBack.newlayout = vk::ImageLayout::eGeneral;
-		TransitionSrcBack.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionSrcBack.SourceAccessflag = vk::AccessFlagBits::eTransferRead;
-		TransitionSrcBack.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
-		TransitionSrcBack.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
-		TransitionSrcBack.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
-
-		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionSrcBack);
-
-
-		ImageTransitionData TransitionDstToSample{};
-		TransitionDstToSample.oldlayout = vk::ImageLayout::eTransferDstOptimal;
-		TransitionDstToSample.newlayout = vk::ImageLayout::eGeneral;
-		TransitionDstToSample.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitionDstToSample.SourceAccessflag = vk::AccessFlagBits::eTransferWrite;
-		TransitionDstToSample.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eShaderRead;
-		TransitionDstToSample.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
-		TransitionDstToSample.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
-
-		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionDstToSample);
-
 	}
 
 	{
@@ -2771,6 +2767,7 @@ void App::destroy_GbufferImages()
 	SSGI_FullScreenQuad->DestroyImage();
 	Combined_FullScreenQuad->DestroyImage();
 	RT_Reflection->DestroyStorageImage();
+
 }
 
 void App::recreateSwapChain() {

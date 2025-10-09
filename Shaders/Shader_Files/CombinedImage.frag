@@ -6,7 +6,6 @@ layout (binding = 1) uniform sampler2D GITexture;
 layout (binding = 2) uniform sampler2D SSAOTexture;                
 layout (binding = 3) uniform sampler2D MaterialsTexture;                
 layout (binding = 4) uniform sampler2D AlbedoTexture;                
-layout (binding = 5) uniform sampler2D RTreflection;                
 
 layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragColor;
@@ -53,19 +52,6 @@ vec3 aces_approx(vec3 v)
     return clamp((v*(a*v+b))/(v*(c*v+d)+e), 0.0f, 1.0f);
 }
 
-float bayerDither(vec2 uv) {
-    int x = int(mod(uv.x, 4.0));
-    int y = int(mod(uv.y, 4.0));
-    int index = x + y * 4;
-    float ditherTable[16] = float[16](
-        0.0,  8.0,  2.0, 10.0,
-        12.0, 4.0, 14.0, 6.0,
-        3.0, 11.0, 1.0,  9.0,
-        15.0, 7.0, 13.0, 5.0
-    );
-    return (ditherTable[index] / 16.0 - 0.5) / 255.0; 
-}
-
 void main() {
 
      float Brightness    = pc.Brightness_Saturation_Concentration_Padding.x;
@@ -79,7 +65,7 @@ void main() {
      float SSAO            = texture(SSAOTexture, inTexCoord).r;
      float MaterialAO      = texture(MaterialsTexture, inTexCoord).b;
      vec3 Albedo           = texture(AlbedoTexture, inTexCoord).rgb;
-
+     
 
      float FinalAO         = SSAO * MaterialAO;
      vec3 IndirectLighting = GI * Albedo / PI;
@@ -87,7 +73,7 @@ void main() {
 
      if(FinalAO < 0.1){FinalAO = 1;}
 
-     vec3 FinalColor = ((DirectLighting) + IndirectLighting * 1.5);
+     vec3 FinalColor = (DirectLighting + IndirectLighting);
      vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, Brightness, Saturation, Concentration);
 
     float luma = rgb2luma(CorrectedColor);
@@ -96,7 +82,6 @@ void main() {
 
     vec3 gammaCorrected = pow(clamp(CorrectedColor, 0.0, 1.0), vec3(dynamicGamma));
     vec3 tonemapped = aces_approx(gammaCorrected);
-    tonemapped += vec3(bayerDither(gl_FragCoord.xy));
 
-   outFragColor = vec4(clamp(GI * 100, 0.0, 1.0), 1.0);
+     outFragColor = vec4(tonemapped, 1.0);
 }

@@ -16,8 +16,8 @@ layout (binding = 5) uniform sampler2D MaterialTexture;
 layout (location = 0) in vec2 inTexCoord;           
 layout (location = 0) out vec4 outFragcolor;
 
-const int MAX_ITERATION = 32;
-const int NUM_BINARY_SEARCH_SAMPLES = 5;
+const int MAX_ITERATION = 0;
+const int NUM_BINARY_SEARCH_SAMPLES = 0;
 float MAX_THICKNESS = 0.0001;
 
 vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal)

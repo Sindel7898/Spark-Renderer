@@ -82,7 +82,7 @@ void VulkanContext::SelectGPU_CreateDevice()
 	vk::PhysicalDeviceVulkan12Features features_1_2{};
 	features_1_2.sType = vk::StructureType::ePhysicalDeviceVulkan12Features;
 	features_1_2.bufferDeviceAddress = vk::True;
-	features_1_2.descriptorIndexing  = vk::True;
+	features_1_2.descriptorIndexing = vk::True;
 	features_1_2.bufferDeviceAddress = vk::True;
 	features_1_2.descriptorBindingPartiallyBound = vk::True;
 	features_1_2.runtimeDescriptorArray = vk::True;
@@ -244,7 +244,6 @@ vk::Format VulkanContext::FindCompatableDepthFormat()
 void VulkanContext::ResetTemporalAccumilation()
 {
 	AccumilationCount = 0;
-	bAccumulationWasReset = true; 
 }
 
 void VulkanContext::destroy_swapchain()

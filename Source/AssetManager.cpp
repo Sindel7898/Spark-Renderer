@@ -38,7 +38,7 @@ const std::vector<StoredImageData>& AssetManager::GetStoredImageData(const std::
 	return FoundData->second;
 }
 
- StoredModelData& AssetManager::GetStoredModelData(const std::string& FilePath)
+const StoredModelData& AssetManager::GetStoredModelData(const std::string& FilePath)
 {
 	// find the data associated to the filepath and return it 
 

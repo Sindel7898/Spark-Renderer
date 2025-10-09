@@ -18,7 +18,7 @@ public:
     void CreateVertexAndIndexBuffer() override;
     void createDescriptorSetLayout() override;
     void UpdataeUniformBufferData();
-    void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData SSGIImage, ImageData SSAOIImage, ImageData MaterialImage, ImageData AlbedoImage, ImageData ReflectionsImage);
+    void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData SSGIImage, ImageData SSAOIImage, ImageData MaterialImage, ImageData AlbedoImage);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
     void CreateImage(vk::Extent3D imageExtent);
     void DestroyImage();
@@ -28,10 +28,10 @@ public:
     ImageData FinalResultImage;
 
     float Brightness = 1.0;
-    float Saturation = 1.7;
-    float Concentration = 1.0;
-    float MaxGamma = 1.0;
-    float MinGamma = 0.6;
+    float Saturation = 1.0;
+    float Concentration = 1.04;
+    float MaxGamma = 0.98;
+    float MinGamma = 0.92;
 
 private:
 
