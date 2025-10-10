@@ -81,7 +81,7 @@ void main() {
     float dynamicGamma = mix(MinGamma, MaxGamma, darkFactor);  // gamma = 0.7 in darks, 1.0 in brights
 
     vec3 gammaCorrected = pow(clamp(CorrectedColor, 0.0, 1.0), vec3(dynamicGamma));
-    vec3 tonemapped = aces_approx(gammaCorrected);
+    //vec3 tonemapped = aces_approx(gammaCorrected);
 
-     outFragColor = vec4(tonemapped, 1.0);
+     outFragColor = vec4(gammaCorrected, 1.0);
 }

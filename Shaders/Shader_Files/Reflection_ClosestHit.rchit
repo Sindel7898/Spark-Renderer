@@ -129,11 +129,11 @@ void main()
 
     vec3 bary = vec3(1.0 - attribs.hitUV.x - attribs.hitUV.y, attribs.hitUV.x, attribs.hitUV.y);
 
-      vec3 VertexPosition = normalize(
+      vec3 VertexPosition = 
         v0.position_Padding.xyz * bary.x +
         v1.position_Padding.xyz * bary.y +
-        v2.position_Padding.xyz * bary.z
-    );
+        v2.position_Padding.xyz * bary.z;
+
 
     vec3 Normal = normalize(
         v0.normal_Padding.xyz * bary.x +
@@ -169,7 +169,7 @@ void main()
     vec3 NormalTexture = texture(Normal_AssetImages[nonuniformEXT(primitiveID)], TexCoord).rgb * 2.0 - vec3(1.0);
     vec3 tnorm = normalize(WorldSpaceTBN * NormalTexture);
 
-
+    Normal = tnorm;
 
     ///////////////////////////////////////////////
     vec3  LightDir = vec3(1,1,1);
@@ -233,6 +233,6 @@ void main()
 
      payload.Color    = totalLighting.xyz;
      payload.Distance = gl_RayTmaxEXT;
-     payload.Normal   = tnorm;
+     payload.Normal   = Normal;
 
  }

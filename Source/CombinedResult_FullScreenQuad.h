@@ -29,7 +29,7 @@ public:
 
     float Brightness = 1.0;
     float Saturation = 1.0;
-    float Concentration = 1.04;
+    float Concentration = 1.0;
     float MaxGamma = 0.98;
     float MinGamma = 0.92;
 

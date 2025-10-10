@@ -47,7 +47,7 @@
 
 	auto model1 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf" ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	
-    auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	//auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	//
 	//auto model4 = std::shared_ptr<Model>(new Model("../Textures/EmptyCornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
@@ -56,28 +56,28 @@
 
 	//auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	//auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	
-    model1.get()->Instances[0]->SetPostion(glm::vec3(-4.282, 2.172, -6.313));
+    model1.get()->Instances[0]->SetPostion(glm::vec3(-14.224, -0.329, 0.357));
     model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
-    model1.get()->Instances[0]->SetScale(glm::vec3(0.050, 0.050, 0.050));
+    model1.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
     model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
     model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
     
-    model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
-    model2.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
-    model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-    model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+    //model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
+    //model2.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
+    //model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+    //model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
     
-    model3.get()->Instances[0]->SetPostion(glm::vec3(4.047, 8.914, 2.195));
-    model3.get()->Instances[0]->SetRotation(glm::vec3(-180.000, -44.147, 180.000));
-    model3.get()->Instances[0]->SetScale(glm::vec3(0.050, 0.050, 0.050));
+    model3.get()->Instances[0]->SetPostion(glm::vec3(7.153, -0.523, -2.166));
+    model3.get()->Instances[0]->SetRotation(glm::vec3(179.997, 44.147, 179.993));
+    model3.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
     model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
     model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 	
-	//model11.get()->Instances[0]->SetScale(glm::vec3(5.000, 5.000, 5.000));
-	//model11.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	//model11.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	model11.get()->Instances[0]->SetScale(glm::vec3(5.000, 5.000, 5.000));
+	model11.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	model11.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
 	//model4.get()->Instances[0]->SetPostion(glm::vec3(-44.980, 0, 0));
 	//model4.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
@@ -95,11 +95,11 @@
 	////
 	////
     Models.push_back(std::move(model1));
-    Models.push_back(std::move(model2));
+    //Models.push_back(std::move(model2));
 	Models.push_back(std::move(model3));
 	//Models.push_back(std::move(model4));
 	//Models.push_back(std::move(model5));
-	//Models.push_back(std::move(model11));
+	Models.push_back(std::move(model11));
 
 
 
@@ -168,32 +168,32 @@
 	//lights[3]->color = glm::vec3(0.431, 0.337, 0.318);
 
 
-    lights[0]->SetPosition(glm::vec3(-16.674, -2.646, 9.023));
+    lights[0]->SetPosition(glm::vec3(-30.433, 13.309, 1.656));
 	lights[0]->lightType = 1;
-	lights[0]->lightIntensity = 5.000;
+	lights[0]->lightIntensity = 2;
 	lights[0]->CastShadowsSwitch(true);
 	lights[0]->ambientStrength = 0;
 	lights[0]->SetScale(glm::vec3(0.200, 0.200, 0.200));
 	
-	lights[1]->SetPosition(glm::vec3(7.298, 1.908, 4.860));
+	lights[1]->SetPosition(glm::vec3(28.060, 9.563, -1.864));
 	lights[1]->SetScale(glm::vec3(0.200, 0.200, 0.200));
 	lights[1]->CastShadowsSwitch(true);
 	lights[1]->ambientStrength = 0;
-	lights[1]->lightIntensity = 5.000;
+	lights[1]->lightIntensity = 3.000;
 	lights[1]->lightType = 1;
 	
 	
-	lights[2]->SetPosition(glm::vec3(21.394, -2.795, 4.368));
+	lights[2]->SetPosition(glm::vec3(22.204, 23.480, -1.704));
 	lights[2]->lightType = 1;
-	lights[2]->lightIntensity = 0;
+	lights[2]->lightIntensity = 3.000;
 	lights[2]->CastShadowsSwitch(true);
 	lights[2]->ambientStrength = 0;
 	lights[2]->SetScale(glm::vec3(0.200, 0.200, 0.200));
 	
 	
-	lights[3]->SetPosition(glm::vec3(1.498, -2.099, 23.667));
+	lights[3]->SetPosition(glm::vec3(4.620, 22.513, -5.577));
 	lights[3]->lightType = 1;
-	lights[3]->lightIntensity = 0;
+	lights[3]->lightIntensity = 3.000;
 	lights[3]->CastShadowsSwitch(true);
 	lights[3]->ambientStrength = 0;
 	lights[3]->SetScale(glm::vec3(0.200, 0.200, 0.200));
@@ -201,8 +201,8 @@
 	
 	lights[0]->color = glm::vec3(1, 1, 1);
 	lights[1]->color = glm::vec3(1, 1, 1);
-	lights[2]->color = glm::vec3(0, 0, 0);;
-	lights[3]->color = glm::vec3(0, 0, 0);;
+	lights[2]->color = glm::vec3(1, 0, 0);;
+	lights[3]->color = glm::vec3(0, 0, 1);;
 
 
 	for (auto& l : lights) {
