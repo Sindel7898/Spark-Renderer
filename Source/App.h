@@ -98,7 +98,7 @@ public:
 	void destroy_GbufferImages();
 
 	bool framebufferResized = false;
-	int DefferedDecider = 8;
+	int DefferedDecider = 9;
 
 	bool bWireFrame = false;
 	//Drawables
@@ -136,6 +136,7 @@ public:
 	VkDescriptorSet SSAOTextureId;
 	VkDescriptorSet SSGITextureId;
 	VkDescriptorSet RT_ReflectionTextureId;
+	VkDescriptorSet RT_BluredReflectionTextureId;
 
 
 	std::vector<std::shared_ptr<Model>> Models;
@@ -175,6 +176,7 @@ private:
 	vk::PipelineLayout         SSGIPipelineLayout = nullptr;
 	vk::PipelineLayout         TA_SSGIPipelineLayout = nullptr;
 	vk::PipelineLayout         BluredSSGIPipelineLayout = nullptr;
+	vk::PipelineLayout         BluredRTreflectionsPipelineLayout = nullptr;
 	vk::PipelineLayout         CombinedImagePipelineLayout = nullptr;
 
 	vk::Pipeline               DeferedLightingPassPipeline = nullptr;
@@ -190,6 +192,7 @@ private:
 	vk::Pipeline               SSGIPipeline = nullptr;
 	vk::Pipeline               TA_SSGIPipeline = nullptr;
 	vk::Pipeline               BluredSSGIPipeline = nullptr;
+	vk::Pipeline               BluredRTreflectionPipeline = nullptr;
 	vk::Pipeline               CombinedImagePassPipeline = nullptr;
 
 

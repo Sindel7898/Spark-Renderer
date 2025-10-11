@@ -400,8 +400,8 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 	case 5: ImGui::Image((ImTextureID)appref->LightingAndReflectionsRenderTextureId, viewportSize); break;
 	case 6: ImGui::Image((ImTextureID)appref->SSGITextureId, viewportSize); break;
 	case 7: ImGui::Image((ImTextureID)appref->RT_ReflectionTextureId, viewportSize); break;
-	case 8: ImGui::Image((ImTextureID)appref->FinalRenderTextureId, viewportSize); break;
-	}
+	case 8: ImGui::Image((ImTextureID)appref->RT_BluredReflectionTextureId, viewportSize); break;
+	case 9: ImGui::Image((ImTextureID)appref->FinalRenderTextureId, viewportSize); break;}
 
 	ImGuizmo::SetOrthographic(false);
 	ImGuizmo::SetDrawlist();

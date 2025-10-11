@@ -20,6 +20,7 @@ glslc.exe Shaders\Shader_Files\CombinedImage.frag         -o  Shaders\Compiled_S
 glslc.exe Shaders\Shader_Files\SSGI.frag                  -o  Shaders\Compiled_Shader_Files\SSGI.frag.spv
 glslc.exe Shaders\Shader_Files\TemporalAccumulation.frag  -o  Shaders\Compiled_Shader_Files\TemporalAccumulation.frag.spv
 glslc.exe Shaders\Shader_Files\SSGI_Blur_Shader.frag      -o  Shaders\Compiled_Shader_Files\SSGI_Blur_Shader.frag.spv
+glslc.exe Shaders\Shader_Files\RT-ReflectionI_Blur_Shader.frag      -o  Shaders\Compiled_Shader_Files\RT-ReflectionI_Blur_Shader.frag.spv
 
 glslc.exe Shaders/Shader_Files/raygen.rgen          -o Shaders/Compiled_Shader_Files/raygen.rgen.spv          --target-env=vulkan1.4
 glslc.exe Shaders/Shader_Files/RayGenMiss.rmiss     -o Shaders/Compiled_Shader_Files/RayGenMiss.rmiss.spv     --target-env=vulkan1.4
@@ -31,6 +32,5 @@ glslc.exe Shaders/Shader_Files/Reflection_Miss.rmiss       -o Shaders/Compiled_S
 
 
  
-
 pause
 

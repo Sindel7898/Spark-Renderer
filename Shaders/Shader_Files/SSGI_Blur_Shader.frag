@@ -14,8 +14,8 @@ layout (push_constant) uniform PushConsts {
 void main() {
     vec2 texelSize = 1.0 / vec2(textureSize(samplerta_SSGI, 0));
 
-    vec3 color  = texture(samplerta_SSGI,inTexCoord).rgb;
-    float Depth  = texture(samplerViewSpacePosition,inTexCoord).b;
+    vec3 color  = textureLod(samplerta_SSGI,inTexCoord,0).rgb;
+    float Depth  = textureLod(samplerViewSpacePosition,inTexCoord,0).b;
 
     vec3 result = vec3(0.0);
     float totalWeight = 0.0;
@@ -27,7 +27,7 @@ void main() {
     bool Direction = true;
 
     if(pc.Direction == 0){ Direction = false;}
-    float MainDepth   = texture(samplerViewSpacePosition, inTexCoord,0).b ;
+    float MainDepth   = textureLod(samplerViewSpacePosition, inTexCoord,0).b ;
     
     float depthScale = clamp(abs(MainDepth) * 0.05, 0.01, 1.2);
 
@@ -37,14 +37,14 @@ void main() {
         vec2 offset = Direction    ? vec2(texelSize.x * i * uBlurSize, 0.0) 
                                    : vec2(0.0, texelSize.y * i * uBlurSize);
 
-        float OffsetDepth = texture(samplerViewSpacePosition, inTexCoord + offset,0).b ;
+        float OffsetDepth = textureLod(samplerViewSpacePosition, inTexCoord + offset,0).b ;
 
         float w = weights[idx];
 
         float Difference = abs(MainDepth - OffsetDepth);
         
         if(Difference < depthScale){
-            result += texture(samplerta_SSGI, inTexCoord + offset).rgb * w; 
+            result += textureLod(samplerta_SSGI, inTexCoord + offset,0).rgb * w; 
             totalWeight += w;
         }
     }

@@ -30,6 +30,10 @@ public:
     uint32_t alignedSize(uint32_t value, uint32_t alignment);
     void Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferData RayMisBuffer, vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
 
+    void DrawHorizontalBlurPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
+
+    void DrawVerticalBlurPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
+
     void CleanUp() ;
     std::vector<BufferData> RayGen_UniformBuffers;
     std::vector<void*> RayGen_UniformBuffersMappedMem;
@@ -47,15 +51,24 @@ public:
     std::vector<void*>       TransformationUniformMappedMem;
 
     vk::DescriptorSetLayout  RayTracingDescriptorSetLayout;
+    vk::DescriptorSetLayout  BlurDescriptorSetLayout;
+
     std::vector<vk::DescriptorSet> RayTracingDescriptorSets;
+    std::vector<vk::DescriptorSet> HorizontalDescriptorSets;
+    std::vector<vk::DescriptorSet> FullBlurDescriptorSets;
 
 
     ImageData ReflectionPassImage;
+    ImageData HorizontalBlurReflectionPassImage;
+    ImageData FullBlurReflectionPassImage;
 
     int NumOfShadowCasters;
 
     vk::Extent3D swapchainextent;
+    vk::Extent3D Blurextent;
 
+    BufferData vertexBufferData;
+    BufferData indexBufferData;
 
 private:
 
@@ -63,6 +76,20 @@ private:
     BufferManager*   bufferManager = nullptr;
     Camera*          camera        = nullptr;
     vk::CommandPool commandPool = nullptr;
+
+
+    std::vector<Vertex> quad = {
+     {{-1.0f, -1.0f}, {0.0f, 0.0f}}, // Bottom-left
+     {{ 1.0f, -1.0f}, {1.0f, 0.0f}}, // Bottom-right
+     {{-1.0f,  1.0f}, {0.0f, 1.0f}}, // Top-left
+     {{ 1.0f,  1.0f}, {1.0f, 1.0f}}  // Top-right
+    };
+
+    const std::vector<uint16_t> quadIndices = {
+           0, 1, 2,
+           2, 1, 3
+    };
+
 };
 
 

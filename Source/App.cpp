@@ -611,7 +611,7 @@ void App::createGBuffer()
 	ssao_FullScreenQuad->CreateImage();
 	RT_Reflection->CreateStorageImage();
 
-	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&ReflectionMaskImageData,&RT_Reflection->ReflectionPassImage);
+	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&ReflectionMaskImageData,&RT_Reflection->FullBlurReflectionPassImage);
 	ssao_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
 	ssr_FullScreenQuad->createDescriptorSets(DescriptorPool, LightingPassImageData, gbuffer.ViewSpaceNormal,gbuffer.ViewSpacePosition, DepthTextureData, ReflectionMaskImageData,gbuffer.Materials);
 	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, LightingPassImageData, SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo);
@@ -656,6 +656,8 @@ void App::createGBuffer()
 	bufferManger.TransitionImage(cmd, &ssao_FullScreenQuad->SSAOImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &ssao_FullScreenQuad->BluredSSAOImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &fxaa_FullScreenQuad->FxaaImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &RT_Reflection->HorizontalBlurReflectionPassImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &RT_Reflection->FullBlurReflectionPassImage, TransitionToGeneral);
 
 	bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd,vulkanContext.graphicsQueue);
 
@@ -699,7 +701,11 @@ void App::createGBuffer()
 	RT_ReflectionTextureId = ImGui_ImplVulkan_AddTexture(RT_Reflection->ReflectionPassImage.imageSampler,
 		                                                 RT_Reflection->ReflectionPassImage.imageView,
 		                                                 VK_IMAGE_LAYOUT_GENERAL);
+	
 
+	RT_BluredReflectionTextureId = ImGui_ImplVulkan_AddTexture(RT_Reflection->FullBlurReflectionPassImage.imageSampler,
+		                                                       RT_Reflection->FullBlurReflectionPassImage.imageView,
+		                                                       VK_IMAGE_LAYOUT_GENERAL);
 	vulkanContext.ResetTemporalAccumilation();
 
 	std::cout << "Swapchain size: "
@@ -1447,6 +1453,32 @@ void App::CreateGraphicsPipeline()
 		BluredSSGIPipeline = Temp.FQ_Pipeline;
 	}
 
+
+	{
+		std::array<vk::Format, 1> colorFormats = { vk::Format::eR16G16B16A16Sfloat };
+
+		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
+		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
+		pipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats.data();
+
+		vk::PushConstantRange range{};
+		range.setOffset(0);
+		range.setSize(sizeof(int));
+		range.setStageFlags(vk::ShaderStageFlagBits::eFragment);
+
+		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.setSetLayouts(RT_Reflection->BlurDescriptorSetLayout);
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges = &range;
+
+
+		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager.create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/RT-ReflectionI_Blur_Shader.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
+
+		BluredRTreflectionsPipelineLayout = Temp.FQ_PipelineLayout;
+		BluredRTreflectionPipeline = Temp.FQ_Pipeline;
+	}
+
 }
 
 uint32_t App::alignedSize(uint32_t value, uint32_t alignment)
@@ -2047,7 +2079,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TransitiontoGeneralRT.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
 		TransitiontoGeneralRT.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
 		TransitiontoGeneralRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
-
+		TransitiontoGeneralRT.LevelCount = RT_Reflection->ReflectionPassImage.miplevels;
 
 		bufferManger.TransitionImage(commandBuffer, &RT_Reflection->ReflectionPassImage, TransitiontoGeneralRT);
 
@@ -2062,6 +2094,88 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			commandBuffer,
 			RT_ReflectionPipelineLayout,
 			currentFrame);
+
+		ImageTransitionData TransitiontoDST{};
+		TransitiontoDST.oldlayout = vk::ImageLayout::eUndefined;
+		TransitiontoDST.newlayout = vk::ImageLayout::eTransferDstOptimal;
+		TransitiontoDST.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitiontoDST.SourceAccessflag = vk::AccessFlagBits::eShaderWrite;
+		TransitiontoDST.DestinationAccessflag = vk::AccessFlagBits::eTransferWrite;
+		TransitiontoDST.SourceOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+		TransitiontoDST.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
+		TransitiontoDST.LevelCount = RT_Reflection->ReflectionPassImage.miplevels;
+
+		bufferManger.TransitionImage(commandBuffer, &RT_Reflection->ReflectionPassImage, TransitiontoDST);
+
+		bufferManger.GenerateMipMaps(&RT_Reflection->ReflectionPassImage, &commandBuffer, RT_Reflection->swapchainextent.width,
+			                          RT_Reflection->swapchainextent.height, vulkanContext.graphicsQueue,1);
+
+		ImageTransitionData TransitiontoGeneral{};
+		TransitiontoGeneral.oldlayout = vk::ImageLayout::eUndefined;
+		TransitiontoGeneral.newlayout = vk::ImageLayout::eGeneral;
+		TransitiontoGeneral.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitiontoGeneral.SourceAccessflag = vk::AccessFlagBits::eNone;
+		TransitiontoGeneral.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
+		TransitiontoGeneral.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
+		TransitiontoGeneral.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+		TransitiontoGeneral.LevelCount = RT_Reflection->ReflectionPassImage.miplevels;
+
+		bufferManger.TransitionImage(commandBuffer, &RT_Reflection->ReflectionPassImage, TransitiontoGeneral);
+
+
+		{
+			vk::RenderingAttachmentInfo BlurPassColorAttachmentInfo{};
+			BlurPassColorAttachmentInfo.imageView = RT_Reflection->HorizontalBlurReflectionPassImage.imageView;
+			BlurPassColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			BlurPassColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
+			BlurPassColorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+			BlurPassColorAttachmentInfo.clearValue = clearColor;
+
+			vk::RenderingInfo renderingInfo{};
+			renderingInfo.renderArea.offset = imageoffset;
+			renderingInfo.renderArea.extent.height = vulkanContext.swapchainExtent.height;
+			renderingInfo.renderArea.extent.width = vulkanContext.swapchainExtent.width;
+			renderingInfo.layerCount = 1;
+			renderingInfo.colorAttachmentCount = 1;
+			renderingInfo.pColorAttachments = &BlurPassColorAttachmentInfo;
+
+			commandBuffer.setViewport(0, 1, &viewport);
+			commandBuffer.setScissor(0, 1, &scissor);
+			commandBuffer.beginRendering(renderingInfo);
+
+			commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, BluredRTreflectionPipeline);
+			RT_Reflection->DrawHorizontalBlurPass(commandBuffer, BluredRTreflectionsPipelineLayout, currentFrame);
+
+			commandBuffer.endRendering();
+		}
+
+
+		{
+			vk::RenderingAttachmentInfo BlurPassColorAttachmentInfo{};
+			BlurPassColorAttachmentInfo.imageView = RT_Reflection->FullBlurReflectionPassImage.imageView;
+			BlurPassColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			BlurPassColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
+			BlurPassColorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+			BlurPassColorAttachmentInfo.clearValue = clearColor;
+
+			vk::RenderingInfo renderingInfo{};
+			renderingInfo.renderArea.offset = imageoffset;
+			renderingInfo.renderArea.extent.height = vulkanContext.swapchainExtent.height;
+			renderingInfo.renderArea.extent.width = vulkanContext.swapchainExtent.width;
+			renderingInfo.layerCount = 1;
+			renderingInfo.colorAttachmentCount = 1;
+			renderingInfo.pColorAttachments = &BlurPassColorAttachmentInfo;
+
+			commandBuffer.setViewport(0, 1, &viewport);
+			commandBuffer.setScissor(0, 1, &scissor);
+			commandBuffer.beginRendering(renderingInfo);
+
+			commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, BluredRTreflectionPipeline);
+			RT_Reflection->DrawVerticalBlurPass(commandBuffer, BluredRTreflectionsPipelineLayout, currentFrame);
+
+			commandBuffer.endRendering();
+		}
+
 	}
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
@@ -2841,6 +2955,7 @@ void App::destroyPipeline()
 	vulkanContext.LogicalDevice.destroyPipeline(BluredSSGIPipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(TA_SSGIPipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(CombinedImagePassPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(BluredRTreflectionPipeline);
 
 	vulkanContext.LogicalDevice.destroyPipelineLayout(DeferedLightingPassPipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(FXAAPassPipelineLayout);
@@ -2856,6 +2971,7 @@ void App::destroyPipeline()
 	vulkanContext.LogicalDevice.destroyPipelineLayout(TA_SSGIPipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(BluredSSGIPipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(CombinedImagePipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(BluredRTreflectionsPipelineLayout);
 
 }
 

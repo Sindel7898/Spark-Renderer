@@ -118,6 +118,14 @@ void RT_Reflections::CreateUniformBuffer() {
 		}
 	}
 
+	VkDeviceSize VertexBufferSize = sizeof(quad[0]) * quad.size();
+	vertexBufferData.BufferID = "RT reflection Blur Buffer";
+	bufferManager->CreateGPUOptimisedBuffer(&vertexBufferData, quad.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
+
+	VkDeviceSize indexBufferSize = sizeof(uint16_t) * quadIndices.size();
+	indexBufferData.BufferID = "RT reflection Blur Index Buffer";
+	bufferManager->CreateGPUOptimisedBuffer(&indexBufferData, quadIndices.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
+
 
 }
 
@@ -126,17 +134,31 @@ void RT_Reflections::CreateStorageImage() {
 	 swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
      ReflectionPassImage.ImageID = "RT Reflection Pass Image";
-	 bufferManager->CreateImage(&ReflectionPassImage, swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled);
+	 bufferManager->CreateImage(&ReflectionPassImage, swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc, true);
      ReflectionPassImage.imageView = bufferManager->CreateImageView(&ReflectionPassImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
      ReflectionPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
      
 
+	 Blurextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
+
+	 HorizontalBlurReflectionPassImage.ImageID = "RT HorizontalBlurReflectionPassImage Pass Image";
+	 bufferManager->CreateImage(&HorizontalBlurReflectionPassImage, swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	 HorizontalBlurReflectionPassImage.imageView = bufferManager->CreateImageView(&HorizontalBlurReflectionPassImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	 HorizontalBlurReflectionPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+
+	 FullBlurReflectionPassImage.ImageID = "RT FullBlurReflectionPassImage Pass Image";
+	 bufferManager->CreateImage(&FullBlurReflectionPassImage, swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	 FullBlurReflectionPassImage.imageView = bufferManager->CreateImageView(&FullBlurReflectionPassImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	 FullBlurReflectionPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 }
 
 
 void RT_Reflections::DestroyStorageImage() {
 
 	bufferManager->DestroyImage(ReflectionPassImage);
+	bufferManager->DestroyImage(HorizontalBlurReflectionPassImage);
+	bufferManager->DestroyImage(FullBlurReflectionPassImage);
+
 }
 
 void RT_Reflections::createRayTracingDescriptorSetLayout(){
@@ -233,7 +255,43 @@ void RT_Reflections::createRayTracingDescriptorSetLayout(){
 	{
 		throw std::runtime_error("Failed to create descriptorset layout!");
 	}
+	
 
+	{
+		vk::DescriptorSetLayoutBinding DepthTexture{};
+		DepthTexture.binding = 0;
+		DepthTexture.descriptorCount = 1;
+		DepthTexture.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		DepthTexture.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+		vk::DescriptorSetLayoutBinding  ReflectionSamplerLayout{};
+		ReflectionSamplerLayout.binding = 1;
+		ReflectionSamplerLayout.descriptorCount = 1;
+		ReflectionSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		ReflectionSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+		vk::DescriptorSetLayoutBinding  MaterialamplerLayout{};
+		MaterialamplerLayout.binding = 2;
+		MaterialamplerLayout.descriptorCount = 1;
+		MaterialamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		MaterialamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+		std::array<vk::DescriptorSetLayoutBinding, 3> bindings = {
+																   DepthTexture,
+																   ReflectionSamplerLayout,MaterialamplerLayout
+		};
+
+
+		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+		layoutInfo.pBindings = bindings.data();
+
+
+		if (vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &BlurDescriptorSetLayout) != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("Failed to create descriptorset layout!");
+		}
+	}
 }
 
 void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS,GBuffer gbuffer, 
@@ -463,6 +521,140 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 		}
 	}
 
+
+	{
+		// create sets from the pool based on the layout
+		// 	     
+		std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, BlurDescriptorSetLayout);
+
+
+		vk::DescriptorSetAllocateInfo allocinfo;
+		allocinfo.descriptorPool = descriptorpool;
+		allocinfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		allocinfo.pSetLayouts = layouts.data();
+
+		HorizontalDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+
+		vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, HorizontalDescriptorSets.data());
+
+		////////////////////////////////////////////////////////////////////////////////////////////////
+		//specifies what exactly to send
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+
+			vk::DescriptorImageInfo ViewSpaceImageInfo{};
+			ViewSpaceImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			ViewSpaceImageInfo.imageView   = gbuffer.ViewSpacePosition.imageView;
+			ViewSpaceImageInfo.sampler     = gbuffer.ViewSpacePosition.imageSampler;
+		
+
+			vk::WriteDescriptorSet ViewSpacePositionSamplerdescriptorWrite{};
+			ViewSpacePositionSamplerdescriptorWrite.dstSet          = HorizontalDescriptorSets[i];
+			ViewSpacePositionSamplerdescriptorWrite.dstBinding      = 0;
+			ViewSpacePositionSamplerdescriptorWrite.dstArrayElement = 0;
+			ViewSpacePositionSamplerdescriptorWrite.descriptorType  = vk::DescriptorType::eCombinedImageSampler;
+			ViewSpacePositionSamplerdescriptorWrite.descriptorCount = 1;
+			ViewSpacePositionSamplerdescriptorWrite.pImageInfo      = &ViewSpaceImageInfo;
+
+			vk::DescriptorImageInfo ReflectionImageInfo{};
+			ReflectionImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			ReflectionImageInfo.imageView = ReflectionPassImage.imageView;
+			ReflectionImageInfo.sampler =   ReflectionPassImage.imageSampler;
+
+			vk::WriteDescriptorSet ReflectionSamplerdescriptorWrite{};
+			ReflectionSamplerdescriptorWrite.dstSet = HorizontalDescriptorSets[i];
+			ReflectionSamplerdescriptorWrite.dstBinding = 1;
+			ReflectionSamplerdescriptorWrite.dstArrayElement = 0;
+			ReflectionSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			ReflectionSamplerdescriptorWrite.descriptorCount = 1;
+			ReflectionSamplerdescriptorWrite.pImageInfo = &ReflectionImageInfo;
+
+			vk::DescriptorImageInfo MaterialImageInfo{};
+			MaterialImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			MaterialImageInfo.imageView = gbuffer.Materials.imageView;
+			MaterialImageInfo.sampler = gbuffer.Materials.imageSampler;
+
+			vk::WriteDescriptorSet MaterialSamplerdescriptorWrite{};
+			MaterialSamplerdescriptorWrite.dstSet = HorizontalDescriptorSets[i];
+			MaterialSamplerdescriptorWrite.dstBinding = 2;
+			MaterialSamplerdescriptorWrite.dstArrayElement = 0;
+			MaterialSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			MaterialSamplerdescriptorWrite.descriptorCount = 1;
+			MaterialSamplerdescriptorWrite.pImageInfo = &MaterialImageInfo;
+
+			std::array<vk::WriteDescriptorSet, 3> descriptorWrites{ ViewSpacePositionSamplerdescriptorWrite,
+																	ReflectionSamplerdescriptorWrite,MaterialSamplerdescriptorWrite };
+
+			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+		}
+	}
+
+	{
+		// create sets from the pool based on the layout
+		// 	     
+		std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, BlurDescriptorSetLayout);
+
+
+		vk::DescriptorSetAllocateInfo allocinfo;
+		allocinfo.descriptorPool = descriptorpool;
+		allocinfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		allocinfo.pSetLayouts = layouts.data();
+
+		FullBlurDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+
+		vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, FullBlurDescriptorSets.data());
+
+		////////////////////////////////////////////////////////////////////////////////////////////////
+		//specifies what exactly to send
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+
+			vk::DescriptorImageInfo ViewSpaceImageInfo{};
+			ViewSpaceImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			ViewSpaceImageInfo.imageView = gbuffer.ViewSpacePosition.imageView;
+			ViewSpaceImageInfo.sampler = gbuffer.ViewSpacePosition.imageSampler;
+
+
+			vk::WriteDescriptorSet ViewSpacePositionSamplerdescriptorWrite{};
+			ViewSpacePositionSamplerdescriptorWrite.dstSet = FullBlurDescriptorSets[i];
+			ViewSpacePositionSamplerdescriptorWrite.dstBinding = 0;
+			ViewSpacePositionSamplerdescriptorWrite.dstArrayElement = 0;
+			ViewSpacePositionSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			ViewSpacePositionSamplerdescriptorWrite.descriptorCount = 1;
+			ViewSpacePositionSamplerdescriptorWrite.pImageInfo = &ViewSpaceImageInfo;
+
+			vk::DescriptorImageInfo ReflectionImageInfo{};
+			ReflectionImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			ReflectionImageInfo.imageView = HorizontalBlurReflectionPassImage.imageView;
+			ReflectionImageInfo.sampler = HorizontalBlurReflectionPassImage.imageSampler;
+
+
+			vk::WriteDescriptorSet ReflectionSamplerdescriptorWrite{};
+			ReflectionSamplerdescriptorWrite.dstSet = FullBlurDescriptorSets[i];
+			ReflectionSamplerdescriptorWrite.dstBinding = 1;
+			ReflectionSamplerdescriptorWrite.dstArrayElement = 0;
+			ReflectionSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			ReflectionSamplerdescriptorWrite.descriptorCount = 1;
+			ReflectionSamplerdescriptorWrite.pImageInfo = &ReflectionImageInfo;
+
+			vk::DescriptorImageInfo MaterialImageInfo{};
+			MaterialImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			MaterialImageInfo.imageView = gbuffer.Materials.imageView;
+			MaterialImageInfo.sampler = gbuffer.Materials.imageSampler;
+
+			vk::WriteDescriptorSet MaterialSamplerdescriptorWrite{};
+			MaterialSamplerdescriptorWrite.dstSet = FullBlurDescriptorSets[i];
+			MaterialSamplerdescriptorWrite.dstBinding = 2;
+			MaterialSamplerdescriptorWrite.dstArrayElement = 0;
+			MaterialSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			MaterialSamplerdescriptorWrite.descriptorCount = 1;
+			MaterialSamplerdescriptorWrite.pImageInfo = &MaterialImageInfo;
+
+			std::array<vk::WriteDescriptorSet, 3> descriptorWrites{ ViewSpacePositionSamplerdescriptorWrite,
+																	ReflectionSamplerdescriptorWrite,MaterialSamplerdescriptorWrite };
+
+			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+		}
+	}
+
 }
 
 
@@ -561,6 +753,36 @@ void RT_Reflections::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, Buff
 		depth);
 }
 
+void RT_Reflections::DrawHorizontalBlurPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
+{
+
+	vk::DeviceSize offsets[] = { 0 };
+	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+
+	int Direction = true;
+	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
+
+	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
+	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &HorizontalDescriptorSets[imageIndex], 0, nullptr);
+	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+}
+
+void RT_Reflections::DrawVerticalBlurPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
+{
+
+	vk::DeviceSize offsets[] = { 0 };
+	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+
+	int Direction = false;
+	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
+
+	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
+	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &FullBlurDescriptorSets[imageIndex], 0, nullptr);
+	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+}
+
 
 void RT_Reflections::CleanUp()
 {
@@ -608,7 +830,25 @@ void RT_Reflections::CleanUp()
 			}
 		}
 
+		
+	    if (vertexBufferData.buffer)
+	    {
+	    	bufferManager->DestroyBuffer(vertexBufferData);
+	    }
+	    
+	    
+	    
+	    if (indexBufferData.buffer)
+	    {
+	    	bufferManager->DestroyBuffer(indexBufferData);
+	    }
+		
+
+
+
 		vulkanContext->LogicalDevice.destroyDescriptorSetLayout(RayTracingDescriptorSetLayout);
+		vulkanContext->LogicalDevice.destroyDescriptorSetLayout(BlurDescriptorSetLayout);
+
 		RayGen_UniformBuffers.clear();
 	}
 
