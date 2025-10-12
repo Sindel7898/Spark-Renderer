@@ -57,7 +57,7 @@ void RT_Shadows::CreateUniformBuffer() {
 
 void RT_Shadows::CreateStorageImage() {
 
-	 swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
+	swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
 
 	for (int i = 0; i < 4; i++)
@@ -65,6 +65,7 @@ void RT_Shadows::CreateStorageImage() {
 		ImageData ShadowPassImage;
 
 		ShadowPassImage.ImageID = "RT Shadow Pass Image";
+
 		bufferManager->CreateImage(&ShadowPassImage, swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled);
 		ShadowPassImage.imageView = bufferManager->CreateImageView(&ShadowPassImage, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
 		ShadowPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);

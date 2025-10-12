@@ -48,7 +48,7 @@ void main() {
     if (payload.Distance > 0.0f) {
    
 		const vec3 hitPos = rayOrigin.xyz + rayDir * payload.Distance;
-		rayOrigin.xyz = hitPos.xyz + payload.Normal * 0.01f;
+		rayOrigin.xyz = hitPos.xyz + payload.Normal * 0.6f;
 		rayDir.xyz = reflect(rayDir.xyz, payload.Normal);
         
           payload.Color = CubeMapReflection;
