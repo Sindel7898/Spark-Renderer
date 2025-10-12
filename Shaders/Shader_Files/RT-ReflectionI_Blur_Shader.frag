@@ -14,49 +14,39 @@ layout (push_constant) uniform PushConsts {
 void main() {
     vec2 texelSize = 1.0 / vec2(textureSize(samplerReflections, 0));
 
-    vec3 color      = texture(samplerReflections, inTexCoord).rgb;
-    float depth     = texture(samplerViewSpacePosition, inTexCoord).b;
-    float roughness = texture(samplerMaterial, inTexCoord).r;
+    vec3 color      = textureLod(samplerReflections, inTexCoord,0).rgb;
+    float depth     = textureLod(samplerViewSpacePosition, inTexCoord,0).b;
+    float roughness = textureLod(samplerMaterial, inTexCoord,0).g;
 
-    // --- Blur modulation based on roughness ---
-    float blurStrength = mix(0.25, 2.5, roughness);   // step size per sample
-    int blurRadius     = int(mix(2.0, 10.0, roughness)); // number of samples each side
+    float blurStrength = mix(0.0, 2.5, roughness);   
+    int blurRadius     = int(mix(0.0, 5, roughness)); 
 
     vec3 result = vec3(0.0);
     float totalWeight = 0.0;
 
-    // --- 10-tap Gaussian weights (symmetric) ---
-    float weights[10] = float[](
-        0.196482,  // 0
-        0.176032,  // 1
-        0.146356,  // 2
-        0.111280,  // 3
-        0.075026,  // 4
-        0.043546,  // 5
-        0.021937,  // 6
-        0.009745,  // 7
-        0.003993,  // 8
-        0.001396   // 9
-    );
+    float weights[5] = float[](0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
+
 
     bool horizontal = (pc.Direction == 0);
 
-    float mainDepth = texture(samplerViewSpacePosition, inTexCoord).b;
+    float mainDepth = textureLod(samplerViewSpacePosition, inTexCoord,0).b;
     float depthScale = clamp(abs(mainDepth) * 0.05, 0.01, 1.2);
 
-    // --- Variable-radius Gaussian blur ---
     for (int i = -blurRadius; i <= blurRadius; i++) {
-        int idx = min(abs(i), 9); // clamp to max defined weight
+        
+        int idx = min(abs(i), 9); 
+
         vec2 offset = horizontal
             ? vec2(texelSize.x * i * blurStrength, 0.0)
             : vec2(0.0, texelSize.y * i * blurStrength);
 
-        float offsetDepth = texture(samplerViewSpacePosition, inTexCoord + offset).b;
+        float offsetDepth = textureLod(samplerViewSpacePosition, inTexCoord + offset,0).b;
         float w = weights[idx];
 
         float depthDiff = abs(mainDepth - offsetDepth);
+
         if (depthDiff < depthScale) {
-            result += texture(samplerReflections, inTexCoord + offset).rgb * w;
+            result += textureLod(samplerReflections, inTexCoord + offset,0).rgb * w;
             totalWeight += w;
         }
     }
@@ -64,5 +54,5 @@ void main() {
     if (totalWeight > 0.0)
         result /= totalWeight;
 
-    outFragColor = vec4(result, 1.0);
+    outFragColor = vec4(color, 1.0);
 }

@@ -142,12 +142,12 @@ void RT_Reflections::CreateStorageImage() {
 	 Blurextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
 	 HorizontalBlurReflectionPassImage.ImageID = "RT HorizontalBlurReflectionPassImage Pass Image";
-	 bufferManager->CreateImage(&HorizontalBlurReflectionPassImage, swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	 bufferManager->CreateImage(&HorizontalBlurReflectionPassImage, Blurextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	 HorizontalBlurReflectionPassImage.imageView = bufferManager->CreateImageView(&HorizontalBlurReflectionPassImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	 HorizontalBlurReflectionPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	 FullBlurReflectionPassImage.ImageID = "RT FullBlurReflectionPassImage Pass Image";
-	 bufferManager->CreateImage(&FullBlurReflectionPassImage, swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	 bufferManager->CreateImage(&FullBlurReflectionPassImage, Blurextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	 FullBlurReflectionPassImage.imageView = bufferManager->CreateImageView(&FullBlurReflectionPassImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	 FullBlurReflectionPassImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 }
@@ -229,8 +229,15 @@ void RT_Reflections::createRayTracingDescriptorSetLayout(){
 	LightInformationUniformBuffersLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
 	LightInformationUniformBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
 
+	vk::DescriptorSetLayoutBinding CubeMapsLayout{};
+	CubeMapsLayout.binding = 11;
+	CubeMapsLayout.descriptorCount = 1;
+	CubeMapsLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	CubeMapsLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
-	std::array<vk::DescriptorSetLayoutBinding, 11> bindings = {
+
+
+	std::array<vk::DescriptorSetLayoutBinding, 12> bindings = {
 		                                                       TLASLayout,              
 															   AlbedoAssetTexturesSamplerLayout,
 															   NormalAssetTexturesSamplerLayout,
@@ -241,7 +248,7 @@ void RT_Reflections::createRayTracingDescriptorSetLayout(){
 															   VertexStorageBuffersLayout,
 															   offsetStorageBuffersLayout,
 															   trasnformationUniformBuffersLayout,
-															   LightInformationUniformBuffersLayout
+															   LightInformationUniformBuffersLayout,CubeMapsLayout
 	};
 
 
@@ -294,8 +301,9 @@ void RT_Reflections::createRayTracingDescriptorSetLayout(){
 	}
 }
 
-void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS,GBuffer gbuffer, 
-	                                               std::vector<BufferData>& fragmentUniformBuffers)
+
+void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, GBuffer gbuffer, std::vector<BufferData>& fragmentUniformBuffers, SkyBox* SkyBoxRef)
+
 {
 	{
 		// create sets from the pool based on the layout
@@ -410,7 +418,6 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 				MetalicRoughnessAssetImagSamplerdescriptorWrite.pImageInfo = MetalicRoughnessImageAssetImagesInfos.data();
 			
 
-
 			/////////////////////////////////////////////////////////////////////////////////////
 
 			vk::DescriptorImageInfo StoreageImageInfo{};
@@ -506,16 +513,31 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 			lightUniformBufferdescriptorWrite.descriptorCount = 1;
 			lightUniformBufferdescriptorWrite.pBufferInfo = &LightUniformBuffersInfo;
 
-			std::array<vk::WriteDescriptorSet, 11> descriptorWrites{ TLAS_descriptorWrite,
-				                                                    AssetImagSamplerdescriptorWrite,
-				                                                    NormalAssetImagSamplerdescriptorWrite,
-				                                                    MetalicRoughnessAssetImagSamplerdescriptorWrite,
-																	StoreageImagSamplerdescriptorWrite,
-			                                                        RayUniformdescriptorWrite,
-			                                                        IndexStorageBufferdescriptorWrite,
-			                                                        VertexStorageBufferdescriptorWrite,
-			                                                        OffsetStorageBufferdescriptorWrite,
-			                                                        TransformUniformBufferdescriptorWrite,lightUniformBufferdescriptorWrite };
+			vk::DescriptorImageInfo ReflectiveCubeimageInfo{};
+			ReflectiveCubeimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			ReflectiveCubeimageInfo.imageView   = SkyBoxRef->SkyBoxImages[SkyBoxRef->SkyBoxIndex].imageView;
+			ReflectiveCubeimageInfo.sampler     = SkyBoxRef->SkyBoxImages[SkyBoxRef->SkyBoxIndex].imageSampler;
+
+			vk::WriteDescriptorSet ReflectiveCubeSamplerdescriptorWrite{};
+			ReflectiveCubeSamplerdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
+			ReflectiveCubeSamplerdescriptorWrite.dstBinding = 11;
+			ReflectiveCubeSamplerdescriptorWrite.dstArrayElement = 0;
+			ReflectiveCubeSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			ReflectiveCubeSamplerdescriptorWrite.descriptorCount = 1;
+			ReflectiveCubeSamplerdescriptorWrite.pImageInfo = &ReflectiveCubeimageInfo;
+
+			std::array<vk::WriteDescriptorSet, 12> descriptorWrites{ TLAS_descriptorWrite,
+				                                                     AssetImagSamplerdescriptorWrite,
+				                                                     NormalAssetImagSamplerdescriptorWrite,
+				                                                     MetalicRoughnessAssetImagSamplerdescriptorWrite,
+																	 StoreageImagSamplerdescriptorWrite,
+			                                                         RayUniformdescriptorWrite,
+			                                                         IndexStorageBufferdescriptorWrite,
+			                                                         VertexStorageBufferdescriptorWrite,
+			                                                         OffsetStorageBufferdescriptorWrite,
+			                                                         TransformUniformBufferdescriptorWrite,
+				                                                     lightUniformBufferdescriptorWrite,
+			                                                         ReflectiveCubeSamplerdescriptorWrite};
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 		}

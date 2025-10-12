@@ -69,11 +69,11 @@ void main() {
 
      float FinalAO         = SSAO * MaterialAO;
      vec3 IndirectLighting = GI * Albedo / PI;
-     IndirectLighting *= FinalAO;
+     IndirectLighting;
 
      if(FinalAO < 0.1){FinalAO = 1;}
 
-     vec3 FinalColor = (DirectLighting + IndirectLighting);
+     vec3 FinalColor = ((DirectLighting * FinalAO) + IndirectLighting);
      vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, Brightness, Saturation, Concentration);
 
     float luma = rgb2luma(CorrectedColor);

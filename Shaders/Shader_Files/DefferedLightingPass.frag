@@ -116,8 +116,8 @@ void main() {
     vec3  WorldPos       = textureLod(samplerPosition,inTexCoord,0).rgb;
     vec3  Normal         = normalize(textureLod(samplerNormal,inTexCoord,0).rgb);
     vec3  Albedo         = textureLod(samplerAlbedo,inTexCoord,0).rgb;
-    float Metallic       = textureLod(samplerMaterials,inTexCoord,0).g;
-    float Roughness      = textureLod(samplerMaterials,inTexCoord,0).r;
+    float Metallic       = textureLod(samplerMaterials,inTexCoord,0).r;
+    float Roughness      = textureLod(samplerMaterials,inTexCoord,0).g;
     vec2  ReflectionMask = textureLod(samplerReflectionMask,inTexCoord,0).rg;
     vec3  Emmisive       = textureLod(samplerEmisive,inTexCoord,0).rgb;
     vec3  RTReflection       = textureLod(samplerReflections,inTexCoord,0).rgb;
@@ -129,8 +129,6 @@ void main() {
     float mipCount = float(textureQueryLevels(samplerReflectiveCubeMap));
     float mipLevel = Roughness * (mipCount - 1.0);
     vec3 Reflection = textureLod(samplerReflectiveCubeMap, cR, mipLevel).rgb;
-
-
 
     float shadows[4] = {PCF(samplerShadowMap[0],0,inTexCoord),
                         PCF(samplerShadowMap[0],1,inTexCoord),
@@ -183,15 +181,16 @@ void main() {
              Lo += (diffuse + specular) * radiance * NdotL;
 
 
-     vec3 kS_env = fresnelSchlick(max(dot(Normal, ViewDir), 0.0), F0);
-     vec3 kD_env = vec3(1.0) - kS_env;
-     kD_env      *= 1.0 - Metallic;
-
-     vec3 reflections = ((RTReflection * kS_env) ) * shadows[i];
-
-     totalLighting +=  ((Lo + reflections) * light.CameraPositionAndLightIntensity.a) * shadows[i];
+     totalLighting +=  ((Lo) * light.CameraPositionAndLightIntensity.a) * shadows[i];
   }
 
+     vec3 kS_env  = fresnelSchlick(max(dot(Normal, ViewDir), 0.0), F0);
+     vec3 kD_env  = vec3(1.0) - kS_env;
+          kD_env *= 1.0 - Metallic;
+
+     vec3 reflections = ((RTReflection * kS_env) );
+
+   totalLighting +=  (reflections * Albedo);
    totalLighting +=  Emmisive;
 
 

@@ -9,6 +9,8 @@ layout(set = 0, binding = 5) uniform Camera {
     mat4 inverseProjectionMatrix;
 } cam;
 
+layout (binding = 11) uniform samplerCube samplerReflectiveCubeMap;
+
 struct Payload {
     vec3 Color;
     float Distance;
@@ -30,21 +32,27 @@ void main() {
     const uint rayFlags = gl_RayFlagsOpaqueEXT;
     const uint cullMask = 0xFF;
     const float tMin = 0.001;
-    const float tMax = 100000.0;
+    const float tMax = 1000.0;
 
      
 
     traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, rayOrigin.xyz, tMin, rayDir, tMax, 0);
       payload.Color = vec3(0);
 
-      vec3 ReflectionColor = vec3(0);
+
+    vec3 ReflectionColor  = vec3(0);
+
+     vec3 CubeMapReflection = texture(samplerReflectiveCubeMap, payload.Normal).rgb;
+          ReflectionColor = CubeMapReflection;
 
     if (payload.Distance > 0.0f) {
    
 		const vec3 hitPos = rayOrigin.xyz + rayDir * payload.Distance;
-		rayOrigin.xyz = hitPos.xyz + payload.Normal * 0.001f;
+		rayOrigin.xyz = hitPos.xyz + payload.Normal * 0.01f;
 		rayDir.xyz = reflect(rayDir.xyz, payload.Normal);
         
+          payload.Color = CubeMapReflection;
+
         traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, rayOrigin.xyz, tMin, rayDir, tMax, 0);
    
         ReflectionColor = payload.Color;

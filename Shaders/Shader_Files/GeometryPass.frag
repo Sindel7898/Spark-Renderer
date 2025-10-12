@@ -38,8 +38,8 @@ void main() {
   vec3 vtnorm = normalize(ViewSpaceTBN * NormalTexture);
   outViewSpaceNormal = vec4(vtnorm, 1);
 
-  vec2 MetallicRoughness  = textureLod(samplerMetallicRoughness,fragTexCoord,0).gb;
-  float A0                = textureLod(samplerAO,fragTexCoord,0).r;
+  vec2 MetallicRoughness  = textureLod(samplerMetallicRoughness,fragTexCoord,0).rg;
+  float A0                = textureLod(samplerAO,fragTexCoord,0).b;
 
   outMetallicRoughnessMapAO = vec4(MetallicRoughness,A0,1);
 
