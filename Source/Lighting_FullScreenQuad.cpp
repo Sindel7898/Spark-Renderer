@@ -15,24 +15,10 @@ Lighting_FullScreenQuad::Lighting_FullScreenQuad(BufferManager* buffermanager, V
 	commandPool   = commandpool;
 	SkyBoxRef = skyboxref;
 	raytracingRef = raytracingref;
-	CreateVertexAndIndexBuffer();
 	CreateUniformBuffer();
 	createDescriptorSetLayout();
 }
 
-
-void Lighting_FullScreenQuad::CreateVertexAndIndexBuffer()
-{
-
-	VkDeviceSize VertexBufferSize = sizeof(quad[0]) * quad.size();
-	vertexBufferData.BufferID = " Lighting FullScreen Quad Vertex Buffer";
-	bufferManager->CreateGPUOptimisedBuffer(&vertexBufferData, quad.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
-
-	VkDeviceSize indexBufferSize = sizeof(uint16_t) * quadIndices.size();
-	indexBufferData.BufferID = " Lighting FullScreen Quad Index Buffer";
-	bufferManager->CreateGPUOptimisedBuffer(&indexBufferData,quadIndices.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
-
-}
 
 void Lighting_FullScreenQuad::CreateUniformBuffer()
 {
@@ -370,11 +356,11 @@ void Lighting_FullScreenQuad::UpdateUniformBuffer(uint32_t currentImage, std::ve
 void Lighting_FullScreenQuad::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)
 {
 	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+	vk::Buffer VertexBuffers[] = { 	bufferManager->FullScreenQuadVertexBufferData.buffer };
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindIndexBuffer(bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
 }
 
 void Lighting_FullScreenQuad::CleanUp()

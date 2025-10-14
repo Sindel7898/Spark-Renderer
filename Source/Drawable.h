@@ -11,16 +11,6 @@ class VulkanContext;
 class Camera;
 class Light;
  
-struct TransformMatrices {
-	alignas(16) glm::mat4 modelMatrix;
-	alignas(16) glm::mat4 viewMatrix;
-	alignas(16) glm::mat4 projectionMatrix;
-};
-
-struct InstanceTransformMatrices {
-	alignas(16) glm::mat4 viewMatrix;
-	alignas(16) glm::mat4 projectionMatrix;
-};
 
 class Drawable
 {
@@ -33,7 +23,7 @@ public:
 
 protected:
 	
-     virtual void CreateVertexAndIndexBuffer() = 0;
+     virtual void CreateVertexAndIndexBuffer();
      virtual void CreateUniformBuffer();
 	 virtual void UpdateUniformBuffer(uint32_t currentImage);
 	 virtual void createDescriptorSetLayout() = 0;

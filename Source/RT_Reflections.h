@@ -39,17 +39,6 @@ public:
     std::vector<BufferData> RayGen_UniformBuffers;
     std::vector<void*> RayGen_UniformBuffersMappedMem;
 
-    std::vector<BufferData> IndexStorageBuffers;
-    std::vector<void*>      IndexStorageBuffersMappedMem;
-
-    std::vector<BufferData> VertexStorageBuffers;
-    std::vector<void*>      VertexStorageBuffersMappedMem;
-
-    std::vector<BufferData> OffsetStorageBuffers;
-    std::vector<void*>      OffsetStorageBuffersMappedMem;
-
-    std::vector<BufferData> TransformationUniformBuffers;
-    std::vector<void*>       TransformationUniformMappedMem;
 
     vk::DescriptorSetLayout  RayTracingDescriptorSetLayout;
     vk::DescriptorSetLayout  BlurDescriptorSetLayout;
@@ -68,29 +57,12 @@ public:
     vk::Extent3D swapchainextent;
     vk::Extent3D Blurextent;
 
-    BufferData vertexBufferData;
-    BufferData indexBufferData;
-
 private:
 
     VulkanContext*   vulkanContext = nullptr;
     BufferManager*   bufferManager = nullptr;
     Camera*          camera        = nullptr;
     vk::CommandPool commandPool = nullptr;
-
-
-    std::vector<Vertex> quad = {
-     {{-1.0f, -1.0f}, {0.0f, 0.0f}}, // Bottom-left
-     {{ 1.0f, -1.0f}, {1.0f, 0.0f}}, // Bottom-right
-     {{-1.0f,  1.0f}, {0.0f, 1.0f}}, // Top-left
-     {{ 1.0f,  1.0f}, {1.0f, 1.0f}}  // Top-right
-    };
-
-    const std::vector<uint16_t> quadIndices = {
-           0, 1, 2,
-           2, 1, 3
-    };
-
 };
 
 

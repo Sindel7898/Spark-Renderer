@@ -2,7 +2,6 @@
 #include "VulkanContext.h"
 #include "BufferManager.h"
 #include "Camera.h"
-#include "Light.h"
 
 #include <stdexcept>
 

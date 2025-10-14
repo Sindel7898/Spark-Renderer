@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 #include "structs.h"
-#include <vulkan/vulkan.hpp>
+#include "Light.h"
 
 class  Camera;
 class  VulkanContext;

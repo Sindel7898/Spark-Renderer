@@ -68,6 +68,10 @@ void Drawable::Destructor()
 	}
 }
 
+void Drawable::CreateVertexAndIndexBuffer()
+{
+}
+
 void Drawable::CreateUniformBuffer()
 {
 }

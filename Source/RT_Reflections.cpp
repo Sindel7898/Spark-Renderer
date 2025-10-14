@@ -32,101 +32,6 @@ void RT_Reflections::CreateUniformBuffer() {
 			RayGen_UniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
 		}
 	}
-
-	{
-		IndexStorageBuffers.resize(1);
-		IndexStorageBuffersMappedMem.resize(1);
-
-		VkDeviceSize RayGenIndexStorageBufferSize = sizeof(uint32_t) * bufferManager->AllScene_IndexGeometryData.size();
-
-		for (size_t i = 0; i < IndexStorageBuffers.size(); i++)
-		{
-			BufferData bufferdata;
-			bufferdata.BufferID = "RayGen Index Storage Buffer" + i;
-			bufferManager->CreateBuffer(&bufferdata, RayGenIndexStorageBufferSize, vk::BufferUsageFlagBits::eStorageBuffer, commandPool, vulkanContext->graphicsQueue);
-			IndexStorageBuffers[i] = bufferdata;
-
-			IndexStorageBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
-
-			memcpy(IndexStorageBuffersMappedMem[i], bufferManager->AllScene_IndexGeometryData.data(), sizeof(uint32_t) * bufferManager->AllScene_IndexGeometryData.size());
-
-			bufferManager->UnmapMemory(bufferdata);
-
-		}
-
-	}
-
-	{
-		VertexStorageBuffers.resize(1);
-		VertexStorageBuffersMappedMem.resize(1);
-
-		VkDeviceSize RayGenIndexStorageBufferSize = sizeof(PaddedModelVertex) * bufferManager->AllScene_VertexGeometryData.size();
-
-		for (size_t i = 0; i < VertexStorageBuffers.size(); i++)
-		{
-			BufferData bufferdata;
-			bufferdata.BufferID = "RayGen Vertex Storage Buffer" + i;
-			bufferManager->CreateBuffer(&bufferdata, RayGenIndexStorageBufferSize, vk::BufferUsageFlagBits::eStorageBuffer, commandPool, vulkanContext->graphicsQueue);
-			VertexStorageBuffers[i] = bufferdata;
-
-			VertexStorageBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
-
-			memcpy(VertexStorageBuffersMappedMem[i], bufferManager->AllScene_VertexGeometryData.data(), sizeof(PaddedModelVertex) * bufferManager->AllScene_VertexGeometryData.size());
-
-			bufferManager->UnmapMemory(bufferdata);
-
-		}
-	}
-
-	{
-		OffsetStorageBuffers.resize(1);
-		OffsetStorageBuffersMappedMem.resize(1);
-
-		VkDeviceSize RayGenIndexStorageBufferSize = sizeof(VertexAndIndexOffsets) * bufferManager->AllScene_VertexAndIndexOffsets.size();
-
-		for (size_t i = 0; i < OffsetStorageBuffers.size(); i++)
-		{
-			BufferData bufferdata;
-			bufferdata.BufferID = "RayGen Offset Storage Buffer" + i;
-			bufferManager->CreateBuffer(&bufferdata, RayGenIndexStorageBufferSize, vk::BufferUsageFlagBits::eStorageBuffer, commandPool, vulkanContext->graphicsQueue);
-			OffsetStorageBuffers[i] = bufferdata;
-
-			OffsetStorageBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
-
-			memcpy(OffsetStorageBuffersMappedMem[i], bufferManager->AllScene_VertexAndIndexOffsets.data(), sizeof(VertexAndIndexOffsets) * bufferManager->AllScene_VertexAndIndexOffsets.size());
-
-			bufferManager->UnmapMemory(bufferdata);
-
-		}
-	}
-
-	{
-		TransformationUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-		TransformationUniformMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
-
-		VkDeviceSize RayGenIndexStorageBufferSize = sizeof(glm::mat4) * 100;
-
-		for (size_t i = 0; i < TransformationUniformBuffers.size(); i++)
-		{
-			BufferData bufferdata;
-			bufferdata.BufferID = "RayGen Transformation Uniform Buffer" + i;
-			bufferManager->CreateBuffer(&bufferdata, RayGenIndexStorageBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
-			TransformationUniformBuffers[i] = bufferdata;
-
-			TransformationUniformMappedMem[i] = bufferManager->MapMemory(bufferdata);
-
-		}
-	}
-
-	VkDeviceSize VertexBufferSize = sizeof(quad[0]) * quad.size();
-	vertexBufferData.BufferID = "RT reflection Blur Buffer";
-	bufferManager->CreateGPUOptimisedBuffer(&vertexBufferData, quad.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
-
-	VkDeviceSize indexBufferSize = sizeof(uint16_t) * quadIndices.size();
-	indexBufferData.BufferID = "RT reflection Blur Index Buffer";
-	bufferManager->CreateGPUOptimisedBuffer(&indexBufferData, quadIndices.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
-
-
 }
 
 void RT_Reflections::CreateStorageImage() {
@@ -449,7 +354,7 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 			RayUniformdescriptorWrite.pBufferInfo = &rayuniformbufferInfo;
 
 			vk::DescriptorBufferInfo IndexStorageBuffersInfo{};
-			IndexStorageBuffersInfo.buffer = IndexStorageBuffers[0].buffer;
+			IndexStorageBuffersInfo.buffer = bufferManager->AllScene_IndexStorageBuffers[0].buffer;
 			IndexStorageBuffersInfo.offset = 0;
 			IndexStorageBuffersInfo.range  = sizeof(uint32_t) * bufferManager->AllScene_IndexGeometryData.size();;
 
@@ -462,7 +367,7 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 			IndexStorageBufferdescriptorWrite.pBufferInfo = &IndexStorageBuffersInfo;
 
 			vk::DescriptorBufferInfo VertexStorageBuffersInfo{};
-			VertexStorageBuffersInfo.buffer = VertexStorageBuffers[0].buffer;
+			VertexStorageBuffersInfo.buffer = bufferManager->AllScene_VertexStorageBuffers[0].buffer;
 			VertexStorageBuffersInfo.offset = 0;
 			VertexStorageBuffersInfo.range = sizeof(PaddedModelVertex) * bufferManager->AllScene_VertexGeometryData.size();;
 
@@ -475,7 +380,7 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 			VertexStorageBufferdescriptorWrite.pBufferInfo = &VertexStorageBuffersInfo;
 
 			vk::DescriptorBufferInfo OffsetStorageBuffersInfo{};
-			OffsetStorageBuffersInfo.buffer = OffsetStorageBuffers[0].buffer;
+			OffsetStorageBuffersInfo.buffer = bufferManager->AllScene_OffsetStorageBuffers[0].buffer;
 			OffsetStorageBuffersInfo.offset = 0;
 			OffsetStorageBuffersInfo.range = sizeof(VertexAndIndexOffsets) * bufferManager->AllScene_VertexAndIndexOffsets.size();;
 
@@ -488,7 +393,7 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 			OffsetStorageBufferdescriptorWrite.pBufferInfo = &OffsetStorageBuffersInfo;
 
 			vk::DescriptorBufferInfo TransformUniformBuffersInfo{};
-			TransformUniformBuffersInfo.buffer = TransformationUniformBuffers[i].buffer;
+			TransformUniformBuffersInfo.buffer = bufferManager->AllScene_TransformationUniformBuffers[i].buffer;
 			TransformUniformBuffersInfo.offset = 0;
 			TransformUniformBuffersInfo.range = sizeof(glm::mat4) * 100;
 
@@ -703,7 +608,7 @@ void RT_Reflections::UpdateUniformBuffer(uint32_t currentImage, std::vector<std:
 		}
 	}
 
-	memcpy(TransformationUniformMappedMem[currentImage], ModelTransfomations.data(), ModelTransfomations.size() * sizeof(glm::mat4));
+	memcpy(bufferManager->AllScene_TransformationUniformMappedMem[currentImage], ModelTransfomations.data(), ModelTransfomations.size() * sizeof(glm::mat4));
 
 }
 
@@ -779,30 +684,30 @@ void RT_Reflections::DrawHorizontalBlurPass(vk::CommandBuffer commandbuffer, vk:
 {
 
 	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
-
+	vk::Buffer VertexBuffers[] = { bufferManager->FullScreenQuadVertexBufferData.buffer };
+	
 	int Direction = true;
 	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindIndexBuffer(bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &HorizontalDescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
 }
 
 void RT_Reflections::DrawVerticalBlurPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
 {
 
 	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+	vk::Buffer VertexBuffers[] = { bufferManager->FullScreenQuadVertexBufferData.buffer };
 
 	int Direction = false;
 	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindIndexBuffer(bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &FullBlurDescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
 }
 
 
@@ -818,55 +723,6 @@ void RT_Reflections::CleanUp()
 				bufferManager->DestroyBuffer(RayGen_Buffer);
 			}
 		}
-
-		for (auto& Buffer : IndexStorageBuffers)
-		{
-			if (Buffer.buffer)
-			{
-				bufferManager->DestroyBuffer(Buffer);
-			}
-		}
-
-		for (auto& Buffer : VertexStorageBuffers)
-		{
-			if (Buffer.buffer)
-			{
-				bufferManager->DestroyBuffer(Buffer);
-			}
-		}
-
-		for (auto& Buffer : OffsetStorageBuffers)
-		{
-			if (Buffer.buffer)
-			{
-				bufferManager->DestroyBuffer(Buffer);
-			}
-		}
-
-		for (auto& Buffer : TransformationUniformBuffers)
-		{
-			if (Buffer.buffer)
-			{
-				bufferManager->UnmapMemory(Buffer);
-				bufferManager->DestroyBuffer(Buffer);
-			}
-		}
-
-		
-	    if (vertexBufferData.buffer)
-	    {
-	    	bufferManager->DestroyBuffer(vertexBufferData);
-	    }
-	    
-	    
-	    
-	    if (indexBufferData.buffer)
-	    {
-	    	bufferManager->DestroyBuffer(indexBufferData);
-	    }
-		
-
-
 
 		vulkanContext->LogicalDevice.destroyDescriptorSetLayout(RayTracingDescriptorSetLayout);
 		vulkanContext->LogicalDevice.destroyDescriptorSetLayout(BlurDescriptorSetLayout);

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
-#include <vk_mem_alloc.h>
 #include "stb_image.h"
 #include <unordered_map>
 #include <iostream>
@@ -9,61 +8,11 @@
 #include <cmath> 
 #include <cstdint>
 #include "VertexInputLayouts.h"          
-
-struct IDdata {
-    int instance;
-    // bool IsActive; // not needed anymore 
-};
-
-struct BufferData {
-
-    std::string BufferID;
-    vk::Buffer buffer{};
-    vk::DeviceSize size{};
-    vk::BufferUsageFlags usage{};
-    VmaAllocation allocation{};
-};
-
-struct ImageData {
-    std::string ImageID;
-    vk::Image image{};
-    vk::ImageView imageView{};
-    vk::Sampler imageSampler{};
-    VmaAllocation allocation{};
-    uint32_t  miplevels = 1;
-};
-
-
-struct ImageTransitionData {
-    vk::ImageLayout oldlayout{};
-    vk::ImageLayout newlayout{};
-    vk::AccessFlags SourceAccessflag = vk::AccessFlagBits::eNone;
-    vk::AccessFlags DestinationAccessflag = vk::AccessFlagBits::eNone;
-    vk::PipelineStageFlags SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
-    vk::PipelineStageFlags DestinationOnThePipeline = vk::PipelineStageFlagBits::eNone;
-    vk::ImageAspectFlags AspectFlag = vk::ImageAspectFlagBits::eColor;
-    int BaseMipLevel = 0;
-    int LevelCount = 1;
-    int LayerCount = 1;
-
-};
-
-struct VertexAndIndexOffsets {
-
-    uint32_t VertexOffset;
-    uint32_t IndexOffset;
-};
-
-struct PaddedModelVertex {
-
-    glm::vec4 vert_Padding;
-    glm::vec4 text_Padding;
-    glm::vec4 normal_Padding;
-    glm::vec4 tangent_Padding;
-};
+#include "structs.h"
 
 
 class VulkanContext;
+
 
 class BufferManager
 {
@@ -79,6 +28,8 @@ public:
 
     void AddImageLog(ImageData* imageData);
     void RemoveImageLog(ImageData imageData);
+
+    void CreateSharedBuffers(vk::CommandPool& commandPool);
 
 
     ~BufferManager();
@@ -135,9 +86,38 @@ public:
     std::vector<ImageData*>        AllScene_Normal_Images;
     std::vector<ImageData*>        AllScene_MetalicRoughness_Images;
 
-    std::vector<PaddedModelVertex> AllScene_VertexGeometryData;
-    std::vector<uint32_t>          AllScene_IndexGeometryData;
-    std::vector<VertexAndIndexOffsets>     AllScene_VertexAndIndexOffsets;
+    std::vector<PaddedModelVertex>      AllScene_VertexGeometryData;
+    std::vector<uint32_t>               AllScene_IndexGeometryData;
+    std::vector<VertexAndIndexOffsets>  AllScene_VertexAndIndexOffsets;
+
+
+    std::vector<BufferData> AllScene_IndexStorageBuffers;
+    std::vector<void*>      AllScene_IndexStorageBuffersMappedMem;
+
+    std::vector<BufferData> AllScene_VertexStorageBuffers;
+    std::vector<void*>      AllScene_VertexStorageBuffersMappedMem;
+
+    std::vector<BufferData> AllScene_OffsetStorageBuffers;
+    std::vector<void*>      AllScene_OffsetStorageBuffersMappedMem;
+
+    std::vector<BufferData> AllScene_TransformationUniformBuffers;
+    std::vector<void*>      AllScene_TransformationUniformMappedMem;
+
+    BufferData FullScreenQuadVertexBufferData;
+    BufferData FullScreenQuadIndexBufferData;
+
+
+    std::vector<Vertex> quad = {
+     {{-1.0f, -1.0f}, {0.0f, 0.0f}}, // Bottom-left
+     {{ 1.0f, -1.0f}, {1.0f, 0.0f}}, // Bottom-right
+     {{-1.0f,  1.0f}, {0.0f, 1.0f}}, // Top-left
+     {{ 1.0f,  1.0f}, {1.0f, 1.0f}}  // Top-right
+    };
+
+    const std::vector<uint16_t> quadIndices = {
+           0, 1, 2,
+           2, 1, 3
+    };
 
 private:
 
@@ -145,6 +125,7 @@ private:
     vk::PhysicalDevice& physicalDevice;
     vk::Instance& vulkanInstance;
     VulkanContext* vulkanContext;
+
 
 };
 

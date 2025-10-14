@@ -18,20 +18,6 @@ SSR_FullScreenQuad::SSR_FullScreenQuad(BufferManager* buffermanager, VulkanConte
 	createDescriptorSetLayout();
 }
 
-
-void SSR_FullScreenQuad::CreateVertexAndIndexBuffer()
-{
-
-	VkDeviceSize VertexBufferSize = sizeof(quad[0]) * quad.size();
-	vertexBufferData.BufferID = "SSR Vertex Buffer";
-	bufferManager->CreateGPUOptimisedBuffer(&vertexBufferData,quad.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
-
-	VkDeviceSize indexBufferSize = sizeof(uint16_t) * quadIndices.size();
-	indexBufferData.BufferID = "SSR Index Buffer";
-	bufferManager->CreateGPUOptimisedBuffer(&indexBufferData,quadIndices.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
-
-}
-
 void SSR_FullScreenQuad::CreateImage(vk::Extent3D imageExtent)
 {
 	  SSRImage.ImageID = "Gbuffer SSRImage Texture";
@@ -221,13 +207,13 @@ void SSR_FullScreenQuad::createDescriptorSets(vk::DescriptorPool descriptorpool,
 void SSR_FullScreenQuad::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)
 {
 	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+	vk::Buffer VertexBuffers[] = { 	bufferManager->FullScreenQuadVertexBufferData.buffer };
 	
 	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(camera->GetProjectionMatrix()), &camera->GetProjectionMatrix());
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindIndexBuffer(bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
 }
 
 void SSR_FullScreenQuad::CleanUp()

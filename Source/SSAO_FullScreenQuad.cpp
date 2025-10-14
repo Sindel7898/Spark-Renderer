@@ -13,7 +13,6 @@ SSA0_FullScreenQuad::SSA0_FullScreenQuad(BufferManager* buffermanager, VulkanCon
 	bufferManager = buffermanager;
 	vulkanContext = vulkancontext;
 	commandPool   = commandpool;
-	CreateVertexAndIndexBuffer();
 	CreateUniformBuffer();
 	CreateKernel();
 	createDescriptorSetLayout();
@@ -22,19 +21,6 @@ SSA0_FullScreenQuad::SSA0_FullScreenQuad(BufferManager* buffermanager, VulkanCon
 	SSAOuniformbuffer.KernelSizeRadiusBiasAndBool = glm::vec4(KernelSize, Radius, Bias, bShouldSSAO);
 }
 
-
-void SSA0_FullScreenQuad::CreateVertexAndIndexBuffer()
-{
-
-	VkDeviceSize VertexBufferSize = sizeof(quad[0]) * quad.size();
-	vertexBufferData.BufferID = "SSAO Vertex Buffer";
-    bufferManager->CreateGPUOptimisedBuffer(&vertexBufferData,quad.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
-
-	VkDeviceSize indexBufferSize = sizeof(uint16_t) * quadIndices.size();
-	indexBufferData.BufferID = "SSAO Index Buffer";
-	bufferManager->CreateGPUOptimisedBuffer(&indexBufferData,quadIndices.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
-
-}
 
 void SSA0_FullScreenQuad::CreateUniformBuffer()
 {
@@ -343,38 +329,39 @@ void SSA0_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool 
 void SSA0_FullScreenQuad::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)
 {
 	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+	vk::Buffer VertexBuffers[] = { 	bufferManager->FullScreenQuadVertexBufferData.buffer };
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindIndexBuffer(bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
 }
 
 void SSA0_FullScreenQuad::DrawSSAOBlurHorizontal(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)
 {
 	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+	vk::Buffer VertexBuffers[] = { 	bufferManager->FullScreenQuadVertexBufferData.buffer };
 	glm::vec2 Direction = glm::vec2(0, 1);
 	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(glm::vec2), &Direction);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindIndexBuffer(bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &SSAOBlurDescriptorSet[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
 }
 
 void SSA0_FullScreenQuad::DrawSSAOBlurVertical(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)
 {
 	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+	vk::Buffer VertexBuffers[] = { 	bufferManager->FullScreenQuadVertexBufferData.buffer };
 	glm::vec2 Direction = glm::vec2(1, 0);
 	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(glm::vec2), &Direction);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindIndexBuffer(bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &SSAOBlurDescriptorSet[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
+
 }
 void SSA0_FullScreenQuad::CleanUp()
 {

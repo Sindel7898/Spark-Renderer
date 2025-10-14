@@ -761,6 +761,103 @@ void BufferManager::RemoveImageLog(ImageData imageData)
 		imageLog.erase(FoundLog);
 	}
 }
+void BufferManager::CreateSharedBuffers(vk::CommandPool& commandPool)
+{
+	VkDeviceSize VertexBufferSize = sizeof(quad[0]) * quad.size();
+	FullScreenQuadVertexBufferData.BufferID = "Full Screen Quad Vertex Buffer";
+	CreateGPUOptimisedBuffer(&FullScreenQuadVertexBufferData, quad.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
+
+	VkDeviceSize indexBufferSize = sizeof(uint16_t) * quadIndices.size();
+	FullScreenQuadIndexBufferData.BufferID = "Full Screen Quad Buffer";
+	CreateGPUOptimisedBuffer(&FullScreenQuadIndexBufferData, quadIndices.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
+
+
+	{
+		AllScene_IndexStorageBuffers.resize(1);
+		AllScene_IndexStorageBuffersMappedMem.resize(1);
+
+		VkDeviceSize RayGenIndexStorageBufferSize = sizeof(uint32_t) * AllScene_IndexGeometryData.size();
+
+		for (size_t i = 0; i < AllScene_IndexStorageBuffers.size(); i++)
+		{
+			BufferData bufferdata;
+			bufferdata.BufferID = "RayGen Index Storage Buffer" + i;
+			CreateBuffer(&bufferdata, RayGenIndexStorageBufferSize, vk::BufferUsageFlagBits::eStorageBuffer, commandPool, vulkanContext->graphicsQueue);
+			AllScene_IndexStorageBuffers[i] = bufferdata;
+
+			AllScene_IndexStorageBuffersMappedMem[i] = MapMemory(bufferdata);
+
+			memcpy(AllScene_IndexStorageBuffersMappedMem[i],AllScene_IndexGeometryData.data(), sizeof(uint32_t) * AllScene_IndexGeometryData.size());
+
+			UnmapMemory(bufferdata);
+
+		}
+
+	}
+
+	{
+		AllScene_VertexStorageBuffers.resize(1);
+		AllScene_VertexStorageBuffersMappedMem.resize(1);
+
+		VkDeviceSize RayGenIndexStorageBufferSize = sizeof(PaddedModelVertex) * AllScene_VertexGeometryData.size();
+
+		for (size_t i = 0; i < AllScene_VertexStorageBuffers.size(); i++)
+		{
+			BufferData bufferdata;
+			bufferdata.BufferID = "RayGen Vertex Storage Buffer" + i;
+			CreateBuffer(&bufferdata, RayGenIndexStorageBufferSize, vk::BufferUsageFlagBits::eStorageBuffer, commandPool, vulkanContext->graphicsQueue);
+			AllScene_VertexStorageBuffers[i] = bufferdata;
+
+			AllScene_VertexStorageBuffersMappedMem[i] = MapMemory(bufferdata);
+
+			memcpy(AllScene_VertexStorageBuffersMappedMem[i],AllScene_VertexGeometryData.data(), sizeof(PaddedModelVertex) * AllScene_VertexGeometryData.size());
+
+			UnmapMemory(bufferdata);
+
+		}
+	}
+
+	{
+		AllScene_OffsetStorageBuffers.resize(1);
+		AllScene_OffsetStorageBuffersMappedMem.resize(1);
+
+		VkDeviceSize RayGenIndexStorageBufferSize = sizeof(VertexAndIndexOffsets) * AllScene_VertexAndIndexOffsets.size();
+
+		for (size_t i = 0; i < AllScene_OffsetStorageBuffers.size(); i++)
+		{
+			BufferData bufferdata;
+			bufferdata.BufferID = "RayGen Offset Storage Buffer" + i;
+			CreateBuffer(&bufferdata, RayGenIndexStorageBufferSize, vk::BufferUsageFlagBits::eStorageBuffer, commandPool, vulkanContext->graphicsQueue);
+			AllScene_OffsetStorageBuffers[i] = bufferdata;
+
+			AllScene_OffsetStorageBuffersMappedMem[i] = MapMemory(bufferdata);
+
+			memcpy(AllScene_OffsetStorageBuffersMappedMem[i],AllScene_VertexAndIndexOffsets.data(), sizeof(VertexAndIndexOffsets) * AllScene_VertexAndIndexOffsets.size());
+
+			UnmapMemory(bufferdata);
+
+		}
+	}
+
+	{
+		AllScene_TransformationUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+		AllScene_TransformationUniformMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
+
+		VkDeviceSize RayGenIndexStorageBufferSize = sizeof(glm::mat4) * 100;
+
+		for (size_t i = 0; i < AllScene_TransformationUniformBuffers.size(); i++)
+		{
+			BufferData bufferdata;
+			bufferdata.BufferID = "RayGen Transformation Uniform Buffer" + i;
+			CreateBuffer(&bufferdata, RayGenIndexStorageBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
+			AllScene_TransformationUniformBuffers[i] = bufferdata;
+
+			AllScene_TransformationUniformMappedMem[i] = MapMemory(bufferdata);
+
+		}
+	}
+
+}
 vk::ImageView BufferManager::CreateImageView(ImageData* imageData, vk::Format ImageFormat = vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlags ImageAspectBits = vk::ImageAspectFlagBits::eColor) {
 
 	vk::ImageViewCreateInfo imageviewinfo{};
@@ -970,6 +1067,38 @@ void BufferManager::CleanUp()
 		}
 	}
 
+	for (auto& Buffer : AllScene_IndexStorageBuffers)
+	{
+		if (Buffer.buffer)
+		{
+			DestroyBuffer(Buffer);
+		}
+	}
+
+	for (auto& Buffer : AllScene_VertexStorageBuffers)
+	{
+		if (Buffer.buffer)
+		{
+			DestroyBuffer(Buffer);
+		}
+	}
+
+	for (auto& Buffer : AllScene_OffsetStorageBuffers)
+	{
+		if (Buffer.buffer)
+		{
+			DestroyBuffer(Buffer);
+		}
+	}
+
+	for (auto& Buffer : AllScene_TransformationUniformBuffers)
+	{
+		if (Buffer.buffer)
+		{
+			UnmapMemory(Buffer);
+			DestroyBuffer(Buffer);
+		}
+	}
 
 	vmaDestroyAllocator(allocator);
 }

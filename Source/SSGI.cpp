@@ -20,15 +20,6 @@ SSGI::SSGI(BufferManager* buffermanager, VulkanContext* vulkancontext, Camera* c
 void SSGI::CreateVertexAndIndexBuffer()
 {
 
-	VkDeviceSize VertexBufferSize = sizeof(quad[0]) * quad.size();
-	vertexBufferData.BufferID = "SSGI Vertex Buffer";
-	bufferManager->CreateGPUOptimisedBuffer(&vertexBufferData, quad.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
-
-	VkDeviceSize indexBufferSize = sizeof(uint16_t) * quadIndices.size();
-	indexBufferData.BufferID = "SSGI Index Buffer";
-	bufferManager->CreateGPUOptimisedBuffer(&indexBufferData, quadIndices.data(), indexBufferSize, vk::BufferUsageFlagBits::eIndexBuffer, commandPool, vulkanContext->graphicsQueue);
-
-
 	for (int i = 0; i < 63; i++)
 	{
 		ImageData Noise;
@@ -934,12 +925,12 @@ void SSGI::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_pt
 void SSGI::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
 {
 	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+	vk::Buffer VertexBuffers[] = { 	bufferManager->FullScreenQuadVertexBufferData.buffer };
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindIndexBuffer(	bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
 
 }
 
@@ -947,134 +938,134 @@ void SSGI::DrawTA(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinela
 {
 
 	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+	vk::Buffer VertexBuffers[] = { 	bufferManager->FullScreenQuadVertexBufferData.buffer };
 
 	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(vulkanContext->AccumilationCount), &vulkanContext->AccumilationCount);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindIndexBuffer(	bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &TemporalAccumilationFullDescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
 }
 
 void SSGI::DrawDownSampleHalfResFirstPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
 {
 
 	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+	vk::Buffer VertexBuffers[] = { 	bufferManager->FullScreenQuadVertexBufferData.buffer };
 
 	int Direction = true;
 	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindIndexBuffer(	bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DownSampleHalfRes_PING_SampleDescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
 }
 
 void SSGI::DrawDownSampleHalfResSecondPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
 {
 
 	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+	vk::Buffer VertexBuffers[] = { 	bufferManager->FullScreenQuadVertexBufferData.buffer };
 
 	int Direction = false;
 	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindIndexBuffer(	bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DownSampleHalfRes_PONG_SampleDescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
 }
 
 void SSGI::DrawDownSampleQuaterfResFirstPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
 {
 
 	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+	vk::Buffer VertexBuffers[] = { 	bufferManager->FullScreenQuadVertexBufferData.buffer };
 
 	int Direction = true;
 	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindIndexBuffer(	bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DownSampleQuaterRes_PING_SampleDescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
 }
 
 void SSGI::DrawDownSampleQuaterfResSecondPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
 {
 
 	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+	vk::Buffer VertexBuffers[] = { 	bufferManager->FullScreenQuadVertexBufferData.buffer };
 
 	int Direction = false;
 	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindIndexBuffer(	bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DownSampleQuaterRes_PONG_SampleDescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
 }
 
 void SSGI::DrawUPSampleHalfResFirstPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
 {
 
 	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+	vk::Buffer VertexBuffers[] = { 	bufferManager->FullScreenQuadVertexBufferData.buffer };
 
 	int Direction = true;
 	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindIndexBuffer(	bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &UPSampleHalfRes_PING_SampleDescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
 }
 
 void SSGI::DrawUPSampleHalfResSecondPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
 {
 
 	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+	vk::Buffer VertexBuffers[] = { 	bufferManager->FullScreenQuadVertexBufferData.buffer };
 
 	int Direction = false;
 	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindIndexBuffer(	bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &UPSampleHalfRes_PONG_SampleDescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
 }
 
 void SSGI::DrawUPSampleFullResFirstPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
 {
 
 	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+	vk::Buffer VertexBuffers[] = { 	bufferManager->FullScreenQuadVertexBufferData.buffer };
 
 	int Direction = true;
 	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindIndexBuffer(	bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &UPSampleFullRes_PING_SampleDescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
 }
 
 void SSGI::DrawUPSampleFullResSecondPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
 {
 
 	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+	vk::Buffer VertexBuffers[] = { 	bufferManager->FullScreenQuadVertexBufferData.buffer };
 
 	int Direction = false;
 	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
 
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
+	commandbuffer.bindIndexBuffer(	bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &UPSampleFullRes_PONG_SampleDescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(quadIndices.size(), 1, 0, 0, 0);
+	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
 }
 
 

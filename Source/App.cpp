@@ -114,6 +114,7 @@
 
 	//UserInterfaceItems.push_back(Models[7].get());
 
+	bufferManger.CreateSharedBuffers(commandPool);
 
 	RT_Reflection = std::unique_ptr<RT_Reflections, decltype(&RT_ReflectionsDeleter)>(new RT_Reflections(&vulkanContext, commandPool, &camera, &bufferManger), RT_ReflectionsDeleter);
 	Raytracing_Shadows = std::unique_ptr<RT_Shadows, decltype(&RT_ShadowsDeleter)>(new RT_Shadows(&vulkanContext, commandPool, &camera, &bufferManger),RT_ShadowsDeleter);

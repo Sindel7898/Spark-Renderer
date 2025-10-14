@@ -4,7 +4,6 @@
 #include <string>
 #include "VulkanContext.h"
 #include "Drawable.h"
-#include "Structs.h"
 
 
 class SSR_FullScreenQuad : public Drawable
@@ -12,7 +11,6 @@ class SSR_FullScreenQuad : public Drawable
 public:
 
     SSR_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext, Camera* cameraref, vk::CommandPool commandpool);
-    void CreateVertexAndIndexBuffer() override;
     void CreateImage(vk::Extent3D ImageEXtent);
     void DestroyImage();
     void createDescriptorSetLayout() override;
