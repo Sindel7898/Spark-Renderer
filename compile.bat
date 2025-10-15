@@ -6,6 +6,9 @@ glslc.exe Shaders\Shader_Files\Terrain_GeometryPass.vert  -o  Shaders\Compiled_S
 glslc.exe Shaders\Shader_Files\Grass_GeoPass.vert         -o  Shaders\Compiled_Shader_Files\Grass_GeoPass.vert.spv
 
 
+glslc.exe Shaders\Shader_Files\DDGI_Probe.frag         -o  Shaders\Compiled_Shader_Files\DDGI_Probe.frag.spv
+glslc.exe Shaders\Shader_Files\DDGI_Probe.vert         -o  Shaders\Compiled_Shader_Files\DDGI_Probe.vert.spv
+
 glslc.exe Shaders\Shader_Files\SkyBox_Shader.frag         -o  Shaders\Compiled_Shader_Files\SkyBox_Shader.frag.spv
 glslc.exe Shaders\Shader_Files\Light_Shader.frag          -o  Shaders\Compiled_Shader_Files\Light_Shader.frag.spv
 glslc.exe Shaders\Shader_Files\GeometryPass.frag          -o  Shaders\Compiled_Shader_Files\GeometryPass.frag.spv

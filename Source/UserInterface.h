@@ -74,6 +74,18 @@ private:
     ImVec2 viewportSize;
 
     glm::mat4 LastModelMatrix;
+
+
+    int TempNumOfProbesX = 10;
+    int TempNumOfProbesY = 10;
+    int TempNumOfProbesZ = 10;
+
+    float TempProbesoffsetX = 20;
+    float TempProbesoffsetY = 6.4;
+    float TempProbesoffsetZ = 10.3;
+
+    glm::vec3 TempGridLocation = glm::vec3(-90.000, 0, -50.000);
+
 };
 
 static inline void UserInterfaceDeleter(UserInterface* userInterface) {

@@ -23,6 +23,7 @@
 #include "UserInterface.h"
 #include "Pipeline_Manager.h"
 #include "RT_Reflections.h"
+#include "DynamicDiffuse_RTGI.h"
 
 
 class MeshLoader;
@@ -126,6 +127,9 @@ public:
 	std::unique_ptr<RT_Reflections, decltype(&RT_ReflectionsDeleter)>
 		RT_Reflection{ nullptr, &RT_ReflectionsDeleter };
 
+	std::unique_ptr<DynamicDiffuse_RTGI, decltype(&DynamicDiffuse_RTGIDeleter)>
+		dynamicDiffuse_RTGI { nullptr, &DynamicDiffuse_RTGIDeleter };
+
 
 	VkDescriptorSet FinalRenderTextureId;
 	VkDescriptorSet LightingAndReflectionsRenderTextureId;
@@ -178,10 +182,13 @@ private:
 	vk::PipelineLayout         BluredSSGIPipelineLayout = nullptr;
 	vk::PipelineLayout         BluredRTreflectionsPipelineLayout = nullptr;
 	vk::PipelineLayout         CombinedImagePipelineLayout = nullptr;
+	vk::PipelineLayout         DDGIProbepipelineLayout = nullptr;
+
 
 	vk::Pipeline               DeferedLightingPassPipeline = nullptr;
 	vk::Pipeline               FXAAPassPipeline = nullptr;
 	vk::Pipeline               LightgraphicsPipeline = nullptr;
+	vk::Pipeline               DDGIProbePipeline = nullptr;
 	vk::Pipeline               SkyBoxgraphicsPipeline = nullptr;
 	vk::Pipeline               geometryPassPipeline = nullptr;
 	vk::Pipeline               SSAOPipeline = nullptr;

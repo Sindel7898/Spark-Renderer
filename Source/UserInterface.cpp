@@ -380,6 +380,34 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 			ImGui::EndChild();
 		}
 
+		if (ImGui::CollapsingHeader("Probe Settings", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::BeginChild("Probe Settings", ImVec2(0, 200), true, ImGuiWindowFlags_AlwaysUseWindowPadding);
+
+			ImGui::TextDisabled("Adjust probe parameters:");
+
+
+			ImGui::SliderInt("X Count", &TempNumOfProbesX, 0, 10, "%d");
+			ImGui::SliderInt("Y Count", &TempNumOfProbesY, 0, 10, "%d");
+			ImGui::SliderInt("Z Count", &TempNumOfProbesZ, 0, 10, "%d");
+
+
+			appref->dynamicDiffuse_RTGI->UpdateProbeCount(glm::vec3(TempNumOfProbesX, TempNumOfProbesY, TempNumOfProbesZ));
+
+
+			ImGui::SliderFloat("X Offset", &TempProbesoffsetX, -20, 20, "%.2f");
+			ImGui::SliderFloat("Y Offset", &TempProbesoffsetY, -20, 20, "%.2f");
+			ImGui::SliderFloat("Z Offset", &TempProbesoffsetZ, -20, 20, "%.2f");
+
+			appref->dynamicDiffuse_RTGI->UpdateProbsOffset(glm::vec3(TempProbesoffsetX, TempProbesoffsetY, TempProbesoffsetZ));
+
+			ImGui::InputFloat3("Scale", glm::value_ptr(TempGridLocation));
+
+			appref->dynamicDiffuse_RTGI->UpdateGridLocation(TempGridLocation);
+
+			ImGui::EndChild();
+		}
+
 		ImGui::End();
 	}
 

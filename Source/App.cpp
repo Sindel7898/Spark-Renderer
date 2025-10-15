@@ -116,14 +116,15 @@
 
 	bufferManger.CreateSharedBuffers(commandPool);
 
-	RT_Reflection = std::unique_ptr<RT_Reflections, decltype(&RT_ReflectionsDeleter)>(new RT_Reflections(&vulkanContext, commandPool, &camera, &bufferManger), RT_ReflectionsDeleter);
-	Raytracing_Shadows = std::unique_ptr<RT_Shadows, decltype(&RT_ShadowsDeleter)>(new RT_Shadows(&vulkanContext, commandPool, &camera, &bufferManger),RT_ShadowsDeleter);
+	RT_Reflection           = std::unique_ptr<RT_Reflections, decltype(&RT_ReflectionsDeleter)>(new RT_Reflections(&vulkanContext, commandPool, &camera, &bufferManger), RT_ReflectionsDeleter);
+	Raytracing_Shadows      = std::unique_ptr<RT_Shadows, decltype(&RT_ShadowsDeleter)>(new RT_Shadows(&vulkanContext, commandPool, &camera, &bufferManger),RT_ShadowsDeleter);
 	lighting_FullScreenQuad = std::unique_ptr<Lighting_FullScreenQuad, decltype(&Lighting_FullScreenQuadDeleter)>(new Lighting_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool, skyBox.get(), Raytracing_Shadows.get()),Lighting_FullScreenQuadDeleter);
-	ssao_FullScreenQuad = std::unique_ptr<SSA0_FullScreenQuad, decltype(&SSA0_FullScreenQuadDeleter)>(new SSA0_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),SSA0_FullScreenQuadDeleter);
-	fxaa_FullScreenQuad = std::unique_ptr<FXAA_FullScreenQuad, decltype(&FXAA_FullScreenQuadDeleter)>(new FXAA_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),FXAA_FullScreenQuadDeleter);
-	ssr_FullScreenQuad = std::unique_ptr<SSR_FullScreenQuad, decltype(&SSR_FullScreenQuadDeleter)>(new SSR_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),SSR_FullScreenQuadDeleter);
+	ssao_FullScreenQuad     = std::unique_ptr<SSA0_FullScreenQuad, decltype(&SSA0_FullScreenQuadDeleter)>(new SSA0_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),SSA0_FullScreenQuadDeleter);
+	fxaa_FullScreenQuad     = std::unique_ptr<FXAA_FullScreenQuad, decltype(&FXAA_FullScreenQuadDeleter)>(new FXAA_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),FXAA_FullScreenQuadDeleter);
+	ssr_FullScreenQuad      = std::unique_ptr<SSR_FullScreenQuad, decltype(&SSR_FullScreenQuadDeleter)>(new SSR_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),SSR_FullScreenQuadDeleter);
 	Combined_FullScreenQuad = std::unique_ptr<CombinedResult_FullScreenQuad, decltype(&CombinedResult_FullScreenQuadDeleter)>(new CombinedResult_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),CombinedResult_FullScreenQuadDeleter);
-	SSGI_FullScreenQuad = std::unique_ptr<SSGI, decltype(&SSGIDeleter)>(new SSGI(&bufferManger, &vulkanContext, &camera, commandPool),SSGIDeleter);
+	SSGI_FullScreenQuad     = std::unique_ptr<SSGI, decltype(&SSGIDeleter)>(new SSGI(&bufferManger, &vulkanContext, &camera, commandPool),SSGIDeleter);
+	dynamicDiffuse_RTGI     = std::unique_ptr<DynamicDiffuse_RTGI, decltype(&DynamicDiffuse_RTGIDeleter)>(new DynamicDiffuse_RTGI("../Textures/Sphere/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), DynamicDiffuse_RTGIDeleter);
 
 	lights.reserve(4);
 
@@ -611,6 +612,7 @@ void App::createGBuffer()
 	Combined_FullScreenQuad->CreateImage(swapchainextent);
 	ssao_FullScreenQuad->CreateImage();
 	RT_Reflection->CreateStorageImage();
+	dynamicDiffuse_RTGI->CreateStorageImage();
 
 	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&ReflectionMaskImageData,&RT_Reflection->FullBlurReflectionPassImage);
 	ssao_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
@@ -620,6 +622,7 @@ void App::createGBuffer()
 	Raytracing_Shadows->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
 	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, LightingPassImageData,DepthTextureData);
 	RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer, lighting_FullScreenQuad->fragmentUniformBuffers,skyBox.get());
+	dynamicDiffuse_RTGI->createRaytracedDescriptorSets(DescriptorPool);
 
 
 	vk::CommandBuffer cmd =  bufferManger.CreateSingleUseCommandBuffer(commandPool);
@@ -1011,6 +1014,68 @@ void App::CreateGraphicsPipeline()
 		vulkanContext.LogicalDevice.destroyShaderModule(FragShaderModule);
 
 	}
+
+	{
+		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/DDGI_Probe.vert.spv");
+		auto FragShaderCode = readFile("../Shaders/Compiled_Shader_Files/DDGI_Probe.frag.spv");
+
+		VkShaderModule VertShaderModule = pipelineManager.createShaderModule(VertShaderCode);
+		VkShaderModule FragShaderModule = pipelineManager.createShaderModule(FragShaderCode);
+
+		vk::PipelineShaderStageCreateInfo VertShaderStageInfo{};
+		VertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
+		VertShaderStageInfo.module = VertShaderModule;
+		VertShaderStageInfo.pName = "main";
+
+		vk::PipelineShaderStageCreateInfo FragmentShaderStageInfo{};
+		FragmentShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
+		FragmentShaderStageInfo.module = FragShaderModule;
+		FragmentShaderStageInfo.pName = "main";
+
+		vk::PipelineShaderStageCreateInfo ShaderStages[] = { VertShaderStageInfo ,FragmentShaderStageInfo };
+
+		auto BindDesctiptions = ModelVertex::GetBindingDescription();
+		auto attributeDescriptions = ModelVertex::GetAttributeDescription();
+
+		vk::PipelineVertexInputStateCreateInfo vertexInputInfo{};
+		vertexInputInfo.setVertexBindingDescriptionCount(1);
+		vertexInputInfo.setVertexAttributeDescriptionCount(4);
+		vertexInputInfo.setPVertexBindingDescriptions(&BindDesctiptions);
+		vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
+
+		vk::PipelineDepthStencilStateCreateInfo depthStencilState{};
+		depthStencilState.depthTestEnable = VK_TRUE;
+		depthStencilState.depthWriteEnable = VK_TRUE;
+		depthStencilState.depthCompareOp = vk::CompareOp::eLessOrEqual;
+		depthStencilState.minDepthBounds = 0.0f;
+		depthStencilState.maxDepthBounds = 1.0f;
+		depthStencilState.stencilTestEnable = VK_FALSE;
+
+		vk::PushConstantRange range = {};
+		range.stageFlags = vk::ShaderStageFlagBits::eVertex;
+		range.offset = 0;
+		range.size = sizeof(glm::mat4) * 2;
+
+		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.setSetLayouts(dynamicDiffuse_RTGI->ProbeDescriptorSetLayout);
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges = &range;
+
+		DDGIProbepipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+
+		vk::Format lightPassFormat = vk::Format::eR16G16B16A16Sfloat;
+		pipelineRenderingCreateInfo.pColorAttachmentFormats = &lightPassFormat;
+
+		DDGIProbePipeline = pipelineManager.createGraphicsPipeline(pipelineRenderingCreateInfo, ShaderStages, &vertexInputInfo, &inputAssembleInfo,
+			viewportState, rasterizerinfo, multisampling, depthStencilState, colorBlend, DynamicState, DDGIProbepipelineLayout);
+
+		vulkanContext.LogicalDevice.destroyShaderModule(VertShaderModule);
+		vulkanContext.LogicalDevice.destroyShaderModule(FragShaderModule);
+
+	}
+
+
 
 	{
 		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/SkyBox_Shader.vert.spv");
@@ -2785,9 +2850,52 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		}
 
 		commandBuffer.endRendering();
-
 	}
 
+	{
+
+		vk::RenderingAttachmentInfo ProbeDrawColorAttachmentInfo{};
+		ProbeDrawColorAttachmentInfo.imageView = Combined_FullScreenQuad->FinalResultImage.imageView;;
+		ProbeDrawColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		ProbeDrawColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+		ProbeDrawColorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		ProbeDrawColorAttachmentInfo.clearValue = clearColor;
+
+		vk::RenderingAttachmentInfo depthStencilAttachment;
+		depthStencilAttachment.imageView = DepthTextureData.imageView;
+		depthStencilAttachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+		depthStencilAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
+		depthStencilAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+		depthStencilAttachment.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+
+		vk::RenderingInfo renderingInfo{};
+		renderingInfo.renderArea.offset = imageoffset;
+		renderingInfo.renderArea.extent.height = vulkanContext.swapchainExtent.height;
+		renderingInfo.renderArea.extent.width = vulkanContext.swapchainExtent.width;
+		renderingInfo.layerCount = 1;
+		renderingInfo.colorAttachmentCount = 1;
+		renderingInfo.pColorAttachments = &ProbeDrawColorAttachmentInfo;
+		renderingInfo.pDepthAttachment = &depthStencilAttachment;
+
+		if (bWireFrame)
+		{
+			vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_LINE);
+		}
+		else
+		{
+			vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
+		}
+
+		commandBuffer.setViewport(0, 1, &viewport);
+		commandBuffer.setScissor(0, 1, &scissor);
+		commandBuffer.beginRendering(renderingInfo);
+
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, DDGIProbePipeline);
+
+		
+		dynamicDiffuse_RTGI->Draw(commandBuffer, DDGIProbepipelineLayout, currentFrame);
+		commandBuffer.endRendering();
+	}
 	/////////////////// FORWARD PASS END ///////////////////////// 
 	vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
 
@@ -2848,6 +2956,7 @@ void App::destroy_GbufferImages()
 	SSGI_FullScreenQuad->DestroyImage();
 	Combined_FullScreenQuad->DestroyImage();
 	RT_Reflection->DestroyStorageImage();
+	dynamicDiffuse_RTGI->DestroyStorageImage();
 
 }
 
@@ -2957,6 +3066,7 @@ void App::destroyPipeline()
 	vulkanContext.LogicalDevice.destroyPipeline(TA_SSGIPipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(CombinedImagePassPipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(BluredRTreflectionPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(DDGIProbePipeline);
 
 	vulkanContext.LogicalDevice.destroyPipelineLayout(DeferedLightingPassPipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(FXAAPassPipelineLayout);
@@ -2973,6 +3083,7 @@ void App::destroyPipeline()
 	vulkanContext.LogicalDevice.destroyPipelineLayout(BluredSSGIPipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(CombinedImagePipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(BluredRTreflectionsPipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(DDGIProbepipelineLayout);
 
 }
 

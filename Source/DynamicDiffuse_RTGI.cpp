@@ -16,6 +16,7 @@ DynamicDiffuse_RTGI::DynamicDiffuse_RTGI(const std::string filepath, VulkanConte
 	FilePath = filepath;
 
 	CreateVertexAndIndexBuffer();
+	CreateUniformBuffer();
 	createRayTracingDescriptorSetLayout();
 	GenerateGrid();
 }
@@ -37,19 +38,19 @@ void DynamicDiffuse_RTGI::CreateVertexAndIndexBuffer() {
 void DynamicDiffuse_RTGI::CreateUniformBuffer()
 {
 	{
-		vertexUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-		VertexUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
+		ProbeWorldMatrixUniformBuffers.resize(1);
+		ProbeWorldMatrixUniformBuffersMappedMem.resize(1);
 
-		VkDeviceSize VertexuniformBufferSize = sizeof(VertexData);
+		VkDeviceSize VertexuniformBufferSize = sizeof(glm::mat4) * 1000;
 
-		for (size_t i = 0; i < vertexUniformBuffers.size(); i++)
+		for (size_t i = 0; i < 1; i++)
 		{
 			BufferData bufferdata;
-			bufferdata.BufferID = "Model Vertex Uniform Buffer" + i;
+			bufferdata.BufferID = "Prob Uniform Buffer" + i;
 			bufferManager->CreateBuffer(&bufferdata, VertexuniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
-			vertexUniformBuffers[i] = bufferdata;
+			ProbeWorldMatrixUniformBuffers[i] = bufferdata;
 
-			VertexUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
+			ProbeWorldMatrixUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
 		}
 	}
 }
@@ -77,22 +78,87 @@ void DynamicDiffuse_RTGI::DestroyStorageImage() {
 	bufferManager->DestroyImage(ProbeVisibilityAtlasImage);
 }
 
-void DynamicDiffuse_RTGI::GenerateGrid() {
+void DynamicDiffuse_RTGI::UpdateProbeCount(glm::vec3 NewProbeCount)
+{
+	NumOfProbesX = (int)NewProbeCount.x;
+	NumOfProbesY = (int)NewProbeCount.y;
+	NumOfProbesZ = (int)NewProbeCount.z;
 
-	for (int x = 0; x < NumOfProbes; x++)
+
+	if (LastNumOfProbesX != NumOfProbesX)
 	{
-		glm::vec3 Scale = glm::vec3(1.0f, 1.0f, 1.0f);
 
-		glm::mat4 TransformationMatrix = glm::mat4(1.0f);
-		TransformationMatrix = glm::translate(TransformationMatrix, ProbeOffset *= x);
-		TransformationMatrix = glm::rotate(TransformationMatrix, glm::radians(Scale.x), glm::vec3(0.0f, 1.0f, 0.0f));
-		TransformationMatrix = glm::rotate(TransformationMatrix, glm::radians(Scale.y), glm::vec3(1.0f, 0.0f, 0.0f));
-		TransformationMatrix = glm::rotate(TransformationMatrix, glm::radians(Scale.z), glm::vec3(0.0f, 0.0f, 1.0f));
-		TransformationMatrix = glm::scale(TransformationMatrix, glm::vec3(1.0f, 1.0f, 1.0f));
+		LastNumOfProbesX = NumOfProbesX;
 
-		ProbeLocations.push_back(TransformationMatrix);
-		
+		GenerateGrid();
 	}
+
+	if (LastNumOfProbesY != NumOfProbesY)
+	{
+
+		LastNumOfProbesY = NumOfProbesY;
+
+		GenerateGrid();
+	}
+
+	if (LastNumOfProbesZ != NumOfProbesZ)
+	{
+
+		LastNumOfProbesZ = NumOfProbesZ;
+
+		GenerateGrid();
+	}
+}
+
+void DynamicDiffuse_RTGI::UpdateProbsOffset(glm::vec3 NewProbeOffset)
+{
+	ProbeOffset = NewProbeOffset;
+
+	if (LastProbeOffset != ProbeOffset)
+	{
+		LastProbeOffset = ProbeOffset;
+
+		GenerateGrid();
+	}
+}
+
+void DynamicDiffuse_RTGI::UpdateGridLocation(glm::vec3 NewGridLocation)
+{
+	GridLocation = NewGridLocation;
+
+	if (LastProbeOffset != GridLocation)
+	{
+		LastProbeOffset = GridLocation;
+
+		GenerateGrid();
+	}
+}
+
+void DynamicDiffuse_RTGI::GenerateGrid()
+{
+	ProbeLocations.clear();
+	ProbeLocations.reserve(NumOfProbesX * NumOfProbesY * NumOfProbesZ);
+
+	for (int x = 0; x < NumOfProbesX; ++x)
+	{
+		for (int y = 0; y < NumOfProbesY; ++y)
+		{
+			for (int z = 0; z < NumOfProbesZ; ++z)
+			{
+				glm::vec3 position = glm::vec3(
+					ProbeOffset.x * x,
+					ProbeOffset.y * y,
+					ProbeOffset.z * z
+				);
+
+				glm::mat4 transform = glm::translate(glm::mat4(1.0f), (position + GridLocation));
+				ProbeLocations.push_back(transform);
+			}
+		}
+	}
+
+	size_t dataSize = sizeof(glm::mat4) * ProbeLocations.size();
+	memcpy(ProbeWorldMatrixUniformBuffersMappedMem[0], ProbeLocations.data(), dataSize);
 }
 
 void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
@@ -110,9 +176,16 @@ void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
 		VisibilitiyAtlasSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		VisibilitiyAtlasSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
+		vk::DescriptorSetLayoutBinding  ProbeLocationUniformBuffer{};
+		ProbeLocationUniformBuffer.binding = 2;
+		ProbeLocationUniformBuffer.descriptorCount = 1;
+		ProbeLocationUniformBuffer.descriptorType = vk::DescriptorType::eUniformBuffer;
+		ProbeLocationUniformBuffer.stageFlags = vk::ShaderStageFlagBits::eVertex;
+
 		std::array<vk::DescriptorSetLayoutBinding, 3> bindings = {
 																   IrradianceAtlasSamplerLayout,
-																   VisibilitiyAtlasSamplerLayout
+																   VisibilitiyAtlasSamplerLayout,
+																   ProbeLocationUniformBuffer
 		};
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
@@ -171,14 +244,28 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 
 			vk::WriteDescriptorSet  ProbeVisibilityAtlasSamplerdescriptorWrite{};
 			ProbeVisibilityAtlasSamplerdescriptorWrite.dstSet = ProbeDescriptorSets[i];
-			ProbeVisibilityAtlasSamplerdescriptorWrite.dstBinding = 0;
+			ProbeVisibilityAtlasSamplerdescriptorWrite.dstBinding = 1;
 			ProbeVisibilityAtlasSamplerdescriptorWrite.dstArrayElement = 0;
 			ProbeVisibilityAtlasSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 			ProbeVisibilityAtlasSamplerdescriptorWrite.descriptorCount = 1;
 			ProbeVisibilityAtlasSamplerdescriptorWrite.pImageInfo = &ProbeVisibilityAtlasImageInfo;
 
-			std::array<vk::WriteDescriptorSet, 2> descriptorWrites{ IrradianceAtlasImageSamplerdescriptorWrite,
-																	ProbeVisibilityAtlasSamplerdescriptorWrite };
+			vk::DescriptorBufferInfo ProbeLocationbufferInfo{};
+			ProbeLocationbufferInfo.buffer = ProbeWorldMatrixUniformBuffers[0].buffer;
+			ProbeLocationbufferInfo.offset = 0;
+			ProbeLocationbufferInfo.range = sizeof(glm::mat4) * 1000;
+
+			vk::WriteDescriptorSet ProbeLocationbufferdescriptorWrite{};
+			ProbeLocationbufferdescriptorWrite.dstSet = ProbeDescriptorSets[i];
+			ProbeLocationbufferdescriptorWrite.dstBinding = 2;
+			ProbeLocationbufferdescriptorWrite.dstArrayElement = 0;
+			ProbeLocationbufferdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+			ProbeLocationbufferdescriptorWrite.descriptorCount = 1;
+			ProbeLocationbufferdescriptorWrite.pBufferInfo = &ProbeLocationbufferInfo;
+
+
+			std::array<vk::WriteDescriptorSet, 3> descriptorWrites{ IrradianceAtlasImageSamplerdescriptorWrite,
+																	ProbeVisibilityAtlasSamplerdescriptorWrite,ProbeLocationbufferdescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 		}
@@ -260,21 +347,47 @@ void DynamicDiffuse_RTGI::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer,
 	//	depth);
 }
 
-void DynamicDiffuse_RTGI::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
+void DynamicDiffuse_RTGI::DrawNode(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex, const std::vector<std::shared_ptr<Node>>& nodes)
 {
+	for (const auto& node : nodes) {
 
-	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { vertexBufferData.buffer };
+		if (!node) continue;
 
-	int Direction = false;
-	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &Direction);
 
-	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint16);
-	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &ProbeDescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(storedModelData->nodes[0]->meshPrimitives.size(), 1, 0, 0, 0);
+		for (int i = 0; i < node->meshPrimitives.size(); i++)
+		{
+
+			if (node->meshPrimitives[i].numIndices > 0) {
+
+				CameraConstantBuffer cameraConstantBuffer;
+				cameraConstantBuffer.ViewMatrix = camera->GetViewMatrix();
+				cameraConstantBuffer.ProjectionMatrix = camera->GetProjectionMatrix();
+				cameraConstantBuffer.ProjectionMatrix[1][1] *= -1;
+
+				commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(CameraConstantBuffer), &cameraConstantBuffer);
+				commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &ProbeDescriptorSets[imageIndex], 0, nullptr);
+
+				commandBuffer.drawIndexed(node->meshPrimitives[i].numIndices, ProbeLocations.size(), node->meshPrimitives[i].indicesStart, 0, 0);
+			}
+		}
+
+
+
+		DrawNode(commandBuffer, pipelineLayout, imageIndex, node->children);
+	}
 }
 
+
+void DynamicDiffuse_RTGI::Draw(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex)
+{
+	vk::DeviceSize offsets[] = { 0 };
+	vk::Buffer vertexBuffers[] = { vertexBufferData.buffer };
+
+	commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
+	commandBuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint32);
+
+	DrawNode(commandBuffer, pipelineLayout, imageIndex, storedModelData->nodes);
+}
 
 void DynamicDiffuse_RTGI::CleanUp()
 {
