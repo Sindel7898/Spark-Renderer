@@ -4,6 +4,10 @@ layout(binding = 0) writeonly buffer StorageBuffer {
    vec4 Position[];
 } SB0;
 
+layout(binding = 0) writeonly buffer StorageBuffer2 {
+   vec4 FibonacciDirections[];
+} SB02;
+
 layout(push_constant) uniform PushConstants {
      vec4 probeCount;      
      vec4 probeOffset;     
@@ -16,18 +20,23 @@ void main()
 {
     uint index = gl_GlobalInvocationID.x;
 
+    // ----------------------------------------------------------
+    // https://stackoverflow.com/questions/11712811/1d-index-to-3d-coordinates
+    // Grid Generation
+    // ----------------------------------------------------------
+
     uint gridSizeX = uint(pc.probeCount.x); 
     uint gridSizeY = uint(pc.probeCount.y); 
     uint gridSizeZ = uint(pc.probeCount.z); 
 
     uint totalCount = gridSizeX * gridSizeY * gridSizeZ;
 
-    // Make sure we don't write out of bounds
     if (index >= totalCount) return;
 
-    uint z = index / (gridSizeX * gridSizeY);
-    uint y = (index / gridSizeX) % gridSizeY;
-    uint x = index % gridSizeX;
+    uint z =  index / (gridSizeX  * gridSizeY);   
+    uint y = (index /  gridSizeX) % gridSizeY;
+    uint x =  index %  gridSizeX;
+    //////////////////////////////////////////
 
     vec3 position = vec3(x * pc.probeOffset.x,
                          y * pc.probeOffset.y,
@@ -35,4 +44,28 @@ void main()
                     + pc.probeBaseLocation.xyz;
 
     SB0.Position[index] = vec4(position, 0.0);
+
+    // ----------------------------------------------------------
+    //https://stackoverflow.com/questions/9600801/evenly-distributing-n-points-on-a-sphere
+    // Fibonacci Sphere Sampling Directions
+    // ----------------------------------------------------------
+   
+   const int SampleCount = 30;
+
+   if (index >= SampleCount) return;
+
+   const float PI   = 3.14159265359;
+   const float phi  =  PI * (sqrt(5) - 1); // golden angle in radians
+
+   float Fibo_Y  = 1.0 - (index/ (SampleCount - 1)) * 2.0; // y from 1 to -1
+   float radius = sqrt(1.0 - Fibo_Y * Fibo_Y); // radius at y
+   float theta = phi * index;
+
+   float Fibo_X = cos(theta) * radius;
+   float Fibo_Z = sin(theta) * radius;
+
+   
+   vec3 Direction = vec3(Fibo_Y,Fibo_X,Fibo_Z);
+   SB02.FibonacciDirections[index] = vec4(Direction, 0.0);
+
 }

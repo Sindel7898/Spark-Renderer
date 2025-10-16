@@ -81,7 +81,9 @@ public:
     glm::vec3 LastGridLocation = glm::vec3(0, 0, 0);
 
 
-    std::vector<BufferData> ProbeWorldMatrixStorageBuffers;
+    std::vector<BufferData> ProbePositionsStorageBuffers;
+    std::vector<BufferData> ProbeFibonacci
+        DirectionsStorageBuffers;
 
 private:
 

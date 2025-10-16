@@ -38,16 +38,30 @@ void DynamicDiffuse_RTGI::CreateVertexAndIndexBuffer() {
 void DynamicDiffuse_RTGI::CreateStorageBuffer()
 {
 	{
-		ProbeWorldMatrixStorageBuffers.resize(1);
+		ProbePositionsStorageBuffers.resize(1);
 
 		VkDeviceSize ComputeStorageBufferSize = sizeof(glm::vec4) * 1000;
 
 		for (size_t i = 0; i < 1; i++)
 		{
 			BufferData bufferdata;
-			bufferdata.BufferID = "Prob Uniform Buffer" + i;
+			bufferdata.BufferID = "Probe Positions Buffer" + i;
 			bufferManager->CreateGPU_Only_Buffer(&bufferdata, ComputeStorageBufferSize, vk::BufferUsageFlagBits::eStorageBuffer, commandPool, vulkanContext->graphicsQueue);
-			ProbeWorldMatrixStorageBuffers[i] = bufferdata;
+			ProbePositionsStorageBuffers[i] = bufferdata;
+		}
+	}
+
+	{
+		ProbeFibonacciDirectionsStorageBuffers.resize(1);
+
+		VkDeviceSize ComputeStorageBufferSize = sizeof(glm::vec4) * 1000;
+
+		for (size_t i = 0; i < 1; i++)
+		{
+			BufferData bufferdata;
+			bufferdata.BufferID = "Probe Fibonacci Buffer" + i;
+			bufferManager->CreateGPU_Only_Buffer(&bufferdata, ComputeStorageBufferSize, vk::BufferUsageFlagBits::eStorageBuffer, commandPool, vulkanContext->graphicsQueue);
+			ProbeFibonacciDirectionsStorageBuffers[i] = bufferdata;
 		}
 	}
 }
@@ -239,7 +253,7 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			ProbeVisibilityAtlasSamplerdescriptorWrite.pImageInfo = &ProbeVisibilityAtlasImageInfo;
 
 			vk::DescriptorBufferInfo ProbeLocationbufferInfo{};
-			ProbeLocationbufferInfo.buffer = ProbeWorldMatrixStorageBuffers[0].buffer;
+			ProbeLocationbufferInfo.buffer = ProbePositionsStorageBuffers[0].buffer;
 			ProbeLocationbufferInfo.offset = 0;
 			ProbeLocationbufferInfo.range = sizeof(glm::vec4) * 1000;
 
@@ -277,7 +291,7 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
 			vk::DescriptorBufferInfo ProbeLocationbufferInfo{};
-			ProbeLocationbufferInfo.buffer = ProbeWorldMatrixStorageBuffers[0].buffer;
+			ProbeLocationbufferInfo.buffer = ProbePositionsStorageBuffers[0].buffer;
 			ProbeLocationbufferInfo.offset = 0;
 			ProbeLocationbufferInfo.range = sizeof(glm::vec4) * 1000;
 
@@ -434,7 +448,7 @@ void DynamicDiffuse_RTGI::Draw(vk::CommandBuffer commandBuffer, vk::PipelineLayo
 void DynamicDiffuse_RTGI::CleanUp()
 {
 
-	for (auto& buffer : ProbeWorldMatrixStorageBuffers)
+	for (auto& buffer : ProbePositionsStorageBuffers)
 	{
 		if (buffer.buffer)
 		{
@@ -443,7 +457,7 @@ void DynamicDiffuse_RTGI::CleanUp()
 		}
 	}
 
-	ProbeWorldMatrixStorageBuffers.clear();
+	ProbePositionsStorageBuffers.clear();
 
 	if (vertexBufferData.buffer)
 	{
