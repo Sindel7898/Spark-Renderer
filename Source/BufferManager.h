@@ -20,6 +20,7 @@ public:
 
     BufferManager(VulkanContext* VulkcanContext);
     void CreateBuffer(BufferData* BufferData, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
+    void CreateGPU_Only_Buffer(BufferData* bufferData, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
     void CreateDeviceBuffer(BufferData* bufferData, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
     void AddBufferLog(BufferData* bufferdata);
     void RemoveBufferLog(BufferData bufferdata);
@@ -30,6 +31,8 @@ public:
     void RemoveImageLog(ImageData imageData);
 
     void CreateSharedBuffers(vk::CommandPool& commandPool);
+
+    void DestroySharedBuffers();
 
 
     ~BufferManager();
@@ -82,6 +85,7 @@ public:
     int bufferCounts = 0;
 
     void CleanUp();
+
     std::vector<ImageData*>        AllScene_Albedo_Images;
     std::vector<ImageData*>        AllScene_Normal_Images;
     std::vector<ImageData*>        AllScene_MetalicRoughness_Images;
@@ -90,7 +94,8 @@ public:
     std::vector<uint32_t>               AllScene_IndexGeometryData;
     std::vector<VertexAndIndexOffsets>  AllScene_VertexAndIndexOffsets;
 
-
+    
+    /////////////
     std::vector<BufferData> AllScene_IndexStorageBuffers;
     std::vector<void*>      AllScene_IndexStorageBuffersMappedMem;
 
@@ -106,6 +111,7 @@ public:
     BufferData FullScreenQuadVertexBufferData;
     BufferData FullScreenQuadIndexBufferData;
 
+    /////////////
 
     std::vector<Vertex> quad = {
      {{-1.0f, -1.0f}, {0.0f, 0.0f}}, // Bottom-left

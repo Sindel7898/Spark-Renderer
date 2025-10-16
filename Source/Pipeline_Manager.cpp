@@ -201,6 +201,22 @@ vk::Pipeline PipelineManager::createRayTracingGraphicsPipeline(vk::PipelineLayou
 	return graphicsPipeline;
 }
 
+vk::Pipeline PipelineManager::creatComputePipeline(vk::PipelineLayout pipelineLayout, vk::PipelineShaderStageCreateInfo ShaderStage)
+{
+
+	vk::ComputePipelineCreateInfo PipelineCreateInfo{};
+	PipelineCreateInfo.layout = pipelineLayout;
+	PipelineCreateInfo.stage = ShaderStage;
+
+	vk::ResultValue<vk::Pipeline> graphicsPipeline = vulkanContext->LogicalDevice.createComputePipeline(nullptr, PipelineCreateInfo);
+
+	if (graphicsPipeline.result != vk::Result::eSuccess)
+	{
+		throw std::runtime_error("failed to create Compute pipeline!");
+	}
+
+	return 	graphicsPipeline.value;
+}
 
 
 vk::ShaderModule PipelineManager::createShaderModule(const std::vector<char>& code)

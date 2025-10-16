@@ -183,6 +183,7 @@ private:
 	vk::PipelineLayout         BluredRTreflectionsPipelineLayout = nullptr;
 	vk::PipelineLayout         CombinedImagePipelineLayout = nullptr;
 	vk::PipelineLayout         DDGIProbepipelineLayout = nullptr;
+	vk::PipelineLayout         GridComputePipelineLayout = nullptr;
 
 
 	vk::Pipeline               DeferedLightingPassPipeline = nullptr;
@@ -201,6 +202,7 @@ private:
 	vk::Pipeline               BluredSSGIPipeline = nullptr;
 	vk::Pipeline               BluredRTreflectionPipeline = nullptr;
 	vk::Pipeline               CombinedImagePassPipeline = nullptr;
+	vk::Pipeline               GridComputePassPipeline = nullptr;
 
 
 	vk::CommandPool            commandPool = nullptr;

@@ -56,6 +56,34 @@ void BufferManager::CreateBuffer(BufferData* bufferData,VkDeviceSize BufferSize,
 	AddBufferLog(bufferData);
 }
 
+void BufferManager::CreateGPU_Only_Buffer(BufferData* bufferData, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue)
+{
+	VmaAllocationCreateInfo AllocationInfo = {};
+	AllocationInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+	AllocationInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+
+
+	vk::BufferCreateInfo BufferCreateInfo = {};
+	BufferCreateInfo.size = BufferSize;
+	BufferCreateInfo.usage = BufferUse;
+	BufferCreateInfo.sharingMode = vk::SharingMode::eExclusive;
+
+	VkBuffer Buffer;
+	VmaAllocation allocation;
+	VkBufferCreateInfo cBufferCreateInfo = BufferCreateInfo;
+
+	if (vmaCreateBuffer(allocator, &cBufferCreateInfo, &AllocationInfo, &Buffer, &allocation, nullptr) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create buffer!");
+	}
+
+	bufferData->buffer = vk::Buffer(Buffer);
+	bufferData->size = cBufferCreateInfo.size;
+	bufferData->usage = BufferUse;
+	bufferData->allocation = allocation;
+
+	AddBufferLog(bufferData);
+}
+
 void BufferManager::CreateDeviceBuffer(BufferData* bufferData, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue)
 {
 
@@ -858,6 +886,64 @@ void BufferManager::CreateSharedBuffers(vk::CommandPool& commandPool)
 	}
 
 }
+
+void BufferManager::DestroySharedBuffers() {
+
+	for (auto& buffer : AllScene_IndexStorageBuffers)
+	{
+		if (buffer.buffer)
+		{
+			DestroyBuffer(buffer);
+		}
+	}
+
+	for (auto& buffer : AllScene_VertexStorageBuffers)
+	{
+		if (buffer.buffer)
+		{
+			DestroyBuffer(buffer);
+		}
+	}
+
+
+	for (auto& buffer : AllScene_OffsetStorageBuffers)
+	{
+		if (buffer.buffer)
+		{
+			DestroyBuffer(buffer);
+		}
+	}
+
+
+	for (auto& buffer : AllScene_TransformationUniformBuffers)
+	{
+		if (buffer.buffer)
+		{
+			UnmapMemory(buffer);
+			DestroyBuffer(buffer);
+		}
+	}
+
+	if (FullScreenQuadVertexBufferData.buffer)
+	{
+		DestroyBuffer(FullScreenQuadVertexBufferData);
+	}
+
+	if (FullScreenQuadIndexBufferData.buffer)
+	{
+		DestroyBuffer(FullScreenQuadIndexBufferData);
+	}
+
+	AllScene_Albedo_Images.clear();
+	AllScene_Normal_Images.clear();
+	AllScene_MetalicRoughness_Images.clear();
+
+	AllScene_VertexGeometryData.clear();
+	AllScene_IndexGeometryData.clear();
+	AllScene_VertexAndIndexOffsets.clear();
+}
+
+
 vk::ImageView BufferManager::CreateImageView(ImageData* imageData, vk::Format ImageFormat = vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlags ImageAspectBits = vk::ImageAspectFlagBits::eColor) {
 
 	vk::ImageViewCreateInfo imageviewinfo{};
@@ -1064,39 +1150,6 @@ void BufferManager::CleanUp()
 		for (auto Images : imageLog)
 		{
 			std::cout << Images.first << std::endl;
-		}
-	}
-
-	for (auto& Buffer : AllScene_IndexStorageBuffers)
-	{
-		if (Buffer.buffer)
-		{
-			DestroyBuffer(Buffer);
-		}
-	}
-
-	for (auto& Buffer : AllScene_VertexStorageBuffers)
-	{
-		if (Buffer.buffer)
-		{
-			DestroyBuffer(Buffer);
-		}
-	}
-
-	for (auto& Buffer : AllScene_OffsetStorageBuffers)
-	{
-		if (Buffer.buffer)
-		{
-			DestroyBuffer(Buffer);
-		}
-	}
-
-	for (auto& Buffer : AllScene_TransformationUniformBuffers)
-	{
-		if (Buffer.buffer)
-		{
-			UnmapMemory(Buffer);
-			DestroyBuffer(Buffer);
 		}
 	}
 

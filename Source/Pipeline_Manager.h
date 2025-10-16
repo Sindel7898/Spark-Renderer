@@ -31,6 +31,8 @@ class PipelineManager
 
 	  vk::Pipeline createRayTracingGraphicsPipeline(vk::PipelineLayout pipelineLayout, std::vector<vk::PipelineShaderStageCreateInfo> ShaderStage, std::vector<vk::RayTracingShaderGroupCreateInfoKHR> RayTracingshaderGroups);
 
+	  vk::Pipeline creatComputePipeline(vk::PipelineLayout pipelineLayout, vk::PipelineShaderStageCreateInfo ShaderStage);
+
 private:
 	
 	VulkanContext* vulkanContext = nullptr;

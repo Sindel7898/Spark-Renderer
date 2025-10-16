@@ -1,0 +1,38 @@
+#version 450
+
+layout(binding = 0) writeonly buffer StorageBuffer {
+   vec4 Position[];
+} SB0;
+
+layout(push_constant) uniform PushConstants {
+     vec4 probeCount;      
+     vec4 probeOffset;     
+     vec4 probeBaseLocation; 
+} pc;
+
+layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+
+void main() 
+{
+    uint index = gl_GlobalInvocationID.x;
+
+    uint gridSizeX = uint(pc.probeCount.x); 
+    uint gridSizeY = uint(pc.probeCount.y); 
+    uint gridSizeZ = uint(pc.probeCount.z); 
+
+    uint totalCount = gridSizeX * gridSizeY * gridSizeZ;
+
+    // Make sure we don't write out of bounds
+    if (index >= totalCount) return;
+
+    uint z = index / (gridSizeX * gridSizeY);
+    uint y = (index / gridSizeX) % gridSizeY;
+    uint x = index % gridSizeX;
+
+    vec3 position = vec3(x * pc.probeOffset.x,
+                         y * pc.probeOffset.y,
+                         z * pc.probeOffset.z) 
+                    + pc.probeBaseLocation.xyz;
+
+    SB0.Position[index] = vec4(position, 0.0);
+}

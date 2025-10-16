@@ -1545,6 +1545,40 @@ void App::CreateGraphicsPipeline()
 		BluredRTreflectionPipeline = Temp.FQ_Pipeline;
 	}
 
+
+	{
+
+
+		auto ComputeShaderCode = readFile("../Shaders/Compiled_Shader_Files/Grid.comp.spv");
+
+		VkShaderModule ComputeShaderModule = pipelineManager.createShaderModule(ComputeShaderCode);
+
+		vk::PipelineShaderStageCreateInfo ComputeShaderStageInfo{};
+		ComputeShaderStageInfo.sType  = vk::StructureType::ePipelineShaderStageCreateInfo;
+		ComputeShaderStageInfo.stage  = vk::ShaderStageFlagBits::eCompute;
+		ComputeShaderStageInfo.module = ComputeShaderModule;
+		ComputeShaderStageInfo.pName  = "main";
+
+		vk::PushConstantRange range{};
+		range.setOffset(0);
+		range.setSize(sizeof(glm::vec4) * 3);
+		range.setStageFlags(vk::ShaderStageFlagBits::eCompute);
+
+
+		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.pSetLayouts = &dynamicDiffuse_RTGI->GridDescriptorSetLayout;
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges = &range;
+
+		GridComputePipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+
+		GridComputePassPipeline = pipelineManager.creatComputePipeline(GridComputePipelineLayout,ComputeShaderStageInfo);
+
+		vulkanContext.LogicalDevice.destroyShaderModule(ComputeShaderModule);
+
+	}
+
 }
 
 uint32_t App::alignedSize(uint32_t value, uint32_t alignment)
@@ -2853,6 +2887,30 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	}
 
 	{
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, GridComputePassPipeline);
+
+		dynamicDiffuse_RTGI->DispatchGridCompute(commandBuffer, GridComputePipelineLayout, currentFrame);
+
+		vk::BufferMemoryBarrier barrier{};
+		barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+		barrier.dstAccessMask = vk::AccessFlagBits::eVertexAttributeRead;
+		barrier.buffer = dynamicDiffuse_RTGI->ProbeWorldMatrixStorageBuffers[0].buffer;
+		barrier.offset = 0;
+		barrier.size = VK_WHOLE_SIZE;
+
+		commandBuffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eComputeShader,
+			vk::PipelineStageFlagBits::eVertexInput,
+			{},
+			0, nullptr,
+			1, & barrier,
+			0, nullptr
+		);
+
+
+	}
+
+	{
 
 		vk::RenderingAttachmentInfo ProbeDrawColorAttachmentInfo{};
 		ProbeDrawColorAttachmentInfo.imageView = Combined_FullScreenQuad->FinalResultImage.imageView;;
@@ -2892,10 +2950,10 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, DDGIProbePipeline);
 
-		
 		dynamicDiffuse_RTGI->Draw(commandBuffer, DDGIProbepipelineLayout, currentFrame);
 		commandBuffer.endRendering();
 	}
+
 	/////////////////// FORWARD PASS END ///////////////////////// 
 	vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
 
@@ -3040,11 +3098,12 @@ void App::DestroyBuffers()
 	SSGI_FullScreenQuad.reset();
 	Combined_FullScreenQuad.reset();
 	RT_Reflection.reset();
-
+	dynamicDiffuse_RTGI.reset();
 	bufferManger.DestroyBuffer(TLAS_Buffer);
 	bufferManger.DestroyBuffer(TLAS_SCRATCH_Buffer);
 	bufferManger.DestroyBuffer(TLAS_InstanceData);
 	vulkanContext.vkDestroyAccelerationStructureKHR(vulkanContext.LogicalDevice, static_cast<VkAccelerationStructureKHR>(TLAS),nullptr);
+	bufferManger.DestroySharedBuffers();
 	DestroyShaderBindingTable();
 	//bufferManger.reset();
 }
@@ -3067,6 +3126,8 @@ void App::destroyPipeline()
 	vulkanContext.LogicalDevice.destroyPipeline(CombinedImagePassPipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(BluredRTreflectionPipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(DDGIProbePipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(GridComputePassPipeline);
+
 
 	vulkanContext.LogicalDevice.destroyPipelineLayout(DeferedLightingPassPipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(FXAAPassPipelineLayout);
@@ -3084,6 +3145,7 @@ void App::destroyPipeline()
 	vulkanContext.LogicalDevice.destroyPipelineLayout(CombinedImagePipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(BluredRTreflectionsPipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(DDGIProbepipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(GridComputePipelineLayout);
 
 }
 

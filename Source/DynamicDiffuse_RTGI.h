@@ -18,6 +18,15 @@ struct CameraConstantBuffer
     glm::mat4 ProjectionMatrix;
 
 };
+
+struct GridData
+{
+    glm::vec4 probeCount;
+    glm::vec4 probeOffset;
+    glm::vec4 probeBaseLocation;
+
+};
+
 class DynamicDiffuse_RTGI
 {
 public:
@@ -28,11 +37,9 @@ public:
     void UpdateProbeCount(glm::vec3 NewProbeCount);
     void UpdateProbsOffset(glm::vec3 NewProbeOffset);
     void UpdateGridLocation(glm::vec3 NewGridLocation);
-    void GenerateGrid();
-    void CreateUniformBuffer();
+    void CreateStorageBuffer();
     void createRayTracingDescriptorSetLayout();
     void createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool);
-    void UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref, std::vector<std::shared_ptr<Model>>& Modelref);
     void CreateVertexAndIndexBuffer();
     uint32_t alignedSize(uint32_t value, uint32_t alignment);
     void Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferData RayMisBuffer, vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
@@ -40,10 +47,15 @@ public:
 
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
 
+    void DispatchGridCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex);
+
     void CleanUp() ;
 
     vk::DescriptorSetLayout        ProbeDescriptorSetLayout;
+    vk::DescriptorSetLayout        GridDescriptorSetLayout;
+
     std::vector<vk::DescriptorSet> ProbeDescriptorSets;
+    std::vector<vk::DescriptorSet> GridDescriptorSets;
 
 
     ImageData IrradianceImageAtlasImage;
@@ -62,15 +74,14 @@ public:
     int LastNumOfProbesY = 0;
     int LastNumOfProbesZ = 0;
 
-    glm::vec3 ProbeOffset     = glm::vec3(20, 6.4, 10.3);
+    glm::vec3 ProbeOffset     = glm::vec3(20, 6.4, 10.8);
     glm::vec3 LastProbeOffset = glm::vec3(0, 0, 0);
 
     glm::vec3 GridLocation     = glm::vec3(-90.000, 0, -50.000);
     glm::vec3 LastGridLocation = glm::vec3(0, 0, 0);
 
 
-    std::vector<BufferData> ProbeWorldMatrixUniformBuffers;
-    std::vector<void*>      ProbeWorldMatrixUniformBuffersMappedMem;
+    std::vector<BufferData> ProbeWorldMatrixStorageBuffers;
 
 private:
 
@@ -86,6 +97,7 @@ private:
 
     const StoredModelData* storedModelData = nullptr;
 
+    bool UpdateGrid = false;
 };
 
 

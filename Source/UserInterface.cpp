@@ -401,7 +401,7 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 
 			appref->dynamicDiffuse_RTGI->UpdateProbsOffset(glm::vec3(TempProbesoffsetX, TempProbesoffsetY, TempProbesoffsetZ));
 
-			ImGui::InputFloat3("Scale", glm::value_ptr(TempGridLocation));
+			ImGui::InputFloat3("GridLocation", glm::value_ptr(TempGridLocation));
 
 			appref->dynamicDiffuse_RTGI->UpdateGridLocation(TempGridLocation);
 

@@ -3,46 +3,46 @@
     {
       "bufferView": 2,
       "componentType": 5126,
-      "count": 1649,
+      "count": 992,
       "max": [
-        0.8562712073326111,
-        0.8562712073326111,
-        0.8562712073326111
+        1.0000003576278687,
+        1.0,
+        1.0000004768371582
       ],
       "min": [
-        -0.8562712073326111,
-        -0.8562712073326111,
-        -0.8562712073326111
-      ],
-      "type": "VEC3"
-    },
-    {
-      "bufferView": 2,
-      "byteOffset": 19788,
-      "componentType": 5126,
-      "count": 1649,
-      "max": [
-        1.0,
-        1.0,
-        1.0
-      ],
-      "min": [
-        -1.0,
+        -1.0000001192092896,
         -1.0,
         -1.0
       ],
       "type": "VEC3"
     },
     {
-      "bufferView": 1,
+      "bufferView": 2,
+      "byteOffset": 11904,
       "componentType": 5126,
-      "count": 1649,
+      "count": 992,
       "max": [
-        0.8750001192092896,
-        1.0000001192092896
+        0.9762411117553711,
+        0.9949957132339478,
+        0.9762411117553711
       ],
       "min": [
-        0.125,
+        -0.9762410521507263,
+        -0.9949957132339478,
+        -0.9762411117553711
+      ],
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 992,
+      "max": [
+        1.000000238418579,
+        1.0
+      ],
+      "min": [
+        0.0,
         0.0
       ],
       "type": "VEC2"
@@ -50,39 +50,39 @@
     {
       "bufferView": 0,
       "componentType": 5125,
-      "count": 9216,
+      "count": 1440,
       "type": "SCALAR"
     }
   ],
   "asset": {
     "extras": {
-      "author": "vijay verma (https://sketchfab.com/realvjy)",
+      "author": "thequinneffect (https://sketchfab.com/thequinneffect)",
       "license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
-      "source": "https://sketchfab.com/3d-models/spherefbx-3dd2cf55c1364c1ca4eb7d1543f0e89c",
-      "title": "sphere.fbx"
+      "source": "https://sketchfab.com/3d-models/s01c01-low-poly-sphere-eba0867abf704221944e5eb6a77f335d",
+      "title": "S01C01 Low Poly Sphere"
     },
-    "generator": "Sketchfab-12.66.0",
+    "generator": "Sketchfab-12.67.0",
     "version": "2.0"
   },
   "bufferViews": [
     {
       "buffer": 0,
-      "byteLength": 36864,
+      "byteLength": 5760,
       "name": "floatBufferViews",
       "target": 34963
     },
     {
       "buffer": 0,
-      "byteLength": 13192,
-      "byteOffset": 36864,
+      "byteLength": 7936,
+      "byteOffset": 5760,
       "byteStride": 8,
       "name": "floatBufferViews",
       "target": 34962
     },
     {
       "buffer": 0,
-      "byteLength": 39576,
-      "byteOffset": 50056,
+      "byteLength": 23808,
+      "byteOffset": 13696,
       "byteStride": 12,
       "name": "floatBufferViews",
       "target": 34962
@@ -90,29 +90,23 @@
   ],
   "buffers": [
     {
-      "byteLength": 89632,
+      "byteLength": 37504,
       "uri": "scene.bin"
     }
   ],
   "materials": [
     {
       "doubleSided": true,
-      "name": "Gradient",
+      "name": "Scene_-_Root",
       "pbrMetallicRoughness": {
-        "baseColorFactor": [
-          0.520346,
-          0.520346,
-          0.520346,
-          1.0
-        ],
         "metallicFactor": 0.0,
-        "roughnessFactor": 0.8959308
+        "roughnessFactor": 0.6
       }
     }
   ],
   "meshes": [
     {
-      "name": "Sphere_Gradient_0",
+      "name": "Object_0",
       "primitives": [
         {
           "attributes": {
@@ -156,59 +150,41 @@
       "children": [
         2
       ],
-      "matrix": [
-        0.009999999776482582,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.009999999776482582,
-        0.0,
-        0.0,
-        -0.009999999776482582,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        0.0,
-        1.0
-      ],
-      "name": "38d913403ede42c2a09bafc76ce9066c.fbx"
+      "name": "root"
     },
     {
       "children": [
         3
       ],
-      "name": "RootNode"
-    },
-    {
-      "children": [
-        4
-      ],
       "matrix": [
-        106.25345611572266,
+        1.0,
         0.0,
         0.0,
         0.0,
         0.0,
-        -1.731088525810368e-05,
-        -106.25345611572125,
+        2.220446049250313e-16,
+        1.0,
         0.0,
         0.0,
-        106.25345611572125,
-        -1.731088525810368e-05,
+        -1.0,
+        2.220446049250313e-16,
         0.0,
         0.0,
         0.0,
         0.0,
         1.0
       ],
-      "name": "Sphere"
+      "name": "GLTF_SceneRootNode"
+    },
+    {
+      "children": [
+        4
+      ],
+      "name": "Sphere_1"
     },
     {
       "mesh": 0,
-      "name": "Sphere_Gradient_0"
+      "name": "Object_4"
     }
   ],
   "scene": 0,

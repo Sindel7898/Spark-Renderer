@@ -16,9 +16,9 @@ DynamicDiffuse_RTGI::DynamicDiffuse_RTGI(const std::string filepath, VulkanConte
 	FilePath = filepath;
 
 	CreateVertexAndIndexBuffer();
-	CreateUniformBuffer();
+	CreateStorageBuffer();
 	createRayTracingDescriptorSetLayout();
-	GenerateGrid();
+	UpdateGrid = true;
 }
 void DynamicDiffuse_RTGI::CreateVertexAndIndexBuffer() {
 
@@ -35,22 +35,19 @@ void DynamicDiffuse_RTGI::CreateVertexAndIndexBuffer() {
 
 }
 
-void DynamicDiffuse_RTGI::CreateUniformBuffer()
+void DynamicDiffuse_RTGI::CreateStorageBuffer()
 {
 	{
-		ProbeWorldMatrixUniformBuffers.resize(1);
-		ProbeWorldMatrixUniformBuffersMappedMem.resize(1);
+		ProbeWorldMatrixStorageBuffers.resize(1);
 
-		VkDeviceSize VertexuniformBufferSize = sizeof(glm::mat4) * 1000;
+		VkDeviceSize ComputeStorageBufferSize = sizeof(glm::vec4) * 1000;
 
 		for (size_t i = 0; i < 1; i++)
 		{
 			BufferData bufferdata;
 			bufferdata.BufferID = "Prob Uniform Buffer" + i;
-			bufferManager->CreateBuffer(&bufferdata, VertexuniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
-			ProbeWorldMatrixUniformBuffers[i] = bufferdata;
-
-			ProbeWorldMatrixUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
+			bufferManager->CreateGPU_Only_Buffer(&bufferdata, ComputeStorageBufferSize, vk::BufferUsageFlagBits::eStorageBuffer, commandPool, vulkanContext->graphicsQueue);
+			ProbeWorldMatrixStorageBuffers[i] = bufferdata;
 		}
 	}
 }
@@ -85,28 +82,16 @@ void DynamicDiffuse_RTGI::UpdateProbeCount(glm::vec3 NewProbeCount)
 	NumOfProbesZ = (int)NewProbeCount.z;
 
 
-	if (LastNumOfProbesX != NumOfProbesX)
+	if (LastNumOfProbesX != NumOfProbesX || LastNumOfProbesY != NumOfProbesY || LastNumOfProbesZ != NumOfProbesZ)
 	{
 
 		LastNumOfProbesX = NumOfProbesX;
 
-		GenerateGrid();
+		UpdateGrid = true;
 	}
-
-	if (LastNumOfProbesY != NumOfProbesY)
+	else
 	{
-
-		LastNumOfProbesY = NumOfProbesY;
-
-		GenerateGrid();
-	}
-
-	if (LastNumOfProbesZ != NumOfProbesZ)
-	{
-
-		LastNumOfProbesZ = NumOfProbesZ;
-
-		GenerateGrid();
+		UpdateGrid = false;
 	}
 }
 
@@ -118,7 +103,11 @@ void DynamicDiffuse_RTGI::UpdateProbsOffset(glm::vec3 NewProbeOffset)
 	{
 		LastProbeOffset = ProbeOffset;
 
-		GenerateGrid();
+		UpdateGrid = true;
+	}
+	else
+	{
+		UpdateGrid = false;
 	}
 }
 
@@ -130,35 +119,12 @@ void DynamicDiffuse_RTGI::UpdateGridLocation(glm::vec3 NewGridLocation)
 	{
 		LastProbeOffset = GridLocation;
 
-		GenerateGrid();
+		UpdateGrid = true;
 	}
-}
-
-void DynamicDiffuse_RTGI::GenerateGrid()
-{
-	ProbeLocations.clear();
-	ProbeLocations.reserve(NumOfProbesX * NumOfProbesY * NumOfProbesZ);
-
-	for (int x = 0; x < NumOfProbesX; ++x)
+	else
 	{
-		for (int y = 0; y < NumOfProbesY; ++y)
-		{
-			for (int z = 0; z < NumOfProbesZ; ++z)
-			{
-				glm::vec3 position = glm::vec3(
-					ProbeOffset.x * x,
-					ProbeOffset.y * y,
-					ProbeOffset.z * z
-				);
-
-				glm::mat4 transform = glm::translate(glm::mat4(1.0f), (position + GridLocation));
-				ProbeLocations.push_back(transform);
-			}
-		}
+		UpdateGrid = false;
 	}
-
-	size_t dataSize = sizeof(glm::mat4) * ProbeLocations.size();
-	memcpy(ProbeWorldMatrixUniformBuffersMappedMem[0], ProbeLocations.data(), dataSize);
 }
 
 void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
@@ -179,7 +145,7 @@ void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
 		vk::DescriptorSetLayoutBinding  ProbeLocationUniformBuffer{};
 		ProbeLocationUniformBuffer.binding = 2;
 		ProbeLocationUniformBuffer.descriptorCount = 1;
-		ProbeLocationUniformBuffer.descriptorType = vk::DescriptorType::eUniformBuffer;
+		ProbeLocationUniformBuffer.descriptorType = vk::DescriptorType::eStorageBuffer;
 		ProbeLocationUniformBuffer.stageFlags = vk::ShaderStageFlagBits::eVertex;
 
 		std::array<vk::DescriptorSetLayoutBinding, 3> bindings = {
@@ -198,6 +164,28 @@ void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
 			throw std::runtime_error("Failed to create descriptorset layout!");
 		}
 	}
+
+
+	{
+		vk::DescriptorSetLayoutBinding ProbePositionStorageBufffer{};
+		ProbePositionStorageBufffer.binding = 0;
+		ProbePositionStorageBufffer.descriptorCount = 1;
+		ProbePositionStorageBufffer.descriptorType = vk::DescriptorType::eStorageBuffer;
+		ProbePositionStorageBufffer.stageFlags = vk::ShaderStageFlagBits::eCompute;
+
+		std::array<vk::DescriptorSetLayoutBinding, 1> bindings = { ProbePositionStorageBufffer };
+
+		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+		layoutInfo.pBindings = bindings.data();
+
+
+		if (vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &GridDescriptorSetLayout) != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("Failed to create descriptorset layout!");
+		}
+	}
+
 }
 
 
@@ -251,15 +239,15 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			ProbeVisibilityAtlasSamplerdescriptorWrite.pImageInfo = &ProbeVisibilityAtlasImageInfo;
 
 			vk::DescriptorBufferInfo ProbeLocationbufferInfo{};
-			ProbeLocationbufferInfo.buffer = ProbeWorldMatrixUniformBuffers[0].buffer;
+			ProbeLocationbufferInfo.buffer = ProbeWorldMatrixStorageBuffers[0].buffer;
 			ProbeLocationbufferInfo.offset = 0;
-			ProbeLocationbufferInfo.range = sizeof(glm::mat4) * 1000;
+			ProbeLocationbufferInfo.range = sizeof(glm::vec4) * 1000;
 
 			vk::WriteDescriptorSet ProbeLocationbufferdescriptorWrite{};
 			ProbeLocationbufferdescriptorWrite.dstSet = ProbeDescriptorSets[i];
 			ProbeLocationbufferdescriptorWrite.dstBinding = 2;
 			ProbeLocationbufferdescriptorWrite.dstArrayElement = 0;
-			ProbeLocationbufferdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+			ProbeLocationbufferdescriptorWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
 			ProbeLocationbufferdescriptorWrite.descriptorCount = 1;
 			ProbeLocationbufferdescriptorWrite.pBufferInfo = &ProbeLocationbufferInfo;
 
@@ -270,14 +258,47 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 		}
 	}
+
+
+	{
+		std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, GridDescriptorSetLayout);
+
+
+		vk::DescriptorSetAllocateInfo allocinfo;
+		allocinfo.descriptorPool = descriptorpool;
+		allocinfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		allocinfo.pSetLayouts = layouts.data();
+
+		GridDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+
+		vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, GridDescriptorSets.data());
+
+		////////////////////////////////////////////////////////////////////////////////////////////////
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+
+			vk::DescriptorBufferInfo ProbeLocationbufferInfo{};
+			ProbeLocationbufferInfo.buffer = ProbeWorldMatrixStorageBuffers[0].buffer;
+			ProbeLocationbufferInfo.offset = 0;
+			ProbeLocationbufferInfo.range = sizeof(glm::vec4) * 1000;
+
+			vk::WriteDescriptorSet ProbeLocationbufferdescriptorWrite{};
+			ProbeLocationbufferdescriptorWrite.dstSet = GridDescriptorSets[i];
+			ProbeLocationbufferdescriptorWrite.dstBinding = 0;
+			ProbeLocationbufferdescriptorWrite.dstArrayElement = 0;
+			ProbeLocationbufferdescriptorWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
+			ProbeLocationbufferdescriptorWrite.descriptorCount = 1;
+			ProbeLocationbufferdescriptorWrite.pBufferInfo = &ProbeLocationbufferInfo;
+
+
+			std::array<vk::WriteDescriptorSet, 1> descriptorWrites{ProbeLocationbufferdescriptorWrite };
+
+			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+		}
+	}
+
 }
 
 
-void DynamicDiffuse_RTGI::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref, std::vector<std::shared_ptr<Model>>& Modelref)
-{
-
-
-}
 
 
 uint32_t DynamicDiffuse_RTGI::alignedSize(uint32_t value, uint32_t alignment)
@@ -367,7 +388,7 @@ void DynamicDiffuse_RTGI::DrawNode(vk::CommandBuffer commandBuffer, vk::Pipeline
 				commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(CameraConstantBuffer), &cameraConstantBuffer);
 				commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &ProbeDescriptorSets[imageIndex], 0, nullptr);
 
-				commandBuffer.drawIndexed(node->meshPrimitives[i].numIndices, ProbeLocations.size(), node->meshPrimitives[i].indicesStart, 0, 0);
+				commandBuffer.drawIndexed(node->meshPrimitives[i].numIndices, NumOfProbesX * NumOfProbesY * NumOfProbesZ, node->meshPrimitives[i].indicesStart, 0, 0);
 			}
 		}
 
@@ -377,6 +398,25 @@ void DynamicDiffuse_RTGI::DrawNode(vk::CommandBuffer commandBuffer, vk::Pipeline
 	}
 }
 
+void DynamicDiffuse_RTGI::DispatchGridCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex)
+{
+	if (UpdateGrid)
+	{
+		uint32_t numElements = NumOfProbesX * NumOfProbesY * NumOfProbesZ;
+		uint32_t localSizeX = 32;
+		uint32_t workGroupsX = numElements / localSizeX;
+
+		GridData gridData;
+		gridData.probeCount = glm::vec4(NumOfProbesX, NumOfProbesY, NumOfProbesZ, 1);
+		gridData.probeOffset = glm::vec4(ProbeOffset, 1);
+		gridData.probeBaseLocation = glm::vec4(GridLocation, 1);
+
+		commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(GridData), &gridData);
+
+		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, 0, 1, &GridDescriptorSets[imageIndex], 0, nullptr);
+		commandBuffer.dispatch(workGroupsX, 1, 1);
+	}
+}
 
 void DynamicDiffuse_RTGI::Draw(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex)
 {
@@ -389,9 +429,36 @@ void DynamicDiffuse_RTGI::Draw(vk::CommandBuffer commandBuffer, vk::PipelineLayo
 	DrawNode(commandBuffer, pipelineLayout, imageIndex, storedModelData->nodes);
 }
 
+
+
 void DynamicDiffuse_RTGI::CleanUp()
 {
 
+	for (auto& buffer : ProbeWorldMatrixStorageBuffers)
+	{
+		if (buffer.buffer)
+		{
+			//bufferManager->UnmapMemory(buffer);
+			bufferManager->DestroyBuffer(buffer);
+		}
+	}
+
+	ProbeWorldMatrixStorageBuffers.clear();
+
+	if (vertexBufferData.buffer)
+	{
+		bufferManager->DestroyBuffer(vertexBufferData);
+	}
+
+	if (indexBufferData.buffer)
+	{
+		bufferManager->DestroyBuffer(indexBufferData);
+	}
+
+	vulkanContext->LogicalDevice.destroyDescriptorSetLayout(ProbeDescriptorSetLayout);
+
+
+	ProbeLocations.clear();
 }
 
 
