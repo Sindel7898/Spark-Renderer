@@ -204,22 +204,35 @@ void UserInterface::SetupDockingEnvironment()
 		first_time = false;
 
 		// Clear out any existing layout
-		ImGui::DockBuilderRemoveNode(dockspace_id);
-		ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
-		ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->Size);
-
-		// Split the dockspace
 		ImGuiID dock_main_id = dockspace_id;
 		ImGuiID dock_left_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.2f, nullptr, &dock_main_id);
 		ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.2f, nullptr, &dock_main_id);
-		ImGuiID dock_Bottom_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.2f, nullptr, &dock_main_id);
+		ImGuiID dock_bottom_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.2f, nullptr, &dock_main_id);
 
+		// Split the right panel vertically
 		ImGuiID dock_DetailsPanel_Top_id;
-		ImGuiID dock_DetailsPanel_Bottom_id = ImGui::DockBuilderSplitNode(dock_right_id, ImGuiDir_Down, 0.5, nullptr, &dock_DetailsPanel_Top_id);
+		ImGuiID dock_DetailsPanel_Bottom_id = ImGui::DockBuilderSplitNode(dock_right_id, ImGuiDir_Down, 0.5f, nullptr, &dock_DetailsPanel_Top_id);
+
+		// Split bottom dock horizontally for the two DDGI atlases
+		ImGuiID dock_DDGI_1_id;
+		ImGuiID dock_DDGI_2_id = ImGui::DockBuilderSplitNode(dock_bottom_id, ImGuiDir_Right, 0.5f, nullptr, &dock_DDGI_1_id);
+
 		// Dock windows
-		ImGui::DockBuilderDockWindow("Global Settings", dock_DetailsPanel_Bottom_id);
-		ImGui::DockBuilderDockWindow("Details Panel", dock_DetailsPanel_Top_id);
+		ImGui::SetNextWindowDockID(dock_main_id, ImGuiCond_Always);
 		ImGui::DockBuilderDockWindow("Main Viewport", dock_main_id);
+
+		ImGui::SetNextWindowDockID(dock_DDGI_1_id, ImGuiCond_FirstUseEver);
+		ImGui::DockBuilderDockWindow("DDGI Atlas", dock_DDGI_1_id);
+
+		ImGui::SetNextWindowDockID(dock_DDGI_2_id, ImGuiCond_FirstUseEver);
+		ImGui::DockBuilderDockWindow("DDGI Atlas 2", dock_DDGI_2_id);
+
+		ImGui::SetNextWindowDockID(dock_DetailsPanel_Bottom_id, ImGuiCond_FirstUseEver);
+		ImGui::DockBuilderDockWindow("Global Settings", dock_DetailsPanel_Bottom_id);
+
+		ImGui::SetNextWindowDockID(dock_DetailsPanel_Top_id, ImGuiCond_FirstUseEver);
+		ImGui::DockBuilderDockWindow("Details Panel", dock_DetailsPanel_Top_id);
+
 
 		ImGui::DockBuilderFinish(dockspace_id);
 	}
@@ -537,7 +550,6 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 
 		// Details Panel
 		ImGui::Begin("Details Panel");
-		ImGui::Dummy(ImVec2(0.0f, 20.0f));
 		ImGui::Separator();
 
 		float matrixTranslation[3], matrixRotation[3], matrixScale[3];
@@ -639,6 +651,19 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 			}
 		}
 		ImGui::End();
+	}
+
+
+	{
+		ImGui::Begin("DDGI Atlas");
+		ImGui::Image((ImTextureID)appref->DDGIIrradianceAtlas, viewportSize);
+		ImGui::End();
+
+		ImGui::Begin("DDGI Atlas 2");
+		ImGui::Image((ImTextureID)appref->DDGIVisibilityAtlas, viewportSize);
+		ImGui::End();
+
+
 	}
 
 	ImGui::End();

@@ -53,6 +53,7 @@ public:
 
     vk::DescriptorSetLayout        ProbeDescriptorSetLayout;
     vk::DescriptorSetLayout        GridDescriptorSetLayout;
+    vk::DescriptorSetLayout        RaytracingDescriptorSetLayout;
 
     std::vector<vk::DescriptorSet> ProbeDescriptorSets;
     std::vector<vk::DescriptorSet> GridDescriptorSets;
@@ -82,8 +83,7 @@ public:
 
 
     std::vector<BufferData> ProbePositionsStorageBuffers;
-    std::vector<BufferData> ProbeFibonacci
-        DirectionsStorageBuffers;
+    std::vector<BufferData> ProbeFibonacciDirectionsStorageBuffers;
 
 private:
 

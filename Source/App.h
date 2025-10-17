@@ -31,6 +31,7 @@ class FramesPerSecondCounter;
 class Light;
 class SkyBox;
 class Model;
+//class TracyVkCtx;
 
 struct GBuffer;
 
@@ -141,6 +142,8 @@ public:
 	VkDescriptorSet SSGITextureId;
 	VkDescriptorSet RT_ReflectionTextureId;
 	VkDescriptorSet RT_BluredReflectionTextureId;
+	VkDescriptorSet DDGIIrradianceAtlas;
+	VkDescriptorSet DDGIVisibilityAtlas;
 
 
 	std::vector<std::shared_ptr<Model>> Models;
@@ -254,4 +257,7 @@ private:
 	vk::DebugUtilsLabelEXT FXAA_Label;
 	vk::DebugUtilsLabelEXT RTReflections_Label;
 
+
+	///Tracy
+	//TracyVkCtx tracyVkContext;
 };

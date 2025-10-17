@@ -4,7 +4,7 @@ layout(binding = 0) writeonly buffer StorageBuffer {
    vec4 Position[];
 } SB0;
 
-layout(binding = 0) writeonly buffer StorageBuffer2 {
+layout(binding = 1) writeonly buffer StorageBuffer2 {
    vec4 FibonacciDirections[];
 } SB02;
 
@@ -57,7 +57,7 @@ void main()
    const float PI   = 3.14159265359;
    const float phi  =  PI * (sqrt(5) - 1); // golden angle in radians
 
-   float Fibo_Y  = 1.0 - (index/ (SampleCount - 1)) * 2.0; // y from 1 to -1
+   float Fibo_Y = 1.0 - (float(index) / float(SampleCount - 1)) * 2.0;
    float radius = sqrt(1.0 - Fibo_Y * Fibo_Y); // radius at y
    float theta = phi * index;
 

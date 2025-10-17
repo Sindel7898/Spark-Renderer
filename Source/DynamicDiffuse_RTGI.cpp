@@ -187,7 +187,13 @@ void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
 		ProbePositionStorageBufffer.descriptorType = vk::DescriptorType::eStorageBuffer;
 		ProbePositionStorageBufffer.stageFlags = vk::ShaderStageFlagBits::eCompute;
 
-		std::array<vk::DescriptorSetLayoutBinding, 1> bindings = { ProbePositionStorageBufffer };
+		vk::DescriptorSetLayoutBinding FibonacciDirectionsStorageBufffer{};
+		FibonacciDirectionsStorageBufffer.binding = 1;
+		FibonacciDirectionsStorageBufffer.descriptorCount = 1;
+		FibonacciDirectionsStorageBufffer.descriptorType = vk::DescriptorType::eStorageBuffer;
+		FibonacciDirectionsStorageBufffer.stageFlags = vk::ShaderStageFlagBits::eCompute;
+
+		std::array<vk::DescriptorSetLayoutBinding, 2> bindings = { ProbePositionStorageBufffer,FibonacciDirectionsStorageBufffer };
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -199,6 +205,96 @@ void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
 			throw std::runtime_error("Failed to create descriptorset layout!");
 		}
 	}
+
+
+	//{
+	//	vk::DescriptorSetLayoutBinding TLASLayout{};
+	//	TLASLayout.binding = 0;
+	//	TLASLayout.descriptorCount = 1;
+	//	TLASLayout.descriptorType = vk::DescriptorType::eAccelerationStructureKHR;
+	//	TLASLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+	//
+	//	vk::DescriptorSetLayoutBinding AlbedoAssetTexturesSamplerLayout{};
+	//	AlbedoAssetTexturesSamplerLayout.binding = 1;
+	//	AlbedoAssetTexturesSamplerLayout.descriptorCount = bufferManager->AllScene_Albedo_Images.size();
+	//	AlbedoAssetTexturesSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	//	AlbedoAssetTexturesSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+	//
+	//	vk::DescriptorSetLayoutBinding NormalAssetTexturesSamplerLayout{};
+	//	NormalAssetTexturesSamplerLayout.binding = 2;
+	//	NormalAssetTexturesSamplerLayout.descriptorCount = bufferManager->AllScene_Normal_Images.size();
+	//	NormalAssetTexturesSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	//	NormalAssetTexturesSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+	//
+	//	vk::DescriptorSetLayoutBinding MetalicRoughnessAssetTexturesSamplerLayout{};
+	//	MetalicRoughnessAssetTexturesSamplerLayout.binding = 3;
+	//	MetalicRoughnessAssetTexturesSamplerLayout.descriptorCount = bufferManager->AllScene_MetalicRoughness_Images.size();
+	//	MetalicRoughnessAssetTexturesSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	//	MetalicRoughnessAssetTexturesSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+	//
+	//	vk::DescriptorSetLayoutBinding IndexStorageBuffersLayout{};
+	//	IndexStorageBuffersLayout.binding = 4;
+	//	IndexStorageBuffersLayout.descriptorCount = 1;
+	//	IndexStorageBuffersLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
+	//	IndexStorageBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+	//
+	//	vk::DescriptorSetLayoutBinding VertexStorageBuffersLayout{};
+	//	VertexStorageBuffersLayout.binding = 5;
+	//	VertexStorageBuffersLayout.descriptorCount = 1;
+	//	VertexStorageBuffersLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
+	//	VertexStorageBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+	//
+	//	vk::DescriptorSetLayoutBinding offsetStorageBuffersLayout{};
+	//	offsetStorageBuffersLayout.binding = 6;
+	//	offsetStorageBuffersLayout.descriptorCount = 1;
+	//	offsetStorageBuffersLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
+	//	offsetStorageBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+	//
+	//	vk::DescriptorSetLayoutBinding trasnformationUniformBuffersLayout{};
+	//	trasnformationUniformBuffersLayout.binding = 7;
+	//	trasnformationUniformBuffersLayout.descriptorCount = 1;
+	//	trasnformationUniformBuffersLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
+	//	trasnformationUniformBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+	//
+	//	vk::DescriptorSetLayoutBinding IrradianceAtlasStorageLayout{};
+	//	IrradianceAtlasStorageLayout.binding = 8;
+	//	IrradianceAtlasStorageLayout.descriptorCount = 1;
+	//	IrradianceAtlasStorageLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
+	//	IrradianceAtlasStorageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+	//
+	//	vk::DescriptorSetLayoutBinding  VisibilitiyAtlasStorageLayout{};
+	//	VisibilitiyAtlasStorageLayout.binding = 9;
+	//	VisibilitiyAtlasStorageLayout.descriptorCount = 1;
+	//	VisibilitiyAtlasStorageLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
+	//	VisibilitiyAtlasStorageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+	//
+	//	std::array<vk::DescriptorSetLayoutBinding, 9> bindings = {
+	//															   TLASLayout,
+	//															   AlbedoAssetTexturesSamplerLayout,
+	//															   NormalAssetTexturesSamplerLayout,
+	//															   IndexStorageBuffersLayout,
+	//															   VertexStorageBuffersLayout,
+	//															   offsetStorageBuffersLayout,
+	//															   trasnformationUniformBuffersLayout,
+	//															   IrradianceAtlasStorageLayout,VisibilitiyAtlasStorageLayout
+	//	};
+	//
+	//
+	//
+	//	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
+	//	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+	//	layoutInfo.pBindings = bindings.data();
+	//
+	//
+	//	if (vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &RaytracingDescriptorSetLayout) != vk::Result::eSuccess)
+	//	{
+	//		throw std::runtime_error("Failed to create descriptorset layout!");
+	//	}
+	//
+	//}
+
+
+
 
 }
 
@@ -303,16 +399,27 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			ProbeLocationbufferdescriptorWrite.descriptorCount = 1;
 			ProbeLocationbufferdescriptorWrite.pBufferInfo = &ProbeLocationbufferInfo;
 
+			vk::DescriptorBufferInfo FibonacciDirectionsbufferInfo{};
+			FibonacciDirectionsbufferInfo.buffer = ProbeFibonacciDirectionsStorageBuffers[0].buffer;
+			FibonacciDirectionsbufferInfo.offset = 0;
+			FibonacciDirectionsbufferInfo.range = sizeof(glm::vec4) * 60;
 
-			std::array<vk::WriteDescriptorSet, 1> descriptorWrites{ProbeLocationbufferdescriptorWrite };
+			vk::WriteDescriptorSet FibonacciDirectionsbufferdescriptorWrite{};
+			FibonacciDirectionsbufferdescriptorWrite.dstSet = GridDescriptorSets[i];
+			FibonacciDirectionsbufferdescriptorWrite.dstBinding = 1;
+			FibonacciDirectionsbufferdescriptorWrite.dstArrayElement = 0;
+			FibonacciDirectionsbufferdescriptorWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
+			FibonacciDirectionsbufferdescriptorWrite.descriptorCount = 1;
+			FibonacciDirectionsbufferdescriptorWrite.pBufferInfo = &FibonacciDirectionsbufferInfo;
+
+
+			std::array<vk::WriteDescriptorSet, 2> descriptorWrites{ProbeLocationbufferdescriptorWrite,FibonacciDirectionsbufferdescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 		}
 	}
 
 }
-
-
 
 
 uint32_t DynamicDiffuse_RTGI::alignedSize(uint32_t value, uint32_t alignment)
@@ -456,6 +563,16 @@ void DynamicDiffuse_RTGI::CleanUp()
 			bufferManager->DestroyBuffer(buffer);
 		}
 	}
+
+	for (auto& buffer : ProbeFibonacciDirectionsStorageBuffers)
+	{
+		if (buffer.buffer)
+		{
+			//bufferManager->UnmapMemory(buffer);
+			bufferManager->DestroyBuffer(buffer);
+		}
+	}
+
 
 	ProbePositionsStorageBuffers.clear();
 

@@ -22,6 +22,7 @@
 #include "SSAO_FullScreenQuad.h"
 #include "Lighting_FullScreenQuad.h"
 #include <pix.h>
+#include "Tracy.hpp"
 
 #define DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
 
@@ -238,6 +239,15 @@ void App::CreateDebugUtils()
 	FXAA_Label.pLabelName           = "FXAA Pass";
 	RTReflections_Label.pLabelName  = "Raytraced Reflections Pass";
 
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.commandPool = commandPool;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandBufferCount = 1;
+	VkCommandBuffer initCmd;
+	//vkAllocateCommandBuffers(device, &allocInfo, &initCmd);
+
+	//tracyVkContext = TracyVkContext(physicalDevice, device, graphicsQueue, initCmd);
 
 }
 
@@ -635,6 +645,8 @@ void App::createGBuffer()
 	TransitionToGeneral.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
 	TransitionToGeneral.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
 
+	vulkanContext.ResetTemporalAccumilation();
+
 	bufferManger.TransitionImage(cmd, &gbuffer.Position, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &gbuffer.ViewSpacePosition, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &gbuffer.Normal, TransitionToGeneral);
@@ -710,7 +722,14 @@ void App::createGBuffer()
 	RT_BluredReflectionTextureId = ImGui_ImplVulkan_AddTexture(RT_Reflection->FullBlurReflectionPassImage.imageSampler,
 		                                                       RT_Reflection->FullBlurReflectionPassImage.imageView,
 		                                                       VK_IMAGE_LAYOUT_GENERAL);
-	vulkanContext.ResetTemporalAccumilation();
+
+	DDGIIrradianceAtlas = ImGui_ImplVulkan_AddTexture(dynamicDiffuse_RTGI->IrradianceImageAtlasImage.imageSampler,
+		                                              dynamicDiffuse_RTGI->IrradianceImageAtlasImage.imageView,
+		                                              VK_IMAGE_LAYOUT_GENERAL);
+
+	DDGIVisibilityAtlas = ImGui_ImplVulkan_AddTexture(dynamicDiffuse_RTGI->ProbeVisibilityAtlasImage.imageSampler,
+		                                              dynamicDiffuse_RTGI->ProbeVisibilityAtlasImage.imageView,
+		                                              VK_IMAGE_LAYOUT_GENERAL);
 
 	std::cout << "Swapchain size: "
 		<< vulkanContext.swapchainExtent.width << " x "
@@ -2894,7 +2913,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		vk::BufferMemoryBarrier barrier{};
 		barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
 		barrier.dstAccessMask = vk::AccessFlagBits::eVertexAttributeRead;
-		barrier.buffer = dynamicDiffuse_RTGI->ProbeWorldMatrixStorageBuffers[0].buffer;
+		barrier.buffer = dynamicDiffuse_RTGI->ProbePositionsStorageBuffers[0].buffer;
 		barrier.offset = 0;
 		barrier.size = VK_WHOLE_SIZE;
 
@@ -2907,7 +2926,21 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			0, nullptr
 		);
 
+		vk::BufferMemoryBarrier barrier2{};
+		barrier2.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+		barrier2.dstAccessMask = vk::AccessFlagBits::eVertexAttributeRead;
+		barrier2.buffer = dynamicDiffuse_RTGI->ProbeFibonacciDirectionsStorageBuffers[0].buffer;
+		barrier2.offset = 0;
+		barrier2.size = VK_WHOLE_SIZE;
 
+		commandBuffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eComputeShader,
+			vk::PipelineStageFlagBits::eVertexInput,
+			{},
+			0, nullptr,
+			1, & barrier2,
+			0, nullptr
+		);
 	}
 
 	{
