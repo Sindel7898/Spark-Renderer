@@ -4,6 +4,26 @@ layout(set = 0, binding = 0,rgba16f)  uniform image2D Radiance_Visibility;
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
+//https://stackoverflow.com/questions/1730961/convert-a-2d-array-index-into-a-1d-index
+//convert the current pixel into an index for the probes
+int get_probe_index_from_pixels(ivec2 pixel_coords, int atlas_width, int probe_full_size) {
+    
+    int probes_per_row      = atlas_width  / probe_full_size; // How many probes can  be fit in one row of the atlas
+    ivec2 probe_grid_coords = pixel_coords / probe_full_size; // What probe in the atlas am i in ?
+
+    return probe_grid_coords.y * probes_per_row + probe_grid_coords.x;
+}
+
+
+vec2 get_probe_normalized_uv(ivec2 pixel_coords, int probe_full_size) {
+    int GuttarSize = 2; // Modify both of these with a push constnt
+    int TotalSizeOfProbePixels = 66; //
+
+    ivec2 inner_coords = pixel_coords % probe_full_size; // what pixel inside the probe am i in ? 
+    float gutter_offset = float(GuttarSize) / 2.0; //offset to accomodate for Guttar 
+
+    return (vec2(inner_coords) - gutter_offset) / float(TotalSizeOfProbePixels - 1.0);  // Remap to [0, 1] UV space
+}
 void main() 
 {
     uint index = gl_GlobalInvocationID.x;
