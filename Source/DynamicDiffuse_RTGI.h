@@ -63,8 +63,10 @@ public:
     //ImageData DDGI_MaterialImageAtlasImage;
 
     ImageData RadianceImageAtlasImage;
+    ImageData IradianceImageAtlasImage;
 
-    vk::Extent3D swapchainextent;
+    vk::Extent3D RadianceImageExtent;
+    vk::Extent3D IradianceImageExtent;
 
     std::vector<glm::mat4> ProbeLocations;
 
@@ -78,6 +80,9 @@ public:
 
     glm::vec3 GridLocation     = glm::vec3(-90.000, 0, -50.000);
 
+
+    int ProbeSideLength = (8 * 8);
+    int GutterSize = 2;
 
     int Last_NumOfProbesX;
     int Last_NumOfProbesY;

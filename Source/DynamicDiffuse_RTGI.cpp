@@ -68,13 +68,24 @@ void DynamicDiffuse_RTGI::CreateStorageBuffer()
 void DynamicDiffuse_RTGI::CreateStorageImage() {
 
 	 int ProbeNum = NumOfProbesX * NumOfProbesY * NumOfProbesZ;
-	 swapchainextent = vk::Extent3D(RaysPerProbe, ProbeNum, 1);
+	 RadianceImageExtent = vk::Extent3D(RaysPerProbe, ProbeNum, 1);
 
 	 RadianceImageAtlasImage.ImageID = " DDGI Irradiance Atlas Image";
-	 bufferManager->CreateImage(&RadianceImageAtlasImage, swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
+	 bufferManager->CreateImage(&RadianceImageAtlasImage, RadianceImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
 	 RadianceImageAtlasImage.imageView = bufferManager->CreateImageView(&RadianceImageAtlasImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	 RadianceImageAtlasImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge,false);
      
+	 int IrradianceSize = (ProbeSideLength + GutterSize);
+	 int probesPerRow = static_cast<int>(ceil(sqrt(ProbeNum))); // find square root and round up
+	 int AtlasSize = IrradianceSize * probesPerRow;
+
+	 IradianceImageExtent = vk::Extent3D(AtlasSize, AtlasSize, 1);
+
+	 IradianceImageAtlasImage.ImageID = " DDGI Irradiance Atlas Image";
+	 bufferManager->CreateImage(&IradianceImageAtlasImage, IradianceImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
+	 IradianceImageAtlasImage.imageView = bufferManager->CreateImageView(&IradianceImageAtlasImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	 IradianceImageAtlasImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
+
 }
 
 
@@ -83,6 +94,12 @@ void DynamicDiffuse_RTGI::DestroyStorageImage() {
 	if (RadianceImageAtlasImage.image)
 	{
 		bufferManager->DestroyImage(RadianceImageAtlasImage);
+	}
+
+
+	if (IradianceImageAtlasImage.image)
+	{
+		bufferManager->DestroyImage(IradianceImageAtlasImage);
 	}
 }
 

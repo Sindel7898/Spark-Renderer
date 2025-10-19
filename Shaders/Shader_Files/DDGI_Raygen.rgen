@@ -38,6 +38,7 @@ void main() {
     traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, probeOrigin.xyz, tMin, rayDirection, tMax, 0);
      
      vec3 Radiance = payload.Color;
+     float Distance = payload.Distance;
 
-    imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(Radiance,1));
+    imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(Radiance,Distance));
 }
