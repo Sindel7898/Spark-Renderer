@@ -213,19 +213,13 @@ void UserInterface::SetupDockingEnvironment()
 		ImGuiID dock_DetailsPanel_Top_id;
 		ImGuiID dock_DetailsPanel_Bottom_id = ImGui::DockBuilderSplitNode(dock_right_id, ImGuiDir_Down, 0.5f, nullptr, &dock_DetailsPanel_Top_id);
 
-		// Split bottom dock horizontally for the two DDGI atlases
-		ImGuiID dock_DDGI_1_id;
-		ImGuiID dock_DDGI_2_id = ImGui::DockBuilderSplitNode(dock_bottom_id, ImGuiDir_Right, 0.5f, nullptr, &dock_DDGI_1_id);
 
 		// Dock windows
 		ImGui::SetNextWindowDockID(dock_main_id, ImGuiCond_Always);
 		ImGui::DockBuilderDockWindow("Main Viewport", dock_main_id);
 
-		ImGui::SetNextWindowDockID(dock_DDGI_1_id, ImGuiCond_FirstUseEver);
-		ImGui::DockBuilderDockWindow("DDGI Atlas", dock_DDGI_1_id);
-
-		ImGui::SetNextWindowDockID(dock_DDGI_2_id, ImGuiCond_FirstUseEver);
-		ImGui::DockBuilderDockWindow("DDGI Atlas 2", dock_DDGI_2_id);
+		ImGui::SetNextWindowDockID(dock_bottom_id, ImGuiCond_FirstUseEver);
+		ImGui::DockBuilderDockWindow("DDGI Atlas", dock_bottom_id);
 
 		ImGui::SetNextWindowDockID(dock_DetailsPanel_Bottom_id, ImGuiCond_FirstUseEver);
 		ImGui::DockBuilderDockWindow("Global Settings", dock_DetailsPanel_Bottom_id);
@@ -399,24 +393,17 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 
 			ImGui::TextDisabled("Adjust probe parameters:");
 
+			ImGui::SliderInt("Rays Per Probe", &appref->dynamicDiffuse_RTGI->RaysPerProbe, 1, 300, "%d");
 
-			ImGui::SliderInt("X Count", &TempNumOfProbesX, 0, 10, "%d");
-			ImGui::SliderInt("Y Count", &TempNumOfProbesY, 0, 10, "%d");
-			ImGui::SliderInt("Z Count", &TempNumOfProbesZ, 0, 10, "%d");
+			ImGui::SliderInt("X Count", &appref->dynamicDiffuse_RTGI->NumOfProbesX, 1, 10, "%d");
+			ImGui::SliderInt("Y Count", &appref->dynamicDiffuse_RTGI->NumOfProbesY, 1, 10, "%d");
+			ImGui::SliderInt("Z Count", &appref->dynamicDiffuse_RTGI->NumOfProbesZ, 1, 10, "%d");
 
+			ImGui::SliderFloat("X Offset", &appref->dynamicDiffuse_RTGI->Last_ProbeOffset.x, -20, 20, "%.2f");
+			ImGui::SliderFloat("Y Offset", &appref->dynamicDiffuse_RTGI->Last_ProbeOffset.y, -20, 20, "%.2f");
+			ImGui::SliderFloat("Z Offset", &appref->dynamicDiffuse_RTGI->Last_ProbeOffset.z, -20, 20, "%.2f");
 
-			appref->dynamicDiffuse_RTGI->UpdateProbeCount(glm::vec3(TempNumOfProbesX, TempNumOfProbesY, TempNumOfProbesZ));
-
-
-			ImGui::SliderFloat("X Offset", &TempProbesoffsetX, -20, 20, "%.2f");
-			ImGui::SliderFloat("Y Offset", &TempProbesoffsetY, -20, 20, "%.2f");
-			ImGui::SliderFloat("Z Offset", &TempProbesoffsetZ, -20, 20, "%.2f");
-
-			appref->dynamicDiffuse_RTGI->UpdateProbsOffset(glm::vec3(TempProbesoffsetX, TempProbesoffsetY, TempProbesoffsetZ));
-
-			ImGui::InputFloat3("GridLocation", glm::value_ptr(TempGridLocation));
-
-			appref->dynamicDiffuse_RTGI->UpdateGridLocation(TempGridLocation);
+			ImGui::InputFloat3("GridLocation", glm::value_ptr(appref->dynamicDiffuse_RTGI->GridLocation));
 
 			ImGui::EndChild();
 		}
@@ -653,17 +640,11 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 		ImGui::End();
 	}
 
-
 	{
 		ImGui::Begin("DDGI Atlas");
-		ImGui::Image((ImTextureID)appref->DDGIIrradianceAtlas, viewportSize);
+		viewportSize = ImGui::GetContentRegionAvail();
+		ImGui::Image((ImTextureID)appref->DDGIIrradianceAtlasID, viewportSize);
 		ImGui::End();
-
-		ImGui::Begin("DDGI Atlas 2");
-		ImGui::Image((ImTextureID)appref->DDGIVisibilityAtlas, viewportSize);
-		ImGui::End();
-
-
 	}
 
 	ImGui::End();

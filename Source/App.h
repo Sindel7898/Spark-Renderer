@@ -142,8 +142,7 @@ public:
 	VkDescriptorSet SSGITextureId;
 	VkDescriptorSet RT_ReflectionTextureId;
 	VkDescriptorSet RT_BluredReflectionTextureId;
-	VkDescriptorSet DDGIIrradianceAtlas;
-	VkDescriptorSet DDGIVisibilityAtlas;
+	VkDescriptorSet DDGIIrradianceAtlasID;
 
 
 	std::vector<std::shared_ptr<Model>> Models;

@@ -37,6 +37,18 @@ layout(set = 0, binding = 7) uniform Transformation {
     mat4 WorldMatrix[10];
 } Transformations;
 
+
+struct LightData{
+    vec4    positionAndLightType;
+    vec4    colorAndAmbientStrength;
+    vec4    CameraPositionAndLightIntensity;
+};
+
+layout(set = 0, binding = 11) uniform LightUniformBuffer {
+
+   LightData lights[4];
+};
+
 struct Payload {
     vec3 Color;
     float Distance;
@@ -112,10 +124,49 @@ void main()
     Normal = tnorm;
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    vec3  LightDir = vec3(1,1,1);
+    const float Constant   = 1.0;
+    const float Linear     = 0.09;
+    const float Quadratic  = 0.032;
+    
+    vec3 radiance          = vec3(0.0);
+    vec3 totalLighting     = vec3(0.0);
 
+    vec4  WorldPos  =  Transformations.WorldMatrix[objectID] * vec4(VertexPosition,1);
+    vec3  ViewDir    = -normalize(gl_WorldRayDirectionEXT);
+
+    for (int i = 0; i < 4; i++) {
   
+     LightData light = lights[i];
+  
+  
+     vec3 Lo      = vec3(0.0);
+  
+  
+      if(light.positionAndLightType.w < 0.5){
+  
+         LightDir = normalize(-light.positionAndLightType.xyz);
+         radiance = light.colorAndAmbientStrength.rgb ;
+  
+       }
+      else if (light.positionAndLightType.w > 0.5){
+               
+           vec3 LightPos   = light.positionAndLightType.xyz;
+               LightDir    = normalize(LightPos - WorldPos.xyz);
+         float Distance    = length(LightPos -  WorldPos.xyz);
+         float Attenuation = 1.0 / (Constant + Linear * Distance + Quadratic * (Distance * Distance));
+               radiance    = light.colorAndAmbientStrength.rgb * Attenuation;
+       }  
+  
+     float NdotL = max(dot(Normal, LightDir), 0.0);        
+             Lo += radiance * NdotL;
+  
+  
+     totalLighting +=  ((Lo) * light.CameraPositionAndLightIntensity.a);
+  }
 
-     payload.Color    = vec3(1);
+
+     payload.Color    = totalLighting;
      payload.Distance = gl_RayTmaxEXT;
      payload.Normal   = Normal;
 

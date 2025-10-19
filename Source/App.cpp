@@ -622,7 +622,6 @@ void App::createGBuffer()
 	Combined_FullScreenQuad->CreateImage(swapchainextent);
 	ssao_FullScreenQuad->CreateImage();
 	RT_Reflection->CreateStorageImage();
-	dynamicDiffuse_RTGI->CreateStorageImage();
 
 	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&ReflectionMaskImageData,&RT_Reflection->FullBlurReflectionPassImage);
 	ssao_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
@@ -632,7 +631,6 @@ void App::createGBuffer()
 	Raytracing_Shadows->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
 	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, LightingPassImageData,DepthTextureData);
 	RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer, lighting_FullScreenQuad->fragmentUniformBuffers,skyBox.get());
-	dynamicDiffuse_RTGI->createRaytracedDescriptorSets(DescriptorPool);
 
 
 	vk::CommandBuffer cmd =  bufferManger.CreateSingleUseCommandBuffer(commandPool);
@@ -723,13 +721,7 @@ void App::createGBuffer()
 		                                                       RT_Reflection->FullBlurReflectionPassImage.imageView,
 		                                                       VK_IMAGE_LAYOUT_GENERAL);
 
-	DDGIIrradianceAtlas = ImGui_ImplVulkan_AddTexture(dynamicDiffuse_RTGI->IrradianceImageAtlasImage.imageSampler,
-		                                              dynamicDiffuse_RTGI->IrradianceImageAtlasImage.imageView,
-		                                              VK_IMAGE_LAYOUT_GENERAL);
 
-	DDGIVisibilityAtlas = ImGui_ImplVulkan_AddTexture(dynamicDiffuse_RTGI->ProbeVisibilityAtlasImage.imageSampler,
-		                                              dynamicDiffuse_RTGI->ProbeVisibilityAtlasImage.imageView,
-		                                              VK_IMAGE_LAYOUT_GENERAL);
 
 	std::cout << "Swapchain size: "
 		<< vulkanContext.swapchainExtent.width << " x "
@@ -1796,6 +1788,11 @@ void App::DestroyShaderBindingTable() {
 	bufferManger.DestroyBuffer(Reflection_raygenShaderBindingTableBuffer);
 	bufferManger.DestroyBuffer(Reflection_missShaderBindingTableBuffer);
 	bufferManger.DestroyBuffer(Reflection_hitShaderBindingTableBuffer);
+
+
+	bufferManger.DestroyBuffer(DDGI_raygenShaderBindingTableBuffer);
+	bufferManger.DestroyBuffer(DDGI_missShaderBindingTableBuffer);
+	bufferManger.DestroyBuffer(DDGI_hitShaderBindingTableBuffer);
 }
 
 
@@ -2003,6 +2000,17 @@ void App::updateUniformBuffer(uint32_t currentImage) {
     SSGI_FullScreenQuad->UpdateUniformBuffer(currentImage, lights,deltaTime);
 	RT_Reflection->UpdateUniformBuffer(currentImage, lights, Models);
 
+	bool ddgiRecreated = dynamicDiffuse_RTGI->UpdateUniformBuffer(DescriptorPool, TLAS, lighting_FullScreenQuad->fragmentUniformBuffers);
+
+	if (ddgiRecreated)
+	{
+
+		DDGIIrradianceAtlasID = ImGui_ImplVulkan_AddTexture(
+			dynamicDiffuse_RTGI->RadianceImageAtlasImage.imageSampler,
+			dynamicDiffuse_RTGI->RadianceImageAtlasImage.imageView,
+			VK_IMAGE_LAYOUT_GENERAL
+		);
+	}
 }
 
 void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) {
@@ -2164,6 +2172,17 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, SSAO_Label);
 	{
+		ImageTransitionData GBufferDepthToSample{};
+		GBufferDepthToSample.oldlayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+		GBufferDepthToSample.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		GBufferDepthToSample.AspectFlag = vk::ImageAspectFlagBits::eDepth;
+		GBufferDepthToSample.SourceAccessflag = vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+		GBufferDepthToSample.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
+		GBufferDepthToSample.SourceOnThePipeline = vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests;
+		GBufferDepthToSample.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
+
+		bufferManger.TransitionImage(commandBuffer, &DepthTextureData, GBufferDepthToSample);
+
 		vk::RenderingAttachmentInfo SSAOColorAttachment{};
 		SSAOColorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
 		SSAOColorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
@@ -2268,6 +2287,71 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	}
 
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
+
+
+	{
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, GridComputePassPipeline);
+
+		dynamicDiffuse_RTGI->DispatchGridCompute(commandBuffer, GridComputePipelineLayout, currentFrame);
+		dynamicDiffuse_RTGI->DispatchDirectionsCompute(commandBuffer, GridComputePipelineLayout, currentFrame);
+
+		vk::BufferMemoryBarrier barrier{};
+		barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+		barrier.buffer = dynamicDiffuse_RTGI->ProbePositionsStorageBuffers[0].buffer;
+		barrier.offset = 0;
+		barrier.size = VK_WHOLE_SIZE;
+
+		commandBuffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eComputeShader,
+			vk::PipelineStageFlagBits::eRayTracingShaderKHR,
+			{},
+			0, nullptr,
+			1, &barrier,
+			0, nullptr
+		);
+
+		vk::BufferMemoryBarrier barrier2{};
+		barrier2.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+		barrier2.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+		barrier2.buffer = dynamicDiffuse_RTGI->ProbeFibonacciDirectionsStorageBuffers[0].buffer;
+		barrier2.offset = 0;
+		barrier2.size = VK_WHOLE_SIZE;
+
+		commandBuffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eComputeShader,
+			vk::PipelineStageFlagBits::eRayTracingShaderKHR,
+			{},
+			0, nullptr,
+			1, &barrier2,
+			0, nullptr
+		);
+	}
+
+	{
+		ImageTransitionData TransitiontoGeneralRT{};
+		TransitiontoGeneralRT.oldlayout = vk::ImageLayout::eUndefined;
+		TransitiontoGeneralRT.newlayout = vk::ImageLayout::eGeneral;
+		TransitiontoGeneralRT.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitiontoGeneralRT.SourceAccessflag = vk::AccessFlagBits::eNone;
+		TransitiontoGeneralRT.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
+		TransitiontoGeneralRT.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
+		TransitiontoGeneralRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+
+	    bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->RadianceImageAtlasImage, TransitiontoGeneralRT);
+
+
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_DDGIPassPipeline);
+
+		dynamicDiffuse_RTGI->Draw(
+			DDGI_raygenShaderBindingTableBuffer,
+			DDGI_hitShaderBindingTableBuffer,
+			DDGI_missShaderBindingTableBuffer,
+			commandBuffer,
+			RT_DDGIPipelineLayout,
+			currentFrame);
+	}
+
 
 
 	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, RTShadows_Label);
@@ -3020,43 +3104,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.endRendering();
 	}
 
-	{
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, GridComputePassPipeline);
-
-		dynamicDiffuse_RTGI->DispatchGridCompute(commandBuffer, GridComputePipelineLayout, currentFrame);
-
-		vk::BufferMemoryBarrier barrier{};
-		barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
-		barrier.dstAccessMask = vk::AccessFlagBits::eVertexAttributeRead;
-		barrier.buffer = dynamicDiffuse_RTGI->ProbePositionsStorageBuffers[0].buffer;
-		barrier.offset = 0;
-		barrier.size = VK_WHOLE_SIZE;
-
-		commandBuffer.pipelineBarrier(
-			vk::PipelineStageFlagBits::eComputeShader,
-			vk::PipelineStageFlagBits::eVertexInput,
-			{},
-			0, nullptr,
-			1, & barrier,
-			0, nullptr
-		);
-
-		vk::BufferMemoryBarrier barrier2{};
-		barrier2.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
-		barrier2.dstAccessMask = vk::AccessFlagBits::eVertexAttributeRead;
-		barrier2.buffer = dynamicDiffuse_RTGI->ProbeFibonacciDirectionsStorageBuffers[0].buffer;
-		barrier2.offset = 0;
-		barrier2.size = VK_WHOLE_SIZE;
-
-		commandBuffer.pipelineBarrier(
-			vk::PipelineStageFlagBits::eComputeShader,
-			vk::PipelineStageFlagBits::eVertexInput,
-			{},
-			0, nullptr,
-			1, & barrier2,
-			0, nullptr
-		);
-	}
 
 	{
 
@@ -3162,8 +3209,6 @@ void App::destroy_GbufferImages()
 	SSGI_FullScreenQuad->DestroyImage();
 	Combined_FullScreenQuad->DestroyImage();
 	RT_Reflection->DestroyStorageImage();
-	dynamicDiffuse_RTGI->DestroyStorageImage();
-
 }
 
 void App::recreateSwapChain() {

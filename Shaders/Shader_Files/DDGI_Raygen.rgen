@@ -3,15 +3,14 @@
 
 layout(set = 0, binding = 0) uniform accelerationStructureEXT topLevelAS;
 layout(set = 0, binding = 8, rgba16f) uniform image2D IrradianceAtlasImage;
-layout(set = 0, binding = 9, rgba16f) uniform image2D VisibilityAtlasImage;
 
-layout(set = 0, binding = 10) readonly buffer StorageBuffer {
+layout(set = 0, binding = 9) readonly buffer StorageBuffer {
    vec4 Position[];
 } SB0;
 
-layout(set = 0, binding = 11) readonly buffer StorageBuffer2 {
+layout(set = 0, binding = 10) readonly buffer StorageBuffer2 {
    vec4 FibonacciDirections[];
-} pc;
+} SB02;
 
 
 struct Payload {
@@ -24,17 +23,21 @@ layout(location = 0) rayPayloadEXT Payload payload;
 
 void main() {
 
+ 
+    vec3 probeOrigin  = SB0.Position[gl_LaunchIDEXT.y].xyz;
+    vec3 rayDirection = SB02.FibonacciDirections[gl_LaunchIDEXT.x].xyz;
+  
 
-    // Trace the ray
+   // Trace the ray
     const uint rayFlags = gl_RayFlagsOpaqueEXT;
     const uint cullMask = 0xFF;
     const float tMin = 0.001;
     const float tMax = 1000.0;
 
     
-     // traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, rayOrigin.xyz, tMin, rayDir, tMax, 0);
-      //payload.Color = vec3(0);
+    traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, probeOrigin.xyz, tMin, rayDirection, tMax, 0);
+     
+     vec3 Radiance = payload.Color;
 
-
-    imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(1.0));
+    imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(Radiance,1));
 }
