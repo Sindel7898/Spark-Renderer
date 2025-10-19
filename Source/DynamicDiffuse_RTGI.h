@@ -55,8 +55,9 @@ public:
     vk::DescriptorSetLayout        GridDescriptorSetLayout;
     vk::DescriptorSetLayout        RaytracingDescriptorSetLayout;
 
-    std::vector<vk::DescriptorSet> ProbeDescriptorSets;
-    std::vector<vk::DescriptorSet> GridDescriptorSets;
+    std::vector<vk::DescriptorSet>  ProbeDescriptorSets;
+    std::vector<vk::DescriptorSet>  GridDescriptorSets;
+    std::vector<vk::DescriptorSet>  RaytracingDescriptorSets;
 
 
     ImageData IrradianceImageAtlasImage;

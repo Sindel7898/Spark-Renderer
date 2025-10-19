@@ -207,91 +207,104 @@ void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
 	}
 
 
-	//{
-	//	vk::DescriptorSetLayoutBinding TLASLayout{};
-	//	TLASLayout.binding = 0;
-	//	TLASLayout.descriptorCount = 1;
-	//	TLASLayout.descriptorType = vk::DescriptorType::eAccelerationStructureKHR;
-	//	TLASLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
-	//
-	//	vk::DescriptorSetLayoutBinding AlbedoAssetTexturesSamplerLayout{};
-	//	AlbedoAssetTexturesSamplerLayout.binding = 1;
-	//	AlbedoAssetTexturesSamplerLayout.descriptorCount = bufferManager->AllScene_Albedo_Images.size();
-	//	AlbedoAssetTexturesSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	//	AlbedoAssetTexturesSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
-	//
-	//	vk::DescriptorSetLayoutBinding NormalAssetTexturesSamplerLayout{};
-	//	NormalAssetTexturesSamplerLayout.binding = 2;
-	//	NormalAssetTexturesSamplerLayout.descriptorCount = bufferManager->AllScene_Normal_Images.size();
-	//	NormalAssetTexturesSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	//	NormalAssetTexturesSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
-	//
-	//	vk::DescriptorSetLayoutBinding MetalicRoughnessAssetTexturesSamplerLayout{};
-	//	MetalicRoughnessAssetTexturesSamplerLayout.binding = 3;
-	//	MetalicRoughnessAssetTexturesSamplerLayout.descriptorCount = bufferManager->AllScene_MetalicRoughness_Images.size();
-	//	MetalicRoughnessAssetTexturesSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	//	MetalicRoughnessAssetTexturesSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
-	//
-	//	vk::DescriptorSetLayoutBinding IndexStorageBuffersLayout{};
-	//	IndexStorageBuffersLayout.binding = 4;
-	//	IndexStorageBuffersLayout.descriptorCount = 1;
-	//	IndexStorageBuffersLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
-	//	IndexStorageBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
-	//
-	//	vk::DescriptorSetLayoutBinding VertexStorageBuffersLayout{};
-	//	VertexStorageBuffersLayout.binding = 5;
-	//	VertexStorageBuffersLayout.descriptorCount = 1;
-	//	VertexStorageBuffersLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
-	//	VertexStorageBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
-	//
-	//	vk::DescriptorSetLayoutBinding offsetStorageBuffersLayout{};
-	//	offsetStorageBuffersLayout.binding = 6;
-	//	offsetStorageBuffersLayout.descriptorCount = 1;
-	//	offsetStorageBuffersLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
-	//	offsetStorageBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
-	//
-	//	vk::DescriptorSetLayoutBinding trasnformationUniformBuffersLayout{};
-	//	trasnformationUniformBuffersLayout.binding = 7;
-	//	trasnformationUniformBuffersLayout.descriptorCount = 1;
-	//	trasnformationUniformBuffersLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
-	//	trasnformationUniformBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
-	//
-	//	vk::DescriptorSetLayoutBinding IrradianceAtlasStorageLayout{};
-	//	IrradianceAtlasStorageLayout.binding = 8;
-	//	IrradianceAtlasStorageLayout.descriptorCount = 1;
-	//	IrradianceAtlasStorageLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
-	//	IrradianceAtlasStorageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
-	//
-	//	vk::DescriptorSetLayoutBinding  VisibilitiyAtlasStorageLayout{};
-	//	VisibilitiyAtlasStorageLayout.binding = 9;
-	//	VisibilitiyAtlasStorageLayout.descriptorCount = 1;
-	//	VisibilitiyAtlasStorageLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
-	//	VisibilitiyAtlasStorageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
-	//
-	//	std::array<vk::DescriptorSetLayoutBinding, 9> bindings = {
-	//															   TLASLayout,
-	//															   AlbedoAssetTexturesSamplerLayout,
-	//															   NormalAssetTexturesSamplerLayout,
-	//															   IndexStorageBuffersLayout,
-	//															   VertexStorageBuffersLayout,
-	//															   offsetStorageBuffersLayout,
-	//															   trasnformationUniformBuffersLayout,
-	//															   IrradianceAtlasStorageLayout,VisibilitiyAtlasStorageLayout
-	//	};
-	//
-	//
-	//
-	//	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
-	//	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-	//	layoutInfo.pBindings = bindings.data();
-	//
-	//
-	//	if (vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &RaytracingDescriptorSetLayout) != vk::Result::eSuccess)
-	//	{
-	//		throw std::runtime_error("Failed to create descriptorset layout!");
-	//	}
-	//
-	//}
+  {
+	vk::DescriptorSetLayoutBinding TLASLayout{};
+	TLASLayout.binding = 0;
+	TLASLayout.descriptorCount = 1;
+	TLASLayout.descriptorType = vk::DescriptorType::eAccelerationStructureKHR;
+	TLASLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+
+	vk::DescriptorSetLayoutBinding AlbedoAssetTexturesSamplerLayout{};
+	AlbedoAssetTexturesSamplerLayout.binding = 1;
+	AlbedoAssetTexturesSamplerLayout.descriptorCount = bufferManager->AllScene_Albedo_Images.size();
+	AlbedoAssetTexturesSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	AlbedoAssetTexturesSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+
+	vk::DescriptorSetLayoutBinding NormalAssetTexturesSamplerLayout{};
+	NormalAssetTexturesSamplerLayout.binding = 2;
+	NormalAssetTexturesSamplerLayout.descriptorCount = bufferManager->AllScene_Normal_Images.size();
+	NormalAssetTexturesSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	NormalAssetTexturesSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+
+	vk::DescriptorSetLayoutBinding MetalicRoughnessAssetTexturesSamplerLayout{};
+	MetalicRoughnessAssetTexturesSamplerLayout.binding = 3;
+	MetalicRoughnessAssetTexturesSamplerLayout.descriptorCount = bufferManager->AllScene_MetalicRoughness_Images.size();
+	MetalicRoughnessAssetTexturesSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	MetalicRoughnessAssetTexturesSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+
+	vk::DescriptorSetLayoutBinding IndexStorageBuffersLayout{};
+	IndexStorageBuffersLayout.binding = 4;
+	IndexStorageBuffersLayout.descriptorCount = 1;
+	IndexStorageBuffersLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
+	IndexStorageBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+
+	vk::DescriptorSetLayoutBinding VertexStorageBuffersLayout{};
+	VertexStorageBuffersLayout.binding = 5;
+	VertexStorageBuffersLayout.descriptorCount = 1;
+	VertexStorageBuffersLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
+	VertexStorageBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+
+	vk::DescriptorSetLayoutBinding offsetStorageBuffersLayout{};
+	offsetStorageBuffersLayout.binding = 6;
+	offsetStorageBuffersLayout.descriptorCount = 1;
+	offsetStorageBuffersLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
+	offsetStorageBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+
+	vk::DescriptorSetLayoutBinding trasnformationUniformBuffersLayout{};
+	trasnformationUniformBuffersLayout.binding = 7;
+	trasnformationUniformBuffersLayout.descriptorCount = 1;
+	trasnformationUniformBuffersLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
+	trasnformationUniformBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+
+	vk::DescriptorSetLayoutBinding IrradianceAtlasStorageLayout{};
+	IrradianceAtlasStorageLayout.binding = 8;
+	IrradianceAtlasStorageLayout.descriptorCount = 1;
+	IrradianceAtlasStorageLayout.descriptorType = vk::DescriptorType::eStorageImage;
+	IrradianceAtlasStorageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+
+	vk::DescriptorSetLayoutBinding  VisibilitiyAtlasStorageLayout{};
+	VisibilitiyAtlasStorageLayout.binding = 9;
+	VisibilitiyAtlasStorageLayout.descriptorCount = 1;
+	VisibilitiyAtlasStorageLayout.descriptorType = vk::DescriptorType::eStorageImage;
+	VisibilitiyAtlasStorageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+
+	vk::DescriptorSetLayoutBinding ProbeLocationsBuffersLayout{};
+	ProbeLocationsBuffersLayout.binding = 10;
+	ProbeLocationsBuffersLayout.descriptorCount = 1;
+	ProbeLocationsBuffersLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
+	ProbeLocationsBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+
+	vk::DescriptorSetLayoutBinding FibonacciDirectionsBuffersLayout{};
+	FibonacciDirectionsBuffersLayout.binding = 11;
+	FibonacciDirectionsBuffersLayout.descriptorCount = 1;
+	FibonacciDirectionsBuffersLayout.descriptorType = vk::DescriptorType::eStorageBuffer;
+	FibonacciDirectionsBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+
+	std::array<vk::DescriptorSetLayoutBinding, 11> bindings = {
+															   TLASLayout,
+															   AlbedoAssetTexturesSamplerLayout,
+															   NormalAssetTexturesSamplerLayout,
+															   IndexStorageBuffersLayout,
+															   VertexStorageBuffersLayout,
+															   offsetStorageBuffersLayout,
+															   trasnformationUniformBuffersLayout,
+															   IrradianceAtlasStorageLayout,VisibilitiyAtlasStorageLayout,
+															   ProbeLocationsBuffersLayout,FibonacciDirectionsBuffersLayout
+	};
+
+
+
+	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
+	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+	layoutInfo.pBindings = bindings.data();
+
+
+	if (vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &RaytracingDescriptorSetLayout) != vk::Result::eSuccess)
+	{
+		throw std::runtime_error("Failed to create descriptorset layout!");
+	}
+
+  }
 
 
 
@@ -419,6 +432,54 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 		}
 	}
 
+	{
+		std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, RaytracingDescriptorSetLayout);
+
+
+		vk::DescriptorSetAllocateInfo allocinfo;
+		allocinfo.descriptorPool = descriptorpool;
+		allocinfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		allocinfo.pSetLayouts = layouts.data();
+
+		RaytracingDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+
+		vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, RaytracingDescriptorSets.data());
+
+		////////////////////////////////////////////////////////////////////////////////////////////////
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+
+			vk::DescriptorBufferInfo ProbeLocationbufferInfo{};
+			ProbeLocationbufferInfo.buffer = ProbePositionsStorageBuffers[0].buffer;
+			ProbeLocationbufferInfo.offset = 0;
+			ProbeLocationbufferInfo.range = sizeof(glm::vec4) * 1000;
+
+			vk::WriteDescriptorSet ProbeLocationbufferdescriptorWrite{};
+			ProbeLocationbufferdescriptorWrite.dstSet = RaytracingDescriptorSets[i];
+			ProbeLocationbufferdescriptorWrite.dstBinding = 0;
+			ProbeLocationbufferdescriptorWrite.dstArrayElement = 0;
+			ProbeLocationbufferdescriptorWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
+			ProbeLocationbufferdescriptorWrite.descriptorCount = 1;
+			ProbeLocationbufferdescriptorWrite.pBufferInfo = &ProbeLocationbufferInfo;
+
+			vk::DescriptorBufferInfo FibonacciDirectionsbufferInfo{};
+			FibonacciDirectionsbufferInfo.buffer = ProbeFibonacciDirectionsStorageBuffers[0].buffer;
+			FibonacciDirectionsbufferInfo.offset = 0;
+			FibonacciDirectionsbufferInfo.range = sizeof(glm::vec4) * 60;
+
+			vk::WriteDescriptorSet FibonacciDirectionsbufferdescriptorWrite{};
+			FibonacciDirectionsbufferdescriptorWrite.dstSet = RaytracingDescriptorSets[i];
+			FibonacciDirectionsbufferdescriptorWrite.dstBinding = 1;
+			FibonacciDirectionsbufferdescriptorWrite.dstArrayElement = 0;
+			FibonacciDirectionsbufferdescriptorWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
+			FibonacciDirectionsbufferdescriptorWrite.descriptorCount = 1;
+			FibonacciDirectionsbufferdescriptorWrite.pBufferInfo = &FibonacciDirectionsbufferInfo;
+
+
+			std::array<vk::WriteDescriptorSet, 2> descriptorWrites{ ProbeLocationbufferdescriptorWrite,FibonacciDirectionsbufferdescriptorWrite };
+
+			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+		}
+	}
 }
 
 
@@ -430,63 +491,63 @@ uint32_t DynamicDiffuse_RTGI::alignedSize(uint32_t value, uint32_t alignment)
 
 void DynamicDiffuse_RTGI::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferData RayMisBuffer, vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
 {
-	//vk::BufferDeviceAddressInfo raygenShaderBindingTableDeviceAdressesInfo;
-	//raygenShaderBindingTableDeviceAdressesInfo.buffer = RayGenBuffer.buffer;
-	//
-	//vk::BufferDeviceAddressInfo missShaderBindingTableDeviceAdressesInfo;
-	//missShaderBindingTableDeviceAdressesInfo.buffer = RayMisBuffer.buffer;
-	//
-	//vk::BufferDeviceAddressInfo hitShaderBindingTableDeviceAdressesInfo;
-	//hitShaderBindingTableDeviceAdressesInfo.buffer = RayHitBuffer.buffer;
-	//
-	//auto raygenShaderBindingTableAdress = vulkanContext->LogicalDevice.getBufferAddress(raygenShaderBindingTableDeviceAdressesInfo);
-	//auto missShaderBindingTableAdress   = vulkanContext->LogicalDevice.getBufferAddress(missShaderBindingTableDeviceAdressesInfo);
-	//auto hitShaderBindingTableAdress    = vulkanContext->LogicalDevice.getBufferAddress(hitShaderBindingTableDeviceAdressesInfo);
-	//
-	//
-	//const uint32_t handleSizeAligned = alignedSize(
-	//	vulkanContext->RayTracingPipelineProperties.shaderGroupHandleSize,
-	//	vulkanContext->RayTracingPipelineProperties.shaderGroupHandleAlignment);
-	//
-	//vk::StridedDeviceAddressRegionKHR    raygenShaderSbtEntry{};
-	//raygenShaderSbtEntry.deviceAddress = raygenShaderBindingTableAdress;
-	//raygenShaderSbtEntry.stride = handleSizeAligned;
-	//raygenShaderSbtEntry.size = handleSizeAligned;
-	//
-	//
-	//vk::StridedDeviceAddressRegionKHR  missShaderSbtEntry{};
-	//missShaderSbtEntry.deviceAddress = missShaderBindingTableAdress;
-	//missShaderSbtEntry.stride = handleSizeAligned;
-	//missShaderSbtEntry.size = handleSizeAligned;
-	//
-	//vk::StridedDeviceAddressRegionKHR hitShaderSbtEntry{};
-	//hitShaderSbtEntry.deviceAddress = hitShaderBindingTableAdress;
-	//hitShaderSbtEntry.stride = handleSizeAligned;
-	//hitShaderSbtEntry.size = handleSizeAligned;
-	//
-	////vk::StridedDeviceAddressRegionKHR hitShaderSbtEntry{};
-	//
-	//vk::StridedDeviceAddressRegionKHR callableShaderSbtEntry{};
-	//
-	//VkStridedDeviceAddressRegionKHR  TEMP_raygenShaderSbtEntry   = static_cast<VkStridedDeviceAddressRegionKHR>(raygenShaderSbtEntry);
-	//VkStridedDeviceAddressRegionKHR  TEMP_missShaderSbtEntry     = static_cast<VkStridedDeviceAddressRegionKHR>(missShaderSbtEntry);;
-	//VkStridedDeviceAddressRegionKHR  TEMP_hitShaderSbtEntry      = static_cast<VkStridedDeviceAddressRegionKHR>(hitShaderSbtEntry);;
-	//VkStridedDeviceAddressRegionKHR  TEMP_callableShaderSbtEntry = static_cast<VkStridedDeviceAddressRegionKHR>(callableShaderSbtEntry);;
-	//
-	//int width  = swapchainextent.width;
-	//int height = swapchainextent.height;
-	//int depth  = 1;
-	//commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, pipelinelayout, 0, 1, &RayTracingDescriptorSets[imageIndex],0,nullptr);
-	//
-	//vulkanContext->vkCmdTraceRaysKHR(
-	//	commandbuffer,
-	//	&TEMP_raygenShaderSbtEntry,
-	//	&TEMP_missShaderSbtEntry,
-	//	&TEMP_hitShaderSbtEntry,
-	//	&TEMP_callableShaderSbtEntry,
-	//	width,
-	//	height,
-	//	depth);
+      vk::BufferDeviceAddressInfo raygenShaderBindingTableDeviceAdressesInfo;
+      raygenShaderBindingTableDeviceAdressesInfo.buffer = RayGenBuffer.buffer;
+      
+      vk::BufferDeviceAddressInfo missShaderBindingTableDeviceAdressesInfo;
+      missShaderBindingTableDeviceAdressesInfo.buffer = RayMisBuffer.buffer;
+      
+      vk::BufferDeviceAddressInfo hitShaderBindingTableDeviceAdressesInfo;
+      hitShaderBindingTableDeviceAdressesInfo.buffer = RayHitBuffer.buffer;
+      
+      auto raygenShaderBindingTableAdress = vulkanContext->LogicalDevice.getBufferAddress(raygenShaderBindingTableDeviceAdressesInfo);
+      auto missShaderBindingTableAdress   = vulkanContext->LogicalDevice.getBufferAddress(missShaderBindingTableDeviceAdressesInfo);
+      auto hitShaderBindingTableAdress    = vulkanContext->LogicalDevice.getBufferAddress(hitShaderBindingTableDeviceAdressesInfo);
+      
+      
+      const uint32_t handleSizeAligned = alignedSize(
+      	vulkanContext->RayTracingPipelineProperties.shaderGroupHandleSize,
+      	vulkanContext->RayTracingPipelineProperties.shaderGroupHandleAlignment);
+      
+      vk::StridedDeviceAddressRegionKHR    raygenShaderSbtEntry{};
+      raygenShaderSbtEntry.deviceAddress = raygenShaderBindingTableAdress;
+      raygenShaderSbtEntry.stride = handleSizeAligned;
+      raygenShaderSbtEntry.size = handleSizeAligned;
+      
+      
+      vk::StridedDeviceAddressRegionKHR  missShaderSbtEntry{};
+      missShaderSbtEntry.deviceAddress = missShaderBindingTableAdress;
+      missShaderSbtEntry.stride = handleSizeAligned;
+      missShaderSbtEntry.size = handleSizeAligned;
+      
+      vk::StridedDeviceAddressRegionKHR hitShaderSbtEntry{};
+      hitShaderSbtEntry.deviceAddress = hitShaderBindingTableAdress;
+      hitShaderSbtEntry.stride = handleSizeAligned;
+      hitShaderSbtEntry.size = handleSizeAligned;
+      
+      //vk::StridedDeviceAddressRegionKHR hitShaderSbtEntry{};
+      
+      vk::StridedDeviceAddressRegionKHR callableShaderSbtEntry{};
+      
+      VkStridedDeviceAddressRegionKHR  TEMP_raygenShaderSbtEntry   = static_cast<VkStridedDeviceAddressRegionKHR>(raygenShaderSbtEntry);
+      VkStridedDeviceAddressRegionKHR  TEMP_missShaderSbtEntry     = static_cast<VkStridedDeviceAddressRegionKHR>(missShaderSbtEntry);;
+      VkStridedDeviceAddressRegionKHR  TEMP_hitShaderSbtEntry      = static_cast<VkStridedDeviceAddressRegionKHR>(hitShaderSbtEntry);;
+      VkStridedDeviceAddressRegionKHR  TEMP_callableShaderSbtEntry = static_cast<VkStridedDeviceAddressRegionKHR>(callableShaderSbtEntry);;
+      
+      int width  = swapchainextent.width;
+      int height = swapchainextent.height;
+      int depth  = 1;
+      commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, pipelinelayout, 0, 1, &RayTracingDescriptorSets[imageIndex],0,nullptr);
+      
+      vulkanContext->vkCmdTraceRaysKHR(
+      	commandbuffer,
+      	&TEMP_raygenShaderSbtEntry,
+      	&TEMP_missShaderSbtEntry,
+      	&TEMP_hitShaderSbtEntry,
+      	&TEMP_callableShaderSbtEntry,
+      	width,
+      	height,
+      	depth);
 }
 
 void DynamicDiffuse_RTGI::DrawNode(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex, const std::vector<std::shared_ptr<Node>>& nodes)

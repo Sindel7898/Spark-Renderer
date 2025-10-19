@@ -187,6 +187,7 @@ private:
 	vk::PipelineLayout         CombinedImagePipelineLayout = nullptr;
 	vk::PipelineLayout         DDGIProbepipelineLayout = nullptr;
 	vk::PipelineLayout         GridComputePipelineLayout = nullptr;
+	vk::PipelineLayout         RT_DDGIPipelineLayout = nullptr;
 
 
 	vk::Pipeline               DeferedLightingPassPipeline = nullptr;
@@ -206,6 +207,7 @@ private:
 	vk::Pipeline               BluredRTreflectionPipeline = nullptr;
 	vk::Pipeline               CombinedImagePassPipeline = nullptr;
 	vk::Pipeline               GridComputePassPipeline = nullptr;
+	vk::Pipeline               RT_DDGIPassPipeline = nullptr;
 
 
 	vk::CommandPool            commandPool = nullptr;
@@ -247,6 +249,10 @@ private:
 	BufferData Reflection_raygenShaderBindingTableBuffer;
 	BufferData Reflection_missShaderBindingTableBuffer;
 	BufferData Reflection_hitShaderBindingTableBuffer;
+
+	BufferData	DDGI_raygenShaderBindingTableBuffer;
+	BufferData	DDGI_missShaderBindingTableBuffer;
+	BufferData	DDGI_hitShaderBindingTableBuffer;
 
 	////DEBUGS
 	vk::DebugUtilsLabelEXT Gbuffer_Label;

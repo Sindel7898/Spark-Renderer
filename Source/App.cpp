@@ -1463,6 +1463,88 @@ void App::CreateGraphicsPipeline()
 
 	}
 
+
+	{
+		auto RayGen_ShaderCode        = readFile("../Shaders/Compiled_Shader_Files/DDGI_Raygen.rgen.spv");
+		auto RayClosestHit_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/DDGI_ClosestHit.rchit.spv");
+		auto RayGenMiss_ShaderCode    = readFile("../Shaders/Compiled_Shader_Files/DDGI_Miss.rmiss.spv");
+
+		VkShaderModule RayGen_ShaderModule = pipelineManager.createShaderModule(RayGen_ShaderCode);
+		VkShaderModule RayClosestHit_ShaderModule = pipelineManager.createShaderModule(RayClosestHit_ShaderCode);
+		VkShaderModule RayMiss_ShaderModule = pipelineManager.createShaderModule(RayGenMiss_ShaderCode);
+
+
+		vk::PipelineShaderStageCreateInfo RayGen_ShaderStageInfo{};
+		RayGen_ShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+		RayGen_ShaderStageInfo.stage = vk::ShaderStageFlagBits::eRaygenKHR;
+		RayGen_ShaderStageInfo.module = RayGen_ShaderModule;
+		RayGen_ShaderStageInfo.pName = "main";
+
+		vk::PipelineShaderStageCreateInfo RayClosestHit_ShaderStageInfo{};
+		RayClosestHit_ShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+		RayClosestHit_ShaderStageInfo.stage = vk::ShaderStageFlagBits::eClosestHitKHR;
+		RayClosestHit_ShaderStageInfo.module = RayClosestHit_ShaderModule;
+		RayClosestHit_ShaderStageInfo.pName = "main";
+
+		vk::PipelineShaderStageCreateInfo RayMiss_ShaderStageInfo{};
+		RayMiss_ShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+		RayMiss_ShaderStageInfo.stage = vk::ShaderStageFlagBits::eMissKHR;
+		RayMiss_ShaderStageInfo.module = RayMiss_ShaderModule;
+		RayMiss_ShaderStageInfo.pName = "main";
+
+		std::vector<vk::PipelineShaderStageCreateInfo> ShaderStages = { RayGen_ShaderStageInfo ,
+																		RayClosestHit_ShaderStageInfo,
+																		RayMiss_ShaderStageInfo };
+
+		vk::RayTracingShaderGroupCreateInfoKHR RayGen_GroupInfo{};
+		RayGen_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
+		RayGen_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
+		RayGen_GroupInfo.generalShader = 0;
+		RayGen_GroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
+		RayGen_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
+		RayGen_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+
+		vk::RayTracingShaderGroupCreateInfoKHR RayClosestHit_GroupInfo{};
+		RayClosestHit_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
+		RayClosestHit_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup;
+		RayClosestHit_GroupInfo.generalShader = VK_SHADER_UNUSED_KHR;
+		RayClosestHit_GroupInfo.closestHitShader = 1;
+		RayClosestHit_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
+		RayClosestHit_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+
+		vk::RayTracingShaderGroupCreateInfoKHR Miss_GroupInfo{};
+		Miss_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
+		Miss_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
+		Miss_GroupInfo.generalShader = 2;
+		Miss_GroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
+		Miss_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
+		Miss_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+
+
+		std::vector<vk::RayTracingShaderGroupCreateInfoKHR> ShaderGroups = {
+			RayGen_GroupInfo,
+			RayClosestHit_GroupInfo,
+			Miss_GroupInfo,
+			Miss_GroupInfo,
+		};
+
+		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.pSetLayouts = &dynamicDiffuse_RTGI->RaytracingDescriptorSetLayout;
+		pipelineLayoutInfo.pushConstantRangeCount = 0;
+		pipelineLayoutInfo.pPushConstantRanges = nullptr;
+
+		RT_DDGIPipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+
+		RT_DDGIPassPipeline = pipelineManager.createRayTracingGraphicsPipeline(RT_DDGIPipelineLayout, ShaderStages, ShaderGroups);
+
+		vulkanContext.LogicalDevice.destroyShaderModule(RayGen_ShaderModule);
+		vulkanContext.LogicalDevice.destroyShaderModule(RayClosestHit_ShaderModule);
+		vulkanContext.LogicalDevice.destroyShaderModule(RayMiss_ShaderModule);
+
+	}
+
+
 	{	
 		vk::Format formats[1] = { vk::Format::eR16G16B16A16Sfloat };
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
@@ -1657,8 +1739,8 @@ void App::createShaderBindingTable() {
 			shaderHandleStorage.data());
 
 		Reflection_raygenShaderBindingTableBuffer.BufferID = "Reflection raygen Shader Binding Table Buffer";
-		Reflection_missShaderBindingTableBuffer.BufferID = "Reflection miss Shader Binding Table Buffer";
-		Reflection_hitShaderBindingTableBuffer.BufferID = "Reflection hit Shader Binding Table Buffer";
+		Reflection_missShaderBindingTableBuffer.BufferID   = "Reflection miss Shader Binding Table Buffer";
+		Reflection_hitShaderBindingTableBuffer.BufferID    = "Reflection hit Shader Binding Table Buffer";
 
 		bufferManger.CreateBuffer(&Reflection_raygenShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
 		bufferManger.CreateBuffer(&Reflection_missShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
@@ -1668,6 +1750,39 @@ void App::createShaderBindingTable() {
 		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned, Reflection_hitShaderBindingTableBuffer);
 		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned * 2, Reflection_missShaderBindingTableBuffer);
 	}
+
+	///Binding Table for DDGI
+	{
+		const size_t   handleSize = vulkanContext.RayTracingPipelineProperties.shaderGroupHandleSize;
+		const size_t   handleSizeAligned = alignedSize(handleSize, vulkanContext.RayTracingPipelineProperties.shaderGroupHandleAlignment);
+		const uint32_t groupCount = 3;
+		const uint32_t sbtSize = groupCount * handleSizeAligned;
+
+		// Get shader group handles
+		std::vector<uint8_t> shaderHandleStorage(sbtSize);
+
+		vulkanContext.vkGetRayTracingShaderGroupHandlesKHR(
+			static_cast<VkDevice>(vulkanContext.LogicalDevice),
+			static_cast<VkPipeline>(RT_DDGIPassPipeline),
+			0,  // First group
+			groupCount,
+			shaderHandleStorage.size(),
+			shaderHandleStorage.data());
+
+		DDGI_raygenShaderBindingTableBuffer.BufferID = "DDGI raygen Shader Binding Table Buffer";
+		DDGI_missShaderBindingTableBuffer.BufferID   = "DDGI miss Shader Binding Table Buffer";
+		DDGI_hitShaderBindingTableBuffer.BufferID    = "DDGI hit Shader Binding Table Buffer";
+
+		bufferManger.CreateBuffer(&DDGI_raygenShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
+		bufferManger.CreateBuffer(&DDGI_missShaderBindingTableBuffer  , handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
+		bufferManger.CreateBuffer(&DDGI_hitShaderBindingTableBuffer   , handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
+
+		bufferManger.CopyDataToBuffer(shaderHandleStorage.data(), DDGI_raygenShaderBindingTableBuffer);
+		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned, DDGI_hitShaderBindingTableBuffer);
+		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned * 2, DDGI_missShaderBindingTableBuffer);
+	}
+
+
 }
 
 void App::DestroyShaderBindingTable() {
@@ -3160,6 +3275,7 @@ void App::destroyPipeline()
 	vulkanContext.LogicalDevice.destroyPipeline(BluredRTreflectionPipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(DDGIProbePipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(GridComputePassPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(RT_DDGIPassPipeline);
 
 
 	vulkanContext.LogicalDevice.destroyPipelineLayout(DeferedLightingPassPipelineLayout);
@@ -3179,6 +3295,7 @@ void App::destroyPipeline()
 	vulkanContext.LogicalDevice.destroyPipelineLayout(BluredRTreflectionsPipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(DDGIProbepipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(GridComputePipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(RT_DDGIPipelineLayout);
 
 }
 

@@ -33,6 +33,12 @@ glslc.exe Shaders/Shader_Files/Reflection_Raygen.rgen      -o Shaders/Compiled_S
 glslc.exe Shaders/Shader_Files/Reflection_ClosestHit.rchit -o Shaders/Compiled_Shader_Files/Reflection_ClosestHit.rchit.spv  --target-env=vulkan1.4
 glslc.exe Shaders/Shader_Files/Reflection_Miss.rmiss       -o Shaders/Compiled_Shader_Files/Reflection_Miss.rmiss.spv         --target-env=vulkan1.4
 
+
+glslc.exe Shaders/Shader_Files/DDGI_Raygen.rgen      -o Shaders/Compiled_Shader_Files/DDGI_Raygen.rgen.spv       --target-env=vulkan1.4
+glslc.exe Shaders/Shader_Files/DDGI_ClosestHit.rchit -o Shaders/Compiled_Shader_Files/DDGI_ClosestHit.rchit.spv  --target-env=vulkan1.4
+glslc.exe Shaders/Shader_Files/DDGI_Miss.rmiss       -o Shaders/Compiled_Shader_Files/DDGI_Miss.rmiss.spv         --target-env=vulkan1.4
+
+
 glslc.exe Shaders/Shader_Files/Grid.comp       -o Shaders/Compiled_Shader_Files/Grid.comp.spv         --target-env=vulkan1.4
 
 
