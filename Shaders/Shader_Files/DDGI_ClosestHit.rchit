@@ -108,7 +108,7 @@ void main()
        v2.texCoord_Padding.xy * bary.z;
 
 
-    mat3 normalMatrix  = mat3(Transformations.WorldMatrix[objectID]);
+    mat3 normalMatrix  = transpose(inverse(mat3(Transformations.WorldMatrix[objectID])));
     vec3 WorldN        = normalize(normalMatrix * Normal);
     vec3 WorldT        = normalize(normalMatrix * Tangent);
     vec3 WorldB        = cross(WorldN,WorldT);
@@ -159,7 +159,7 @@ void main()
        }  
   
      float NdotL = max(dot(Normal, LightDir), 0.0);        
-             Lo += radiance * NdotL;
+             Lo +=  Albedo * radiance * NdotL;
   
   
      totalLighting +=  ((Lo) * light.CameraPositionAndLightIntensity.a);
@@ -167,7 +167,7 @@ void main()
 
 
      payload.Color    = totalLighting;
-     payload.Distance = gl_RayTmaxEXT;
+     payload.Distance = gl_HitTEXT;
      payload.Normal   = Normal;
 
  }
