@@ -448,6 +448,174 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 		////////////////////////////////////////////////////////////////////////////////////////////////
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
+			vk::WriteDescriptorSetAccelerationStructureKHR descriptorAccelerationStructureInfo{};
+			descriptorAccelerationStructureInfo.accelerationStructureCount = 1;
+			descriptorAccelerationStructureInfo.pAccelerationStructures = &TLAS;
+
+			vk::WriteDescriptorSet TLAS_descriptorWrite{};
+			TLAS_descriptorWrite.dstSet = RaytracingDescriptorSets[i];
+			TLAS_descriptorWrite.dstBinding = 0;
+			TLAS_descriptorWrite.dstArrayElement = 0;
+			TLAS_descriptorWrite.descriptorType = vk::DescriptorType::eAccelerationStructureKHR;
+			TLAS_descriptorWrite.descriptorCount = 1;
+			TLAS_descriptorWrite.pNext = &descriptorAccelerationStructureInfo;
+
+			/////////////////////////////////////////////////////////////////////////////////////
+
+
+			std::vector<vk::DescriptorImageInfo>AssetImagesInfos;
+
+			for (int j = 0; j < bufferManager->AllScene_Albedo_Images.size(); j++)
+			{
+				ImageData* imageData = bufferManager->AllScene_Albedo_Images[j];
+				if (imageData) {
+
+					vk::DescriptorImageInfo ASSETImageInfo{};
+					ASSETImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+					ASSETImageInfo.imageView = imageData->imageView;
+					ASSETImageInfo.sampler = imageData->imageSampler;
+
+					AssetImagesInfos.push_back(ASSETImageInfo);
+				};
+			}
+
+			vk::WriteDescriptorSet AssetImagSamplerdescriptorWrite{};
+			AssetImagSamplerdescriptorWrite.dstSet = RaytracingDescriptorSets[i];
+			AssetImagSamplerdescriptorWrite.dstBinding = 1;
+			AssetImagSamplerdescriptorWrite.dstArrayElement = 0;
+			AssetImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			AssetImagSamplerdescriptorWrite.descriptorCount = AssetImagesInfos.size();
+			AssetImagSamplerdescriptorWrite.pImageInfo = AssetImagesInfos.data();
+
+
+
+			std::vector<vk::DescriptorImageInfo> NormalImageAssetImagesInfos;
+
+			for (int j = 0; j < bufferManager->AllScene_Normal_Images.size(); j++)
+			{
+				ImageData* imageData = bufferManager->AllScene_Normal_Images[j];
+				if (imageData) {
+
+					vk::DescriptorImageInfo NormalASSETImageInfo{};
+					NormalASSETImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+					NormalASSETImageInfo.imageView = imageData->imageView;
+					NormalASSETImageInfo.sampler = imageData->imageSampler;
+
+					NormalImageAssetImagesInfos.push_back(NormalASSETImageInfo);
+				};
+			}
+
+			vk::WriteDescriptorSet NormalAssetImagSamplerdescriptorWrite{};
+			NormalAssetImagSamplerdescriptorWrite.dstSet = RaytracingDescriptorSets[i];
+			NormalAssetImagSamplerdescriptorWrite.dstBinding = 2;
+			NormalAssetImagSamplerdescriptorWrite.dstArrayElement = 0;
+			NormalAssetImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			NormalAssetImagSamplerdescriptorWrite.descriptorCount = NormalImageAssetImagesInfos.size();
+			NormalAssetImagSamplerdescriptorWrite.pImageInfo = NormalImageAssetImagesInfos.data();
+
+
+			std::vector<vk::DescriptorImageInfo> MetalicRoughnessImageAssetImagesInfos;
+
+			for (int j = 0; j < bufferManager->AllScene_MetalicRoughness_Images.size(); j++)
+			{
+				ImageData* imageData = bufferManager->AllScene_MetalicRoughness_Images[j];
+				if (imageData) {
+
+					vk::DescriptorImageInfo MetalicRoughnessASSETImageInfo{};
+					MetalicRoughnessASSETImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+					MetalicRoughnessASSETImageInfo.imageView = imageData->imageView;
+					MetalicRoughnessASSETImageInfo.sampler = imageData->imageSampler;
+
+					MetalicRoughnessImageAssetImagesInfos.push_back(MetalicRoughnessASSETImageInfo);
+				};
+			}
+
+			vk::WriteDescriptorSet MetalicRoughnessAssetImagSamplerdescriptorWrite{};
+			MetalicRoughnessAssetImagSamplerdescriptorWrite.dstSet = RaytracingDescriptorSets[i];
+			MetalicRoughnessAssetImagSamplerdescriptorWrite.dstBinding = 3;
+			MetalicRoughnessAssetImagSamplerdescriptorWrite.dstArrayElement = 0;
+			MetalicRoughnessAssetImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			MetalicRoughnessAssetImagSamplerdescriptorWrite.descriptorCount = MetalicRoughnessImageAssetImagesInfos.size();
+			MetalicRoughnessAssetImagSamplerdescriptorWrite.pImageInfo = MetalicRoughnessImageAssetImagesInfos.data();
+
+			vk::DescriptorBufferInfo IndexStorageBuffersInfo{};
+			IndexStorageBuffersInfo.buffer = bufferManager->AllScene_IndexStorageBuffers[0].buffer;
+			IndexStorageBuffersInfo.offset = 0;
+			IndexStorageBuffersInfo.range = sizeof(uint32_t) * bufferManager->AllScene_IndexGeometryData.size();;
+
+			vk::WriteDescriptorSet IndexStorageBufferdescriptorWrite{};
+			IndexStorageBufferdescriptorWrite.dstSet = RaytracingDescriptorSets[i];
+			IndexStorageBufferdescriptorWrite.dstBinding = 4;
+			IndexStorageBufferdescriptorWrite.dstArrayElement = 0;
+			IndexStorageBufferdescriptorWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
+			IndexStorageBufferdescriptorWrite.descriptorCount = 1;
+			IndexStorageBufferdescriptorWrite.pBufferInfo = &IndexStorageBuffersInfo;
+
+			vk::DescriptorBufferInfo VertexStorageBuffersInfo{};
+			VertexStorageBuffersInfo.buffer = bufferManager->AllScene_VertexStorageBuffers[0].buffer;
+			VertexStorageBuffersInfo.offset = 0;
+			VertexStorageBuffersInfo.range = sizeof(PaddedModelVertex) * bufferManager->AllScene_VertexGeometryData.size();;
+
+			vk::WriteDescriptorSet VertexStorageBufferdescriptorWrite{};
+			VertexStorageBufferdescriptorWrite.dstSet = RaytracingDescriptorSets[i];
+			VertexStorageBufferdescriptorWrite.dstBinding = 5;
+			VertexStorageBufferdescriptorWrite.dstArrayElement = 0;
+			VertexStorageBufferdescriptorWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
+			VertexStorageBufferdescriptorWrite.descriptorCount = 1;
+			VertexStorageBufferdescriptorWrite.pBufferInfo = &VertexStorageBuffersInfo;
+
+			vk::DescriptorBufferInfo OffsetStorageBuffersInfo{};
+			OffsetStorageBuffersInfo.buffer = bufferManager->AllScene_OffsetStorageBuffers[0].buffer;
+			OffsetStorageBuffersInfo.offset = 0;
+			OffsetStorageBuffersInfo.range = sizeof(VertexAndIndexOffsets) * bufferManager->AllScene_VertexAndIndexOffsets.size();;
+
+			vk::WriteDescriptorSet OffsetStorageBufferdescriptorWrite{};
+			OffsetStorageBufferdescriptorWrite.dstSet = RaytracingDescriptorSets[i];
+			OffsetStorageBufferdescriptorWrite.dstBinding = 6;
+			OffsetStorageBufferdescriptorWrite.dstArrayElement = 0;
+			OffsetStorageBufferdescriptorWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
+			OffsetStorageBufferdescriptorWrite.descriptorCount = 1;
+			OffsetStorageBufferdescriptorWrite.pBufferInfo = &OffsetStorageBuffersInfo;
+
+			vk::DescriptorBufferInfo TransformUniformBuffersInfo{};
+			TransformUniformBuffersInfo.buffer = bufferManager->AllScene_TransformationUniformBuffers[i].buffer;
+			TransformUniformBuffersInfo.offset = 0;
+			TransformUniformBuffersInfo.range = sizeof(glm::mat4) * 100;
+
+			vk::WriteDescriptorSet TransformUniformBufferdescriptorWrite{};
+			TransformUniformBufferdescriptorWrite.dstSet = RaytracingDescriptorSets[i];
+			TransformUniformBufferdescriptorWrite.dstBinding = 7;
+			TransformUniformBufferdescriptorWrite.dstArrayElement = 0;
+			TransformUniformBufferdescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+			TransformUniformBufferdescriptorWrite.descriptorCount = 1;
+			TransformUniformBufferdescriptorWrite.pBufferInfo = &TransformUniformBuffersInfo;
+
+			vk::DescriptorImageInfo IrradianceAtlasStorageImageInfo{};
+			IrradianceAtlasStorageImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			IrradianceAtlasStorageImageInfo.imageView = IrradianceImageAtlasImage.imageView;
+			IrradianceAtlasStorageImageInfo.sampler = IrradianceImageAtlasImage.imageSampler;
+
+			vk::WriteDescriptorSet IrradianceAtlasdescriptorWrite{};
+			IrradianceAtlasdescriptorWrite.dstSet = RaytracingDescriptorSets[i];
+			IrradianceAtlasdescriptorWrite.dstBinding = 8;
+			IrradianceAtlasdescriptorWrite.dstArrayElement = 0;
+			IrradianceAtlasdescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
+			IrradianceAtlasdescriptorWrite.descriptorCount = 1;
+			IrradianceAtlasdescriptorWrite.pImageInfo = &IrradianceAtlasStorageImageInfo;
+
+			vk::DescriptorImageInfo VisibilityStoreageImageInfo{};
+			VisibilityStoreageImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			VisibilityStoreageImageInfo.imageView   = ProbeVisibilityAtlasImage.imageView;
+			VisibilityStoreageImageInfo.sampler     = ProbeVisibilityAtlasImage.imageSampler;
+
+			vk::WriteDescriptorSet VisibilityStorageescriptorWrite{};
+			VisibilityStorageescriptorWrite.dstSet = RaytracingDescriptorSets[i];
+			VisibilityStorageescriptorWrite.dstBinding = 9;
+			VisibilityStorageescriptorWrite.dstArrayElement = 0;
+			VisibilityStorageescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
+			VisibilityStorageescriptorWrite.descriptorCount = 1;
+			VisibilityStorageescriptorWrite.pImageInfo = &VisibilityStoreageImageInfo;
+
 			vk::DescriptorBufferInfo ProbeLocationbufferInfo{};
 			ProbeLocationbufferInfo.buffer = ProbePositionsStorageBuffers[0].buffer;
 			ProbeLocationbufferInfo.offset = 0;
@@ -455,7 +623,7 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 
 			vk::WriteDescriptorSet ProbeLocationbufferdescriptorWrite{};
 			ProbeLocationbufferdescriptorWrite.dstSet = RaytracingDescriptorSets[i];
-			ProbeLocationbufferdescriptorWrite.dstBinding = 0;
+			ProbeLocationbufferdescriptorWrite.dstBinding = 10;
 			ProbeLocationbufferdescriptorWrite.dstArrayElement = 0;
 			ProbeLocationbufferdescriptorWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
 			ProbeLocationbufferdescriptorWrite.descriptorCount = 1;
@@ -468,7 +636,7 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 
 			vk::WriteDescriptorSet FibonacciDirectionsbufferdescriptorWrite{};
 			FibonacciDirectionsbufferdescriptorWrite.dstSet = RaytracingDescriptorSets[i];
-			FibonacciDirectionsbufferdescriptorWrite.dstBinding = 1;
+			FibonacciDirectionsbufferdescriptorWrite.dstBinding = 11;
 			FibonacciDirectionsbufferdescriptorWrite.dstArrayElement = 0;
 			FibonacciDirectionsbufferdescriptorWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
 			FibonacciDirectionsbufferdescriptorWrite.descriptorCount = 1;
