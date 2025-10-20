@@ -113,21 +113,14 @@ void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
 		IrradianceAtlasSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		IrradianceAtlasSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-		vk::DescriptorSetLayoutBinding  VisibilitiyAtlasSamplerLayout{};
-		VisibilitiyAtlasSamplerLayout.binding = 1;
-		VisibilitiyAtlasSamplerLayout.descriptorCount = 1;
-		VisibilitiyAtlasSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		VisibilitiyAtlasSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
-
 		vk::DescriptorSetLayoutBinding  ProbeLocationUniformBuffer{};
-		ProbeLocationUniformBuffer.binding = 2;
+		ProbeLocationUniformBuffer.binding = 1;
 		ProbeLocationUniformBuffer.descriptorCount = 1;
 		ProbeLocationUniformBuffer.descriptorType = vk::DescriptorType::eStorageBuffer;
 		ProbeLocationUniformBuffer.stageFlags = vk::ShaderStageFlagBits::eVertex;
 
-		std::array<vk::DescriptorSetLayoutBinding, 3> bindings = {
+		std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {
 																   IrradianceAtlasSamplerLayout,
-																   VisibilitiyAtlasSamplerLayout,
 																   ProbeLocationUniformBuffer
 		};
 
@@ -164,6 +157,37 @@ void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
 
 
 		if (vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &GridDescriptorSetLayout) != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("Failed to create descriptorset layout!");
+		}
+	}
+
+	{
+		vk::DescriptorSetLayoutBinding FibonacciDirectionsStorageBufffer{};
+		FibonacciDirectionsStorageBufffer.binding = 0;
+		FibonacciDirectionsStorageBufffer.descriptorCount = 1;
+		FibonacciDirectionsStorageBufffer.descriptorType = vk::DescriptorType::eStorageBuffer;
+		FibonacciDirectionsStorageBufffer.stageFlags = vk::ShaderStageFlagBits::eCompute;
+
+		vk::DescriptorSetLayoutBinding RadianceStorageImage{};
+		RadianceStorageImage.binding = 1;
+		RadianceStorageImage.descriptorCount = 1;
+		RadianceStorageImage.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		RadianceStorageImage.stageFlags = vk::ShaderStageFlagBits::eCompute;
+
+		vk::DescriptorSetLayoutBinding IrradianceStorageImage{};
+		IrradianceStorageImage.binding = 2;
+		IrradianceStorageImage.descriptorCount = 1;
+		IrradianceStorageImage.descriptorType = vk::DescriptorType::eStorageImage;
+		IrradianceStorageImage.stageFlags = vk::ShaderStageFlagBits::eCompute;
+
+		std::array<vk::DescriptorSetLayoutBinding, 3> bindings = { FibonacciDirectionsStorageBufffer,RadianceStorageImage,IrradianceStorageImage };
+
+		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+		layoutInfo.pBindings = bindings.data();
+
+		if (vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &ConstructProbeDataDescriptorSetLayout) != vk::Result::eSuccess)
 		{
 			throw std::runtime_error("Failed to create descriptorset layout!");
 		}
@@ -319,8 +343,8 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 
 			vk::DescriptorImageInfo IrradiancAtlasImageInfo{};
 			IrradiancAtlasImageInfo.imageLayout =  vk::ImageLayout::eGeneral;
-			IrradiancAtlasImageInfo.imageView   =  RadianceImageAtlasImage.imageView;
-			IrradiancAtlasImageInfo.sampler     =  RadianceImageAtlasImage.imageSampler;
+			IrradiancAtlasImageInfo.imageView   = IradianceImageAtlasImage.imageView;
+			IrradiancAtlasImageInfo.sampler     = IradianceImageAtlasImage.imageSampler;
 		
 
 			vk::WriteDescriptorSet IrradianceAtlasImageSamplerdescriptorWrite{};
@@ -338,7 +362,7 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 
 			vk::WriteDescriptorSet ProbeLocationbufferdescriptorWrite{};
 			ProbeLocationbufferdescriptorWrite.dstSet = ProbeDescriptorSets[i];
-			ProbeLocationbufferdescriptorWrite.dstBinding = 2;
+			ProbeLocationbufferdescriptorWrite.dstBinding = 1;
 			ProbeLocationbufferdescriptorWrite.dstArrayElement = 0;
 			ProbeLocationbufferdescriptorWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
 			ProbeLocationbufferdescriptorWrite.descriptorCount = 1;
@@ -401,6 +425,72 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 		}
 	}
+
+
+	{
+		std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, ConstructProbeDataDescriptorSetLayout);
+
+
+		vk::DescriptorSetAllocateInfo allocinfo;
+		allocinfo.descriptorPool = descriptorpool;
+		allocinfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		allocinfo.pSetLayouts = layouts.data();
+
+		ConstructProbeDataDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+
+		vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, ConstructProbeDataDescriptorSets.data());
+
+		////////////////////////////////////////////////////////////////////////////////////////////////
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+
+			vk::DescriptorBufferInfo FibonacciDirectionsbufferInfo{};
+			FibonacciDirectionsbufferInfo.buffer = ProbeFibonacciDirectionsStorageBuffers[0].buffer;
+			FibonacciDirectionsbufferInfo.offset = 0;
+			FibonacciDirectionsbufferInfo.range = sizeof(glm::vec4) * 500;
+
+			vk::WriteDescriptorSet FibonacciDirectionsbufferdescriptorWrite{};
+			FibonacciDirectionsbufferdescriptorWrite.dstSet = ConstructProbeDataDescriptorSets[i];
+			FibonacciDirectionsbufferdescriptorWrite.dstBinding = 0;
+			FibonacciDirectionsbufferdescriptorWrite.dstArrayElement = 0;
+			FibonacciDirectionsbufferdescriptorWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
+			FibonacciDirectionsbufferdescriptorWrite.descriptorCount = 1;
+			FibonacciDirectionsbufferdescriptorWrite.pBufferInfo = &FibonacciDirectionsbufferInfo;
+
+			vk::DescriptorImageInfo radiancAtlasImageInfo{};
+			radiancAtlasImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			radiancAtlasImageInfo.imageView = RadianceImageAtlasImage.imageView;
+			radiancAtlasImageInfo.sampler = RadianceImageAtlasImage.imageSampler;
+
+			vk::WriteDescriptorSet radianceAtlasImageSamplerdescriptorWrite{};
+			radianceAtlasImageSamplerdescriptorWrite.dstSet = ConstructProbeDataDescriptorSets[i];
+			radianceAtlasImageSamplerdescriptorWrite.dstBinding = 1;
+			radianceAtlasImageSamplerdescriptorWrite.dstArrayElement = 0;
+			radianceAtlasImageSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			radianceAtlasImageSamplerdescriptorWrite.descriptorCount = 1;
+			radianceAtlasImageSamplerdescriptorWrite.pImageInfo = &radiancAtlasImageInfo;
+
+			vk::DescriptorImageInfo IradiancAtlasImageInfo{};
+			IradiancAtlasImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			IradiancAtlasImageInfo.imageView = IradianceImageAtlasImage.imageView;
+			IradiancAtlasImageInfo.sampler = IradianceImageAtlasImage.imageSampler;
+
+			vk::WriteDescriptorSet IradianceAtlasImageSamplerdescriptorWrite{};
+			IradianceAtlasImageSamplerdescriptorWrite.dstSet = ConstructProbeDataDescriptorSets[i];
+			IradianceAtlasImageSamplerdescriptorWrite.dstBinding = 2;
+			IradianceAtlasImageSamplerdescriptorWrite.dstArrayElement = 0;
+			IradianceAtlasImageSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
+			IradianceAtlasImageSamplerdescriptorWrite.descriptorCount = 1;
+			IradianceAtlasImageSamplerdescriptorWrite.pImageInfo = &IradiancAtlasImageInfo;
+
+
+			std::array<vk::WriteDescriptorSet, 3> descriptorWrites{ FibonacciDirectionsbufferdescriptorWrite,
+				                                                    radianceAtlasImageSamplerdescriptorWrite,
+			                                                        IradianceAtlasImageSamplerdescriptorWrite };
+
+			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+		}
+	}
+
 
 	{
 		std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, RaytracingDescriptorSetLayout);
@@ -792,6 +882,25 @@ void DynamicDiffuse_RTGI::DispatchDirectionsCompute(vk::CommandBuffer commandBuf
 	commandBuffer.dispatch(workGroupsX, 1, 1);
 }
 
+void DynamicDiffuse_RTGI::DispatchCalcProbeDataCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex)
+{
+	GeneralAtlasInfo generalAtlasInfo;
+	generalAtlasInfo.AtlasWidthSize = IradianceImageExtent.width;
+	generalAtlasInfo.ProbeSideLength = ProbeSideLength;
+	generalAtlasInfo.GutterSize = GutterSize;
+	generalAtlasInfo.Padding = RaysPerProbe;
+
+	commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(GeneralAtlasInfo), &generalAtlasInfo);
+
+	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, 0, 1, &ConstructProbeDataDescriptorSets[imageIndex], 0, nullptr);
+
+	uint32_t workGroupsX = (IradianceImageExtent.width + 7) / 8;
+	uint32_t workGroupsY = (IradianceImageExtent.height + 7) / 8;
+
+	commandBuffer.dispatch(workGroupsX, workGroupsY, 1);
+}
+
+
 void DynamicDiffuse_RTGI::Draw(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex)
 {
 	vk::DeviceSize offsets[] = { 0 };
@@ -841,7 +950,7 @@ void DynamicDiffuse_RTGI::CleanUp()
 
 	vulkanContext->LogicalDevice.destroyDescriptorSetLayout(ProbeDescriptorSetLayout);
 
-
+	DestroyStorageImage();
 	ProbeLocations.clear();
 }
 

@@ -187,6 +187,7 @@ private:
 	vk::PipelineLayout         DDGIProbepipelineLayout = nullptr;
 	vk::PipelineLayout         GridComputePipelineLayout = nullptr;
 	vk::PipelineLayout         RT_DDGIPipelineLayout = nullptr;
+	vk::PipelineLayout         IrradianceComputePipelineLayout = nullptr;
 
 
 	vk::Pipeline               DeferedLightingPassPipeline = nullptr;
@@ -207,6 +208,7 @@ private:
 	vk::Pipeline               CombinedImagePassPipeline = nullptr;
 	vk::Pipeline               GridComputePassPipeline = nullptr;
 	vk::Pipeline               RT_DDGIPassPipeline = nullptr;
+	vk::Pipeline               IrradianceComputePassPipeline = nullptr;
 
 
 	vk::CommandPool            commandPool = nullptr;

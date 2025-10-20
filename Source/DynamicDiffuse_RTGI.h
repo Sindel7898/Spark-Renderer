@@ -24,6 +24,14 @@ struct GridData
     glm::vec4 probeCount;
     glm::vec4 probeOffset;
     glm::vec4 probeBaseLocation;
+};
+
+struct GeneralAtlasInfo
+{
+    int  AtlasWidthSize;
+    int  ProbeSideLength;
+    int  GutterSize;
+    int  Padding;
 
 };
 
@@ -46,6 +54,7 @@ public:
 
     void DispatchGridCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex);
     void DispatchDirectionsCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex);
+    void DispatchCalcProbeDataCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex);
     bool UpdateUniformBuffer(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, std::vector<BufferData>& fragmentUniformBuffers);
 
     void CleanUp() ;
@@ -53,10 +62,12 @@ public:
     vk::DescriptorSetLayout        ProbeDescriptorSetLayout;
     vk::DescriptorSetLayout        GridDescriptorSetLayout;
     vk::DescriptorSetLayout        RaytracingDescriptorSetLayout;
+    vk::DescriptorSetLayout        ConstructProbeDataDescriptorSetLayout;
 
     std::vector<vk::DescriptorSet>  ProbeDescriptorSets;
     std::vector<vk::DescriptorSet>  GridDescriptorSets;
     std::vector<vk::DescriptorSet>  RaytracingDescriptorSets;
+    std::vector<vk::DescriptorSet>  ConstructProbeDataDescriptorSets;
 
     //ImageData DDGI_AlbedoImageAtlasImage;
     //ImageData DDGI_NormalImageAtlasImage;

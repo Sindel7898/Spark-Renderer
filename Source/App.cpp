@@ -1640,8 +1640,6 @@ void App::CreateGraphicsPipeline()
 
 
 	{
-
-
 		auto ComputeShaderCode = readFile("../Shaders/Compiled_Shader_Files/Grid.comp.spv");
 
 		VkShaderModule ComputeShaderModule = pipelineManager.createShaderModule(ComputeShaderCode);
@@ -1669,7 +1667,36 @@ void App::CreateGraphicsPipeline()
 		GridComputePassPipeline = pipelineManager.creatComputePipeline(GridComputePipelineLayout,ComputeShaderStageInfo);
 
 		vulkanContext.LogicalDevice.destroyShaderModule(ComputeShaderModule);
+	}
 
+	{
+		auto ComputeShaderCode = readFile("../Shaders/Compiled_Shader_Files/Irradiance_Visibility.comp.spv");
+
+		VkShaderModule ComputeShaderModule = pipelineManager.createShaderModule(ComputeShaderCode);
+
+		vk::PipelineShaderStageCreateInfo ComputeShaderStageInfo{};
+		ComputeShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+		ComputeShaderStageInfo.stage = vk::ShaderStageFlagBits::eCompute;
+		ComputeShaderStageInfo.module = ComputeShaderModule;
+		ComputeShaderStageInfo.pName = "main";
+
+		vk::PushConstantRange range{};
+		range.setOffset(0);
+		range.setSize(sizeof(int) * 4);
+		range.setStageFlags(vk::ShaderStageFlagBits::eCompute);
+
+
+		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.pSetLayouts = &dynamicDiffuse_RTGI->ConstructProbeDataDescriptorSetLayout;
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges = &range;
+
+		IrradianceComputePipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+
+		IrradianceComputePassPipeline = pipelineManager.creatComputePipeline(IrradianceComputePipelineLayout, ComputeShaderStageInfo);
+
+		vulkanContext.LogicalDevice.destroyShaderModule(ComputeShaderModule);
 	}
 
 }
@@ -2006,8 +2033,8 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 	{
 
 		DDGIIrradianceAtlasID = ImGui_ImplVulkan_AddTexture(
-			dynamicDiffuse_RTGI->RadianceImageAtlasImage.imageSampler,
-			dynamicDiffuse_RTGI->RadianceImageAtlasImage.imageView,
+			dynamicDiffuse_RTGI->IradianceImageAtlasImage.imageSampler,
+			dynamicDiffuse_RTGI->IradianceImageAtlasImage.imageView,
 			VK_IMAGE_LAYOUT_GENERAL
 		);
 	}
@@ -2326,6 +2353,35 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			1, &barrier2,
 			0, nullptr
 		);
+
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, IrradianceComputePassPipeline);
+
+		dynamicDiffuse_RTGI->DispatchCalcProbeDataCompute(commandBuffer, IrradianceComputePipelineLayout, currentFrame);
+
+		vk::ImageMemoryBarrier imagebarrier;
+		imagebarrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+		imagebarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+		imagebarrier.oldLayout = vk::ImageLayout::eUndefined;
+		imagebarrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		imagebarrier.image = dynamicDiffuse_RTGI->IradianceImageAtlasImage.image;
+		imagebarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		imagebarrier.subresourceRange.baseMipLevel = 0;
+		imagebarrier.subresourceRange.levelCount = 1;
+		imagebarrier.subresourceRange.baseArrayLayer = 0;
+		imagebarrier.subresourceRange.layerCount = 1;
+
+		imagebarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imagebarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+		commandBuffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eComputeShader,
+			vk::PipelineStageFlagBits::eRayTracingShaderKHR,
+			{},
+			0, nullptr,       
+			0, nullptr,       
+			1, & imagebarrier 
+		);
+
 	}
 
 	{
@@ -2339,6 +2395,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TransitiontoGeneralRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
 
 	    bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->RadianceImageAtlasImage, TransitiontoGeneralRT);
+		bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->IradianceImageAtlasImage, TransitiontoGeneralRT);
 
 
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_DDGIPassPipeline);
@@ -3321,6 +3378,7 @@ void App::destroyPipeline()
 	vulkanContext.LogicalDevice.destroyPipeline(DDGIProbePipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(GridComputePassPipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(RT_DDGIPassPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(IrradianceComputePassPipeline);
 
 
 	vulkanContext.LogicalDevice.destroyPipelineLayout(DeferedLightingPassPipelineLayout);
@@ -3341,6 +3399,7 @@ void App::destroyPipeline()
 	vulkanContext.LogicalDevice.destroyPipelineLayout(DDGIProbepipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(GridComputePipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(RT_DDGIPipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(IrradianceComputePipelineLayout);
 
 }
 

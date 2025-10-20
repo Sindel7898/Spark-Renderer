@@ -40,6 +40,7 @@ glslc.exe Shaders/Shader_Files/DDGI_Miss.rmiss       -o Shaders/Compiled_Shader_
 
 
 glslc.exe Shaders/Shader_Files/Grid.comp       -o Shaders/Compiled_Shader_Files/Grid.comp.spv         --target-env=vulkan1.4
+glslc.exe Shaders/Shader_Files/Irradiance_Visibility.comp       -o Shaders/Compiled_Shader_Files/Irradiance_Visibility.comp.spv         --target-env=vulkan1.4
 
 
 
