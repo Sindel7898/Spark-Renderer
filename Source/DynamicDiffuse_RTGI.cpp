@@ -172,7 +172,7 @@ void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
 		vk::DescriptorSetLayoutBinding RadianceStorageImage{};
 		RadianceStorageImage.binding = 1;
 		RadianceStorageImage.descriptorCount = 1;
-		RadianceStorageImage.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		RadianceStorageImage.descriptorType = vk::DescriptorType::eStorageImage;
 		RadianceStorageImage.stageFlags = vk::ShaderStageFlagBits::eCompute;
 
 		vk::DescriptorSetLayoutBinding IrradianceStorageImage{};
@@ -465,7 +465,7 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			radianceAtlasImageSamplerdescriptorWrite.dstSet = ConstructProbeDataDescriptorSets[i];
 			radianceAtlasImageSamplerdescriptorWrite.dstBinding = 1;
 			radianceAtlasImageSamplerdescriptorWrite.dstArrayElement = 0;
-			radianceAtlasImageSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			radianceAtlasImageSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
 			radianceAtlasImageSamplerdescriptorWrite.descriptorCount = 1;
 			radianceAtlasImageSamplerdescriptorWrite.pImageInfo = &radiancAtlasImageInfo;
 
@@ -949,6 +949,10 @@ void DynamicDiffuse_RTGI::CleanUp()
 	}
 
 	vulkanContext->LogicalDevice.destroyDescriptorSetLayout(ProbeDescriptorSetLayout);
+	vulkanContext->LogicalDevice.destroyDescriptorSetLayout(GridDescriptorSetLayout);
+	vulkanContext->LogicalDevice.destroyDescriptorSetLayout(RaytracingDescriptorSetLayout);
+	vulkanContext->LogicalDevice.destroyDescriptorSetLayout(ConstructProbeDataDescriptorSetLayout);
+
 
 	DestroyStorageImage();
 	ProbeLocations.clear();

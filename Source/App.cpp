@@ -2317,6 +2317,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 
 	{
+
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, GridComputePassPipeline);
 
 		dynamicDiffuse_RTGI->DispatchGridCompute(commandBuffer, GridComputePipelineLayout, currentFrame);
@@ -2356,31 +2357,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, IrradianceComputePassPipeline);
 
-		dynamicDiffuse_RTGI->DispatchCalcProbeDataCompute(commandBuffer, IrradianceComputePipelineLayout, currentFrame);
-
-		vk::ImageMemoryBarrier imagebarrier;
-		imagebarrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
-		imagebarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-		imagebarrier.oldLayout = vk::ImageLayout::eUndefined;
-		imagebarrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		imagebarrier.image = dynamicDiffuse_RTGI->IradianceImageAtlasImage.image;
-		imagebarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-		imagebarrier.subresourceRange.baseMipLevel = 0;
-		imagebarrier.subresourceRange.levelCount = 1;
-		imagebarrier.subresourceRange.baseArrayLayer = 0;
-		imagebarrier.subresourceRange.layerCount = 1;
-
-		imagebarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		imagebarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-		commandBuffer.pipelineBarrier(
-			vk::PipelineStageFlagBits::eComputeShader,
-			vk::PipelineStageFlagBits::eRayTracingShaderKHR,
-			{},
-			0, nullptr,       
-			0, nullptr,       
-			1, & imagebarrier 
-		);
 
 	}
 
@@ -2407,6 +2383,34 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			commandBuffer,
 			RT_DDGIPipelineLayout,
 			currentFrame);
+
+
+
+		dynamicDiffuse_RTGI->DispatchCalcProbeDataCompute(commandBuffer, IrradianceComputePipelineLayout, currentFrame);
+
+		vk::ImageMemoryBarrier imagebarrier;
+		imagebarrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+		imagebarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+		imagebarrier.oldLayout = vk::ImageLayout::eUndefined;
+		imagebarrier.newLayout = vk::ImageLayout::eGeneral;
+		imagebarrier.image = dynamicDiffuse_RTGI->IradianceImageAtlasImage.image;
+		imagebarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		imagebarrier.subresourceRange.baseMipLevel = 0;
+		imagebarrier.subresourceRange.levelCount = 1;
+		imagebarrier.subresourceRange.baseArrayLayer = 0;
+		imagebarrier.subresourceRange.layerCount = 1;
+
+		imagebarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imagebarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+		commandBuffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eComputeShader,
+			vk::PipelineStageFlagBits::eRayTracingShaderKHR,
+			{},
+			0, nullptr,
+			0, nullptr,
+			1, & imagebarrier
+		);
 	}
 
 
