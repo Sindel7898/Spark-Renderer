@@ -21,11 +21,11 @@ class RT_Reflections
 {
 public:
 
-    RT_Reflections(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger);
+    RT_Reflections(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, SkyBox* skybox);
     void CreateStorageImage();
     void DestroyStorageImage();
     void createRayTracingDescriptorSetLayout();
-    void createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, GBuffer gbuffer, std::vector<BufferData>& fragmentUniformBuffers, SkyBox* SkyBoxRef);
+    void createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, GBuffer gbuffer, std::vector<BufferData>& fragmentUniformBuffers);
     void UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref, std::vector<std::shared_ptr<Model>>& Modelref);
     void CreateUniformBuffer();
     uint32_t alignedSize(uint32_t value, uint32_t alignment);
@@ -63,6 +63,9 @@ private:
     BufferManager*   bufferManager = nullptr;
     Camera*          camera        = nullptr;
     vk::CommandPool commandPool = nullptr;
+
+    SkyBox* skyboxRef = nullptr;
+
 };
 
 

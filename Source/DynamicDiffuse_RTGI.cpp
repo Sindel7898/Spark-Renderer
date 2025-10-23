@@ -2,19 +2,20 @@
 #include "VulkanContext.h"
 #include "BufferManager.h"
 #include "Camera.h"
+#include "SkyBox.h"
 #include <stdexcept>
 #include "AssetManager.h"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
 
-DynamicDiffuse_RTGI::DynamicDiffuse_RTGI(const std::string filepath, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger)
+DynamicDiffuse_RTGI::DynamicDiffuse_RTGI(const std::string filepath, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, SkyBox* skybox)
 {
 	bufferManager = buffermanger;
 	vulkanContext = vulkancontext;
 	camera        = rcamera;
 	commandPool   = commandpool;
 	FilePath = filepath;
-
+	skyboxRef = skybox;
 	CreateVertexAndIndexBuffer();
 	CreateStorageBuffer();
 	createRayTracingDescriptorSetLayout();
@@ -75,6 +76,7 @@ void DynamicDiffuse_RTGI::CreateStorageImage() {
 	 RadianceImageAtlasImage.imageView = bufferManager->CreateImageView(&RadianceImageAtlasImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	 RadianceImageAtlasImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge,false);
      
+	 ////////////////////////////////////////////////////////////
 	 int IrradianceSize = (ProbeSideLength + GutterSize);
 	 int probesPerRow = static_cast<int>(ceil(sqrt(ProbeNum))); // find square root and round up
 	 int AtlasSize = IrradianceSize * probesPerRow;
@@ -267,7 +269,13 @@ void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
 	LightInformationUniformBuffersLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
 	LightInformationUniformBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
 
-	std::array<vk::DescriptorSetLayoutBinding, 12> bindings = {
+	vk::DescriptorSetLayoutBinding SkyBoxImageSamplersLayout{};
+	SkyBoxImageSamplersLayout.binding = 12;
+	SkyBoxImageSamplersLayout.descriptorCount = skyboxRef->SkyBoxImages.size();
+	SkyBoxImageSamplersLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	SkyBoxImageSamplersLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+
+	std::array<vk::DescriptorSetLayoutBinding, 13> bindings = {
 															   TLASLayout,
 															   AlbedoAssetTexturesSamplerLayout,
 															   NormalAssetTexturesSamplerLayout,
@@ -278,7 +286,7 @@ void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
 															   trasnformationUniformBuffersLayout,
 															   IrradianceAtlasStorageLayout,
 															   ProbeLocationsBuffersLayout,FibonacciDirectionsBuffersLayout,
-															   LightInformationUniformBuffersLayout
+															   LightInformationUniformBuffersLayout,SkyBoxImageSamplersLayout
 	};
 
 
@@ -712,12 +720,36 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			lightUniformBufferdescriptorWrite.descriptorCount = 1;
 			lightUniformBufferdescriptorWrite.pBufferInfo = &LightUniformBuffersInfo;
 
-			std::array<vk::WriteDescriptorSet, 12> descriptorWrites{ 
+			std::vector<vk::DescriptorImageInfo> SkyboxImageAssetImagesInfos;
+
+			for (int j = 0; j < skyboxRef->SkyBoxImages.size(); j++)
+			{
+				ImageData imageData = skyboxRef->SkyBoxImages[j];
+
+			
+			    vk::DescriptorImageInfo SkyboxASSETImageInfo{};
+			    SkyboxASSETImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			    SkyboxASSETImageInfo.imageView   = imageData.imageView;
+			    SkyboxASSETImageInfo.sampler     = imageData.imageSampler;
+			    
+				SkyboxImageAssetImagesInfos.push_back(SkyboxASSETImageInfo);
+			}
+
+			vk::WriteDescriptorSet SkyboxImagSamplerdescriptorWrite{};
+			SkyboxImagSamplerdescriptorWrite.dstSet = RaytracingDescriptorSets[i];
+			SkyboxImagSamplerdescriptorWrite.dstBinding = 12;
+			SkyboxImagSamplerdescriptorWrite.dstArrayElement = 0;
+			SkyboxImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			SkyboxImagSamplerdescriptorWrite.descriptorCount = SkyboxImageAssetImagesInfos.size();
+			SkyboxImagSamplerdescriptorWrite.pImageInfo     = SkyboxImageAssetImagesInfos.data();
+
+
+			std::array<vk::WriteDescriptorSet, 13> descriptorWrites{ 
 			TLAS_descriptorWrite,AssetImagSamplerdescriptorWrite,
 			NormalAssetImagSamplerdescriptorWrite,MetalicRoughnessAssetImagSamplerdescriptorWrite,
 			IndexStorageBufferdescriptorWrite,VertexStorageBufferdescriptorWrite,OffsetStorageBufferdescriptorWrite,
 			TransformUniformBufferdescriptorWrite,IrradianceAtlasdescriptorWrite,
-			ProbeLocationbufferdescriptorWrite,FibonacciDirectionsbufferdescriptorWrite,lightUniformBufferdescriptorWrite };
+			ProbeLocationbufferdescriptorWrite,FibonacciDirectionsbufferdescriptorWrite,lightUniformBufferdescriptorWrite,SkyboxImagSamplerdescriptorWrite };
 
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
@@ -780,6 +812,7 @@ void DynamicDiffuse_RTGI::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer,
 	  uint32_t totalProbes  = NumOfProbesX * NumOfProbesY * NumOfProbesZ;
       int depth  = 1;
 
+	  commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eRaygenKHR, 0, sizeof(int), &skyboxRef->SkyBoxIndex);
       commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, pipelinelayout, 0, 1, &RaytracingDescriptorSets[imageIndex],0,nullptr);
       
       vulkanContext->vkCmdTraceRaysKHR(
@@ -834,8 +867,13 @@ void DynamicDiffuse_RTGI::DrawNode(vk::CommandBuffer commandBuffer, vk::Pipeline
 				cameraConstantBuffer.ViewMatrix = camera->GetViewMatrix();
 				cameraConstantBuffer.ProjectionMatrix = camera->GetProjectionMatrix();
 				cameraConstantBuffer.ProjectionMatrix[1][1] *= -1;
+				cameraConstantBuffer.generalAtlasInfo.AtlasWidthSize = IradianceImageExtent.width;
+				cameraConstantBuffer.generalAtlasInfo.ProbeSideLength = ProbeSideLength;
+				cameraConstantBuffer.generalAtlasInfo.GutterSize = GutterSize;
+				cameraConstantBuffer.generalAtlasInfo.RaysPerProbe = RaysPerProbe;
 
-				commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(CameraConstantBuffer), &cameraConstantBuffer);
+				commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, sizeof(CameraConstantBuffer), &cameraConstantBuffer);
+						
 				commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &ProbeDescriptorSets[imageIndex], 0, nullptr);
 
 				commandBuffer.drawIndexed(node->meshPrimitives[i].numIndices, NumOfProbesX * NumOfProbesY * NumOfProbesZ, node->meshPrimitives[i].indicesStart, 0, 0);
@@ -888,7 +926,7 @@ void DynamicDiffuse_RTGI::DispatchCalcProbeDataCompute(vk::CommandBuffer command
 	generalAtlasInfo.AtlasWidthSize = IradianceImageExtent.width;
 	generalAtlasInfo.ProbeSideLength = ProbeSideLength;
 	generalAtlasInfo.GutterSize = GutterSize;
-	generalAtlasInfo.Padding = RaysPerProbe;
+	generalAtlasInfo.RaysPerProbe = RaysPerProbe;
 
 	commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(GeneralAtlasInfo), &generalAtlasInfo);
 

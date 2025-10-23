@@ -117,7 +117,7 @@
 
 	bufferManger.CreateSharedBuffers(commandPool);
 
-	RT_Reflection           = std::unique_ptr<RT_Reflections, decltype(&RT_ReflectionsDeleter)>(new RT_Reflections(&vulkanContext, commandPool, &camera, &bufferManger), RT_ReflectionsDeleter);
+	RT_Reflection           = std::unique_ptr<RT_Reflections, decltype(&RT_ReflectionsDeleter)>(new RT_Reflections(&vulkanContext, commandPool, &camera, &bufferManger, skyBox.get()), RT_ReflectionsDeleter);
 	Raytracing_Shadows      = std::unique_ptr<RT_Shadows, decltype(&RT_ShadowsDeleter)>(new RT_Shadows(&vulkanContext, commandPool, &camera, &bufferManger),RT_ShadowsDeleter);
 	lighting_FullScreenQuad = std::unique_ptr<Lighting_FullScreenQuad, decltype(&Lighting_FullScreenQuadDeleter)>(new Lighting_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool, skyBox.get(), Raytracing_Shadows.get()),Lighting_FullScreenQuadDeleter);
 	ssao_FullScreenQuad     = std::unique_ptr<SSA0_FullScreenQuad, decltype(&SSA0_FullScreenQuadDeleter)>(new SSA0_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),SSA0_FullScreenQuadDeleter);
@@ -125,7 +125,7 @@
 	ssr_FullScreenQuad      = std::unique_ptr<SSR_FullScreenQuad, decltype(&SSR_FullScreenQuadDeleter)>(new SSR_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),SSR_FullScreenQuadDeleter);
 	Combined_FullScreenQuad = std::unique_ptr<CombinedResult_FullScreenQuad, decltype(&CombinedResult_FullScreenQuadDeleter)>(new CombinedResult_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),CombinedResult_FullScreenQuadDeleter);
 	SSGI_FullScreenQuad     = std::unique_ptr<SSGI, decltype(&SSGIDeleter)>(new SSGI(&bufferManger, &vulkanContext, &camera, commandPool),SSGIDeleter);
-	dynamicDiffuse_RTGI     = std::unique_ptr<DynamicDiffuse_RTGI, decltype(&DynamicDiffuse_RTGIDeleter)>(new DynamicDiffuse_RTGI("../Textures/Sphere/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), DynamicDiffuse_RTGIDeleter);
+	dynamicDiffuse_RTGI     = std::unique_ptr<DynamicDiffuse_RTGI, decltype(&DynamicDiffuse_RTGIDeleter)>(new DynamicDiffuse_RTGI("../Textures/Sphere/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger, skyBox.get()), DynamicDiffuse_RTGIDeleter);
 
 	lights.reserve(4);
 
@@ -630,7 +630,7 @@ void App::createGBuffer()
 	fxaa_FullScreenQuad->createDescriptorSets(DescriptorPool, Combined_FullScreenQuad->FinalResultImage);
 	Raytracing_Shadows->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
 	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, LightingPassImageData,DepthTextureData);
-	RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer, lighting_FullScreenQuad->fragmentUniformBuffers,skyBox.get());
+	RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer, lighting_FullScreenQuad->fragmentUniformBuffers);
 
 
 	vk::CommandBuffer cmd =  bufferManger.CreateSingleUseCommandBuffer(commandPool);
@@ -1063,9 +1063,9 @@ void App::CreateGraphicsPipeline()
 		depthStencilState.stencilTestEnable = VK_FALSE;
 
 		vk::PushConstantRange range = {};
-		range.stageFlags = vk::ShaderStageFlagBits::eVertex;
+		range.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
 		range.offset = 0;
-		range.size = sizeof(glm::mat4) * 2;
+		range.size = sizeof(CameraConstantBuffer);
 
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.setLayoutCount = 1;
@@ -1438,12 +1438,16 @@ void App::CreateGraphicsPipeline()
 			Miss_GroupInfo,
 			Miss_GroupInfo,
 		};
+		vk::PushConstantRange range{};
+		range.setOffset(0);
+		range.setSize(sizeof(int));
+		range.setStageFlags(vk::ShaderStageFlagBits::eRaygenKHR);
 
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.setLayoutCount = 1;
 		pipelineLayoutInfo.pSetLayouts = &RT_Reflection->RayTracingDescriptorSetLayout;
-		pipelineLayoutInfo.pushConstantRangeCount = 0;
-		pipelineLayoutInfo.pPushConstantRanges = nullptr;
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges = &range;
 
 		RT_ReflectionPipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 
@@ -1520,11 +1524,16 @@ void App::CreateGraphicsPipeline()
 			Miss_GroupInfo,
 		};
 
+		vk::PushConstantRange range{};
+		range.setOffset(0);
+		range.setSize(sizeof(int));
+		range.setStageFlags(vk::ShaderStageFlagBits::eRaygenKHR);
+
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.setLayoutCount = 1;
 		pipelineLayoutInfo.pSetLayouts = &dynamicDiffuse_RTGI->RaytracingDescriptorSetLayout;
-		pipelineLayoutInfo.pushConstantRangeCount = 0;
-		pipelineLayoutInfo.pPushConstantRanges = nullptr;
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges = &range;
 
 		RT_DDGIPipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
 

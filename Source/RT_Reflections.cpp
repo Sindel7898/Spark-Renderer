@@ -5,12 +5,13 @@
 #include <stdexcept>
 #include "Model.h"
 
-RT_Reflections::RT_Reflections( VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger)
+RT_Reflections::RT_Reflections( VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, SkyBox* skybox)
 {
 	bufferManager = buffermanger;
 	vulkanContext = vulkancontext;
 	camera        = rcamera;
 	commandPool   = commandpool;
+	skyboxRef = skybox;
 	CreateUniformBuffer();
 	createRayTracingDescriptorSetLayout();
 }
@@ -136,7 +137,7 @@ void RT_Reflections::createRayTracingDescriptorSetLayout(){
 
 	vk::DescriptorSetLayoutBinding CubeMapsLayout{};
 	CubeMapsLayout.binding = 11;
-	CubeMapsLayout.descriptorCount = 1;
+	CubeMapsLayout.descriptorCount = skyboxRef->SkyBoxImages.size();
 	CubeMapsLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	CubeMapsLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
@@ -207,7 +208,7 @@ void RT_Reflections::createRayTracingDescriptorSetLayout(){
 }
 
 
-void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, GBuffer gbuffer, std::vector<BufferData>& fragmentUniformBuffers, SkyBox* SkyBoxRef)
+void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, GBuffer gbuffer, std::vector<BufferData>& fragmentUniformBuffers)
 
 {
 	{
@@ -418,18 +419,31 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 			lightUniformBufferdescriptorWrite.descriptorCount = 1;
 			lightUniformBufferdescriptorWrite.pBufferInfo = &LightUniformBuffersInfo;
 
-			vk::DescriptorImageInfo ReflectiveCubeimageInfo{};
-			ReflectiveCubeimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			ReflectiveCubeimageInfo.imageView   = SkyBoxRef->SkyBoxImages[SkyBoxRef->SkyBoxIndex].imageView;
-			ReflectiveCubeimageInfo.sampler     = SkyBoxRef->SkyBoxImages[SkyBoxRef->SkyBoxIndex].imageSampler;
 
-			vk::WriteDescriptorSet ReflectiveCubeSamplerdescriptorWrite{};
-			ReflectiveCubeSamplerdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
-			ReflectiveCubeSamplerdescriptorWrite.dstBinding = 11;
-			ReflectiveCubeSamplerdescriptorWrite.dstArrayElement = 0;
-			ReflectiveCubeSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-			ReflectiveCubeSamplerdescriptorWrite.descriptorCount = 1;
-			ReflectiveCubeSamplerdescriptorWrite.pImageInfo = &ReflectiveCubeimageInfo;
+			std::vector<vk::DescriptorImageInfo> SkyboxImageAssetImagesInfos;
+
+			for (int j = 0; j < skyboxRef->SkyBoxImages.size(); j++)
+			{
+				ImageData imageData = skyboxRef->SkyBoxImages[j];
+
+
+				vk::DescriptorImageInfo SkyboxASSETImageInfo{};
+				SkyboxASSETImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+				SkyboxASSETImageInfo.imageView = imageData.imageView;
+				SkyboxASSETImageInfo.sampler = imageData.imageSampler;
+
+				SkyboxImageAssetImagesInfos.push_back(SkyboxASSETImageInfo);
+			}
+
+			vk::WriteDescriptorSet SkyboxImagSamplerdescriptorWrite{};
+			SkyboxImagSamplerdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
+			SkyboxImagSamplerdescriptorWrite.dstBinding = 11;
+			SkyboxImagSamplerdescriptorWrite.dstArrayElement = 0;
+			SkyboxImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			SkyboxImagSamplerdescriptorWrite.descriptorCount = SkyboxImageAssetImagesInfos.size();
+			SkyboxImagSamplerdescriptorWrite.pImageInfo = SkyboxImageAssetImagesInfos.data();
+
+
 
 			std::array<vk::WriteDescriptorSet, 12> descriptorWrites{ TLAS_descriptorWrite,
 				                                                     AssetImagSamplerdescriptorWrite,
@@ -442,7 +456,7 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 			                                                         OffsetStorageBufferdescriptorWrite,
 			                                                         TransformUniformBufferdescriptorWrite,
 				                                                     lightUniformBufferdescriptorWrite,
-			                                                         ReflectiveCubeSamplerdescriptorWrite};
+																	 SkyboxImagSamplerdescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 		}
@@ -667,6 +681,7 @@ void RT_Reflections::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, Buff
 	int width  = swapchainextent.width;
 	int height = swapchainextent.height;
 	int depth  = 1;
+	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eRaygenKHR, 0, sizeof(int), &skyboxRef->SkyBoxIndex);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, pipelinelayout, 0, 1, &RayTracingDescriptorSets[imageIndex],0,nullptr);
 	
 	vulkanContext->vkCmdTraceRaysKHR(

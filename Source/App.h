@@ -190,6 +190,7 @@ private:
 	vk::PipelineLayout         IrradianceComputePipelineLayout = nullptr;
 
 
+
 	vk::Pipeline               DeferedLightingPassPipeline = nullptr;
 	vk::Pipeline               FXAAPassPipeline = nullptr;
 	vk::Pipeline               LightgraphicsPipeline = nullptr;

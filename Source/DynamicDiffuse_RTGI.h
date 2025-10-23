@@ -11,13 +11,7 @@ class  VulkanContext;
 class  BufferManager;
 class  Model;
 class  Light;
-
-struct CameraConstantBuffer
-{
-    glm::mat4 ViewMatrix;
-    glm::mat4 ProjectionMatrix;
-
-};
+class  SkyBox;
 
 struct GridData
 {
@@ -31,15 +25,23 @@ struct GeneralAtlasInfo
     int  AtlasWidthSize;
     int  ProbeSideLength;
     int  GutterSize;
-    int  Padding;
+    int  RaysPerProbe;
 
 };
+
+struct CameraConstantBuffer
+{
+    glm::mat4 ViewMatrix;
+    glm::mat4 ProjectionMatrix;
+    GeneralAtlasInfo generalAtlasInfo;
+};
+
 
 class DynamicDiffuse_RTGI
 {
 public:
 
-    DynamicDiffuse_RTGI(const std::string filepath,VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger);
+    DynamicDiffuse_RTGI(const std::string filepath,VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, SkyBox* skybox);
     void CreateStorageImage();
     void DestroyStorageImage();
     void CreateStorageBuffer();
@@ -118,6 +120,9 @@ private:
     std::string FilePath;
 
     const StoredModelData* storedModelData = nullptr;
+
+
+    SkyBox* skyboxRef = nullptr;
 };
 
 

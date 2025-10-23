@@ -50,9 +50,9 @@ layout(set = 0, binding = 11) uniform LightUniformBuffer {
 };
 
 struct Payload {
-    vec3 Color;
+    vec3  Color;
     float Distance;
-    vec3 Normal;
+    int Hit;
 };
 
 layout(location = 0) rayPayloadInEXT Payload payload;
@@ -168,6 +168,5 @@ void main()
 
      payload.Color    = totalLighting;
      payload.Distance = gl_HitTEXT;
-     payload.Normal   = Normal;
-
+     payload.Hit = 1;
  }

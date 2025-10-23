@@ -8,6 +8,11 @@ layout(location = 3) in vec3 inTangent;
 layout(push_constant) uniform PushConstants {
     mat4 view;
     mat4 proj;
+
+    int   AtlasWidthSize;  
+    int   ProbeSideLength; 
+    int   GutterSize;      
+    int   NumRays;     
 }pc;
 
 layout(set = 0,binding = 1) readonly  buffer StorageBufferObject {
