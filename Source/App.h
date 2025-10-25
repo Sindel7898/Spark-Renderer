@@ -100,7 +100,7 @@ public:
 	void destroy_GbufferImages();
 
 	bool framebufferResized = false;
-	int DefferedDecider = 9;
+	int DefferedDecider = 10;
 
 	bool bWireFrame = false;
 	//Drawables
@@ -143,6 +143,7 @@ public:
 	VkDescriptorSet RT_ReflectionTextureId;
 	VkDescriptorSet RT_BluredReflectionTextureId;
 	VkDescriptorSet DDGIIrradianceAtlasID;
+	VkDescriptorSet Sampled_GI_ID;
 
 
 	std::vector<std::shared_ptr<Model>> Models;
@@ -188,6 +189,7 @@ private:
 	vk::PipelineLayout         GridComputePipelineLayout = nullptr;
 	vk::PipelineLayout         RT_DDGIPipelineLayout = nullptr;
 	vk::PipelineLayout         IrradianceComputePipelineLayout = nullptr;
+	vk::PipelineLayout         SampleDDGIComputePipelineLayout = nullptr;
 
 
 
@@ -210,6 +212,7 @@ private:
 	vk::Pipeline               GridComputePassPipeline = nullptr;
 	vk::Pipeline               RT_DDGIPassPipeline = nullptr;
 	vk::Pipeline               IrradianceComputePassPipeline = nullptr;
+	vk::Pipeline               SampleDDGIComputePassPipeline = nullptr;
 
 
 	vk::CommandPool            commandPool = nullptr;

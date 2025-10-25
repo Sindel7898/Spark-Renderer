@@ -167,6 +167,6 @@ void main()
 
 
      payload.Color    = totalLighting;
-     payload.Distance = gl_HitTEXT;
+     payload.Distance = gl_RayTminEXT + gl_HitTEXT;
      payload.Hit = 1;
  }

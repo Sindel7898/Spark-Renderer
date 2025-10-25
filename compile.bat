@@ -2,8 +2,6 @@ glslc.exe Shaders\Shader_Files\SkyBox_Shader.vert         -o  Shaders\Compiled_S
 glslc.exe Shaders\Shader_Files\Light_Shader.vert          -o  Shaders\Compiled_Shader_Files\Light_Shader.vert.spv
 glslc.exe Shaders\Shader_Files\GeometryPass.vert          -o  Shaders\Compiled_Shader_Files\GeometryPass.vert.spv
 glslc.exe Shaders\Shader_Files\FullScreenQuad.vert        -o  Shaders\Compiled_Shader_Files\FullScreenQuad.vert.spv
-glslc.exe Shaders\Shader_Files\Terrain_GeometryPass.vert  -o  Shaders\Compiled_Shader_Files\Terrain_GeometryPass.vert.spv
-glslc.exe Shaders\Shader_Files\Grass_GeoPass.vert         -o  Shaders\Compiled_Shader_Files\Grass_GeoPass.vert.spv
 
 
 glslc.exe Shaders\Shader_Files\DDGI_Probe.frag         -o  Shaders\Compiled_Shader_Files\DDGI_Probe.frag.spv
@@ -41,6 +39,7 @@ glslc.exe Shaders/Shader_Files/DDGI_Miss.rmiss       -o Shaders/Compiled_Shader_
 
 glslc.exe Shaders/Shader_Files/Grid.comp       -o Shaders/Compiled_Shader_Files/Grid.comp.spv         --target-env=vulkan1.4
 glslc.exe Shaders/Shader_Files/Irradiance_Visibility.comp       -o Shaders/Compiled_Shader_Files/Irradiance_Visibility.comp.spv         --target-env=vulkan1.4
+glslc.exe Shaders/Shader_Files/Sample_GI_Probes.comp       -o Shaders/Compiled_Shader_Files/Sample_GI_Probes.comp.spv         --target-env=vulkan1.4
 
 
 

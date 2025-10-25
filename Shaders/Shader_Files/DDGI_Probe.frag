@@ -19,8 +19,8 @@ layout(location = 1) in vec2 TexCoord;
 
 void main() {
    
-  int ProbeSideWithGutter = pc.ProbeSideLength + pc.GutterSize;
-  int ProbesPerRow      = pc.AtlasWidthSize  /  ProbeSideWithGutter; // How many Probes can be fit in a row?
+  int ProbeSideWithGutter = pc.ProbeSideLength +  pc.GutterSize;
+  int ProbesPerRow        = pc.AtlasWidthSize  /  ProbeSideWithGutter; // How many Probes can be fit in a row?
 
   // Convert integer sizes to float for UV calculations
   float FAtlasWidth       = float(pc.AtlasWidthSize);
@@ -30,8 +30,8 @@ void main() {
   float FHalfGutter       = FGutterSize / 2.0;
 
   ///Find the  general offset (What Index in the atlas are we in ?) this is the pixel of the Top left corner of the probe
-  float CellOffset_X = (float((ProbeIndex % ProbesPerRow) * ProbeSideWithGutter)) / FAtlasWidth;
-  float CellOffset_Y = (float((ProbeIndex / ProbesPerRow) * ProbeSideWithGutter)) / FAtlasHeight;
+  float CellOffset_X = (float((ProbeIndex % ProbesPerRow) * ProbeSideWithGutter)) / FAtlasWidth; // normliase to UV space
+  float CellOffset_Y = (float((ProbeIndex / ProbesPerRow) * ProbeSideWithGutter)) / FAtlasHeight; // normliase to UV space
 
   ///(skip half the gutter)
   float GutterOffsetX = FHalfGutter / FAtlasWidth;

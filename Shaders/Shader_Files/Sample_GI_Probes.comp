@@ -1,0 +1,111 @@
+#version 450
+
+layout(push_constant) uniform ImageSize{
+    vec4 GridBaseLocation_ScreenSizeWidth;
+    vec4 ProbeSpacing_ScreenSizeHeight;
+    vec4 ProbeCount;
+
+    ///////////////////////
+
+    int   AtlasWidthSize;  
+    int   ProbeSideLength; 
+    int   GutterSize;      
+    int   NumRays;    
+}pc;
+
+layout(binding = 0)   uniform sampler2D  PositionImage;
+layout(binding = 1)   uniform sampler2D  NormalImage;
+layout(binding = 2, rgba16f)   uniform image2D  IrradianceStorageImage;
+layout(binding = 3, rgba16f)   uniform image2D  SampledGIImage;
+
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
+
+ivec3 WorldToGrid(vec3 WorldPosition,vec3 GridBaseLocation,vec3 GridSpacing,vec3 ProbeCount){
+
+    vec3 GridIndex = (WorldPosition - GridBaseLocation) / GridSpacing; // Get the position in the grid
+
+    vec3 ClampedGridIndex = clamp(GridIndex, vec3(0), vec3(ProbeCount - 1)); // Clamp to the grid size
+    return ivec3(ClampedGridIndex);
+}
+
+ivec2 GetProbeTexel(ivec3 probeIndex, vec2 uv)
+{
+    int probeSideWithGutter = pc.ProbeSideLength + pc.GutterSize;
+    int probesPerRow = pc.AtlasWidthSize / probeSideWithGutter;
+
+    int linearIndex = probeIndex.x + probeIndex.y * int(pc.ProbeCount.x) + probeIndex.z * int(pc.ProbeCount.x * pc.ProbeCount.y);
+
+    int cellOffsetX = (linearIndex % probesPerRow) * probeSideWithGutter;
+    int cellOffsetY = (linearIndex / probesPerRow) * probeSideWithGutter;
+
+    ivec2 texel = ivec2(uv * float(pc.ProbeSideLength)) + ivec2(cellOffsetX, cellOffsetY);
+
+    return texel;
+}
+
+
+void main() 
+{
+    int   Width            = int(pc.GridBaseLocation_ScreenSizeWidth.w);
+    int   Height           = int(pc.ProbeSpacing_ScreenSizeHeight.w);
+    vec3  GridBaseLocation = pc.GridBaseLocation_ScreenSizeWidth.xyz;
+    vec3  ProbeSpacing     = pc.ProbeSpacing_ScreenSizeHeight.xyz;
+    ivec3 ProbeCount       = ivec3(pc.ProbeCount.xyz);
+
+    ivec2 TextlCord        = ivec2(gl_GlobalInvocationID.xy);
+
+    vec2 UV = (vec2(TextlCord) + 0.5) / vec2(Width,Height); // + 0.5 gives us the middle of the TEXEL not the edge
+
+    vec3 Position = texture(PositionImage,UV).rgb;
+    vec3 Normal   = texture(NormalImage,  UV).rgb;
+    vec3 GridIndexF = (Position - GridBaseLocation) / ProbeSpacing;
+    vec3 Alpha = fract(GridIndexF);
+
+
+    ivec3 GridIndex = WorldToGrid(Position,GridBaseLocation,ProbeSpacing,vec3(ProbeCount));
+
+     ivec3 Offsets[8] = {
+         ivec3(0,0,0), ivec3(1,0,0),
+         ivec3(0,1,0), ivec3(1,1,0),
+         ivec3(0,0,1), ivec3(1,0,1),
+         ivec3(0,1,1), ivec3(1,1,1)
+     };
+
+
+     vec3 Irradiance = vec3(0);
+
+     for(int i = 0; i < 8; i++){
+
+      vec3 weight;
+
+         if (Offsets[i].x == 0) {
+             weight.x = 1.0 - Alpha.x;
+         } else {
+             weight.x = Alpha.x;
+         }
+         
+         if (Offsets[i].y == 0) {
+             weight.y = 1.0 - Alpha.y;
+         } else {
+             weight.y = Alpha.y;
+         }
+         
+         if (Offsets[i].z == 0) {
+             weight.z = 1.0 - Alpha.z;
+         } else {
+             weight.z = Alpha.z;
+         }
+
+        float w = weight.x * weight.y * weight.z;
+
+         ivec3 ProbeIndex = clamp((GridIndex + Offsets[i]),ivec3(0),ProbeCount);
+
+         ivec2 probeTexel = GetProbeTexel(ProbeIndex, vec2(0.5));
+
+        Irradiance += w * imageLoad(IrradianceStorageImage, probeTexel).rgb;
+
+     }
+
+    imageStore(SampledGIImage, ivec2(gl_GlobalInvocationID.xy), vec4(Irradiance,1));
+
+}

@@ -5,7 +5,7 @@ layout(binding = 0) readonly buffer StorageBuffer2 {
 } SB0;
 
 layout(binding = 1, rgba16f)  uniform image2D Radiance_Visibility;
-layout(binding = 2,rgba16f)  uniform image2D  Iradiance_Visibility;
+layout(binding = 2,rgba16f)  uniform image2D  Iradiance;
 
 layout(push_constant) uniform PushConstants {
     int   AtlasWidthSize;  
@@ -70,7 +70,8 @@ vec3 oct_decode(vec2 o) {                                                       
 
 void main() 
 {
-    ivec2 fragCoord = ivec2(gl_GlobalInvocationID.xy);
+   ivec2 fragCoord = ivec2(gl_GlobalInvocationID.xy);
+   const float energy_conservation = 0.95;
 
     int ProbeSideLength_With_Gutter  = pc.ProbeSideLength + pc.GutterSize ;
     int probe_last_pixel = pc.ProbeSideLength + (pc.GutterSize - 1); // subtract by one because the gutter is on each side
@@ -87,43 +88,61 @@ void main()
     float total_visibility = 0.0;
     float total_weight = 0.0;
      vec4 final_color = vec4(0.0, 0.0, 0.0, 1000.0);
+     uint backfaces = 0;
+     uint max_backfaces = uint(pc.NumRays * 0.1f);
+
+     const bool use_backfacing_blending = true;
 
     if(!border_pixel){
       
-        for (int ray_index = 0; ray_index <= pc.NumRays; ray_index++) {
+        for (int ray_index = 0; ray_index < pc.NumRays; ray_index++) {
           
               ivec2 load_coord = ivec2(ray_index, ProbeIndex);
-              vec4 ray_data = imageLoad(Radiance_Visibility, load_coord);
-              
-              vec3 ray_radiance  = ray_data.rgb;
+              vec4  ray_data = imageLoad(Radiance_Visibility, load_coord);
               float ray_distance = ray_data.a;
-             
+              
+              if ( ray_distance < 0.0f && use_backfacing_blending ) {
+                ++backfaces;
+
+                if (backfaces >= max_backfaces) {
+                    return;
+                }
+                
+                continue; 
+            }
+
+              
               vec3 ray_direction = SB0.FibonacciDirections[ray_index].xyz;
-             
-               vec3 texel_direction = oct_decode(normalized_oct_coord(fragCoord));
+              vec3 texel_direction = oct_decode(normalized_oct_coord(fragCoord));
 
               // Calculate the cosine weighting term
-              float weight  = max(0.0, dot(texel_direction, ray_direction));
-              
-              if (weight  > 0.0) {
-                  total_irradiance += ray_radiance * weight ;
+              float  weight  = max(0.0, dot(texel_direction, ray_direction));
+              float  distance2  = imageLoad(Radiance_Visibility, load_coord).a;
+
+
+              if (weight  > 0.0001) {
+         
+                vec3  ray_radiance  = ray_data.rgb;
+
+                ray_radiance *= energy_conservation;
+
+                total_irradiance += ray_radiance * weight;             
+                total_visibility += ray_distance;
                   
-                  total_visibility += ray_distance * weight ;
-                  
-                  total_weight += weight ;
+                total_weight += weight;
               }
 
       }
             
-      if (total_weight > 0.0001) {
-          vec3 final_irradiance = total_irradiance  / total_weight;
-          //float final_visibility = total_visibility / total_weight; 
+      if (total_weight > 0.000) {
+          vec3  final_irradiance = total_irradiance  / total_weight;
+          float final_visibility = total_visibility  / total_weight; 
           
           final_color = vec4(final_irradiance, 1);
       }
     }
 
 
-    imageStore(Iradiance_Visibility, ivec2(gl_GlobalInvocationID.xy), final_color);
+    imageStore(Iradiance, ivec2(gl_GlobalInvocationID.xy), final_color);
 
 }

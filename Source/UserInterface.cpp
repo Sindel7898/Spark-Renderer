@@ -393,17 +393,22 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 
 			ImGui::TextDisabled("Adjust probe parameters:");
 
+			ImGui::Checkbox("Draw Debug", (bool*)&appref->dynamicDiffuse_RTGI->DrawDEBUG_Probes);
+
 			ImGui::SliderInt("Rays Per Probe", &appref->dynamicDiffuse_RTGI->RaysPerProbe, 1, 300, "%d");
 
 			ImGui::SliderInt("X Count", &appref->dynamicDiffuse_RTGI->NumOfProbesX, 1, 10, "%d");
 			ImGui::SliderInt("Y Count", &appref->dynamicDiffuse_RTGI->NumOfProbesY, 1, 10, "%d");
 			ImGui::SliderInt("Z Count", &appref->dynamicDiffuse_RTGI->NumOfProbesZ, 1, 10, "%d");
 
-			ImGui::SliderFloat("X Offset", &appref->dynamicDiffuse_RTGI->Last_ProbeOffset.x, -20, 20, "%.2f");
-			ImGui::SliderFloat("Y Offset", &appref->dynamicDiffuse_RTGI->Last_ProbeOffset.y, -20, 20, "%.2f");
-			ImGui::SliderFloat("Z Offset", &appref->dynamicDiffuse_RTGI->Last_ProbeOffset.z, -20, 20, "%.2f");
+			//ImGui::SliderFloat("X Offset", &appref->dynamicDiffuse_RTGI->ProbeOffset.x, -20, 20, "%.2f");
+			//ImGui::SliderFloat("Y Offset", &appref->dynamicDiffuse_RTGI->ProbeOffset.y, -20, 20, "%.2f");
+			//ImGui::SliderFloat("Z Offset", &appref->dynamicDiffuse_RTGI->ProbeOffset.z, -20, 20, "%.2f");
 
-			ImGui::InputFloat3("GridLocation", glm::value_ptr(appref->dynamicDiffuse_RTGI->GridLocation));
+			ImGui::SliderFloat3("Probe Offset", glm::value_ptr(appref->dynamicDiffuse_RTGI->ProbeOffset), -20, 20, "%.2f");
+			ImGui::SliderFloat3("Grid Location", glm::value_ptr(appref->dynamicDiffuse_RTGI->GridLocation), -100, 100, "%.2f");
+
+			//ImGui::InputFloat3("GridLocation", glm::value_ptr(appref->dynamicDiffuse_RTGI->GridLocation));
 
 			ImGui::EndChild();
 		}
@@ -429,7 +434,8 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 	case 6: ImGui::Image((ImTextureID)appref->SSGITextureId, viewportSize); break;
 	case 7: ImGui::Image((ImTextureID)appref->RT_ReflectionTextureId, viewportSize); break;
 	case 8: ImGui::Image((ImTextureID)appref->RT_BluredReflectionTextureId, viewportSize); break;
-	case 9: ImGui::Image((ImTextureID)appref->FinalRenderTextureId, viewportSize); break;}
+	case 9: ImGui::Image((ImTextureID)appref->Sampled_GI_ID, viewportSize); break;
+	case 10: ImGui::Image((ImTextureID)appref->FinalRenderTextureId, viewportSize); break;}
 
 	ImGuizmo::SetOrthographic(false);
 	ImGuizmo::SetDrawlist();

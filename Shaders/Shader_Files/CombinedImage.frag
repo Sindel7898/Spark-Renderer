@@ -6,6 +6,7 @@ layout (binding = 1) uniform sampler2D GITexture;
 layout (binding = 2) uniform sampler2D SSAOTexture;                
 layout (binding = 3) uniform sampler2D MaterialsTexture;                
 layout (binding = 4) uniform sampler2D AlbedoTexture;                
+layout(binding = 5, rgba16f) uniform image2D  DDGITexture;
 
 layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragColor;
@@ -61,27 +62,33 @@ void main() {
      float MinGamma      = pc.MaxGamma_MinGamma_Padding.y;
 
      vec3 DirectLighting   = texture(LightingReflectionTexture, inTexCoord).rgb;
-     vec3 GI               = texture(GITexture, inTexCoord).rgb;
+     vec3 SSGI               = texture(GITexture, inTexCoord).rgb;
      float SSAO            = texture(SSAOTexture, inTexCoord).r;
      float MaterialAO      = texture(MaterialsTexture, inTexCoord).b;
      vec3 Albedo           = texture(AlbedoTexture, inTexCoord).rgb;
-     
+     ivec2 texelSize = imageSize(DDGITexture);
+     ivec2 texelCoord = ivec2(inTexCoord * vec2(texelSize));
+     vec3 DDGI = imageLoad(DDGITexture, texelCoord).rgb;
 
-     float FinalAO         = SSAO * MaterialAO;
-     vec3 IndirectLighting = GI * Albedo / PI;
-     IndirectLighting;
 
-     if(FinalAO < 0.1){FinalAO = 1;}
+     float AO     = SSAO * MaterialAO;
 
-     vec3 FinalColor = ((DirectLighting * FinalAO) + IndirectLighting);
+     vec3 DDGIresult   = DDGI  * Albedo / PI;
+     vec3 SSGIGIresult = SSGI  * Albedo / PI;
+
+     if(AO < 0.1){AO = 1;}
+
+    vec3 FinalColor = DirectLighting + (DDGIresult + SSGIGIresult) * AO;
+
+
      vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, Brightness, Saturation, Concentration);
 
-    float luma = rgb2luma(CorrectedColor);
-    float darkFactor   = smoothstep(0.0, 0.2, luma); // 0 when dark, 1 when bright
-    float dynamicGamma = mix(MinGamma, MaxGamma, darkFactor);  // gamma = 0.7 in darks, 1.0 in brights
-
-    vec3 gammaCorrected = pow(clamp(CorrectedColor, 0.0, 1.0), vec3(dynamicGamma));
+    //float luma = rgb2luma(CorrectedColor);
+    //float darkFactor   = smoothstep(0.0, 0.2, luma); // 0 when dark, 1 when bright
+    //float dynamicGamma = mix(MinGamma, MaxGamma, darkFactor);  // gamma = 0.7 in darks, 1.0 in brights
+    //
+    //vec3 gammaCorrected = pow(clamp(CorrectedColor, 0.0, 1.0), vec3(dynamicGamma));
     //vec3 tonemapped = aces_approx(gammaCorrected);
 
-     outFragColor = vec4(gammaCorrected, 1.0);
+     outFragColor = vec4(CorrectedColor,1.0);
 }

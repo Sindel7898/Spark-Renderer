@@ -10,10 +10,13 @@ layout(set = 0, binding = 5) uniform Camera {
 } cam;
 
 layout (binding = 11) uniform samplerCube samplerReflectiveCubeMap[2];
+layout(binding  = 12 ) uniform sampler2D PositionImage;
+layout(binding  = 13 ) uniform sampler2D NormalImage;
+layout(binding  = 14 ) uniform sampler2D MaterialImage;
 
 layout(push_constant) uniform PushConstants {
     int SkyboxIndex;    
-}pc;
+} pc;
 
 struct Payload {
     vec3 Color;
@@ -24,44 +27,51 @@ struct Payload {
 layout(location = 0) rayPayloadEXT Payload payload;
 
 void main() {
-    vec2 pixelCenter = vec2(gl_LaunchIDEXT.xy) + vec2(0.5);
-    vec2 uv = pixelCenter / vec2(gl_LaunchSizeEXT.xy);
-    vec2 ndc = uv * 2.0 - 1.0;
-
-    vec4 rayOrigin = cam.inverseViewMatrix * vec4(0,0,0,1);
-    vec4 target = cam.inverseProjectionMatrix * vec4(ndc.x, ndc.y, 1, 1);
-    vec3 rayDir = normalize((cam.inverseViewMatrix * vec4(target.xyz / target.w, 0)).xyz);
-
-    // Trace the ray
     const uint rayFlags = gl_RayFlagsOpaqueEXT;
     const uint cullMask = 0xFF;
     const float tMin = 0.001;
     const float tMax = 1000.0;
 
-     
+    ivec2 halfCoord  = ivec2(gl_LaunchIDEXT.xy);
+    ivec2 fullCoord = halfCoord;
 
-    traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, rayOrigin.xyz, tMin, rayDir, tMax, 0);
-      payload.Color = vec3(0);
+    vec3 camPos = (cam.inverseViewMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 
+    vec3 hitPosition   = texelFetch(PositionImage, fullCoord, 0).xyz;
+    vec3 hitNormal     = texelFetch(NormalImage  , fullCoord, 0).xyz;
+    vec3 hitMaterial   = texelFetch(MaterialImage  , fullCoord, 0).xyz;
 
-    vec3 ReflectionColor  = vec3(0);
+   vec3 ReflectionColor;
 
-     vec3 CubeMapReflection = texture(samplerReflectiveCubeMap[pc.SkyboxIndex], payload.Normal).rgb;
+    if (hitMaterial.g < 0.3) {
 
-          ReflectionColor = CubeMapReflection;
-
-    if (payload.Distance > 0.0f) {
-   
-		const vec3 hitPos = rayOrigin.xyz + rayDir * payload.Distance;
-		rayOrigin.xyz = hitPos.xyz + payload.Normal * 0.6f;
-		rayDir.xyz = reflect(rayDir.xyz, payload.Normal);
+        // offset the origin slightly along the normal to avoid self-intersection
+        vec3 rayOrigin = hitPosition + hitNormal * 0.018;
         
-          payload.Color = CubeMapReflection;
+        // compute incident direction (from camera towards hit point)
+        vec3 incident = normalize(hitPosition - camPos);
+        
+        // reflection direction
+        vec3 rayDir = normalize(reflect(incident, hitNormal));
+        
+        // initialize payload (trace will overwrite fields if hit/miss shaders write)
+        payload.Color = vec3(0.0);
+        payload.Distance = 0.0;
+        payload.Normal = vec3(0.0);
+        
+        // trace reflection ray
+        traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, rayOrigin, tMin, rayDir, tMax, 0);
+        
+        // if the hit shader set a distance > 0 we use payload color, otherwise sample skybox with rayDir
+        if (payload.Distance > 0.0) {
+            ReflectionColor = payload.Color;
+        } else {
+            ReflectionColor = texture(samplerReflectiveCubeMap[pc.SkyboxIndex], rayDir).rgb;
+        } 
 
-        traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, rayOrigin.xyz, tMin, rayDir, tMax, 0);
-   
-        ReflectionColor = payload.Color;
+    }else{
+        ReflectionColor = vec3(0.0);
     }
 
-    imageStore(OutputImage, ivec2(gl_LaunchIDEXT.xy), vec4(ReflectionColor, 1.0));
+    imageStore(OutputImage, halfCoord, vec4(ReflectionColor, 1.0));
 }

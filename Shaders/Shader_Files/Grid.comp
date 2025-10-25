@@ -11,7 +11,9 @@ layout(binding = 1) writeonly buffer StorageBuffer2 {
 layout(push_constant) uniform PushConstants {
      vec4 probeCount_RayCount;      
      vec4 probeOffset;     
-     vec4 probeBaseLocation_Flag; 
+     vec4 probeBaseLocation_Flag;
+     mat4 Matrix; 
+
 } pc;
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
@@ -66,7 +68,8 @@ void main()
         float Fibo_Z = sin(theta) * radius;
        
         
-        vec3 Direction = vec3(Fibo_Y,Fibo_X,Fibo_Z);
-        SB02.FibonacciDirections[index] = vec4(Direction, 0.0);
+        vec4 Direction = normalize(pc.Matrix * vec4(Fibo_X, Fibo_Y, Fibo_Z, 1.0));
+
+        SB02.FibonacciDirections[index] = vec4(Direction.xyz, 0.0);
    }
 }

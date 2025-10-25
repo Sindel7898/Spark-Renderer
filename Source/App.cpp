@@ -47,7 +47,6 @@
 
 
 	auto model1 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf" ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	
 	//auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	//
@@ -64,12 +63,12 @@
     model1.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
     model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
     model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-    
+    //
     //model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
     //model2.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
     //model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
     //model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-    
+    //
     model3.get()->Instances[0]->SetPostion(glm::vec3(7.153, -0.523, -2.166));
     model3.get()->Instances[0]->SetRotation(glm::vec3(179.997, 44.147, 179.993));
     model3.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
@@ -622,15 +621,17 @@ void App::createGBuffer()
 	Combined_FullScreenQuad->CreateImage(swapchainextent);
 	ssao_FullScreenQuad->CreateImage();
 	RT_Reflection->CreateStorageImage();
+	dynamicDiffuse_RTGI->CreateSampledGIImage(); 
 
 	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&ReflectionMaskImageData,&RT_Reflection->FullBlurReflectionPassImage);
 	ssao_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
 	ssr_FullScreenQuad->createDescriptorSets(DescriptorPool, LightingPassImageData, gbuffer.ViewSpaceNormal,gbuffer.ViewSpacePosition, DepthTextureData, ReflectionMaskImageData,gbuffer.Materials);
-	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, LightingPassImageData, SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo);
+	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, LightingPassImageData, SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo, dynamicDiffuse_RTGI->Probe_Sampled_GI_Image);
 	fxaa_FullScreenQuad->createDescriptorSets(DescriptorPool, Combined_FullScreenQuad->FinalResultImage);
 	Raytracing_Shadows->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
 	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, LightingPassImageData,DepthTextureData);
 	RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer, lighting_FullScreenQuad->fragmentUniformBuffers);
+	dynamicDiffuse_RTGI->createDescriptorSets(DescriptorPool, gbuffer);
 
 
 	vk::CommandBuffer cmd =  bufferManger.CreateSingleUseCommandBuffer(commandPool);
@@ -672,6 +673,7 @@ void App::createGBuffer()
 	bufferManger.TransitionImage(cmd, &fxaa_FullScreenQuad->FxaaImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &RT_Reflection->HorizontalBlurReflectionPassImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &RT_Reflection->FullBlurReflectionPassImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &dynamicDiffuse_RTGI->Probe_Sampled_GI_Image, TransitionToGeneral);
 
 	bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd,vulkanContext.graphicsQueue);
 
@@ -721,6 +723,9 @@ void App::createGBuffer()
 		                                                       RT_Reflection->FullBlurReflectionPassImage.imageView,
 		                                                       VK_IMAGE_LAYOUT_GENERAL);
 
+   Sampled_GI_ID = ImGui_ImplVulkan_AddTexture(dynamicDiffuse_RTGI->Probe_Sampled_GI_Image.imageSampler,
+	                                           dynamicDiffuse_RTGI->Probe_Sampled_GI_Image.imageView,
+			                                   VK_IMAGE_LAYOUT_GENERAL);
 
 
 	std::cout << "Swapchain size: "
@@ -1708,6 +1713,37 @@ void App::CreateGraphicsPipeline()
 		vulkanContext.LogicalDevice.destroyShaderModule(ComputeShaderModule);
 	}
 
+
+	{
+		auto ComputeShaderCode = readFile("../Shaders/Compiled_Shader_Files/Sample_GI_Probes.comp.spv");
+
+		VkShaderModule ComputeShaderModule = pipelineManager.createShaderModule(ComputeShaderCode);
+
+		vk::PipelineShaderStageCreateInfo ComputeShaderStageInfo{};
+		ComputeShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+		ComputeShaderStageInfo.stage = vk::ShaderStageFlagBits::eCompute;
+		ComputeShaderStageInfo.module = ComputeShaderModule;
+		ComputeShaderStageInfo.pName = "main";
+
+		vk::PushConstantRange range{};
+		range.setOffset(0);
+		range.setSize(sizeof(SampleGridInfo));
+		range.setStageFlags(vk::ShaderStageFlagBits::eCompute);
+
+		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.pSetLayouts = &dynamicDiffuse_RTGI->DDGISamplingDescriptorSetLayout;
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges = &range;
+
+		SampleDDGIComputePipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+
+		SampleDDGIComputePassPipeline = pipelineManager.creatComputePipeline(SampleDDGIComputePipelineLayout, ComputeShaderStageInfo);
+
+		vulkanContext.LogicalDevice.destroyShaderModule(ComputeShaderModule);
+	}
+
+
 }
 
 uint32_t App::alignedSize(uint32_t value, uint32_t alignment)
@@ -2036,7 +2072,7 @@ void App::updateUniformBuffer(uint32_t currentImage) {
     SSGI_FullScreenQuad->UpdateUniformBuffer(currentImage, lights,deltaTime);
 	RT_Reflection->UpdateUniformBuffer(currentImage, lights, Models);
 
-	bool ddgiRecreated = dynamicDiffuse_RTGI->UpdateUniformBuffer(DescriptorPool, TLAS, lighting_FullScreenQuad->fragmentUniformBuffers);
+	bool ddgiRecreated = dynamicDiffuse_RTGI->UpdateUniformBuffer(DescriptorPool, TLAS, lighting_FullScreenQuad->fragmentUniformBuffers,gbuffer);
 
 	if (ddgiRecreated)
 	{
@@ -2364,62 +2400,98 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			0, nullptr
 		);
 
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, IrradianceComputePassPipeline);
-
 
 	}
 
 	{
-		ImageTransitionData TransitiontoGeneralRT{};
-		TransitiontoGeneralRT.oldlayout = vk::ImageLayout::eUndefined;
-		TransitiontoGeneralRT.newlayout = vk::ImageLayout::eGeneral;
-		TransitiontoGeneralRT.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitiontoGeneralRT.SourceAccessflag = vk::AccessFlagBits::eNone;
-		TransitiontoGeneralRT.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
-		TransitiontoGeneralRT.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
-		TransitiontoGeneralRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+		{
+			ImageTransitionData TransitiontoGeneralRT{};
+			TransitiontoGeneralRT.oldlayout = vk::ImageLayout::eUndefined;
+			TransitiontoGeneralRT.newlayout = vk::ImageLayout::eGeneral;
+			TransitiontoGeneralRT.AspectFlag = vk::ImageAspectFlagBits::eColor;
+			TransitiontoGeneralRT.SourceAccessflag = vk::AccessFlagBits::eNone;
+			TransitiontoGeneralRT.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
+			TransitiontoGeneralRT.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
+			TransitiontoGeneralRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
 
-	    bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->RadianceImageAtlasImage, TransitiontoGeneralRT);
-		bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->IradianceImageAtlasImage, TransitiontoGeneralRT);
-
-
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_DDGIPassPipeline);
-
-		dynamicDiffuse_RTGI->Draw(
-			DDGI_raygenShaderBindingTableBuffer,
-			DDGI_hitShaderBindingTableBuffer,
-			DDGI_missShaderBindingTableBuffer,
-			commandBuffer,
-			RT_DDGIPipelineLayout,
-			currentFrame);
+			bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->RadianceImageAtlasImage, TransitiontoGeneralRT);
+			bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->IradianceImageAtlasImage, TransitiontoGeneralRT);
 
 
+			commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_DDGIPassPipeline);
 
-		dynamicDiffuse_RTGI->DispatchCalcProbeDataCompute(commandBuffer, IrradianceComputePipelineLayout, currentFrame);
+			dynamicDiffuse_RTGI->Draw(
+				DDGI_raygenShaderBindingTableBuffer,
+				DDGI_hitShaderBindingTableBuffer,
+				DDGI_missShaderBindingTableBuffer,
+				commandBuffer,
+				RT_DDGIPipelineLayout,
+				currentFrame);
+		}
+		
 
-		vk::ImageMemoryBarrier imagebarrier;
-		imagebarrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
-		imagebarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-		imagebarrier.oldLayout = vk::ImageLayout::eUndefined;
-		imagebarrier.newLayout = vk::ImageLayout::eGeneral;
-		imagebarrier.image = dynamicDiffuse_RTGI->IradianceImageAtlasImage.image;
-		imagebarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-		imagebarrier.subresourceRange.baseMipLevel = 0;
-		imagebarrier.subresourceRange.levelCount = 1;
-		imagebarrier.subresourceRange.baseArrayLayer = 0;
-		imagebarrier.subresourceRange.layerCount = 1;
 
-		imagebarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		imagebarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		{
+			commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, IrradianceComputePassPipeline);
+			dynamicDiffuse_RTGI->DispatchCalcProbeDataCompute(commandBuffer, IrradianceComputePipelineLayout, currentFrame);
 
-		commandBuffer.pipelineBarrier(
-			vk::PipelineStageFlagBits::eComputeShader,
-			vk::PipelineStageFlagBits::eRayTracingShaderKHR,
-			{},
-			0, nullptr,
-			0, nullptr,
-			1, & imagebarrier
-		);
+			vk::ImageMemoryBarrier imagebarrier;
+			imagebarrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+			imagebarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+			imagebarrier.oldLayout = vk::ImageLayout::eUndefined;
+			imagebarrier.newLayout = vk::ImageLayout::eGeneral;
+			imagebarrier.image = dynamicDiffuse_RTGI->IradianceImageAtlasImage.image;
+			imagebarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+			imagebarrier.subresourceRange.baseMipLevel = 0;
+			imagebarrier.subresourceRange.levelCount = 1;
+			imagebarrier.subresourceRange.baseArrayLayer = 0;
+			imagebarrier.subresourceRange.layerCount = 1;
+
+			imagebarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imagebarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+			commandBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eComputeShader,
+				vk::PipelineStageFlagBits::eRayTracingShaderKHR,
+				{},
+				0, nullptr,
+				0, nullptr,
+				1, &imagebarrier
+			);
+		}
+
+
+		{
+			commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, SampleDDGIComputePassPipeline);
+
+			dynamicDiffuse_RTGI->DispatchSampleGIFromProbeDataCompute(commandBuffer, SampleDDGIComputePipelineLayout, currentFrame);
+
+			vk::ImageMemoryBarrier imagebarrier;
+			imagebarrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+			imagebarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+			imagebarrier.oldLayout = vk::ImageLayout::eUndefined;
+			imagebarrier.newLayout = vk::ImageLayout::eGeneral;
+			imagebarrier.image = dynamicDiffuse_RTGI->Probe_Sampled_GI_Image.image;
+			imagebarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+			imagebarrier.subresourceRange.baseMipLevel = 0;
+			imagebarrier.subresourceRange.levelCount = 1;
+			imagebarrier.subresourceRange.baseArrayLayer = 0;
+			imagebarrier.subresourceRange.layerCount = 1;
+
+			imagebarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imagebarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+			commandBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eComputeShader,
+				vk::PipelineStageFlagBits::eFragmentShader,
+				{},
+				0, nullptr,
+				0, nullptr,
+				1, &imagebarrier
+			);
+		}
+	
+
 	}
 
 
@@ -3279,6 +3351,7 @@ void App::destroy_GbufferImages()
 	SSGI_FullScreenQuad->DestroyImage();
 	Combined_FullScreenQuad->DestroyImage();
 	RT_Reflection->DestroyStorageImage();
+	dynamicDiffuse_RTGI->DestroySampledGIImage();
 }
 
 void App::recreateSwapChain() {
@@ -3392,6 +3465,7 @@ void App::destroyPipeline()
 	vulkanContext.LogicalDevice.destroyPipeline(GridComputePassPipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(RT_DDGIPassPipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(IrradianceComputePassPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(SampleDDGIComputePassPipeline);
 
 
 	vulkanContext.LogicalDevice.destroyPipelineLayout(DeferedLightingPassPipelineLayout);
@@ -3413,6 +3487,7 @@ void App::destroyPipeline()
 	vulkanContext.LogicalDevice.destroyPipelineLayout(GridComputePipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(RT_DDGIPipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(IrradianceComputePipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(SampleDDGIComputePipelineLayout);
 
 }
 

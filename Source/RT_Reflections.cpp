@@ -141,9 +141,25 @@ void RT_Reflections::createRayTracingDescriptorSetLayout(){
 	CubeMapsLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	CubeMapsLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
+	vk::DescriptorSetLayoutBinding PositionImageLayout{};
+	PositionImageLayout.binding = 12;
+	PositionImageLayout.descriptorCount = 1;
+	PositionImageLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	PositionImageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
+	vk::DescriptorSetLayoutBinding NormalImageLayout{};
+	NormalImageLayout.binding = 13;
+	NormalImageLayout.descriptorCount = 1;
+	NormalImageLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	NormalImageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
-	std::array<vk::DescriptorSetLayoutBinding, 12> bindings = {
+	vk::DescriptorSetLayoutBinding MaterialImageLayout{};
+	MaterialImageLayout.binding = 14;
+	MaterialImageLayout.descriptorCount = 1;
+	MaterialImageLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	MaterialImageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+
+	std::array<vk::DescriptorSetLayoutBinding, 15> bindings = {
 		                                                       TLASLayout,              
 															   AlbedoAssetTexturesSamplerLayout,
 															   NormalAssetTexturesSamplerLayout,
@@ -154,7 +170,7 @@ void RT_Reflections::createRayTracingDescriptorSetLayout(){
 															   VertexStorageBuffersLayout,
 															   offsetStorageBuffersLayout,
 															   trasnformationUniformBuffersLayout,
-															   LightInformationUniformBuffersLayout,CubeMapsLayout
+															   LightInformationUniformBuffersLayout,CubeMapsLayout,PositionImageLayout,NormalImageLayout,MaterialImageLayout
 	};
 
 
@@ -444,8 +460,48 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 			SkyboxImagSamplerdescriptorWrite.pImageInfo = SkyboxImageAssetImagesInfos.data();
 
 
+			vk::DescriptorImageInfo positionImageInfo{};
+			positionImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			positionImageInfo.imageView = gbuffer.Position.imageView;
+			positionImageInfo.sampler = gbuffer.Position.imageSampler;
 
-			std::array<vk::WriteDescriptorSet, 12> descriptorWrites{ TLAS_descriptorWrite,
+			vk::WriteDescriptorSet PositionImagSamplerdescriptorWrite{};
+			PositionImagSamplerdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
+			PositionImagSamplerdescriptorWrite.dstBinding = 12;
+			PositionImagSamplerdescriptorWrite.dstArrayElement = 0;
+			PositionImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			PositionImagSamplerdescriptorWrite.descriptorCount = 1;
+			PositionImagSamplerdescriptorWrite.pImageInfo = &positionImageInfo;
+
+
+			vk::DescriptorImageInfo normalImageInfo{};
+			normalImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			normalImageInfo.imageView = gbuffer.Normal.imageView;
+			normalImageInfo.sampler =  gbuffer.Normal.imageSampler;
+
+			vk::WriteDescriptorSet NormalImagSamplerdescriptorWrite{};
+			NormalImagSamplerdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
+			NormalImagSamplerdescriptorWrite.dstBinding = 13;
+			NormalImagSamplerdescriptorWrite.dstArrayElement = 0;
+			NormalImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			NormalImagSamplerdescriptorWrite.descriptorCount = 1;
+			NormalImagSamplerdescriptorWrite.pImageInfo = &normalImageInfo;
+
+			vk::DescriptorImageInfo MaterialImageInfo{};
+			MaterialImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			MaterialImageInfo.imageView = gbuffer.Materials.imageView;
+			MaterialImageInfo.sampler = gbuffer.Materials.imageSampler;
+
+			vk::WriteDescriptorSet MaterialImagSamplerdescriptorWrite{};
+			MaterialImagSamplerdescriptorWrite.dstSet = RayTracingDescriptorSets[i];
+			MaterialImagSamplerdescriptorWrite.dstBinding = 14;
+			MaterialImagSamplerdescriptorWrite.dstArrayElement = 0;
+			MaterialImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			MaterialImagSamplerdescriptorWrite.descriptorCount = 1;
+			MaterialImagSamplerdescriptorWrite.pImageInfo = &MaterialImageInfo;
+
+
+			std::array<vk::WriteDescriptorSet, 15> descriptorWrites{ TLAS_descriptorWrite,
 				                                                     AssetImagSamplerdescriptorWrite,
 				                                                     NormalAssetImagSamplerdescriptorWrite,
 				                                                     MetalicRoughnessAssetImagSamplerdescriptorWrite,
@@ -456,7 +512,7 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 			                                                         OffsetStorageBufferdescriptorWrite,
 			                                                         TransformUniformBufferdescriptorWrite,
 				                                                     lightUniformBufferdescriptorWrite,
-																	 SkyboxImagSamplerdescriptorWrite };
+																	 SkyboxImagSamplerdescriptorWrite,PositionImagSamplerdescriptorWrite,NormalImagSamplerdescriptorWrite,MaterialImagSamplerdescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 		}
