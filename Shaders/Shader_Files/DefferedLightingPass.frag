@@ -188,7 +188,7 @@ void main() {
      vec3 kD_env  = vec3(1.0) - kS_env;
           kD_env *= 1.0 - Metallic;
 
-     vec3 reflections = ((RTReflection * kS_env) );
+   vec3 reflections = ((RTReflection * kS_env) );
 
    totalLighting +=  (reflections * Albedo);
    totalLighting +=  Emmisive;

@@ -74,7 +74,7 @@
     model3.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
     model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
     model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-	
+	//
 	model11.get()->Instances[0]->SetScale(glm::vec3(5.000, 5.000, 5.000));
 	model11.get()->Instances[0]->CubeMapReflectiveSwitch(false);
 	model11.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);

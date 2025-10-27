@@ -46,7 +46,7 @@ void main() {
     if (hitMaterial.g < 0.3) {
 
         // offset the origin slightly along the normal to avoid self-intersection
-        vec3 rayOrigin = hitPosition + hitNormal * 0.018;
+        vec3 rayOrigin = hitPosition + hitNormal * 0.038;
         
         // compute incident direction (from camera towards hit point)
         vec3 incident = normalize(hitPosition - camPos);
