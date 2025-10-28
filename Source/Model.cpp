@@ -15,9 +15,13 @@ Model::Model(const std::string filepath, VulkanContext* vulkancontext, vk::Comma
 	bufferManager = buffermanger;
 
 	CreateVertexAndIndexBuffer();
+
 	CreateBLAS();
+
 	LoadTextures();
+
 	CreateUniformBuffer();
+
 	createDescriptorSetLayout();
 	Instantiate();
 }
@@ -110,6 +114,7 @@ void Model::LoadTextures()
 
 void Model::CreateVertexAndIndexBuffer()
 {
+
 
 	storedModelData = &AssetManager::GetInstance().GetStoredModelData(FilePath);
 

@@ -36,6 +36,7 @@ void MeshLoader::LoadModel(const std::string& pFile)
 
     auto start = Clock::now();
 
+
     auto materialFuture = std::async(std::launch::async, [this, pFile, &model]() mutable {
              LoadMaterials(pFile, model);
         });
