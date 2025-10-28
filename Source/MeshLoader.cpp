@@ -9,6 +9,10 @@
 #include "AssetManager.h"
 #include <glm/gtc/type_ptr.hpp>
 #include "meshoptimizer.h"
+#include <thread>
+#include <future>
+#include <mutex>
+#include <chrono>  
 
 MeshLoader::MeshLoader()
 {
@@ -28,8 +32,14 @@ void MeshLoader::LoadModel(const std::string& pFile)
         return;
     }
 
-   
-    LoadMaterials(pFile, model);
+    using Clock = std::chrono::high_resolution_clock;
+
+    auto start = Clock::now();
+
+    auto materialFuture = std::async(std::launch::async, [this, pFile, &model]() mutable {
+             LoadMaterials(pFile, model);
+        });
+
 
     std::cout << "Loaded glTF: " << pFile << std::endl;
 
@@ -47,6 +57,10 @@ void MeshLoader::LoadModel(const std::string& pFile)
             modelData.nodes.push_back(std::move(rootNode));
         }
     }
+
+    auto end = Clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "Model loaded in " << elapsed.count() << " seconds.\n";
 
     std::vector<unsigned int> remap(modelData.IndexData.size());
 
@@ -76,12 +90,13 @@ void MeshLoader::LoadModel(const std::string& pFile)
     
 
 
-
+    materialFuture.get();
     Opt_modelData.nodes = modelData.nodes;
 
     AssetManager::GetInstance().ParseModelData(pFile, Opt_modelData);
 
 }
+
 
 void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
 {
@@ -95,259 +110,36 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
         // For all the "Materials group" get the individual material  
         for (int i = 0; i < model.materials.size(); i++)
         {
-            tinygltf::Material gltfMaterial = model.materials[i];
+             tinygltf::Material gltfMaterial = model.materials[i];
            
-            {
-               //check if the material group has the albedo texture in its map
-               if (gltfMaterial.values.find("baseColorTexture") != gltfMaterial.values.end())
-               {
-                   StoredImageData TextureData;
-                   //get the texture from the material map
-                   tinygltf::Texture& colortex = model.textures[gltfMaterial.values["baseColorTexture"].TextureIndex()];
-                   //get the image from the texture
-                   const tinygltf::Image& image = model.images[colortex.source];
-               
-                   size_t colorimageSize = image.width * image.height * 4;
+              auto ColorTextureTask = std::async(std::launch::async, [this, gltfMaterial, &model]() {
+                                      return ReadTexture(gltfMaterial, "baseColorTexture", model);
+               });
 
-                   TextureData.imageData = static_cast<stbi_uc*>(malloc(colorimageSize));
+              auto NormalTextureTask = std::async(std::launch::async, [this, gltfMaterial, &model]() {
+                  return ReadTexture(gltfMaterial, "normalTexture", model);
+                  });
 
-                   std::memcpy(TextureData.imageData, image.image.data(), colorimageSize);
-
-                   TextureData.imageHeight = image.height;
-                   TextureData.imageWidth = image.width;
-               
-                   Textures.push_back(TextureData);
-               }
-               else
-               {
-                   std::vector<stbi_uc> DefaultImage;
-                   const int ImageSize = 4;
-
-                   DefaultImage.resize(ImageSize * ImageSize * 4);
-
-                   for (int i = 0; i < ImageSize * ImageSize * 4; i += 4) {
-
-                       DefaultImage[i + 0] = 255; // R
-                       DefaultImage[i + 1] = 255; // G
-                       DefaultImage[i + 2] = 255; // B
-                       DefaultImage[i + 3] = 255; // A
-                   }
-
-                   size_t DefaultimageSize = DefaultImage.size();
-
-                   StoredImageData TextureData;
-                   TextureData.imageData = static_cast<stbi_uc*>(malloc(DefaultimageSize));
-
-                   // Copy pixel data
-                   std::memcpy(TextureData.imageData, DefaultImage.data(), DefaultimageSize);
-
-                   TextureData.imageHeight = ImageSize;
-                   TextureData.imageWidth = ImageSize;
-
-                   // Store in your textures array
-                   Textures.push_back(TextureData);
-               }
-            }
-
-            {
-               //check if the material group has the normal texture in its map. 
-               if (gltfMaterial.additionalValues.find("normalTexture") != gltfMaterial.additionalValues.end())
-               {
-                   StoredImageData TextureData;
-                   //get the texture from the material map
-                   tinygltf::Texture& normaltex = model.textures[gltfMaterial.additionalValues["normalTexture"].TextureIndex()];
-                   //get the image from the texture
-                   const tinygltf::Image& image = model.images[normaltex.source];
-               
-                   size_t normalimageSize = image.width * image.height * 4;
-                   TextureData.imageData = static_cast<stbi_uc*>(malloc(normalimageSize));
-                   std::memcpy(TextureData.imageData, image.image.data(), normalimageSize);
-                   TextureData.imageHeight = image.height;
-                   TextureData.imageWidth = image.width;
-               
-                   Textures.push_back(TextureData);
-               }
-               else
-               {
-                   std::vector<stbi_uc> DefaultImage;
-                   const int ImageSize = 4;
-
-                   DefaultImage.resize(ImageSize * ImageSize * 4);
-
-                   for (int i = 0; i < ImageSize * ImageSize * 4; i += 4) {
-
-                       DefaultImage[i + 0] = 255; // R
-                       DefaultImage[i + 1] = 255; // G
-                       DefaultImage[i + 2] = 255; // B
-                       DefaultImage[i + 3] = 255; // A
-                   }
-
-                   size_t DefaultimageSize = DefaultImage.size();
-
-                   StoredImageData TextureData;
-                   TextureData.imageData = static_cast<stbi_uc*>(malloc(DefaultimageSize));
-
-                   // Copy pixel data
-                   std::memcpy(TextureData.imageData, DefaultImage.data(), DefaultimageSize);
-
-                   TextureData.imageHeight = ImageSize;
-                   TextureData.imageWidth = ImageSize;
-
-                   // Store in your textures array
-                   Textures.push_back(TextureData);
-               }
-            }
-
-            {
-                //check if the material group has the normal texture in its map. 
-                if (gltfMaterial.values.find("metallicRoughnessTexture") != gltfMaterial.values.end())
-                {
-                    StoredImageData TextureData;
-                    //get the texture from the material map
-                    tinygltf::Texture& metalicroughnesstex = model.textures[gltfMaterial.values["metallicRoughnessTexture"].TextureIndex()];
-                    //get the image from the texture
-                    const tinygltf::Image& image = model.images[metalicroughnesstex.source];
-
-                    size_t metalicroughnessimageSize = image.width * image.height * 4;
-                    TextureData.imageData = static_cast<stbi_uc*>(malloc(metalicroughnessimageSize));
-                    std::memcpy(TextureData.imageData, image.image.data(), metalicroughnessimageSize);
-                    TextureData.imageHeight = image.height;
-                    TextureData.imageWidth = image.width;
-
-                    Textures.push_back(TextureData);
-                }
-                else
-                {
-                    std::vector<stbi_uc> DefaultImage;
-                    const int ImageSize = 4;
-
-                    DefaultImage.resize(ImageSize* ImageSize * 4);
-
-                    for (int i = 0; i < ImageSize * ImageSize * 4; i += 4) {
-
-                        DefaultImage[i + 0] = 255; // R
-                        DefaultImage[i + 1] = 255; // G
-                        DefaultImage[i + 2] = 255; // B
-                        DefaultImage[i + 3] = 255; // A
-                    }
-
-                    size_t DefaultimageSize = DefaultImage.size();
-
-                    StoredImageData TextureData;
-                    TextureData.imageData = static_cast<stbi_uc*>(malloc(DefaultimageSize));
-
-                    // Copy pixel data
-                    std::memcpy(TextureData.imageData, DefaultImage.data(), DefaultimageSize);
-
-                    TextureData.imageHeight = ImageSize;
-                    TextureData.imageWidth = ImageSize;
-
-                    // Store in your textures array
-                    Textures.push_back(TextureData);
-                }
-            }
-
-            {
-                //check if the material group has the normal texture in its map. 
-                if (gltfMaterial.additionalValues.find("occlusionTexture") != gltfMaterial.additionalValues.end())
-                {
-                    StoredImageData TextureData;
-                    //get the texture from the material map
-                    tinygltf::Texture& occlusiontex = model.textures[gltfMaterial.additionalValues["occlusionTexture"].TextureIndex()];
-                    //get the image from the texture
-                    const tinygltf::Image& image = model.images[occlusiontex.source];
-
-                    size_t occlusionmageSize = image.width * image.height * 4;
-                    TextureData.imageData = static_cast<stbi_uc*>(malloc(occlusionmageSize));
-                    std::memcpy(TextureData.imageData, image.image.data(), occlusionmageSize);
-                    TextureData.imageHeight = image.height;
-                    TextureData.imageWidth = image.width;
-
-                    Textures.push_back(TextureData);
-                }
-                else
-                {
-                    std::vector<stbi_uc> DefaultImage;
-                    const int ImageSize = 4;
-
-                    DefaultImage.resize(ImageSize* ImageSize * 4);
-
-                    for (int i = 0; i < ImageSize * ImageSize * 4; i += 4) {
-
-                        DefaultImage[i + 0] = 255; // R
-                        DefaultImage[i + 1] = 255; // G
-                        DefaultImage[i + 2] = 255; // B
-                        DefaultImage[i + 3] = 255; // A
-                    }
-
-                    size_t DefaultimageSize = DefaultImage.size();
-
-                    StoredImageData TextureData;
-                    TextureData.imageData = static_cast<stbi_uc*>(malloc(DefaultimageSize));
-
-                    // Copy pixel data
-                    std::memcpy(TextureData.imageData, DefaultImage.data(), DefaultimageSize);
-
-                    TextureData.imageHeight = ImageSize;
-                    TextureData.imageWidth = ImageSize;
-
-                    // Store in your textures array
-                    Textures.push_back(TextureData);
-                }
-            }
+              auto MetalicRoughnessTextureTask = std::async(std::launch::async, [this, gltfMaterial, &model]() {
+                  return ReadTexture(gltfMaterial, "metallicRoughnessTexture", model);
+                  });
 
 
-            {
-                //check if the material group has the normal texture in its map. 
-                if (gltfMaterial.additionalValues.find("emissiveTexture") != gltfMaterial.additionalValues.end())
-                {
-                    StoredImageData TextureData;
-                    //get the texture from the material map
-                    tinygltf::Texture& occlusiontex = model.textures[gltfMaterial.additionalValues["emissiveTexture"].TextureIndex()];
-                    //get the image from the texture
-                    const tinygltf::Image& image = model.images[occlusiontex.source];
-
-                    size_t occlusionmageSize = image.width * image.height * 4;
-                    TextureData.imageData = static_cast<stbi_uc*>(malloc(occlusionmageSize));
-                    std::memcpy(TextureData.imageData, image.image.data(), occlusionmageSize);
-                    TextureData.imageHeight = image.height;
-                    TextureData.imageWidth = image.width;
-
-                    Textures.push_back(TextureData);
-                }
-                else
-                {
-                    std::vector<stbi_uc> DefaultImage;
-                    const int ImageSize = 4;
-
-                    DefaultImage.resize(ImageSize * ImageSize * 4);
-
-                    for (int i = 0; i < ImageSize * ImageSize * 4; i += 4) {
-
-                        DefaultImage[i + 0] = 0; // R
-                        DefaultImage[i + 1] = 0; // G
-                        DefaultImage[i + 2] = 0; // B
-                        DefaultImage[i + 3] = 255; // A
-                    }
-
-                    size_t DefaultimageSize = DefaultImage.size();
-
-                    StoredImageData TextureData;
-                    TextureData.imageData = static_cast<stbi_uc*>(malloc(DefaultimageSize));
-
-                    // Copy pixel data
-                    std::memcpy(TextureData.imageData, DefaultImage.data(), DefaultimageSize);
-
-                    TextureData.imageHeight = ImageSize;
-                    TextureData.imageWidth = ImageSize;
-
-                    // Store in your textures array
-                    Textures.push_back(TextureData);
-                }
-            }
+              auto OcculusionTextureTask = std::async(std::launch::async, [this, gltfMaterial, &model]() {
+                  return ReadTexture(gltfMaterial, "occlusionTexture", model);
+                  });
 
 
+              auto EmissiveTextureTask = std::async(std::launch::async, [this, gltfMaterial, &model]() {
+                  return ReadTexture(gltfMaterial, "emissiveTexture", model);
+                  });
 
+              
+              Textures.push_back(std::move(ColorTextureTask.get()));
+              Textures.push_back(std::move(NormalTextureTask.get()));
+              Textures.push_back(std::move(MetalicRoughnessTextureTask.get()));
+              Textures.push_back(std::move(OcculusionTextureTask.get()));
+              Textures.push_back(std::move(EmissiveTextureTask.get()));
         }
 
         AssetManager::GetInstance().ParseTextureData(pFile, Textures);
@@ -357,6 +149,93 @@ void MeshLoader::LoadMaterials(const std::string& pFile, tinygltf::Model& model)
     }
 }
 
+StoredImageData MeshLoader::ReadTexture(const tinygltf::Material& gltfMaterial, std::string TextureType, tinygltf::Model& model) {
+
+    {
+        auto value = gltfMaterial.values.find(TextureType);
+
+        if (value != gltfMaterial.values.end()) {
+          
+            StoredImageData TextureData;
+            //get the texture from the material map
+            tinygltf::Texture& colortex = model.textures[value->second.TextureIndex()];
+            //get the image from the texture
+            const tinygltf::Image& image = model.images[colortex.source];
+
+            size_t colorimageSize = image.width * image.height * 4;
+
+            TextureData.imageData = static_cast<stbi_uc*>(malloc(colorimageSize));
+
+            std::memcpy(TextureData.imageData, image.image.data(), colorimageSize);
+
+            TextureData.imageHeight = image.height;
+            TextureData.imageWidth = image.width;
+
+            return TextureData;
+        }
+
+        auto additionalvalue = gltfMaterial.additionalValues.find(TextureType);
+
+        if (additionalvalue != gltfMaterial.additionalValues.end()) {
+
+            StoredImageData TextureData;
+            //get the texture from the material map
+            tinygltf::Texture& colortex = model.textures[additionalvalue->second.TextureIndex()];
+            //get the image from the texture
+            const tinygltf::Image& image = model.images[colortex.source];
+
+            size_t colorimageSize = image.width * image.height * 4;
+
+            TextureData.imageData = static_cast<stbi_uc*>(malloc(colorimageSize));
+
+            std::memcpy(TextureData.imageData, image.image.data(), colorimageSize);
+
+            TextureData.imageHeight = image.height;
+            TextureData.imageWidth = image.width;
+
+            return TextureData;
+        }
+
+         std::vector<stbi_uc> DefaultImage;
+         const int ImageSize = 4;
+         
+         DefaultImage.resize(ImageSize * ImageSize * 4);
+         
+         if (TextureType == "emissiveTexture")
+         {
+             for (int i = 0; i < ImageSize * ImageSize * 4; i += 4) {
+
+                 DefaultImage[i + 0] = 0;   // R
+                 DefaultImage[i + 1] = 0;   // G
+                 DefaultImage[i + 2] = 0;   // B
+                 DefaultImage[i + 3] = 255; // A
+
+             }
+         }
+         else
+         {
+             for (int i = 0; i < ImageSize * ImageSize * 4; i += 4) {
+                 DefaultImage[i + 0] = 255; // R
+                 DefaultImage[i + 1] = 255; // G
+                 DefaultImage[i + 2] = 255; // B
+                 DefaultImage[i + 3] = 255; // A
+             }
+         }
+         
+         size_t DefaultimageSize = DefaultImage.size();
+         
+         StoredImageData TextureData;
+         TextureData.imageData = static_cast<stbi_uc*>(malloc(DefaultimageSize));
+         
+         // Copy pixel data
+         std::memcpy(TextureData.imageData, DefaultImage.data(), DefaultimageSize);
+         
+         TextureData.imageHeight = ImageSize;
+         TextureData.imageWidth = ImageSize;
+         
+         return TextureData; 
+    }
+}
 
 std::unique_ptr<Node> MeshLoader::loadNode(const tinygltf::Node&      inputNode, 
                                            const tinygltf::Model&     model,
@@ -400,8 +279,26 @@ std::unique_ptr<Node> MeshLoader::loadNode(const tinygltf::Node&      inputNode,
 
             const tinygltf::Primitive& glTFPrimitive = mesh.primitives[i];
             
-            uint32_t indicesStart = static_cast<uint32_t>(indices.size());
-            uint32_t verticesStart = static_cast<uint32_t>(vertices.size());
+            node->meshPrimitives.push_back(ProcessPrimitive(glTFPrimitive, model, vertices, indices));
+        }
+    }
+
+    for (int childIndex : inputNode.children) {
+
+        if (auto rootNode = loadNode(model.nodes[childIndex], model, vertices, indices, node.get())) {
+
+            node->children.push_back(std::move(rootNode));
+        }
+
+    }
+
+    return node;
+}
+
+Primitive MeshLoader::ProcessPrimitive(const tinygltf::Primitive& glTFPrimitive, const tinygltf::Model& model, std::vector<ModelVertex>& outVertices, std::vector<uint32_t>& outIndices) {
+
+            uint32_t indicesStart = static_cast<uint32_t>(outIndices.size());
+            uint32_t verticesStart = static_cast<uint32_t>(outVertices.size());
            
             uint32_t indexCount  = 0;
             uint32_t vertexCount = 0;
@@ -463,7 +360,7 @@ std::unique_ptr<Node> MeshLoader::loadNode(const tinygltf::Node&      inputNode,
                      vertex.tangent = { tangents[i * 3 + 0], tangents[i * 3 + 1],tangents[i * 3 + 2] };
                  }
 
-                vertices.push_back(vertex);
+                outVertices.push_back(vertex);
              }
 
              const auto& indexAccessor = model.accessors[glTFPrimitive.indices];
@@ -476,46 +373,33 @@ std::unique_ptr<Node> MeshLoader::loadNode(const tinygltf::Node&      inputNode,
              case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
                  const uint32_t* buf = reinterpret_cast<const uint32_t*>(&buffer.data[indexAccessor.byteOffset + bufferView.byteOffset]);
                  for (size_t index = 0; index < indexAccessor.count; index++) {
-                     indices.push_back(buf[index] + verticesStart);
+                     outIndices.push_back(buf[index] + verticesStart);
                  }
                  break;
              }
              case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
                  const uint16_t* buf = reinterpret_cast<const uint16_t*>(&buffer.data[indexAccessor.byteOffset + bufferView.byteOffset]);
                  for (size_t index = 0; index < indexAccessor.count; index++) {
-                     indices.push_back(buf[index] + verticesStart);
+                     outIndices.push_back(buf[index] + verticesStart);
                  }
                  break;
              }
              case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
                  const uint8_t* buf = reinterpret_cast<const uint8_t*>(&buffer.data[indexAccessor.byteOffset + bufferView.byteOffset]);
                  for (size_t index = 0; index < indexAccessor.count; index++) {
-                     indices.push_back(buf[index] + verticesStart);
+                     outIndices.push_back(buf[index] + verticesStart);
                  }
                  break;
              }
              default:
                  std::cerr << "Index component type " << indexAccessor.componentType << " not supported!" << std::endl;
-                 return std::move(nullptr);
              }
           
+
 
             Primitive primitive;
             primitive.indicesStart   = indicesStart;
             primitive.numIndices     = indexCount;
             primitive.materialIndex  = glTFPrimitive.material;
-            node->meshPrimitives.push_back( primitive);
-        }
-    }
-
-    for (int childIndex : inputNode.children) {
-
-        if (auto rootNode = loadNode(model.nodes[childIndex], model, vertices, indices, node.get())) {
-
-            node->children.push_back(std::move(rootNode));
-        }
-
-    }
-
-    return node;
+            return primitive;
 }

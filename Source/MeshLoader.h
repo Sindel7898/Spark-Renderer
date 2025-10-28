@@ -34,6 +34,8 @@ namespace tinygltf {
 	class TinyGLTF;
 	class Primitive;
 	class Node;
+	class Material;
+
 }
 
 typedef unsigned char stbi_uc;
@@ -54,7 +56,12 @@ public:
 	void LoadModel(const std::string& pFile);
 	void LoadMaterials(const std::string& pFile, tinygltf::Model& model);
 
+	StoredImageData ReadTexture(const tinygltf::Material& gltfMaterial, std::string TextureType, tinygltf::Model& model);
+
+
 	std::unique_ptr<Node> loadNode(const tinygltf::Node& inputNode, const tinygltf::Model& model, std::vector<ModelVertex>& vertices, std::vector<uint32_t>& indices, Node* Patent);
+
+	Primitive ProcessPrimitive(const tinygltf::Primitive& glTFPrimitive, const tinygltf::Model& model, std::vector<ModelVertex>& outVertices, std::vector<uint32_t>& outIndices);
 
 
 private:
