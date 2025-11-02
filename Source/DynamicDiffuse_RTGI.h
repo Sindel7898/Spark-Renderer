@@ -94,6 +94,7 @@ public:
 
     ImageData RadianceImageAtlasImage;
     ImageData IradianceImageAtlasImage;
+    ImageData VisibilityImageAtlasImage;
     ImageData Probe_Sampled_GI_Image;
 
     vk::Extent3D RadianceImageExtent;
@@ -101,15 +102,15 @@ public:
 
     std::vector<glm::mat4> ProbeLocations;
 
-    int NumOfProbesX = 6;
-    int NumOfProbesY = 6;
-    int NumOfProbesZ = 6;
+    int NumOfProbesX = 10;
+    int NumOfProbesY = 10;
+    int NumOfProbesZ = 10;
 
     int RaysPerProbe = 128;
 
-    glm::vec3 ProbeOffset     = glm::vec3(20, 9.48, 9.74);
+    glm::vec3 ProbeOffset     = glm::vec3(13.60, 5.38, 5.64);
 
-    glm::vec3 GridLocation     = glm::vec3(-52.63, 1.0, -28.21);
+    glm::vec3 GridLocation     = glm::vec3(-68.42, 1.0, -28.20);
     float RayRotationRadians = 0;;
     float RotationSpeed = 0.0001;
 

@@ -37,8 +37,8 @@ void main() {
 
     vec3 camPos = (cam.inverseViewMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 
-    vec3 hitPosition   = texelFetch(PositionImage, fullCoord, 0).xyz;
-    vec3 hitNormal     = texelFetch(NormalImage  , fullCoord, 0).xyz;
+    vec3 hitPosition   = texelFetch(PositionImage  , fullCoord, 0).xyz;
+    vec3 hitNormal     = texelFetch(NormalImage    , fullCoord, 0).xyz;
     vec3 hitMaterial   = texelFetch(MaterialImage  , fullCoord, 0).xyz;
 
    vec3 ReflectionColor;

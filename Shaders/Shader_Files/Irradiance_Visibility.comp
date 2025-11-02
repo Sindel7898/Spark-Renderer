@@ -5,13 +5,14 @@ layout(binding = 0) readonly buffer StorageBuffer2 {
 } SB0;
 
 layout(binding = 1, rgba16f)  uniform image2D Radiance_Visibility;
-layout(binding = 2,rgba16f)  uniform image2D  Iradiance;
+layout(binding = 2, rgba16f)  uniform image2D  Iradiance;
+layout(binding = 3, rgba16f)  uniform image2D  Visibility;
 
 layout(push_constant) uniform PushConstants {
     int   AtlasWidthSize;  
     int   ProbeSideLength; 
     int   GutterSize;      
-    int   NumRays;         
+    int   NumRays;
 }pc;
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
@@ -34,18 +35,19 @@ int get_probe_index_from_pixels(ivec2 pixel_coords, int atlas_width, int probe_f
 // License: MIT License (see repository for details)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Compute normalized oct coord, mapping top left of top left pixel to (-1,-1) and bottom right to (1,1)                                   //
-vec2 normalized_oct_coord(ivec2 fragCoord) {                                                                                               //
+// Computes normalized texel coordinates within a single probe’s quad in the atlas.
+// This just tells us where inside the probe we are, in the range [-1, +1]^2. for guttar//
+vec2 get_normalized_probe_texel_coord(ivec2 fragCoord) {                                                                                               //
                                                                                                                                            //
     int probe_with_border_side  = pc.ProbeSideLength + pc.GutterSize;                                                                      //
                                                                                                                                            //
-    vec2 octahedral_texel_coordinates = ivec2((fragCoord.x - 1) % probe_with_border_side, (fragCoord.y - 1) % probe_with_border_side);     //
+    vec2 texel_coordinates = ivec2((fragCoord.x - 1) % probe_with_border_side, (fragCoord.y - 1) % probe_with_border_side);     //
                                                                                                                                            //
-    octahedral_texel_coordinates += vec2(0.5f);                                                                                            //
-    octahedral_texel_coordinates *= (2.0f / float(pc.ProbeSideLength));                                                                    //
-    octahedral_texel_coordinates -= vec2(1.0f);                                                                                            //
+    texel_coordinates += vec2(0.5f);                                                                                            //
+    texel_coordinates *= (2.0f / float(pc.ProbeSideLength));                                                                    //
+    texel_coordinates -= vec2(1.0f);                                                                                            //
                                                                                                                                            //
-    return octahedral_texel_coordinates;                                                                                                   //
+    return texel_coordinates;                                                                                                   //
                                                                                                                                            //
 }                                                                                                                                          //
                                                                                                                                            //
@@ -79,70 +81,85 @@ void main()
     int ProbeIndex =  get_probe_index_from_pixels(fragCoord,pc.AtlasWidthSize,ProbeSideLength_With_Gutter);
 
      /// do not do any calculations on gutter pixels
-    bool border_pixel = ((gl_GlobalInvocationID.x % ProbeSideLength_With_Gutter) == 0) || ((gl_GlobalInvocationID.x % ProbeSideLength_With_Gutter ) == probe_last_pixel ); 
-    border_pixel = border_pixel || ((gl_GlobalInvocationID.y % ProbeSideLength_With_Gutter) == 0) || ((gl_GlobalInvocationID.y % ProbeSideLength_With_Gutter ) == probe_last_pixel );
+    bool border_pixel   = ((gl_GlobalInvocationID.x % ProbeSideLength_With_Gutter) == 0) || ((gl_GlobalInvocationID.x % ProbeSideLength_With_Gutter ) == probe_last_pixel ); 
+    border_pixel        = border_pixel || ((gl_GlobalInvocationID.y % ProbeSideLength_With_Gutter) == 0) || ((gl_GlobalInvocationID.y % ProbeSideLength_With_Gutter ) == probe_last_pixel );
 
 
-
-    vec3  total_irradiance = vec3(0.0);
-    float total_visibility = 0.0;
-    float total_weight = 0.0;
-     vec4 final_color = vec4(0.0, 0.0, 0.0, 1000.0);
-     uint backfaces = 0;
-     uint max_backfaces = uint(pc.NumRays * 0.1f);
+    vec3  irradiance = vec3(0.0);
+    vec4  visibility = vec4(0.0);
+    float total_weight     = 0.0;
+     vec4 final_color      = vec4(0.0, 0.0, 0.0, 1000.0);
+     uint backfaces        = 0;
+     uint max_backfaces    = uint(pc.NumRays * 0.1f); // 10% of the total amount of rays being cast
 
      const bool use_backfacing_blending = true;
+    // int pass = pc.PassSpecifiyer;
 
     if(!border_pixel){
       
         for (int ray_index = 0; ray_index < pc.NumRays; ray_index++) {
           
-              ivec2 load_coord = ivec2(ray_index, ProbeIndex);
-              vec4  ray_data = imageLoad(Radiance_Visibility, load_coord);
+              ivec2 Sample_Position = ivec2(ray_index, ProbeIndex);
+              vec4  ray_data = imageLoad(Radiance_Visibility, Sample_Position);
               float ray_distance = ray_data.a;
               
               if ( ray_distance < 0.0f && use_backfacing_blending ) {
-                ++backfaces;
+                    ++backfaces;
 
-                if (backfaces >= max_backfaces) {
-                    return;
-                }
-                
+                  if (backfaces >= max_backfaces) {
+                  
+                       //imageStore(Iradiance , ivec2(gl_GlobalInvocationID.xy), vec4(1,0,0,1)); // come back to this. 
+                       //imageStore(Iradiance , ivec2(gl_GlobalInvocationID.xy), vec4(1,0,0,1)); // update so that it sends some info not to shoot rays or sample from this probe
+                       return;
+                  }
                 continue; 
             }
 
               
               vec3 ray_direction = SB0.FibonacciDirections[ray_index].xyz;
-              vec3 texel_direction = oct_decode(normalized_oct_coord(fragCoord));
+              vec3 texel_direction = oct_decode(get_normalized_probe_texel_coord(fragCoord));
 
               // Calculate the cosine weighting term
-              float  weight  = max(0.0, dot(texel_direction, ray_direction));
-              float  distance2  = imageLoad(Radiance_Visibility, load_coord).a;
+              float  weight  = max(dot(texel_direction, ray_direction),0.0);
 
 
               if (weight  > 0.0001) {
-         
-                vec3  ray_radiance  = ray_data.rgb;
-
-                ray_radiance *= energy_conservation;
-
-                total_irradiance += ray_radiance * weight;             
-                total_visibility += ray_distance;
-                  
-                total_weight += weight;
+                    vec3  ray_radiance  = ray_data.rgb;
+                    ray_radiance *= energy_conservation;
+                    
+                    irradiance += ray_radiance * weight;                                    
+                    total_weight += weight;
+                
               }
 
+              if (weight  > 0.0001) {
+              
+                   float probe_max_ray_distance = 1.0f * 1.5f;
+              
+                   ray_distance = min(abs(ray_distance), probe_max_ray_distance);
+                            
+                   visibility.x += ray_distance * weight;      
+                   visibility.y += (ray_distance * ray_distance) * weight;
+                   visibility.z += weight;
+              }
+             
       }
             
+
       if (total_weight > 0.000) {
-          vec3  final_irradiance = total_irradiance  / total_weight;
-          float final_visibility = total_visibility  / total_weight; 
+           irradiance /=  total_weight;
           
-          final_color = vec4(final_irradiance, 1);
+           imageStore(Iradiance , ivec2(gl_GlobalInvocationID.xy), vec4(irradiance,1));
       }
+
+      if (total_weight > 0.000) {
+
+            // Get weighted average
+            float mean     = visibility.x / visibility.z; 
+            float mean_sq  = visibility.y / visibility.z;
+            
+            imageStore(Visibility, ivec2(gl_GlobalInvocationID.xy), vec4(mean, mean_sq,1, 1.0));
+        }
     }
-
-
-    imageStore(Iradiance, ivec2(gl_GlobalInvocationID.xy), final_color);
 
 }

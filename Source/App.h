@@ -144,7 +144,8 @@ public:
 	VkDescriptorSet RT_BluredReflectionTextureId;
 	VkDescriptorSet DDGIIrradianceAtlasID;
 	VkDescriptorSet Sampled_GI_ID;
-
+	VkDescriptorSet DDGIIVisibilityAtlasID;
+	
 
 	std::vector<std::shared_ptr<Model>> Models;
 	std::vector<std::shared_ptr<Light>> lights;

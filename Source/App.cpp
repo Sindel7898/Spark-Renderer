@@ -1666,7 +1666,7 @@ void App::CreateGraphicsPipeline()
 
 		vk::PushConstantRange range{};
 		range.setOffset(0);
-		range.setSize(sizeof(glm::vec4) * 3);
+		range.setSize(sizeof(GridData));
 		range.setStageFlags(vk::ShaderStageFlagBits::eCompute);
 
 
@@ -1696,7 +1696,7 @@ void App::CreateGraphicsPipeline()
 
 		vk::PushConstantRange range{};
 		range.setOffset(0);
-		range.setSize(sizeof(int) * 4);
+		range.setSize(sizeof(GeneralAtlasInfo));
 		range.setStageFlags(vk::ShaderStageFlagBits::eCompute);
 
 
@@ -2082,6 +2082,13 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 			dynamicDiffuse_RTGI->IradianceImageAtlasImage.imageView,
 			VK_IMAGE_LAYOUT_GENERAL
 		);
+
+		DDGIIVisibilityAtlasID = ImGui_ImplVulkan_AddTexture(
+			dynamicDiffuse_RTGI->VisibilityImageAtlasImage.imageSampler,
+			dynamicDiffuse_RTGI->VisibilityImageAtlasImage.imageView,
+			VK_IMAGE_LAYOUT_GENERAL
+		);
+
 	}
 }
 
@@ -2415,7 +2422,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			TransitiontoGeneralRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
 
 			bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->RadianceImageAtlasImage, TransitiontoGeneralRT);
-			bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->IradianceImageAtlasImage, TransitiontoGeneralRT);
 
 
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_DDGIPassPipeline);
@@ -2427,37 +2433,77 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 				commandBuffer,
 				RT_DDGIPipelineLayout,
 				currentFrame);
+
+
+			vk::ImageMemoryBarrier rtToComputeBarrier{};
+			rtToComputeBarrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+			rtToComputeBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+			rtToComputeBarrier.oldLayout = vk::ImageLayout::eGeneral; 
+			rtToComputeBarrier.newLayout = vk::ImageLayout::eGeneral; 
+			rtToComputeBarrier.image = dynamicDiffuse_RTGI->RadianceImageAtlasImage.image;
+			rtToComputeBarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+			rtToComputeBarrier.subresourceRange.baseMipLevel = 0;
+			rtToComputeBarrier.subresourceRange.levelCount = 1;
+			rtToComputeBarrier.subresourceRange.baseArrayLayer = 0;
+			rtToComputeBarrier.subresourceRange.layerCount = 1;
+			rtToComputeBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			rtToComputeBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+			commandBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eRayTracingShaderKHR, 
+				vk::PipelineStageFlagBits::eComputeShader,    
+				{},
+				0, nullptr,
+				0, nullptr,
+				1, & rtToComputeBarrier
+			);
 		}
 		
 
 
 		{
+
+			ImageTransitionData TransitiontoGeneraCompute{};
+			TransitiontoGeneraCompute.oldlayout = vk::ImageLayout::eUndefined;
+			TransitiontoGeneraCompute.newlayout = vk::ImageLayout::eGeneral;
+			TransitiontoGeneraCompute.AspectFlag = vk::ImageAspectFlagBits::eColor;
+			TransitiontoGeneraCompute.SourceAccessflag = vk::AccessFlagBits::eNone;
+			TransitiontoGeneraCompute.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
+			TransitiontoGeneraCompute.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
+			TransitiontoGeneraCompute.DestinationOnThePipeline = vk::PipelineStageFlagBits::eComputeShader;
+
+			bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->IradianceImageAtlasImage , TransitiontoGeneraCompute);
+			bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->VisibilityImageAtlasImage, TransitiontoGeneraCompute);
+
+
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, IrradianceComputePassPipeline);
-			dynamicDiffuse_RTGI->DispatchCalcProbeDataCompute(commandBuffer, IrradianceComputePipelineLayout, currentFrame);
+			{
+				dynamicDiffuse_RTGI->DispatchCalcProbeDataCompute(commandBuffer, IrradianceComputePipelineLayout, currentFrame);
 
-			vk::ImageMemoryBarrier imagebarrier;
-			imagebarrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
-			imagebarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-			imagebarrier.oldLayout = vk::ImageLayout::eUndefined;
-			imagebarrier.newLayout = vk::ImageLayout::eGeneral;
-			imagebarrier.image = dynamicDiffuse_RTGI->IradianceImageAtlasImage.image;
-			imagebarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-			imagebarrier.subresourceRange.baseMipLevel = 0;
-			imagebarrier.subresourceRange.levelCount = 1;
-			imagebarrier.subresourceRange.baseArrayLayer = 0;
-			imagebarrier.subresourceRange.layerCount = 1;
+				vk::ImageMemoryBarrier imagebarrier;
+				imagebarrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+				imagebarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+				imagebarrier.oldLayout = vk::ImageLayout::eGeneral;
+				imagebarrier.newLayout = vk::ImageLayout::eGeneral;
+				imagebarrier.image = dynamicDiffuse_RTGI->VisibilityImageAtlasImage.image;
+				imagebarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+				imagebarrier.subresourceRange.baseMipLevel = 0;
+				imagebarrier.subresourceRange.levelCount = 1;
+				imagebarrier.subresourceRange.baseArrayLayer = 0;
+				imagebarrier.subresourceRange.layerCount = 1;
 
-			imagebarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			imagebarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				imagebarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				imagebarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
-			commandBuffer.pipelineBarrier(
-				vk::PipelineStageFlagBits::eComputeShader,
-				vk::PipelineStageFlagBits::eRayTracingShaderKHR,
-				{},
-				0, nullptr,
-				0, nullptr,
-				1, &imagebarrier
-			);
+				commandBuffer.pipelineBarrier(
+					vk::PipelineStageFlagBits::eComputeShader,
+					vk::PipelineStageFlagBits::eRayTracingShaderKHR,
+					{},
+					0, nullptr,
+					0, nullptr,
+					1, &imagebarrier
+				);
+			}
 		}
 
 
@@ -3510,6 +3556,7 @@ void App::destroyPipeline()
 	DestroySyncObjects();
 	vkb::destroy_debug_utils_messenger(vulkanContext.VulkanInstance, vulkanContext.Debug_Messenger);
 	//vulkanContext.reset();
+
 
 	//window.reset();
 #ifndef NDEBUG

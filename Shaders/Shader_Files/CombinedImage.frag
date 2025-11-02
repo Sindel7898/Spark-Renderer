@@ -6,7 +6,7 @@ layout (binding = 1) uniform sampler2D GITexture;
 layout (binding = 2) uniform sampler2D SSAOTexture;                
 layout (binding = 3) uniform sampler2D MaterialsTexture;                
 layout (binding = 4) uniform sampler2D AlbedoTexture;                
-layout(binding = 5, rgba16f) uniform image2D  DDGITexture;
+layout(binding = 5, rgba16f) readonly uniform image2D  DDGITexture;
 
 layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragColor;

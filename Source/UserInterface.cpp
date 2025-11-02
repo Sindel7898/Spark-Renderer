@@ -204,22 +204,22 @@ void UserInterface::SetupDockingEnvironment()
 		first_time = false;
 
 		// Clear out any existing layout
-		ImGuiID dock_main_id = dockspace_id;
-		ImGuiID dock_left_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.2f, nullptr, &dock_main_id);
-		ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.2f, nullptr, &dock_main_id);
-		ImGuiID dock_bottom_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.2f, nullptr, &dock_main_id);
+		ImGuiID dock_main_id   = dockspace_id;
+		ImGuiID dock_left_id   = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left , 0.2f, nullptr, &dock_main_id);
+		ImGuiID dock_right_id  = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.2f, nullptr, &dock_main_id);
+		ImGuiID dock_bottom_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down , 0.2f, nullptr, &dock_main_id);
 
 		// Split the right panel vertically
 		ImGuiID dock_DetailsPanel_Top_id;
 		ImGuiID dock_DetailsPanel_Bottom_id = ImGui::DockBuilderSplitNode(dock_right_id, ImGuiDir_Down, 0.5f, nullptr, &dock_DetailsPanel_Top_id);
-
 
 		// Dock windows
 		ImGui::SetNextWindowDockID(dock_main_id, ImGuiCond_Always);
 		ImGui::DockBuilderDockWindow("Main Viewport", dock_main_id);
 
 		ImGui::SetNextWindowDockID(dock_bottom_id, ImGuiCond_FirstUseEver);
-		ImGui::DockBuilderDockWindow("DDGI Atlas", dock_bottom_id);
+		ImGui::DockBuilderDockWindow("DDGI Irradiance Atlas", dock_bottom_id);
+		ImGui::DockBuilderDockWindow("DDGI Visibility Atlas", dock_bottom_id);
 
 		ImGui::SetNextWindowDockID(dock_DetailsPanel_Bottom_id, ImGuiCond_FirstUseEver);
 		ImGui::DockBuilderDockWindow("Global Settings", dock_DetailsPanel_Bottom_id);
@@ -647,9 +647,17 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 	}
 
 	{
-		ImGui::Begin("DDGI Atlas");
+		ImGui::Begin("DDGI Irradiance Atlas");
 		viewportSize = ImGui::GetContentRegionAvail();
 		ImGui::Image((ImTextureID)appref->DDGIIrradianceAtlasID, viewportSize);
+		ImGui::End();
+	}
+
+
+	{
+		ImGui::Begin("DDGI Visibility Atlas");
+		viewportSize = ImGui::GetContentRegionAvail();
+		ImGui::Image((ImTextureID)appref->DDGIIVisibilityAtlasID, viewportSize);
 		ImGui::End();
 	}
 

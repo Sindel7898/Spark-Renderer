@@ -88,6 +88,11 @@ void DynamicDiffuse_RTGI::CreateAtlasImages() {
 	bufferManager->CreateImage(&IradianceImageAtlasImage, IradianceImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
 	IradianceImageAtlasImage.imageView = bufferManager->CreateImageView(&IradianceImageAtlasImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	IradianceImageAtlasImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
+
+	VisibilityImageAtlasImage.ImageID = " DDGI Visibility Atlas Image";
+	bufferManager->CreateImage(&VisibilityImageAtlasImage, IradianceImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
+	VisibilityImageAtlasImage.imageView = bufferManager->CreateImageView(&VisibilityImageAtlasImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	VisibilityImageAtlasImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
 }
 
 void DynamicDiffuse_RTGI::CreateSampledGIImage() {
@@ -112,6 +117,11 @@ void DynamicDiffuse_RTGI::DestroyAtlasImages() {
 	if (IradianceImageAtlasImage.image)
 	{
 		bufferManager->DestroyImage(IradianceImageAtlasImage);
+	}
+
+	if (VisibilityImageAtlasImage.image)
+	{
+		bufferManager->DestroyImage(VisibilityImageAtlasImage);
 	}
 }
 
@@ -201,7 +211,13 @@ void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
 		IrradianceStorageImage.descriptorType = vk::DescriptorType::eStorageImage;
 		IrradianceStorageImage.stageFlags = vk::ShaderStageFlagBits::eCompute;
 
-		std::array<vk::DescriptorSetLayoutBinding, 3> bindings = { FibonacciDirectionsStorageBufffer,RadianceStorageImage,IrradianceStorageImage };
+		vk::DescriptorSetLayoutBinding VisibilityStorageImage{};
+		VisibilityStorageImage.binding = 3;
+		VisibilityStorageImage.descriptorCount = 1;
+		VisibilityStorageImage.descriptorType = vk::DescriptorType::eStorageImage;
+		VisibilityStorageImage.stageFlags = vk::ShaderStageFlagBits::eCompute;
+
+		std::array<vk::DescriptorSetLayoutBinding, 4> bindings = { FibonacciDirectionsStorageBufffer,RadianceStorageImage,IrradianceStorageImage,VisibilityStorageImage };
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -645,9 +661,24 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			IradianceAtlasImageSamplerdescriptorWrite.pImageInfo = &IradiancAtlasImageInfo;
 
 
-			std::array<vk::WriteDescriptorSet, 3> descriptorWrites{ FibonacciDirectionsbufferdescriptorWrite,
+			vk::DescriptorImageInfo VisibilityAtlasImageInfo{};
+			VisibilityAtlasImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			VisibilityAtlasImageInfo.imageView   = VisibilityImageAtlasImage.imageView;
+			VisibilityAtlasImageInfo.sampler     = VisibilityImageAtlasImage.imageSampler;
+
+			vk::WriteDescriptorSet VisibilityAtlasImageSamplerdescriptorWrite{};
+			VisibilityAtlasImageSamplerdescriptorWrite.dstSet = ConstructProbeDataDescriptorSets[i];
+			VisibilityAtlasImageSamplerdescriptorWrite.dstBinding = 3;
+			VisibilityAtlasImageSamplerdescriptorWrite.dstArrayElement = 0;
+			VisibilityAtlasImageSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
+			VisibilityAtlasImageSamplerdescriptorWrite.descriptorCount = 1;
+			VisibilityAtlasImageSamplerdescriptorWrite.pImageInfo = &VisibilityAtlasImageInfo;
+
+
+			std::array<vk::WriteDescriptorSet, 4> descriptorWrites{ FibonacciDirectionsbufferdescriptorWrite,
 				                                                    radianceAtlasImageSamplerdescriptorWrite,
-			                                                        IradianceAtlasImageSamplerdescriptorWrite };
+			                                                        IradianceAtlasImageSamplerdescriptorWrite,
+				                                                    VisibilityAtlasImageSamplerdescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 		}
@@ -1100,10 +1131,11 @@ void DynamicDiffuse_RTGI::DispatchCalcProbeDataCompute(vk::CommandBuffer command
 	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, 0, 1, &ConstructProbeDataDescriptorSets[imageIndex], 0, nullptr);
 
 	uint32_t workGroupsX = (IradianceImageExtent.width  +  7) / 8;
-	uint32_t workGroupsY = (IradianceImageExtent.height + 7) / 8;
+	uint32_t workGroupsY = (IradianceImageExtent.height +  7) / 8;
 
 	commandBuffer.dispatch(workGroupsX, workGroupsY, 1);
 }
+
 
 void DynamicDiffuse_RTGI::DispatchSampleGIFromProbeDataCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex)
 {
@@ -1123,8 +1155,8 @@ void DynamicDiffuse_RTGI::DispatchSampleGIFromProbeDataCompute(vk::CommandBuffer
 
 	
 
-	uint32_t workGroupsX = (vulkanContext->swapchainExtent.width + 31) / 32;
-	uint32_t workGroupsY = (vulkanContext->swapchainExtent.height + 31)/ 32;
+	uint32_t workGroupsX = (vulkanContext->swapchainExtent.width  + 31) / 32;
+	uint32_t workGroupsY = (vulkanContext->swapchainExtent.height + 31) / 32;
 
 	commandBuffer.dispatch(workGroupsX, workGroupsY, 1);
 }

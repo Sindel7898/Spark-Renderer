@@ -11,6 +11,6 @@ layout(location = 0) rayPayloadInEXT Payload payload;
 
 void main() {
     payload.Color     = vec3(0);
-    payload.Distance  =  10000.0f;
+    payload.Distance  =  1000.0f;
     payload.Hit       =  0;
 }

@@ -37,7 +37,7 @@ void main() {
     const uint rayFlags = gl_RayFlagsOpaqueEXT;
     const uint cullMask = 0xFF;
     const float tMin = 0.001;
-    const float tMax = 500.0;
+    const float tMax = 100.0;
 
    vec3 CubeMapIrradiance = texture(samplerCubeMap[pc.SkyboxIndex], rayDirection).rgb;
 

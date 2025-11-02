@@ -63,110 +63,117 @@ hitAttributeEXT struct HitAttribute {
 
 void main()
 {
-    uint packed  = gl_InstanceCustomIndexEXT;
 
-    uint objectID   = packed >> 12;
-    uint primitiveID = packed & 0xFFF;
+   vec3 Radiance  = vec3(0.0);
+   float Distance = 0;
 
-    VertexAndIndexOffsets offsets = OffsetBuffer.Offsets[primitiveID];
-    
-    uint baseIndex = 3 * gl_PrimitiveID + offsets.IndexOffset;
+  if(gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT){ // if we hit the inside of a triangle get the backface
+      Distance = gl_RayTminEXT + gl_HitTEXT; //minimum traversel legth + gl_HitTEXT (contains the t-value of an intersection along the ray)
+      Distance *= -0.2; // negated the value so that it is always -
+ }else{
+       uint packed  = gl_InstanceCustomIndexEXT;
+   
+       uint objectID   = packed >> 12;
+       uint primitiveID = packed & 0xFFF;
+   
+       VertexAndIndexOffsets offsets = OffsetBuffer.Offsets[primitiveID];
+       
+       uint baseIndex = 3 * gl_PrimitiveID + offsets.IndexOffset;
+   
+       ivec3 index = ivec3(
+           indexBuffer.Indices[baseIndex  + 0],
+           indexBuffer.Indices[baseIndex  + 1],
+           indexBuffer.Indices[baseIndex  + 2]
+       );
+   
+       Vertex v0 = vertexBuffer.vertices[index.x];
+       Vertex v1 = vertexBuffer.vertices[index.y];
+       Vertex v2 = vertexBuffer.vertices[index.z];
+   
+       vec3 bary = vec3(1.0 - attribs.hitUV.x - attribs.hitUV.y, attribs.hitUV.x, attribs.hitUV.y);
+   
+         vec3 VertexPosition = 
+           v0.position_Padding.xyz * bary.x +
+           v1.position_Padding.xyz * bary.y +
+           v2.position_Padding.xyz * bary.z;
+   
+   
+       vec3 Normal = normalize(
+           v0.normal_Padding.xyz * bary.x +
+           v1.normal_Padding.xyz * bary.y +
+           v2.normal_Padding.xyz * bary.z
+       );
+   
+        vec3 Tangent = normalize(
+           v0.tangent_Padding.xyz * bary.x +
+           v1.tangent_Padding.xyz * bary.y +
+           v2.tangent_Padding.xyz * bary.z
+       );
+   
+        vec2 TexCoord = 
+          v0.texCoord_Padding.xy * bary.x +
+          v1.texCoord_Padding.xy * bary.y +
+          v2.texCoord_Padding.xy * bary.z;
+   
+   
+       mat3 normalMatrix  = transpose(inverse(mat3(Transformations.WorldMatrix[objectID])));
+       vec3 WorldN        = normalize(normalMatrix * Normal);
+       vec3 WorldT        = normalize(normalMatrix * Tangent);
+       vec3 WorldB        = cross(WorldN,WorldT);
+   
+       mat3 WorldSpaceTBN = mat3(WorldT, WorldB, WorldN);
+   
+       vec3  Albedo     = texture(Albedo_AssetImages         [nonuniformEXT(primitiveID)], TexCoord).rgb;
+       float Metallic  = texture(MetalicRoughness_AssetImages[nonuniformEXT(primitiveID)], TexCoord).r;
+       float Roughness = texture(MetalicRoughness_AssetImages[nonuniformEXT(primitiveID)], TexCoord).r;
+   
+       vec3 NormalTexture = texture(Normal_AssetImages[nonuniformEXT(primitiveID)], TexCoord).rgb * 2.0 - vec3(1.0);
+       vec3 tnorm = normalize(WorldSpaceTBN * NormalTexture);
+       Normal = tnorm;
+       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+   
+       vec3  LightDir = vec3(1,1,1);
+       const float Constant   = 1.0;
+       const float Linear     = 0.09;
+       const float Quadratic  = 0.032;
+       
+       vec3 radiance          = vec3(0.0);
+       vec4  WorldPos  =  Transformations.WorldMatrix[objectID] * vec4(VertexPosition,1);
+       vec3  ViewDir    = -normalize(gl_WorldRayDirectionEXT);
+   
+       for (int i = 0; i < 4; i++) {
+     
+           LightData light = lights[i];
+           
+           
+           vec3 Lo      = vec3(0.0);
+           
+           
+            if(light.positionAndLightType.w < 0.5){
+           
+               LightDir = normalize(-light.positionAndLightType.xyz);
+               radiance = light.colorAndAmbientStrength.rgb ;
+           
+             }
+            else if (light.positionAndLightType.w > 0.5){
+                     
+                 vec3 LightPos   = light.positionAndLightType.xyz;
+                     LightDir    = normalize(LightPos - WorldPos.xyz);
+               float Distance    = length(LightPos -  WorldPos.xyz);
+               float Attenuation = 1.0 / (Constant + Linear * Distance + Quadratic * (Distance * Distance));
+                     radiance    = light.colorAndAmbientStrength.rgb * Attenuation;
+             }  
+           
+           float NdotL = max(dot(Normal, LightDir), 0.0);        
+                   Lo +=  Albedo * radiance * NdotL;
 
-    ivec3 index = ivec3(
-        indexBuffer.Indices[baseIndex  + 0],
-        indexBuffer.Indices[baseIndex  + 1],
-        indexBuffer.Indices[baseIndex  + 2]
-    );
+        Radiance +=  ((Lo) * light.CameraPositionAndLightIntensity.a);
+     }
+     
+     Distance = gl_RayTminEXT + gl_HitTEXT;
+   }
 
-    Vertex v0 = vertexBuffer.vertices[index.x];
-    Vertex v1 = vertexBuffer.vertices[index.y];
-    Vertex v2 = vertexBuffer.vertices[index.z];
-
-    vec3 bary = vec3(1.0 - attribs.hitUV.x - attribs.hitUV.y, attribs.hitUV.x, attribs.hitUV.y);
-
-      vec3 VertexPosition = 
-        v0.position_Padding.xyz * bary.x +
-        v1.position_Padding.xyz * bary.y +
-        v2.position_Padding.xyz * bary.z;
-
-
-    vec3 Normal = normalize(
-        v0.normal_Padding.xyz * bary.x +
-        v1.normal_Padding.xyz * bary.y +
-        v2.normal_Padding.xyz * bary.z
-    );
-
-     vec3 Tangent = normalize(
-        v0.tangent_Padding.xyz * bary.x +
-        v1.tangent_Padding.xyz * bary.y +
-        v2.tangent_Padding.xyz * bary.z
-    );
-
-     vec2 TexCoord = 
-       v0.texCoord_Padding.xy * bary.x +
-       v1.texCoord_Padding.xy * bary.y +
-       v2.texCoord_Padding.xy * bary.z;
-
-
-    mat3 normalMatrix  = transpose(inverse(mat3(Transformations.WorldMatrix[objectID])));
-    vec3 WorldN        = normalize(normalMatrix * Normal);
-    vec3 WorldT        = normalize(normalMatrix * Tangent);
-    vec3 WorldB        = cross(WorldN,WorldT);
-
-    mat3 WorldSpaceTBN = mat3(WorldT, WorldB, WorldN);
-
-    vec3  Albedo     = texture(Albedo_AssetImages         [nonuniformEXT(primitiveID)], TexCoord).rgb;
-    float Metallic  = texture(MetalicRoughness_AssetImages[nonuniformEXT(primitiveID)], TexCoord).r;
-    float Roughness = texture(MetalicRoughness_AssetImages[nonuniformEXT(primitiveID)], TexCoord).r;
-
-    vec3 NormalTexture = texture(Normal_AssetImages[nonuniformEXT(primitiveID)], TexCoord).rgb * 2.0 - vec3(1.0);
-    vec3 tnorm = normalize(WorldSpaceTBN * NormalTexture);
-    Normal = tnorm;
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    vec3  LightDir = vec3(1,1,1);
-    const float Constant   = 1.0;
-    const float Linear     = 0.09;
-    const float Quadratic  = 0.032;
-    
-    vec3 radiance          = vec3(0.0);
-    vec3 totalLighting     = vec3(0.0);
-
-    vec4  WorldPos  =  Transformations.WorldMatrix[objectID] * vec4(VertexPosition,1);
-    vec3  ViewDir    = -normalize(gl_WorldRayDirectionEXT);
-
-    for (int i = 0; i < 4; i++) {
-  
-     LightData light = lights[i];
-  
-  
-     vec3 Lo      = vec3(0.0);
-  
-  
-      if(light.positionAndLightType.w < 0.5){
-  
-         LightDir = normalize(-light.positionAndLightType.xyz);
-         radiance = light.colorAndAmbientStrength.rgb ;
-  
-       }
-      else if (light.positionAndLightType.w > 0.5){
-               
-           vec3 LightPos   = light.positionAndLightType.xyz;
-               LightDir    = normalize(LightPos - WorldPos.xyz);
-         float Distance    = length(LightPos -  WorldPos.xyz);
-         float Attenuation = 1.0 / (Constant + Linear * Distance + Quadratic * (Distance * Distance));
-               radiance    = light.colorAndAmbientStrength.rgb * Attenuation;
-       }  
-  
-     float NdotL = max(dot(Normal, LightDir), 0.0);        
-             Lo +=  Albedo * radiance * NdotL;
-  
-  
-     totalLighting +=  ((Lo) * light.CameraPositionAndLightIntensity.a);
-  }
-
-
-     payload.Color    = totalLighting;
-     payload.Distance = gl_RayTminEXT + gl_HitTEXT;
+     payload.Color    = Radiance;
+     payload.Distance = Distance;
      payload.Hit = 1;
  }
