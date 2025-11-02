@@ -17,6 +17,7 @@ layout(binding = 0)   uniform sampler2D  PositionImage;
 layout(binding = 1)   uniform sampler2D  NormalImage;
 layout(binding = 2, rgba16f)   uniform image2D  IrradianceStorageImage;
 layout(binding = 3, rgba16f)   uniform image2D  SampledGIImage;
+layout(binding = 4, rgba16f)   uniform image2D  VisibilityStorageImage;
 
 layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
@@ -43,7 +44,6 @@ ivec2 GetProbeTexel(ivec3 probeIndex, vec2 uv)
     return texel;
 }
 
-
 void main() 
 {
 
@@ -58,7 +58,7 @@ void main()
     vec2 UV = (vec2(TextlCord) + 0.5) / vec2(Width,Height); // + 0.5 gives us the middle of the TEXEL not the edge
 
     vec3 Position = texture(PositionImage,UV).rgb;
-    //vec3 Normal   = texture(NormalImage,  UV).rgb;
+    vec3 Normal   = texture(NormalImage,  UV).rgb;
     vec3 GridIndexF = (Position - GridBaseLocation) / ProbeSpacing;
     vec3 Alpha = fract(GridIndexF);
 
@@ -73,40 +73,51 @@ void main()
      };
 
 
-     vec3 Irradiance = vec3(0);
+     vec4 Irradiance = vec4(0);
 
      for(int i = 0; i < 8; i++){
 
-      vec3 weight;
-
-         if (Offsets[i].x == 0) {
-             weight.x = 1.0 - Alpha.x;
-         } else {
-             weight.x = Alpha.x;
-         }
-         
-         if (Offsets[i].y == 0) {
-             weight.y = 1.0 - Alpha.y;
-         } else {
-             weight.y = Alpha.y;
-         }
-         
-         if (Offsets[i].z == 0) {
-             weight.z = 1.0 - Alpha.z;
-         } else {
-             weight.z = Alpha.z;
-         }
-
-        float w = weight.x * weight.y * weight.z;
-
          ivec3 ProbeIndex = clamp((GridIndex + Offsets[i]),ivec3(0),ProbeCount);
 
-         ivec2 probeTexel = GetProbeTexel(ProbeIndex, vec2(0.5));
+         vec3 ProbeWorldPosition = GridBaseLocation + (vec3(ProbeIndex) * ProbeSpacing);
 
-        Irradiance += w * imageLoad(IrradianceStorageImage, probeTexel).rgb;
+          
+          ivec2 probeTexel = GetProbeTexel(ProbeIndex, vec2(0.5));
+         
+           vec3 dir = Position  -  ProbeWorldPosition ;
+           float r = length(dir);
+           dir *= -1.0 / r;
 
+           float weight = (dot(dir, Normal) + 1) * 0.5;
+
+           float wx = (Offsets[i].x == 1) ? Alpha.x : (1.0 - Alpha.x);
+           float wy = (Offsets[i].y == 1) ? Alpha.y : (1.0 - Alpha.y);
+           float wz = (Offsets[i].z == 1) ? Alpha.z : (1.0 - Alpha.z);
+           float trilinearWeight = wx * wy * wz;
+
+           weight *= trilinearWeight;
+
+          //////////////////////////////////////////////////////////////
+          vec2 DepthInfo =  imageLoad(VisibilityStorageImage, probeTexel).rg;
+
+          float Mean  = DepthInfo.x; 
+          float Mean2 = DepthInfo.y; 
+
+
+          if(r >  Mean) {
+
+           float variance = abs((Mean * Mean) - Mean2);
+           weight *= variance / (variance + (r - Mean) * (r - Mean));
+
+          }
+
+         vec3 probeIrradiance = imageLoad(IrradianceStorageImage, probeTexel).rgb * weight;
+         Irradiance += vec4(probeIrradiance, weight);
      }
+     
+       vec3 ComputedIrradiance = (Irradiance.rgb / Irradiance.a);
+       ComputedIrradiance *= ComputedIrradiance;
 
-    imageStore(SampledGIImage, ivec2(gl_GlobalInvocationID.xy), vec4(Irradiance,1));
+    imageStore(SampledGIImage, ivec2(gl_GlobalInvocationID.xy), vec4(ComputedIrradiance,1));
 
 }

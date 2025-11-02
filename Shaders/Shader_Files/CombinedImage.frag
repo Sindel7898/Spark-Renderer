@@ -90,5 +90,6 @@ void main() {
     //vec3 gammaCorrected = pow(clamp(CorrectedColor, 0.0, 1.0), vec3(dynamicGamma));
     //vec3 tonemapped = aces_approx(gammaCorrected);
 
+     //vec3 GIOnly =   (DDGI + SSGI) * AO;
      outFragColor = vec4(CorrectedColor,1.0);
 }

@@ -102,9 +102,9 @@ public:
 
     std::vector<glm::mat4> ProbeLocations;
 
-    int NumOfProbesX = 10;
-    int NumOfProbesY = 10;
-    int NumOfProbesZ = 10;
+    int NumOfProbesX = 6;
+    int NumOfProbesY = 6;
+    int NumOfProbesZ = 6;
 
     int RaysPerProbe = 128;
 

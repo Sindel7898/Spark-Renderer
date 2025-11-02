@@ -363,7 +363,15 @@ void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
 	  SampledGIStorageImage.descriptorType = vk::DescriptorType::eStorageImage;
 	  SampledGIStorageImage.stageFlags = vk::ShaderStageFlagBits::eCompute;
 
-	  std::array<vk::DescriptorSetLayoutBinding, 4> bindings = { PositionImage,NormalImage,IrradianceStorageImage,SampledGIStorageImage };
+	  vk::DescriptorSetLayoutBinding VisibilityStorageImage{};
+	  VisibilityStorageImage.binding = 4;
+	  VisibilityStorageImage.descriptorCount = 1;
+	  VisibilityStorageImage.descriptorType = vk::DescriptorType::eStorageImage;
+	  VisibilityStorageImage.stageFlags = vk::ShaderStageFlagBits::eCompute;
+
+	  std::array<vk::DescriptorSetLayoutBinding, 5> bindings = { PositionImage,NormalImage,
+		                                                         IrradianceStorageImage,SampledGIStorageImage,
+		                                                         VisibilityStorageImage };
 
 	  vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 	  layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -461,10 +469,24 @@ void DynamicDiffuse_RTGI::createDescriptorSets(vk::DescriptorPool descriptorpool
 			Probe_Sampled_GISamplerdescriptorWrite.descriptorCount = 1;
 			Probe_Sampled_GISamplerdescriptorWrite.pImageInfo = &Probe_Sampled_GIImageInfo;
 
+			vk::DescriptorImageInfo VisibilityImageAtlasImageInfo{};
+			VisibilityImageAtlasImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			VisibilityImageAtlasImageInfo.imageView = VisibilityImageAtlasImage.imageView;
+			VisibilityImageAtlasImageInfo.sampler = VisibilityImageAtlasImage.imageSampler;
 
-			std::array<vk::WriteDescriptorSet, 4> descriptorWrites{ PositionImageSamplerdescriptorWrite,
+			vk::WriteDescriptorSet VisibilityAtlasSamplerdescriptorWrite{};
+			VisibilityAtlasSamplerdescriptorWrite.dstSet = DDGISamplingDescriptorSets[i];
+			VisibilityAtlasSamplerdescriptorWrite.dstBinding = 4;
+			VisibilityAtlasSamplerdescriptorWrite.dstArrayElement = 0;
+			VisibilityAtlasSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
+			VisibilityAtlasSamplerdescriptorWrite.descriptorCount = 1;
+			VisibilityAtlasSamplerdescriptorWrite.pImageInfo = &VisibilityImageAtlasImageInfo;
+
+
+			std::array<vk::WriteDescriptorSet, 5> descriptorWrites{ PositionImageSamplerdescriptorWrite,
 																	NormalImageSamplerdescriptorWrite,
-				                                                    IradianceImageAtlasSamplerdescriptorWrite,Probe_Sampled_GISamplerdescriptorWrite };
+				                                                    IradianceImageAtlasSamplerdescriptorWrite,Probe_Sampled_GISamplerdescriptorWrite,
+			                                                        VisibilityAtlasSamplerdescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 		}
