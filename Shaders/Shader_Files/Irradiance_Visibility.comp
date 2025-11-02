@@ -108,8 +108,8 @@ void main()
 
                   if (backfaces >= max_backfaces) {
                   
-                       //imageStore(Iradiance , ivec2(gl_GlobalInvocationID.xy), vec4(1,0,0,1)); // come back to this. 
-                       //imageStore(Iradiance , ivec2(gl_GlobalInvocationID.xy), vec4(1,0,0,1)); // update so that it sends some info not to shoot rays or sample from this probe
+                       imageStore(Visibility , ivec2(gl_GlobalInvocationID.xy), vec4(0,0,0,1)); 
+                       imageStore(Iradiance , ivec2(gl_GlobalInvocationID.xy), vec4(0,0,0,1)); 
                        return;
                   }
                 continue; 

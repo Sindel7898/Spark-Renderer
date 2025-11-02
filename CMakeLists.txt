@@ -4,6 +4,10 @@ project(Spark)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(MSVC)
+    add_compile_options(/MP)
+endif()
+
 # Set paths for external libraries
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/External/imgui)
 set(ImGuizmo_DIR ${CMAKE_SOURCE_DIR}/External/ImGuizmo)
