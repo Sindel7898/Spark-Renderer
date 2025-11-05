@@ -378,11 +378,12 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 
 			ImGui::TextDisabled("Adjust post-processing parameters:");
 
-			ImGui::SliderFloat("Brightness", &appref->Combined_FullScreenQuad->Brightness, 0.0f, 2.0f, "%.2f");
-			ImGui::SliderFloat("Saturation", &appref->Combined_FullScreenQuad->Saturation, 0.0f, 2.0f, "%.2f");
+			ImGui::SliderFloat("Brightness"   , &appref->Combined_FullScreenQuad->Brightness, 0.0f, 2.0f, "%.2f");
+			ImGui::SliderFloat("Saturation"   , &appref->Combined_FullScreenQuad->Saturation, 0.0f, 2.0f, "%.2f");
 			ImGui::SliderFloat("Concentration", &appref->Combined_FullScreenQuad->Concentration, 0.0f, 2.0f, "%.2f");
-			ImGui::SliderFloat("Max Gamma", &appref->Combined_FullScreenQuad->MaxGamma, 0.1f, 4.0f, "%.2f");
-			ImGui::SliderFloat("Min Gamma", &appref->Combined_FullScreenQuad->MinGamma, 0.1f, 4.0f, "%.2f");
+			ImGui::SliderFloat("Max Gamma"    , &appref->Combined_FullScreenQuad->MaxGamma, 0.1f, 4.0f, "%.2f");
+			ImGui::SliderFloat("Min Gamma"    , &appref->Combined_FullScreenQuad->MinGamma, 0.1f, 4.0f, "%.2f");
+			ImGui::SliderFloat("GI Boost"     , &appref->Combined_FullScreenQuad->GIBoost, 0.1f, 10.0f, "%.2f");
 
 			ImGui::EndChild();
 		}
@@ -397,9 +398,9 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 
 			ImGui::SliderInt("Rays Per Probe", &appref->dynamicDiffuse_RTGI->RaysPerProbe, 1, 300, "%d");
 
-			ImGui::SliderInt("X Count", &appref->dynamicDiffuse_RTGI->NumOfProbesX, 1, 10, "%d");
-			ImGui::SliderInt("Y Count", &appref->dynamicDiffuse_RTGI->NumOfProbesY, 1, 10, "%d");
-			ImGui::SliderInt("Z Count", &appref->dynamicDiffuse_RTGI->NumOfProbesZ, 1, 10, "%d");
+			ImGui::SliderInt("X Count", &appref->dynamicDiffuse_RTGI->NumOfProbesX, 1, 20, "%d");
+			ImGui::SliderInt("Y Count", &appref->dynamicDiffuse_RTGI->NumOfProbesY, 1, 20, "%d");
+			ImGui::SliderInt("Z Count", &appref->dynamicDiffuse_RTGI->NumOfProbesZ, 1, 20, "%d");
 
 			//ImGui::SliderFloat("X Offset", &appref->dynamicDiffuse_RTGI->ProbeOffset.x, -20, 20, "%.2f");
 			//ImGui::SliderFloat("Y Offset", &appref->dynamicDiffuse_RTGI->ProbeOffset.y, -20, 20, "%.2f");

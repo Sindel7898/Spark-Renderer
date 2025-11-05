@@ -1112,7 +1112,7 @@ void DynamicDiffuse_RTGI::DispatchGridCompute(vk::CommandBuffer commandBuffer, v
 		commandBuffer.dispatch(workGroupsX, 1, 1);
 }
 
-void DynamicDiffuse_RTGI::DispatchDirectionsCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex)
+void DynamicDiffuse_RTGI::DispatchDirectionsCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex, float deltaTime)
 {
 	if (RayRotationRadians >= 360.0f) {
 		RayRotationRadians  = 0.0f;
@@ -1129,7 +1129,7 @@ void DynamicDiffuse_RTGI::DispatchDirectionsCompute(vk::CommandBuffer commandBuf
 	gridData.probeBaseLocation = glm::vec4(GridLocation, 1);
 
 	gridData.RotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(RayRotationRadians), glm::vec3(1.0f, 1.0f, 1.0f));
-	RayRotationRadians += RotationSpeed;
+	RayRotationRadians += RotationSpeed * deltaTime;
 
 
 

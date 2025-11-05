@@ -213,7 +213,7 @@ void CombinedResult_FullScreenQuad::Draw(vk::CommandBuffer commandbuffer, vk::Pi
 	vk::Buffer VertexBuffers[] = { 	bufferManager->FullScreenQuadVertexBufferData.buffer };
 
 	PostProcessSettings PPS;
-	PPS.Brightness_Saturation_Concentration_Padding = glm::vec4(Brightness, Saturation, Concentration,0);
+	PPS.Brightness_Saturation_Concentration_GIboost = glm::vec4(Brightness, Saturation, Concentration, GIBoost);
 	PPS.MaxGamma_MinGamma_Padding = glm::vec4(MaxGamma, MinGamma, 0, 0);
 
 	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(PostProcessSettings), &PPS);

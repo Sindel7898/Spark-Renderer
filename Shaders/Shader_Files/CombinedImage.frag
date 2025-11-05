@@ -12,7 +12,7 @@ layout (location = 0) in vec2 inTexCoord;
 layout (location = 0) out vec4 outFragColor;
 
 layout(push_constant) uniform PushConstants {
-    vec4 Brightness_Saturation_Concentration_Padding;
+    vec4 Brightness_Saturation_Concentration_GIBoost;
     vec4 MaxGamma_MinGamma_Padding;
 } pc;
 
@@ -55,9 +55,10 @@ vec3 aces_approx(vec3 v)
 
 void main() {
 
-     float Brightness    = pc.Brightness_Saturation_Concentration_Padding.x;
-     float Saturation    = pc.Brightness_Saturation_Concentration_Padding.y;
-     float Concentration = pc.Brightness_Saturation_Concentration_Padding.z;
+     float Brightness    = pc.Brightness_Saturation_Concentration_GIBoost.x;
+     float Saturation    = pc.Brightness_Saturation_Concentration_GIBoost.y;
+     float Concentration = pc.Brightness_Saturation_Concentration_GIBoost.z;
+     float GIboost       = pc.Brightness_Saturation_Concentration_GIBoost.w;
      float MaxGamma      = pc.MaxGamma_MinGamma_Padding.x;
      float MinGamma      = pc.MaxGamma_MinGamma_Padding.y;
 
@@ -76,9 +77,11 @@ void main() {
      vec3 DDGIresult   = DDGI  * Albedo / PI;
      vec3 SSGIGIresult = SSGI  * Albedo / PI;
 
+     //DDGIresult *= GIboost;
+
      if(AO < 0.1){AO = 1;}
 
-    vec3 FinalColor = DirectLighting + (DDGIresult + SSGIGIresult) * AO;
+    vec3 FinalColor = DirectLighting + ((DDGIresult + SSGIGIresult) * AO) * GIboost;
 
 
      vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, Brightness, Saturation, Concentration);
@@ -90,6 +93,6 @@ void main() {
     //vec3 gammaCorrected = pow(clamp(CorrectedColor, 0.0, 1.0), vec3(dynamicGamma));
     //vec3 tonemapped = aces_approx(gammaCorrected);
 
-     //vec3 GIOnly =   (DDGI + SSGI) * AO;
+     vec3 GIOnly =   (DDGI + SSGI) * AO;
      outFragColor = vec4(CorrectedColor,1.0);
 }

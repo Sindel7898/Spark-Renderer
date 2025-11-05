@@ -6,7 +6,7 @@
 #include "Drawable.h"
 
 struct PostProcessSettings {
-    glm::vec4 Brightness_Saturation_Concentration_Padding;
+    glm::vec4 Brightness_Saturation_Concentration_GIboost;
     glm::vec4 MaxGamma_MinGamma_Padding;
 };
 class CombinedResult_FullScreenQuad : public Drawable
@@ -30,7 +30,7 @@ public:
     float Concentration = 1.0;
     float MaxGamma = 0.98;
     float MinGamma = 0.92;
-
+    float GIBoost = 1;
 private:
 };
 

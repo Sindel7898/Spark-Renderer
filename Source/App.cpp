@@ -170,41 +170,41 @@
 	//lights[3]->color = glm::vec3(0.431, 0.337, 0.318);
 
 
-    lights[0]->SetPosition(glm::vec3(-30.433, 13.309, 1.656));
-	lights[0]->lightType = 1;
-	lights[0]->lightIntensity = 2;
+    lights[0]->SetPosition(glm::vec3(5.873, -50.574, -6.875));
+	lights[0]->lightType = 0;
+	lights[0]->lightIntensity = 4;
 	lights[0]->CastShadowsSwitch(true);
 	lights[0]->ambientStrength = 0;
 	lights[0]->SetScale(glm::vec3(0.200, 0.200, 0.200));
 	
 	lights[1]->SetPosition(glm::vec3(28.060, 9.563, -1.864));
 	lights[1]->SetScale(glm::vec3(0.200, 0.200, 0.200));
-	lights[1]->CastShadowsSwitch(true);
+	lights[1]->CastShadowsSwitch(false);
 	lights[1]->ambientStrength = 0;
-	lights[1]->lightIntensity = 3.000;
+	lights[1]->lightIntensity = 0;
 	lights[1]->lightType = 1;
 	
 	
 	lights[2]->SetPosition(glm::vec3(22.204, 23.480, -1.704));
 	lights[2]->lightType = 1;
-	lights[2]->lightIntensity = 3.000;
-	lights[2]->CastShadowsSwitch(true);
+	lights[2]->lightIntensity = 0;
+	lights[2]->CastShadowsSwitch(false);
 	lights[2]->ambientStrength = 0;
 	lights[2]->SetScale(glm::vec3(0.200, 0.200, 0.200));
 	
 	
 	lights[3]->SetPosition(glm::vec3(4.620, 22.513, -5.577));
 	lights[3]->lightType = 1;
-	lights[3]->lightIntensity = 3.000;
-	lights[3]->CastShadowsSwitch(true);
+	lights[3]->lightIntensity = 0;
+	lights[3]->CastShadowsSwitch(false);
 	lights[3]->ambientStrength = 0;
 	lights[3]->SetScale(glm::vec3(0.200, 0.200, 0.200));
 	
 	
 	lights[0]->color = glm::vec3(1, 1, 1);
-	lights[1]->color = glm::vec3(1, 1, 1);
-	lights[2]->color = glm::vec3(1, 0, 0);;
-	lights[3]->color = glm::vec3(0, 0, 1);;
+	lights[1]->color = glm::vec3(0, 0, 0);
+	lights[2]->color = glm::vec3(0, 0, 0);;
+	lights[3]->color = glm::vec3(0, 0, 0);;
 
 
 	for (auto& l : lights) {
@@ -2373,7 +2373,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, GridComputePassPipeline);
 
 		dynamicDiffuse_RTGI->DispatchGridCompute(commandBuffer, GridComputePipelineLayout, currentFrame);
-		dynamicDiffuse_RTGI->DispatchDirectionsCompute(commandBuffer, GridComputePipelineLayout, currentFrame);
+		dynamicDiffuse_RTGI->DispatchDirectionsCompute(commandBuffer, GridComputePipelineLayout, currentFrame,deltaTime);
 
 		vk::BufferMemoryBarrier barrier{};
 		barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;

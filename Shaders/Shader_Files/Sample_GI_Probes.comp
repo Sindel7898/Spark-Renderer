@@ -29,20 +29,48 @@ ivec3 WorldToGrid(vec3 WorldPosition,vec3 GridBaseLocation,vec3 GridSpacing,vec3
     return ivec3(ClampedGridIndex);
 }
 
-ivec2 GetProbeTexel(ivec3 probeIndex, vec2 uv)
-{
-    int probeSideWithGutter = pc.ProbeSideLength + pc.GutterSize;
-    int probesPerRow = pc.AtlasWidthSize / probeSideWithGutter;
+float sign_not_zero(in float k) {
+    return (k >= 0.0) ? 1.0 : -1.0;
+}
 
-    int linearIndex = probeIndex.x + probeIndex.y * int(pc.ProbeCount.x) + probeIndex.z * int(pc.ProbeCount.x * pc.ProbeCount.y);
+vec2 sign_not_zero2(in vec2 v) {
+    return vec2(sign_not_zero(v.x), sign_not_zero(v.y));
+}
+
+vec2 oct_encode(in vec3 v) {
+    float l1norm = abs(v.x) + abs(v.y) + abs(v.z);
+    vec2 result = v.xy * (1.0 / l1norm);
+    if (v.z < 0.0) {
+        result = (1.0 - abs(result.yx)) * sign_not_zero2(result.xy);
+    }
+    return result;
+}
+
+ivec2 GetProbeTexel( vec3 direction, ivec3 probeIndex)
+{
+
+    vec2 octahedral_coordinates = oct_encode(normalize(direction));
+    // 2. Map it to [0, 1]
+     octahedral_coordinates = (octahedral_coordinates * 0.5) + 0.5f;
+
+    int probeSideWithGutter = pc.ProbeSideLength + pc.GutterSize;
+    int probesPerRow        = pc.AtlasWidthSize / probeSideWithGutter;
+    int linearIndex         = probeIndex.x + probeIndex.y * int(pc.ProbeCount.x) + probeIndex.z * int(pc.ProbeCount.x * pc.ProbeCount.y);
 
     int cellOffsetX = (linearIndex % probesPerRow) * probeSideWithGutter;
     int cellOffsetY = (linearIndex / probesPerRow) * probeSideWithGutter;
 
-    ivec2 texel = ivec2(uv * float(pc.ProbeSideLength)) + ivec2(cellOffsetX, cellOffsetY);
 
-    return texel;
+    vec2 internalPixelOffset = octahedral_coordinates * float(pc.ProbeSideLength);
+
+    int   border_offset = pc.GutterSize / 2; 
+    ivec2 TopLeft = ivec2(cellOffsetX, cellOffsetY) + ivec2(border_offset);
+
+    ivec2 FinalTexel = TopLeft + ivec2(internalPixelOffset) ;
+
+    return FinalTexel;
 }
+
 
 void main() 
 {
@@ -77,46 +105,55 @@ void main()
 
      for(int i = 0; i < 8; i++){
 
-         ivec3 ProbeIndex = clamp((GridIndex + Offsets[i]),ivec3(0),ProbeCount);
-
+         ivec3 ProbeIndex        = clamp((GridIndex + Offsets[i]),ivec3(0),ProbeCount);
          vec3 ProbeWorldPosition = GridBaseLocation + (vec3(ProbeIndex) * ProbeSpacing);
 
-          
-          ivec2 probeTexel = GetProbeTexel(ProbeIndex, vec2(0.5));
-         
-           vec3 dir = Position  -  ProbeWorldPosition ;
-           float r = length(dir);
-           dir *= -1.0 / r;
+         ivec2 irradiance_texel = GetProbeTexel(Normal,ProbeIndex);
 
-           float weight = (dot(dir, Normal) + 1) * 0.5;
+         vec3 dir = Position  -  ProbeWorldPosition ;
+         float r = length(dir);
+         dir *= -1.0 / r;
 
-           float wx = (Offsets[i].x == 1) ? Alpha.x : (1.0 - Alpha.x);
-           float wy = (Offsets[i].y == 1) ? Alpha.y : (1.0 - Alpha.y);
-           float wz = (Offsets[i].z == 1) ? Alpha.z : (1.0 - Alpha.z);
-           float trilinearWeight = wx * wy * wz;
 
-           weight *= trilinearWeight;
+         float weight = (dot(dir, Normal) + 1) * 0.5;
+         weight = (weight * weight) + 0.2;
+
+         float wx = (Offsets[i].x == 1) ? Alpha.x : (1.0 - Alpha.x);
+         float wy = (Offsets[i].y == 1) ? Alpha.y : (1.0 - Alpha.y);
+         float wz = (Offsets[i].z == 1) ? Alpha.z : (1.0 - Alpha.z);
+         float trilinearWeight = wx * wy * wz;
+
+         weight *= trilinearWeight + 0.001;
 
           //////////////////////////////////////////////////////////////
-          vec2 DepthInfo =  imageLoad(VisibilityStorageImage, probeTexel).rg;
+          ivec2 visibility_texel = GetProbeTexel(dir, ProbeIndex);
+          vec2 DepthInfo =  imageLoad(VisibilityStorageImage, visibility_texel).rg;
 
           float Mean  = DepthInfo.x; 
           float Mean2 = DepthInfo.y; 
+          
+         float chebyshev_weight = 1.0;
 
+         if(r >  Mean) {
+         
+          float variance = abs((Mean * Mean) - Mean2);
+          const float distanceDiff = r - Mean;
+          chebyshev_weight = variance / (variance + (distanceDiff * distanceDiff));
+            
+          chebyshev_weight = max((chebyshev_weight * chebyshev_weight * chebyshev_weight), 0.0f);
 
-          if(r >  Mean) {
+         }
 
-           float variance = abs((Mean * Mean) - Mean2);
-           weight *= variance / (variance + (r - Mean) * (r - Mean));
+         chebyshev_weight = max(0.05f, chebyshev_weight);
+         weight *= chebyshev_weight;
 
-          }
-
-         vec3 probeIrradiance = imageLoad(IrradianceStorageImage, probeTexel).rgb * weight;
+         vec3 probeIrradiance = sqrt(imageLoad(IrradianceStorageImage, irradiance_texel).rgb) * weight;
          Irradiance += vec4(probeIrradiance, weight);
      }
      
-       vec3 ComputedIrradiance = (Irradiance.rgb / Irradiance.a);
-       ComputedIrradiance *= ComputedIrradiance;
+       vec3 ComputedIrradiance = (Irradiance.rgb * (1.0 / Irradiance.a));
+
+       ComputedIrradiance = ComputedIrradiance * ComputedIrradiance;
 
     imageStore(SampledGIImage, ivec2(gl_GlobalInvocationID.xy), vec4(ComputedIrradiance,1));
 

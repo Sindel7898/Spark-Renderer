@@ -64,7 +64,7 @@ public:
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
 
     void DispatchGridCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex);
-    void DispatchDirectionsCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex);
+    void DispatchDirectionsCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex, float deltaTime);
     void DispatchCalcProbeDataCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex);
     void DispatchSampleGIFromProbeDataCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex);
 
@@ -102,17 +102,17 @@ public:
 
     std::vector<glm::mat4> ProbeLocations;
 
-    int NumOfProbesX = 6;
+    int NumOfProbesX = 10;
     int NumOfProbesY = 6;
-    int NumOfProbesZ = 6;
+    int NumOfProbesZ = 10;
 
     int RaysPerProbe = 128;
 
-    glm::vec3 ProbeOffset     = glm::vec3(13.60, 5.38, 5.64);
+    glm::vec3 ProbeOffset     = glm::vec3(14.74, 12.47, 10.08);
 
-    glm::vec3 GridLocation     = glm::vec3(-68.42, 1.0, -28.20);
+    glm::vec3 GridLocation     = glm::vec3(-60.02, -3.71, -48.71);
     float RayRotationRadians = 0;;
-    float RotationSpeed = 0.0001;
+    float RotationSpeed = 0.000001;
 
 
     int ProbeSideLength = (8 * 8);
