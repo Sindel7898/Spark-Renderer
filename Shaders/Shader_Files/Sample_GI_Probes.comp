@@ -10,7 +10,9 @@ layout(push_constant) uniform ImageSize{
     int   AtlasWidthSize;  
     int   ProbeSideLength; 
     int   GutterSize;      
-    int   NumRays;    
+    int   NumRays;   
+    vec4  CameraLocaito;
+
 }pc;
 
 layout(binding = 0)   uniform sampler2D  PositionImage;
@@ -71,7 +73,8 @@ vec3 SampleIrradiance( vec3 Position, vec3 Normal)
     vec3  ProbeSpacing     = pc.ProbeSpacing_ScreenSizeHeight.xyz;
     ivec3 ProbeCount       = ivec3(pc.ProbeCount.xyz);
 
-    vec3 GridIndexF = (Position - GridBaseLocation) / ProbeSpacing;
+ 
+    vec3 GridIndexF = ((Position ) - GridBaseLocation) / ProbeSpacing;
     vec3 Alpha = fract(GridIndexF);
 
 

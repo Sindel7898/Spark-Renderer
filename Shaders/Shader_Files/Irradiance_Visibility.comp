@@ -148,28 +148,35 @@ void main()
       }
             
 
-      if (total_weight > 0.000) {
-           irradiance /=  total_weight;
-
-           vec3 previous_value = imageLoad( Prev_Iradiance, ivec2(gl_GlobalInvocationID.xy)).rgb;
-           vec3 result = mix( irradiance, previous_value,  0.95f);
-
-           imageStore(Iradiance , ivec2(gl_GlobalInvocationID.xy), vec4(result,1));
-      }
-
-      if (total_weight > 0.000) {
-
-            // Get weighted average
-             float mean     = visibility.x / visibility.z; 
-             float mean_sq  = visibility.y / visibility.z;
-            
-             vec2 Vsibility = vec2(mean,mean_sq);
-
-             vec2 previous_value = imageLoad(Prev_Visibility, ivec2(gl_GlobalInvocationID.xy)).rg;
-             vec2 result = mix( Vsibility, previous_value, 0.95f);
-
-            imageStore(Visibility, ivec2(gl_GlobalInvocationID.xy), vec4(result,1, 1.0));
-        }
+          if (total_weight > 0.000) {
+               irradiance /=  total_weight;
+          
+               vec3 previous_value = imageLoad( Prev_Iradiance, ivec2(gl_GlobalInvocationID.xy)).rgb;
+               vec3 result = mix( irradiance, previous_value,  0.95f);
+          
+               imageStore(Iradiance , ivec2(gl_GlobalInvocationID.xy), vec4(result,1));
+          }
+          
+          if (total_weight > 0.000) {
+          
+                // Get weighted average
+                 float mean     = visibility.x / visibility.z; 
+                 float mean_sq  = visibility.y / visibility.z;
+                
+                 vec2 Vsibility = vec2(mean,mean_sq);
+          
+                 vec2 previous_value = imageLoad(Prev_Visibility, ivec2(gl_GlobalInvocationID.xy)).rg;
+                 vec2 result = mix( Vsibility, previous_value, 0.95f);
+          
+                imageStore(Visibility, ivec2(gl_GlobalInvocationID.xy), vec4(result,1, 1.0));
+            }
+    }
+    
+    
+    else{
+      
+        imageStore(Iradiance,  ivec2(gl_GlobalInvocationID.xy), vec4(0.0, 0.0, 0.0, 1.0));
+        imageStore(Visibility, ivec2(gl_GlobalInvocationID.xy), vec4(0.0, 0.0, 0.0, 1.0));
     }
 
 }
