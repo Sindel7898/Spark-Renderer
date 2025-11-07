@@ -14,8 +14,18 @@ layout(set = 0, binding = 10) readonly buffer StorageBuffer2 {
 
 layout (binding = 12) uniform samplerCube samplerCubeMap[2];
 
-layout(push_constant) uniform PushConstants {
-    int SkyboxIndex;    
+layout(push_constant) uniform PushConstant{
+    vec4 GridBaseLocation_ScreenSizeWidth;
+    vec4 ProbeSpacing_ScreenSizeHeight;
+    vec4 ProbeCount;
+
+    ///////////////////////
+
+    int   AtlasWidthSize;  
+    int   ProbeSideLength; 
+    int   GutterSize;      
+    int   NumRays;
+    vec4 UseInfiniteBounce_infinite_bounces_multiplier_Padding;
 }pc;
 
 struct Payload {
@@ -27,7 +37,8 @@ struct Payload {
 layout(location = 0) rayPayloadEXT Payload payload;
 
 void main() {
-
+     
+     int SkyBoxIndex = int(pc.ProbeCount.w);
  
     vec3 probeOrigin  = SB0.Position[gl_LaunchIDEXT.y].xyz;
     vec3 rayDirection = SB02.FibonacciDirections[gl_LaunchIDEXT.x].xyz;
@@ -39,7 +50,7 @@ void main() {
     const float tMin = 0.001;
     const float tMax = 100.0;
 
-   vec3 CubeMapIrradiance = texture(samplerCubeMap[pc.SkyboxIndex], rayDirection).rgb;
+   vec3 CubeMapIrradiance = texture(samplerCubeMap[SkyBoxIndex], rayDirection).rgb;
 
     traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, probeOrigin.xyz, tMin, rayDirection, tMax, 0);
      

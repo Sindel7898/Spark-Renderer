@@ -1531,8 +1531,8 @@ void App::CreateGraphicsPipeline()
 
 		vk::PushConstantRange range{};
 		range.setOffset(0);
-		range.setSize(sizeof(int));
-		range.setStageFlags(vk::ShaderStageFlagBits::eRaygenKHR);
+		range.setSize(sizeof(RTpcInfo));
+		range.setStageFlags(vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR);
 
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.setLayoutCount = 1;
@@ -2422,6 +2422,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			TransitiontoGeneralRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
 
 			bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->RadianceImageAtlasImage, TransitiontoGeneralRT);
+			bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->IradianceImageAtlasImage, TransitiontoGeneralRT);
+			bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->VisibilityImageAtlasImage, TransitiontoGeneralRT);
 
 
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_DDGIPassPipeline);
@@ -2462,18 +2464,50 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 
 		{
+			{
+			   
+				ImageTransitionData TransitiontoGeneraCompute{};
+				TransitiontoGeneraCompute.oldlayout = vk::ImageLayout::eUndefined;
+				TransitiontoGeneraCompute.newlayout = vk::ImageLayout::eGeneral;
+				TransitiontoGeneraCompute.AspectFlag = vk::ImageAspectFlagBits::eColor;
+				TransitiontoGeneraCompute.SourceAccessflag = vk::AccessFlagBits::eNone;
+				TransitiontoGeneraCompute.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
+				TransitiontoGeneraCompute.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
+				TransitiontoGeneraCompute.DestinationOnThePipeline = vk::PipelineStageFlagBits::eComputeShader;
 
-			ImageTransitionData TransitiontoGeneraCompute{};
-			TransitiontoGeneraCompute.oldlayout = vk::ImageLayout::eUndefined;
-			TransitiontoGeneraCompute.newlayout = vk::ImageLayout::eGeneral;
-			TransitiontoGeneraCompute.AspectFlag = vk::ImageAspectFlagBits::eColor;
-			TransitiontoGeneraCompute.SourceAccessflag = vk::AccessFlagBits::eNone;
-			TransitiontoGeneraCompute.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
-			TransitiontoGeneraCompute.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
-			TransitiontoGeneraCompute.DestinationOnThePipeline = vk::PipelineStageFlagBits::eComputeShader;
+				bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->IradianceImageAtlasImage, TransitiontoGeneraCompute);
+				bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->VisibilityImageAtlasImage, TransitiontoGeneraCompute);
+				bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->Prev_IradianceImageAtlasImage, TransitiontoGeneraCompute);
+				bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->Prev_VisibilityImageAtlasImage, TransitiontoGeneraCompute);
 
-			bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->IradianceImageAtlasImage , TransitiontoGeneraCompute);
-			bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->VisibilityImageAtlasImage, TransitiontoGeneraCompute);
+				vk::ImageSubresourceLayers SrcSubresourceLayers;
+				SrcSubresourceLayers.mipLevel = 0;
+				SrcSubresourceLayers.baseArrayLayer = 0;
+				SrcSubresourceLayers.layerCount = 1;
+				SrcSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
+
+				vk::ImageSubresourceLayers DstSubresourceLayers;
+				DstSubresourceLayers.mipLevel = 0;
+				DstSubresourceLayers.baseArrayLayer = 0;
+				DstSubresourceLayers.layerCount = 1;
+				DstSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
+
+				vk::Extent3D ImageSize = {
+					dynamicDiffuse_RTGI->IradianceImageExtent.width ,
+					dynamicDiffuse_RTGI->IradianceImageExtent.height,
+					1
+				};
+
+				bufferManger.CopyImageToAnotherImage(commandBuffer,
+					                                 dynamicDiffuse_RTGI->IradianceImageAtlasImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
+					                                 dynamicDiffuse_RTGI->Prev_IradianceImageAtlasImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
+					                                 ImageSize, vulkanContext.graphicsQueue);
+			
+				bufferManger.CopyImageToAnotherImage(commandBuffer,
+					                                 dynamicDiffuse_RTGI->VisibilityImageAtlasImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
+					                                 dynamicDiffuse_RTGI->Prev_VisibilityImageAtlasImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
+					                                 ImageSize, vulkanContext.graphicsQueue);
+			}
 
 
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, IrradianceComputePassPipeline);

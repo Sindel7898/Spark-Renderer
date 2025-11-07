@@ -37,6 +37,13 @@ struct SampleGridInfo
     GeneralAtlasInfo generalAtlasInfo;
 };
 
+struct RTpcInfo
+{
+    SampleGridInfo  sampleGridInfo;
+    glm::vec4 UseInfiniteBounce_infinite_bounces_multiplier_Padding;
+
+};
+
 
 struct CameraConstantBuffer
 {
@@ -95,6 +102,8 @@ public:
     ImageData RadianceImageAtlasImage;
     ImageData IradianceImageAtlasImage;
     ImageData VisibilityImageAtlasImage;
+    ImageData Prev_IradianceImageAtlasImage;
+    ImageData Prev_VisibilityImageAtlasImage;
     ImageData Probe_Sampled_GI_Image;
 
     vk::Extent3D RadianceImageExtent;
@@ -103,14 +112,14 @@ public:
     std::vector<glm::mat4> ProbeLocations;
 
     int NumOfProbesX = 10;
-    int NumOfProbesY = 6;
+    int NumOfProbesY = 10;
     int NumOfProbesZ = 10;
 
     int RaysPerProbe = 128;
 
-    glm::vec3 ProbeOffset     = glm::vec3(14.74, 12.47, 10.08);
+    glm::vec3 ProbeOffset     = glm::vec3(13.14, 6.15, 5.34);
 
-    glm::vec3 GridLocation     = glm::vec3(-60.02, -3.71, -48.71);
+    glm::vec3 GridLocation     = glm::vec3(-60.02, -3.71, -28.95);
     float RayRotationRadians = 0;;
     float RotationSpeed = 0.000001;
 
@@ -128,6 +137,9 @@ public:
     std::vector<BufferData> ProbeFibonacciDirectionsStorageBuffers;
 
 	bool DrawDEBUG_Probes = false;
+
+    float infiniteBounceMultiplyer = 0.75f;
+    int UseinfiniteBounce = 1;
 private:
 
     VulkanContext*   vulkanContext = nullptr;

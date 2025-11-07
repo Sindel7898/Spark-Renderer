@@ -76,4 +76,4 @@ static inline void RT_ReflectionsDeleter(RT_Reflections* rayTracing) {
             delete rayTracing;
         }
    
-};
+};    

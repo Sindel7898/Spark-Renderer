@@ -3,9 +3,11 @@
 #extension GL_EXT_nonuniform_qualifier : require
 const float PI = 3.14159265359;
 
-layout(set = 0, binding = 1) uniform sampler2D Albedo_AssetImages[];
-layout(set = 0, binding = 2) uniform sampler2D Normal_AssetImages[];
-layout(set = 0, binding = 3) uniform sampler2D MetalicRoughness_AssetImages[];
+layout(set = 0, binding = 1)  uniform sampler2D         Albedo_AssetImages[];
+layout(set = 0, binding = 2)  uniform sampler2D         Normal_AssetImages[];
+layout(set = 0, binding = 3)  uniform sampler2D         MetalicRoughness_AssetImages[];
+layout(set = 0, binding = 13,rgba16f) uniform readonly image2D  IrradianceStorageImage;
+layout(set = 0, binding = 14,rgba16f) uniform readonly image2D  VisibilityStorageImage;
 
 struct Vertex {
     vec4 position_Padding;
@@ -48,6 +50,146 @@ layout(set = 0, binding = 11) uniform LightUniformBuffer {
 
    LightData lights[4];
 };
+
+
+layout(push_constant) uniform PushConstant{
+    vec4 GridBaseLocation_ScreenSizeWidth;
+    vec4 ProbeSpacing_ScreenSizeHeight;
+    vec4 ProbeCount;
+
+    ///////////////////////
+
+    int   AtlasWidthSize;  
+    int   ProbeSideLength; 
+    int   GutterSize;      
+    int   NumRays;
+    vec4 UseInfiniteBounce_infinite_bounces_multiplier_Padding;
+}pc;
+
+/////Move these stuff to header to be reused. bit cramped here
+float sign_not_zero(in float k) {
+    return (k >= 0.0) ? 1.0 : -1.0;
+}
+
+vec2 sign_not_zero2(in vec2 v) {
+    return vec2(sign_not_zero(v.x), sign_not_zero(v.y));
+}
+
+vec2 oct_encode(in vec3 v) {
+    float l1norm = abs(v.x) + abs(v.y) + abs(v.z);
+    vec2 result = v.xy * (1.0 / l1norm);
+    if (v.z < 0.0) {
+        result = (1.0 - abs(result.yx)) * sign_not_zero2(result.xy);
+    }
+    return result;
+}
+
+ivec2 GetProbeTexel( vec3 direction, ivec3 probeIndex)
+{
+
+    vec2 octahedral_coordinates = oct_encode(normalize(direction));
+    // 2. Map it to [0, 1]
+     octahedral_coordinates = (octahedral_coordinates * 0.5) + 0.5f;
+
+    int probeSideWithGutter = pc.ProbeSideLength + pc.GutterSize;
+    int probesPerRow        = pc.AtlasWidthSize / probeSideWithGutter;
+    int linearIndex         = probeIndex.x + probeIndex.y * int(pc.ProbeCount.x) + probeIndex.z * int(pc.ProbeCount.x * pc.ProbeCount.y);
+
+    int cellOffsetX = (linearIndex % probesPerRow) * probeSideWithGutter;
+    int cellOffsetY = (linearIndex / probesPerRow) * probeSideWithGutter;
+
+
+    vec2 internalPixelOffset = octahedral_coordinates * float(pc.ProbeSideLength);
+
+    int   border_offset = pc.GutterSize / 2; 
+    ivec2 TopLeft = ivec2(cellOffsetX, cellOffsetY) + ivec2(border_offset);
+
+    ivec2 FinalTexel = TopLeft + ivec2(internalPixelOffset) ;
+
+    return FinalTexel;
+}
+////////////////////////////////////
+
+vec3 SampleIrradiance( vec3 Position, vec3 Normal)
+{
+
+    vec3  GridBaseLocation = pc.GridBaseLocation_ScreenSizeWidth.xyz;
+    vec3  ProbeSpacing     = pc.ProbeSpacing_ScreenSizeHeight.xyz;
+    ivec3 ProbeCount       = ivec3(pc.ProbeCount.xyz);
+
+    vec3 GridIndexF = (Position - GridBaseLocation) / ProbeSpacing;
+    vec3 Alpha = fract(GridIndexF);
+
+
+    ivec3 GridIndex = ivec3(GridIndexF);
+
+     ivec3 Offsets[8] = {
+         ivec3(0,0,0), ivec3(1,0,0),
+         ivec3(0,1,0), ivec3(1,1,0),
+         ivec3(0,0,1), ivec3(1,0,1),
+         ivec3(0,1,1), ivec3(1,1,1)
+     };
+
+
+     vec4 Irradiance = vec4(0);
+
+     for(int i = 0; i < 8; i++){
+
+         ivec3 ProbeIndex        = clamp((GridIndex + Offsets[i]),ivec3(0),ProbeCount - 1);
+         vec3 ProbeWorldPosition = GridBaseLocation + (vec3(ProbeIndex) * ProbeSpacing);
+
+         ivec2 irradiance_texel = GetProbeTexel(Normal,ProbeIndex);
+
+         vec3 dir = Position  -  ProbeWorldPosition ;
+         float r = length(dir);
+         dir *= -1.0 / r;
+
+
+         float weight = (dot(dir, Normal) + 1) * 0.5;
+         weight = (weight * weight) + 0.2;
+
+  
+          vec3 trilinear = mix(vec3(1.0) - Alpha, Alpha, vec3(Offsets[i]));
+         float trilinearWeight = trilinear.x * trilinear.y * trilinear.z;
+
+         weight *= (trilinearWeight + 0.001f);
+
+          //////////////////////////////////////////////////////////////
+          ivec2 visibility_texel = GetProbeTexel(dir, ProbeIndex);
+          vec2 DepthInfo =  imageLoad(VisibilityStorageImage, visibility_texel).rg;
+
+          float Mean  = DepthInfo.x; 
+          float Mean2 = DepthInfo.y; 
+         
+         
+         ///////Same as how shadow maps are calculated
+         float chebyshev_weight = 1.0;
+
+         if(r >  Mean) {
+         
+             float variance = abs((Mean * Mean) - Mean2);
+             const float distanceDiff = r - Mean;
+             chebyshev_weight = variance / (variance + (distanceDiff * distanceDiff));
+               
+             chebyshev_weight = max((chebyshev_weight * chebyshev_weight * chebyshev_weight), 0.0f);
+         }
+
+
+         chebyshev_weight = max(0.05f, chebyshev_weight);
+         weight *= chebyshev_weight;
+
+         vec3 probeIrradiance = sqrt(imageLoad(IrradianceStorageImage, irradiance_texel).rgb) * weight;
+         Irradiance += vec4(probeIrradiance, weight);
+     }
+     
+       vec3 ComputedIrradiance = (Irradiance.rgb * (1.0 / Irradiance.a));
+
+       ComputedIrradiance = ComputedIrradiance * ComputedIrradiance;
+
+       return ComputedIrradiance;
+}
+
+
 
 struct Payload {
     vec3  Color;
@@ -137,9 +279,8 @@ void main()
        const float Linear     = 0.09;
        const float Quadratic  = 0.032;
        
-       vec3 radiance          = vec3(0.0);
+       vec3  radiance  = vec3(0.0);
        vec4  WorldPos  =  Transformations.WorldMatrix[objectID] * vec4(VertexPosition,1);
-       vec3  ViewDir    = -normalize(gl_WorldRayDirectionEXT);
    
        for (int i = 0; i < 4; i++) {
      
@@ -170,9 +311,16 @@ void main()
         Radiance +=  ((Lo) * light.CameraPositionAndLightIntensity.a);
      }
      
+       int UseInfiniteBounce =  int(pc.UseInfiniteBounce_infinite_bounces_multiplier_Padding.x);
+
+        if(UseInfiniteBounce > 0.5){
+          Radiance += Albedo * SampleIrradiance(WorldPos.xyz,Normal) *  pc.UseInfiniteBounce_infinite_bounces_multiplier_Padding.y;
+        }
+
      Distance = gl_RayTminEXT + gl_HitTEXT;
    }
 
+   Radiance = 
      payload.Color    = Radiance;
      payload.Distance = Distance;
      payload.Hit = 1;

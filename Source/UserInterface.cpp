@@ -394,7 +394,10 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 
 			ImGui::TextDisabled("Adjust probe parameters:");
 
-			ImGui::Checkbox("Draw Debug", (bool*)&appref->dynamicDiffuse_RTGI->DrawDEBUG_Probes);
+			ImGui::Checkbox("Draw Debug"         , (bool*)&appref->dynamicDiffuse_RTGI->DrawDEBUG_Probes );
+
+			ImGui::Checkbox("Use Infinite Bounce", (bool*)&appref->dynamicDiffuse_RTGI->UseinfiniteBounce);
+			ImGui::SliderFloat("infinite Bounce Multiplyer", &appref->dynamicDiffuse_RTGI->infiniteBounceMultiplyer, 0, 1, "%.1f");
 
 			ImGui::SliderInt("Rays Per Probe", &appref->dynamicDiffuse_RTGI->RaysPerProbe, 1, 300, "%d");
 
@@ -402,14 +405,10 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 			ImGui::SliderInt("Y Count", &appref->dynamicDiffuse_RTGI->NumOfProbesY, 1, 20, "%d");
 			ImGui::SliderInt("Z Count", &appref->dynamicDiffuse_RTGI->NumOfProbesZ, 1, 20, "%d");
 
-			//ImGui::SliderFloat("X Offset", &appref->dynamicDiffuse_RTGI->ProbeOffset.x, -20, 20, "%.2f");
-			//ImGui::SliderFloat("Y Offset", &appref->dynamicDiffuse_RTGI->ProbeOffset.y, -20, 20, "%.2f");
-			//ImGui::SliderFloat("Z Offset", &appref->dynamicDiffuse_RTGI->ProbeOffset.z, -20, 20, "%.2f");
 
-			ImGui::SliderFloat3("Probe Offset", glm::value_ptr(appref->dynamicDiffuse_RTGI->ProbeOffset), -20, 20, "%.2f");
+			ImGui::SliderFloat3("Probe Offset", glm::value_ptr (appref->dynamicDiffuse_RTGI->ProbeOffset)  , -30, 30,  "%.2f");
 			ImGui::SliderFloat3("Grid Location", glm::value_ptr(appref->dynamicDiffuse_RTGI->GridLocation), -100, 100, "%.2f");
 
-			//ImGui::InputFloat3("GridLocation", glm::value_ptr(appref->dynamicDiffuse_RTGI->GridLocation));
 
 			ImGui::EndChild();
 		}
