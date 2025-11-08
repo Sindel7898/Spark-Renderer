@@ -23,10 +23,10 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 //convert the current pixel into an index for the probes
 int get_probe_index_from_pixels(ivec2 pixel_coords, int atlas_width, int probe_full_size) {
     
-    int  probes_per_row      = atlas_width  / probe_full_size; // How many probes can  be fit in one row of the atlas
-    ivec2 probe_grid_coords  = pixel_coords / probe_full_size; // What probe in the atlas am i in ?
+    int   probes_per_row      = atlas_width  / probe_full_size; // How many probes can  be fit in one row of the atlas
+    ivec2 probe_grid_coords   = pixel_coords / probe_full_size; // What probe in the atlas am i in ?
 
-    return probe_grid_coords.y * probes_per_row + probe_grid_coords.x;
+    return probe_grid_coords.y * probes_per_row + probe_grid_coords.x; // scale it 
 }
 
 
@@ -41,16 +41,18 @@ int get_probe_index_from_pixels(ivec2 pixel_coords, int atlas_width, int probe_f
 // This just tells us where inside the probe we are, in the range [-1, +1]^2. for guttar//
 vec2 get_normalized_probe_texel_coord(ivec2 fragCoord) {                                                                                               //
                                                                                                                                            //
-    int probe_with_border_side  = pc.ProbeSideLength + pc.GutterSize;                                                                      //
-                                                                                                                                           //
-    vec2 texel_coordinates = ivec2((fragCoord.x - 1) % probe_with_border_side, (fragCoord.y - 1) % probe_with_border_side);     //
-                                                                                                                                           //
-    texel_coordinates += vec2(0.5f);                                                                                            //
-    texel_coordinates *= (2.0f / float(pc.ProbeSideLength));                                                                    //
-    texel_coordinates -= vec2(1.0f);                                                                                            //
-                                                                                                                                           //
-    return texel_coordinates;                                                                                                   //
-                                                                                                                                           //
+    int probe_with_border_side  = pc.ProbeSideLength + pc.GutterSize; // How Long is a total probe?                                                      //
+                                                              
+       ///Where are we exactly?
+    float texel_coordinatesX =   (fragCoord.x - 1) % probe_with_border_side;   
+    float texel_coordinatesY =   (fragCoord.y - 1) % probe_with_border_side;  
+    
+    vec2 Texel = vec2(texel_coordinatesX,texel_coordinatesY);
+    
+    Texel += vec2(0.5f); // Adjustment so we are sampling in the middle of the pixel                                                                                            //
+    Texel = (Texel / float(pc.ProbeSideLength)) * 2.0 - 1.0; // map out of texture space to normalized direction-space
+                                                                                       //                                                                                                                                       //
+    return Texel;                                                                                                   //                                                                                                                                         //
 }                                                                                                                                          //
                                                                                                                                            //
 // Returns a unit vector. Argument o is an octahedral vector packed via oct_encode,                                                        //
@@ -122,8 +124,7 @@ void main()
               vec3 texel_direction = oct_decode(get_normalized_probe_texel_coord(fragCoord));
 
               // Calculate the cosine weighting term
-              float  weight  = max(dot(texel_direction, ray_direction),0.0);
-
+              float weight  = max(dot(texel_direction, ray_direction),0.0);
 
               if (weight  > 0.0001) {
                     vec3  ray_radiance  = ray_data.rgb;
@@ -152,7 +153,7 @@ void main()
                irradiance /=  total_weight;
           
                vec3 previous_value = imageLoad( Prev_Iradiance, ivec2(gl_GlobalInvocationID.xy)).rgb;
-               vec3 result = mix( irradiance, previous_value,  0.95f);
+               vec3 result = mix(irradiance, previous_value,  0.95f);
           
                imageStore(Iradiance , ivec2(gl_GlobalInvocationID.xy), vec4(result,1));
           }

@@ -58,22 +58,39 @@
 	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	//auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	
-    model1.get()->Instances[0]->SetPostion(glm::vec3(-14.224, -0.329, 0.357));
-    model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
-    model1.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
+	//////////CORNEL SETUP////////////////////////////////////////
+    model1.get()->Instances[0]->SetPostion(glm::vec3(-5.936, 3.043, -9.525));
+    model1.get()->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
+    model1.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
     model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
     model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-    //
-    model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
-    model2.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
-    model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-    model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-    //
-    model3.get()->Instances[0]->SetPostion(glm::vec3(7.153, -0.523, -2.166));
-    model3.get()->Instances[0]->SetRotation(glm::vec3(179.997, 44.147, 179.993));
-    model3.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
+   
+
+    model3.get()->Instances[0]->SetPostion(glm::vec3(6.087, 13.277, 3.776));
+    model3.get()->Instances[0]->SetRotation(glm::vec3(-179.987, -49.785, 179.967));
+    model3.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
     model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
     model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+
+	model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
+	model2.get()->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
+	model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+
+
+	//model1.get()->Instances[0]->SetPostion(glm::vec3(-14.224, -0.329, 0.357));
+	//model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
+	//model1.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
+	//model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	//model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	//
+	//
+	//model3.get()->Instances[0]->SetPostion(glm::vec3(7.153, -0.523, -2.166));
+	//model3.get()->Instances[0]->SetRotation(glm::vec3(179.997, 44.147, 179.993));
+	//model3.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
+	//model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+
 	//
 	//model11.get()->Instances[0]->SetScale(glm::vec3(5.000, 5.000, 5.000));
 	//model11.get()->Instances[0]->CubeMapReflectiveSwitch(false);
@@ -109,7 +126,6 @@
 	UserInterfaceItems.push_back(Models[0].get());
 	UserInterfaceItems.push_back(Models[1].get());
 	UserInterfaceItems.push_back(Models[2].get());
-	UserInterfaceItems.push_back(Models[3].get());
 	//UserInterfaceItems.push_back(Models[4].get());
 
 	//UserInterfaceItems.push_back(Models[7].get());
@@ -2370,6 +2386,19 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	{
 
+		ImageTransitionData TransitiontoGeneralRT{};
+		TransitiontoGeneralRT.oldlayout = vk::ImageLayout::eUndefined;
+		TransitiontoGeneralRT.newlayout = vk::ImageLayout::eGeneral;
+		TransitiontoGeneralRT.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		TransitiontoGeneralRT.SourceAccessflag = vk::AccessFlagBits::eNone;
+		TransitiontoGeneralRT.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
+		TransitiontoGeneralRT.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
+		TransitiontoGeneralRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+
+		bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->RadianceImageAtlasImage, TransitiontoGeneralRT);
+		bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->IradianceImageAtlasImage, TransitiontoGeneralRT);
+		bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->VisibilityImageAtlasImage, TransitiontoGeneralRT);
+
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, GridComputePassPipeline);
 
 		dynamicDiffuse_RTGI->DispatchGridCompute(commandBuffer, GridComputePipelineLayout, currentFrame);
@@ -2412,20 +2441,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	{
 		{
-			ImageTransitionData TransitiontoGeneralRT{};
-			TransitiontoGeneralRT.oldlayout = vk::ImageLayout::eUndefined;
-			TransitiontoGeneralRT.newlayout = vk::ImageLayout::eGeneral;
-			TransitiontoGeneralRT.AspectFlag = vk::ImageAspectFlagBits::eColor;
-			TransitiontoGeneralRT.SourceAccessflag = vk::AccessFlagBits::eNone;
-			TransitiontoGeneralRT.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
-			TransitiontoGeneralRT.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
-			TransitiontoGeneralRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
-
-			bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->RadianceImageAtlasImage, TransitiontoGeneralRT);
-			bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->IradianceImageAtlasImage, TransitiontoGeneralRT);
-			bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->VisibilityImageAtlasImage, TransitiontoGeneralRT);
-
-
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_DDGIPassPipeline);
 
 			dynamicDiffuse_RTGI->Draw(
@@ -2464,8 +2479,40 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 
 		{
+
+
+			commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, IrradianceComputePassPipeline);
 			{
-			   
+				dynamicDiffuse_RTGI->DispatchCalcProbeDataCompute(commandBuffer, IrradianceComputePipelineLayout, currentFrame);
+
+				vk::ImageMemoryBarrier imagebarrier;
+				imagebarrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+				imagebarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+				imagebarrier.oldLayout = vk::ImageLayout::eGeneral;
+				imagebarrier.newLayout = vk::ImageLayout::eGeneral;
+				imagebarrier.image = dynamicDiffuse_RTGI->VisibilityImageAtlasImage.image;
+				imagebarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+				imagebarrier.subresourceRange.baseMipLevel = 0;
+				imagebarrier.subresourceRange.levelCount = 1;
+				imagebarrier.subresourceRange.baseArrayLayer = 0;
+				imagebarrier.subresourceRange.layerCount = 1;
+
+				imagebarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				imagebarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+				commandBuffer.pipelineBarrier(
+					vk::PipelineStageFlagBits::eComputeShader,
+					vk::PipelineStageFlagBits::eRayTracingShaderKHR,
+					{},
+					0, nullptr,
+					0, nullptr,
+					1, &imagebarrier
+				);
+			}
+
+
+			{
+
 				ImageTransitionData TransitiontoGeneraCompute{};
 				TransitiontoGeneraCompute.oldlayout = vk::ImageLayout::eUndefined;
 				TransitiontoGeneraCompute.newlayout = vk::ImageLayout::eGeneral;
@@ -2499,45 +2546,17 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 				};
 
 				bufferManger.CopyImageToAnotherImage(commandBuffer,
-					                                 dynamicDiffuse_RTGI->IradianceImageAtlasImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
-					                                 dynamicDiffuse_RTGI->Prev_IradianceImageAtlasImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
-					                                 ImageSize, vulkanContext.graphicsQueue);
-			
+					dynamicDiffuse_RTGI->IradianceImageAtlasImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
+					dynamicDiffuse_RTGI->Prev_IradianceImageAtlasImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
+					ImageSize, vulkanContext.graphicsQueue);
+
 				bufferManger.CopyImageToAnotherImage(commandBuffer,
-					                                 dynamicDiffuse_RTGI->VisibilityImageAtlasImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
-					                                 dynamicDiffuse_RTGI->Prev_VisibilityImageAtlasImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
-					                                 ImageSize, vulkanContext.graphicsQueue);
+					dynamicDiffuse_RTGI->VisibilityImageAtlasImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
+					dynamicDiffuse_RTGI->Prev_VisibilityImageAtlasImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
+					ImageSize, vulkanContext.graphicsQueue);
 			}
 
 
-			commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, IrradianceComputePassPipeline);
-			{
-				dynamicDiffuse_RTGI->DispatchCalcProbeDataCompute(commandBuffer, IrradianceComputePipelineLayout, currentFrame);
-
-				vk::ImageMemoryBarrier imagebarrier;
-				imagebarrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
-				imagebarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-				imagebarrier.oldLayout = vk::ImageLayout::eGeneral;
-				imagebarrier.newLayout = vk::ImageLayout::eGeneral;
-				imagebarrier.image = dynamicDiffuse_RTGI->VisibilityImageAtlasImage.image;
-				imagebarrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-				imagebarrier.subresourceRange.baseMipLevel = 0;
-				imagebarrier.subresourceRange.levelCount = 1;
-				imagebarrier.subresourceRange.baseArrayLayer = 0;
-				imagebarrier.subresourceRange.layerCount = 1;
-
-				imagebarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-				imagebarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-				commandBuffer.pipelineBarrier(
-					vk::PipelineStageFlagBits::eComputeShader,
-					vk::PipelineStageFlagBits::eRayTracingShaderKHR,
-					{},
-					0, nullptr,
-					0, nullptr,
-					1, &imagebarrier
-				);
-			}
 		}
 
 

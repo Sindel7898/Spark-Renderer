@@ -16,6 +16,7 @@ DynamicDiffuse_RTGI::DynamicDiffuse_RTGI(const std::string filepath, VulkanConte
 	commandPool   = commandpool;
 	FilePath = filepath;
 	skyboxRef = skybox;
+
 	CreateVertexAndIndexBuffer();
 	CreateStorageBuffer();
 	createRayTracingDescriptorSetLayout();
@@ -39,7 +40,7 @@ void DynamicDiffuse_RTGI::CreateStorageBuffer()
 	{
 		ProbePositionsStorageBuffers.resize(1);
 
-		VkDeviceSize ComputeStorageBufferSize = sizeof(glm::vec4) * 1000;
+		VkDeviceSize ComputeStorageBufferSize = sizeof(glm::vec4) * 2000;
 
 		for (size_t i = 0; i < 1; i++)
 		{
@@ -53,7 +54,7 @@ void DynamicDiffuse_RTGI::CreateStorageBuffer()
 	{
 		ProbeFibonacciDirectionsStorageBuffers.resize(1);
 
-		VkDeviceSize ComputeStorageBufferSize = sizeof(glm::vec4) * 500;
+		VkDeviceSize ComputeStorageBufferSize = sizeof(glm::vec4) * 300;
 
 		for (size_t i = 0; i < 1; i++)
 		{
@@ -643,7 +644,7 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			vk::DescriptorBufferInfo ProbeLocationbufferInfo{};
 			ProbeLocationbufferInfo.buffer = ProbePositionsStorageBuffers[0].buffer;
 			ProbeLocationbufferInfo.offset = 0;
-			ProbeLocationbufferInfo.range = sizeof(glm::vec4) * 1000;
+			ProbeLocationbufferInfo.range = sizeof(glm::vec4) * 2000;
 
 			vk::WriteDescriptorSet ProbeLocationbufferdescriptorWrite{};
 			ProbeLocationbufferdescriptorWrite.dstSet = GridDescriptorSets[i];
@@ -656,7 +657,7 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			vk::DescriptorBufferInfo FibonacciDirectionsbufferInfo{};
 			FibonacciDirectionsbufferInfo.buffer = ProbeFibonacciDirectionsStorageBuffers[0].buffer;
 			FibonacciDirectionsbufferInfo.offset = 0;
-			FibonacciDirectionsbufferInfo.range = sizeof(glm::vec4) * 500;
+			FibonacciDirectionsbufferInfo.range = sizeof(glm::vec4) * 300;
 
 			vk::WriteDescriptorSet FibonacciDirectionsbufferdescriptorWrite{};
 			FibonacciDirectionsbufferdescriptorWrite.dstSet = GridDescriptorSets[i];
@@ -693,7 +694,7 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			vk::DescriptorBufferInfo FibonacciDirectionsbufferInfo{};
 			FibonacciDirectionsbufferInfo.buffer = ProbeFibonacciDirectionsStorageBuffers[0].buffer;
 			FibonacciDirectionsbufferInfo.offset = 0;
-			FibonacciDirectionsbufferInfo.range = sizeof(glm::vec4) * 500;
+			FibonacciDirectionsbufferInfo.range = sizeof(glm::vec4) * 300;
 
 			vk::WriteDescriptorSet FibonacciDirectionsbufferdescriptorWrite{};
 			FibonacciDirectionsbufferdescriptorWrite.dstSet = ConstructProbeDataDescriptorSets[i];
@@ -977,7 +978,7 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			vk::DescriptorBufferInfo FibonacciDirectionsbufferInfo{};
 			FibonacciDirectionsbufferInfo.buffer = ProbeFibonacciDirectionsStorageBuffers[0].buffer;
 			FibonacciDirectionsbufferInfo.offset = 0;
-			FibonacciDirectionsbufferInfo.range = sizeof(glm::vec4) * 500;
+			FibonacciDirectionsbufferInfo.range = sizeof(glm::vec4) * 300;
 
 			vk::WriteDescriptorSet FibonacciDirectionsbufferdescriptorWrite{};
 			FibonacciDirectionsbufferdescriptorWrite.dstSet = RaytracingDescriptorSets[i];
@@ -1187,6 +1188,8 @@ void DynamicDiffuse_RTGI::DrawNode(vk::CommandBuffer commandBuffer, vk::Pipeline
 				cameraConstantBuffer.ViewMatrix = camera->GetViewMatrix();
 				cameraConstantBuffer.ProjectionMatrix = camera->GetProjectionMatrix();
 				cameraConstantBuffer.ProjectionMatrix[1][1] *= -1;
+				cameraConstantBuffer.ModelMatrix = glm::mat4(1);
+				cameraConstantBuffer.ModelMatrix = glm::scale(glm::vec3(0.5, 0.5, 0.5));
 				cameraConstantBuffer.generalAtlasInfo.AtlasWidthSize = IradianceImageExtent.width;
 				cameraConstantBuffer.generalAtlasInfo.ProbeSideLength = ProbeSideLength;
 				cameraConstantBuffer.generalAtlasInfo.GutterSize = GutterSize;

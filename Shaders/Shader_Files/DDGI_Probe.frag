@@ -7,11 +7,12 @@ layout(location = 0) out vec4 outColor;
 layout(push_constant) uniform PushConstants {
     mat4 view;
     mat4 proj;
+    mat4 model;
 
     int   AtlasWidthSize;  
     int   ProbeSideLength; 
     int   GutterSize;      
-    int   NumRays;         
+    int   NumRays;     
 }pc;
 
 layout(location = 0) in flat int  ProbeIndex;

@@ -8,6 +8,7 @@ layout(location = 3) in vec3 inTangent;
 layout(push_constant) uniform PushConstants {
     mat4 view;
     mat4 proj;
+    mat4 model;
 
     int   AtlasWidthSize;  
     int   ProbeSideLength; 
@@ -24,7 +25,7 @@ layout(location = 1) out vec2 TexCoord;
 
 void main() {
     
-     vec4 instancePos = SBO.Position[gl_InstanceIndex];
+     vec4 instancePos = pc.model *  SBO.Position[gl_InstanceIndex];
      vec4 worldPos    = vec4(inPosition, 1.0) + instancePos;
 
    ProbeIndex = gl_InstanceIndex;

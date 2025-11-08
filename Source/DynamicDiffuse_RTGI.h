@@ -49,6 +49,7 @@ struct CameraConstantBuffer
 {
     glm::mat4 ViewMatrix;
     glm::mat4 ProjectionMatrix;
+    glm::mat4 ModelMatrix;
     GeneralAtlasInfo generalAtlasInfo;
 };
 
@@ -117,11 +118,11 @@ public:
 
     int RaysPerProbe = 128;
 
-    glm::vec3 ProbeOffset     = glm::vec3(13.14, 6.15, 5.34);
+    glm::vec3 ProbeOffset     = glm::vec3(8, 7.82, 8.68);
 
-    glm::vec3 GridLocation     = glm::vec3(-60.02, -3.71, -28.95);
+    glm::vec3 GridLocation     = glm::vec3(-37.14, -14.82, -45.61);
     float RayRotationRadians = 0;;
-    float RotationSpeed = 0.000001;
+    float RotationSpeed = 0.01;
 
 
     int ProbeSideLength = (8 * 8);

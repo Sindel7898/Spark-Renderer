@@ -68,8 +68,8 @@ void main()
         float Fibo_Z = sin(theta) * radius;
        
         
-        //vec4 Direction = normalize(pc.Matrix * vec4(Fibo_X, Fibo_Y, Fibo_Z, 1.0));
-         vec4 Direction = normalize(vec4(Fibo_X, Fibo_Y, Fibo_Z, 1.0));
+        vec4 Direction = normalize(pc.Matrix * vec4(Fibo_X, Fibo_Y, Fibo_Z, 1.0));
+         //vec4 Direction = normalize(vec4(Fibo_X, Fibo_Y, Fibo_Z, 1.0));
 
         SB02.FibonacciDirections[index] = vec4(Direction.xyz, 0.0);
    }

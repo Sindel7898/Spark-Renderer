@@ -190,8 +190,8 @@ void main() {
 
    vec3 reflections = ((RTReflection * kS_env) );
 
-   //totalLighting +=  (reflections * Albedo);
-   totalLighting +=  Emmisive;
+     totalLighting +=  (reflections * Albedo);
+  // totalLighting +=  Emmisive;
 
 
   vec3 gammaCorrected = pow(clamp(totalLighting, 0.0, 1.0), vec3(1.4 / 2.2));
