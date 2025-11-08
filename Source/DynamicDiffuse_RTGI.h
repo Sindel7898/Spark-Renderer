@@ -122,7 +122,7 @@ public:
 
     glm::vec3 GridLocation     = glm::vec3(-37.14, -14.82, -45.61);
     float RayRotationRadians = 0;;
-    float RotationSpeed = 0.01;
+    float RotationSpeed = 1;
 
 
     int ProbeSideLength = (8 * 8);
