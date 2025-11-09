@@ -84,31 +84,29 @@ vec2 oct_encode(in vec3 v) {
     return result;
 }
 
-ivec2 GetProbeTexel( vec3 direction, ivec3 probeIndex)
+ivec2 GetProbeTexel(vec2 uv, ivec3 probeIndex)
 {
 
-    vec2 octahedral_coordinates = oct_encode(normalize(direction));
-    // 2. Map it to [0, 1]
-     octahedral_coordinates = (octahedral_coordinates * 0.5) + 0.5f;
+    int probe_full_size = pc.ProbeSideLength + pc.GutterSize;
+    int probes_per_row  = pc.AtlasWidthSize / probe_full_size;
 
-    int probeSideWithGutter = pc.ProbeSideLength + pc.GutterSize;
-    int probesPerRow        = pc.AtlasWidthSize / probeSideWithGutter;
-    int linearIndex         = probeIndex.x + probeIndex.y * int(pc.ProbeCount.x) + probeIndex.z * int(pc.ProbeCount.x * pc.ProbeCount.y);
+    // Flatten 3D probe index to 1D
+    int linear_index = probeIndex.x + probeIndex.y * int(pc.ProbeCount.x) + probeIndex.z * int(pc.ProbeCount.x * pc.ProbeCount.y);
 
-    int cellOffsetX = (linearIndex % probesPerRow) * probeSideWithGutter;
-    int cellOffsetY = (linearIndex / probesPerRow) * probeSideWithGutter;
+    // Top-left corner of this probe in the atlas
+    ivec2 probe_origin = ivec2((linear_index % probes_per_row) * probe_full_size,
+                               (linear_index / probes_per_row) * probe_full_size);
 
+    // Compute texel offset inside the probe region 
+    ivec2 border_offset = ivec2(pc.GutterSize / 2);
 
-    vec2 internalPixelOffset = octahedral_coordinates * float(pc.ProbeSideLength);
+    vec2 pixel_pos      = uv * float(pc.ProbeSideLength);
+    
+    ivec2 pixel_offset = clamp(ivec2(pixel_pos), ivec2(0), ivec2(pc.ProbeSideLength - 1));
 
-    int   border_offset = pc.GutterSize / 2; 
-    ivec2 TopLeft = ivec2(cellOffsetX, cellOffsetY) + ivec2(border_offset);
-
-    ivec2 FinalTexel = TopLeft + ivec2(internalPixelOffset) ;
-
-    return FinalTexel;
+    return probe_origin + (border_offset + pixel_offset);
 }
-////////////////////////////////////
+
 
 vec3 SampleIrradiance( vec3 Position, vec3 Normal)
 {
@@ -117,9 +115,13 @@ vec3 SampleIrradiance( vec3 Position, vec3 Normal)
     vec3  ProbeSpacing     = pc.ProbeSpacing_ScreenSizeHeight.xyz;
     ivec3 ProbeCount       = ivec3(pc.ProbeCount.xyz);
 
-    vec3 GridIndexF = (Position - GridBaseLocation) / ProbeSpacing;
-    vec3 Alpha = fract(GridIndexF);
+ 
+ 
+    float push_bias = 0.1; 
+    vec3 SamplePosition = Position + Normal * push_bias;
 
+    vec3 GridIndexF = ((SamplePosition ) - GridBaseLocation) / ProbeSpacing;
+    vec3 Alpha = fract(GridIndexF);
 
     ivec3 GridIndex = ivec3(GridIndexF);
 
@@ -131,62 +133,77 @@ vec3 SampleIrradiance( vec3 Position, vec3 Normal)
      };
 
 
-     vec4 Irradiance = vec4(0);
+
+     vec4 Irradiance       = vec4(0);
+     vec4 IrradianceNoCheb = vec4(0);
+
+         // Encode direction into [0,1] texture space
+    vec2 uv = (oct_encode(normalize(Normal)) * 0.5) + 0.5;
 
      for(int i = 0; i < 8; i++){
 
-         ivec3 ProbeIndex        = clamp((GridIndex + Offsets[i]),ivec3(0),ProbeCount - 1);
-         vec3 ProbeWorldPosition = GridBaseLocation + (vec3(ProbeIndex) * ProbeSpacing);
+         ivec3 Offset = ivec3(i, i >> 1, i >> 2) & ivec3(1);
+         ivec3 ProbeIndex         = clamp((GridIndex + Offsets[i]),ivec3(0),ProbeCount - 1);
+         vec3  ProbeWorldPosition = GridBaseLocation + (vec3(ProbeIndex) * ProbeSpacing);
 
-         ivec2 irradiance_texel = GetProbeTexel(Normal,ProbeIndex);
+         ivec2 irradiance_texel = GetProbeTexel(uv,ProbeIndex);
 
-         vec3 dir = Position  -  ProbeWorldPosition ;
+         vec3 dir = SamplePosition  -  ProbeWorldPosition ;
          float r = length(dir);
          dir *= -1.0 / r;
 
-
+         ////////////////////////////////////////////////////////
          float weight = (dot(dir, Normal) + 1) * 0.5;
-         weight = (weight * weight) + 0.2;
+               weight = (weight * weight);
 
-  
-          vec3 trilinear = mix(vec3(1.0) - Alpha, Alpha, vec3(Offsets[i]));
-         float trilinearWeight = trilinear.x * trilinear.y * trilinear.z;
+         float weightNoCheb = (dot(dir, Normal) + 1) * 0.5;
+               weightNoCheb = (weightNoCheb * weightNoCheb) + 0.2;
+         ////////////////////////////////////////////////////////
 
-         weight *= (trilinearWeight + 0.001f);
+
+        vec3 CornerWeight = mix(vec3(1.0) - Alpha, Alpha, vec3(Offset));
+        float TrilinearWeight = CornerWeight.x * CornerWeight.y * CornerWeight.z;
+                if (TrilinearWeight <= 0.0001) continue;
+
+          ///////////////////////////////////////////
+          weight       *= (TrilinearWeight + 0.001f);
+          weightNoCheb *= (TrilinearWeight + 0.001f);
 
           //////////////////////////////////////////////////////////////
-          ivec2 visibility_texel = GetProbeTexel(dir, ProbeIndex);
+          ivec2 visibility_texel = GetProbeTexel(uv, ProbeIndex);
           vec2 DepthInfo =  imageLoad(VisibilityStorageImage, visibility_texel).rg;
 
           float Mean  = DepthInfo.x; 
           float Mean2 = DepthInfo.y; 
          
-         
          ///////Same as how shadow maps are calculated
          float chebyshev_weight = 1.0;
 
-         if(r >  Mean) {
+         float bias = 0.1; // 
+         float r_biased = r - 0.05 ;  
+
+         if(r_biased >  Mean) {
          
              float variance = abs((Mean * Mean) - Mean2);
              const float distanceDiff = r - Mean;
              chebyshev_weight = variance / (variance + (distanceDiff * distanceDiff));
-               
-             chebyshev_weight = max((chebyshev_weight * chebyshev_weight * chebyshev_weight), 0.0f);
-         }
+             weight *= chebyshev_weight;
+          }
 
 
-         chebyshev_weight = max(0.05f, chebyshev_weight);
-         weight *= chebyshev_weight;
-
-         vec3 probeIrradiance = sqrt(imageLoad(IrradianceStorageImage, irradiance_texel).rgb) * weight;
-         Irradiance += vec4(probeIrradiance, weight);
+         vec3 probeIrradiance = sqrt(imageLoad(IrradianceStorageImage, irradiance_texel).rgb);
+         IrradianceNoCheb += vec4(probeIrradiance * weightNoCheb, weightNoCheb);
+         Irradiance       += vec4(probeIrradiance * weight, weight);
      }
      
-       vec3 ComputedIrradiance = (Irradiance.rgb * (1.0 / Irradiance.a));
+       vec3 ComputedIrradiance       = (Irradiance.rgb       * (1.0 / Irradiance.a));
+       vec3 ComputedIrradianceNoCheb = (IrradianceNoCheb.rgb * (1.0 / IrradianceNoCheb.a));
 
-       ComputedIrradiance = ComputedIrradiance * ComputedIrradiance;
-
-       return ComputedIrradiance;
+       ComputedIrradiance       = ComputedIrradiance * ComputedIrradiance;
+       ComputedIrradianceNoCheb = ComputedIrradianceNoCheb * ComputedIrradianceNoCheb;
+       
+       vec3   Result =  mix(ComputedIrradianceNoCheb,ComputedIrradiance,clamp(IrradianceNoCheb.a,0,1));
+       return Result;
 }
 
 

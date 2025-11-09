@@ -101,7 +101,9 @@ void main()
      float RAW_RAYDISTANCE = 0;
 
     if(!border_pixel){
-      
+        
+         vec3 texel_direction = oct_decode(get_normalized_probe_texel_coord(fragCoord));
+
         for (int ray_index = 0; ray_index < pc.NumRays; ray_index++) {
           
               ivec2 Sample_Position = ivec2(ray_index, ProbeIndex);
@@ -124,7 +126,6 @@ void main()
 
               
               vec3 ray_direction   = SB0.FibonacciDirections[ray_index].xyz;
-              vec3 texel_direction = oct_decode(get_normalized_probe_texel_coord(fragCoord));
 
               // Calculate the cosine weighting term
               float weight  = max(dot(texel_direction, ray_direction),0.0);
