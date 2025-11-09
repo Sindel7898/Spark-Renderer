@@ -140,7 +140,7 @@ void main()
 
               if (weight  > 0.0001) {
               
-                   float probe_max_ray_distance = 150.0f;
+                   float probe_max_ray_distance = 100.0f;
               
                    ray_distance = min(abs(ray_distance), probe_max_ray_distance);
                             

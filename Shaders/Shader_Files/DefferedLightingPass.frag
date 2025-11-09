@@ -190,7 +190,7 @@ void main() {
 
    vec3 reflections = ((RTReflection * kS_env) );
 
-     //totalLighting +=  (reflections * Albedo);
+    totalLighting +=  (reflections * Albedo);
   // totalLighting +=  Emmisive;
 
 

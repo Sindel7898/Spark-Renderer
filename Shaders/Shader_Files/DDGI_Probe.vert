@@ -13,7 +13,8 @@ layout(push_constant) uniform PushConstants {
     int   AtlasWidthSize;  
     int   ProbeSideLength; 
     int   GutterSize;      
-    int   NumRays;     
+    int   NumRays;
+    int   ShowDebugStatus;
 }pc;
 
 const int PROBE_STATE_ACTIVE   = 0; //  this is for when a probe is activly collecting new scene data

@@ -12,7 +12,8 @@ layout(push_constant) uniform PushConstants {
     int   AtlasWidthSize;  
     int   ProbeSideLength; 
     int   GutterSize;      
-    int   NumRays;     
+    int   NumRays;
+    int   ShowDebugStatus;
 }pc;
 
 layout(location = 0) in flat int  ProbeIndex;
@@ -21,7 +22,7 @@ layout(location = 2) in  flat int ProbeStatus;
 
 void main() {
    
-  bool ShowProbeStatus = true;
+  bool ShowProbeStatus = bool(pc.ShowDebugStatus);
   if(ShowProbeStatus){    
        
        if(ProbeStatus == 0){

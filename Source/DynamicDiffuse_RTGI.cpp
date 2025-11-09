@@ -1317,6 +1317,7 @@ void DynamicDiffuse_RTGI::DrawNode(vk::CommandBuffer commandBuffer, vk::Pipeline
 				cameraConstantBuffer.generalAtlasInfo.ProbeSideLength = ProbeSideLength;
 				cameraConstantBuffer.generalAtlasInfo.GutterSize = GutterSize;
 				cameraConstantBuffer.generalAtlasInfo.RaysPerProbe = RaysPerProbe;
+				cameraConstantBuffer.ShowDebugStatus = ShowDEBUG_Status;
 
 				commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0, sizeof(CameraConstantBuffer), &cameraConstantBuffer);
 						

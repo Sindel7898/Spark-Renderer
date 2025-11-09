@@ -51,6 +51,7 @@ struct CameraConstantBuffer
     glm::mat4 ProjectionMatrix;
     glm::mat4 ModelMatrix;
     GeneralAtlasInfo generalAtlasInfo;
+    int ShowDebugStatus;
 };
 
 enum ProbeState {
@@ -152,6 +153,7 @@ public:
     std::vector<BufferData> ProbeFibonacciDirectionsStorageBuffers;
 
 	bool DrawDEBUG_Probes = false;
+    bool ShowDEBUG_Status = false;
 
     float infiniteBounceMultiplyer = 0.75f;
     int UseinfiniteBounce = 1;

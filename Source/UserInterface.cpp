@@ -394,7 +394,12 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 
 			ImGui::TextDisabled("Adjust probe parameters:");
 
-			ImGui::Checkbox("Draw Debug"         , (bool*)&appref->dynamicDiffuse_RTGI->DrawDEBUG_Probes );
+			ImGui::Checkbox("Draw Debug Probe" , (bool*)&appref->dynamicDiffuse_RTGI->DrawDEBUG_Probes);
+			
+			if (appref->dynamicDiffuse_RTGI->DrawDEBUG_Probes)
+			{
+				ImGui::Checkbox("Show Debug Status", (bool*)&appref->dynamicDiffuse_RTGI->ShowDEBUG_Status);
+			}
 
 			ImGui::Checkbox("Use Infinite Bounce", (bool*)&appref->dynamicDiffuse_RTGI->UseinfiniteBounce);
 			ImGui::SliderFloat("infinite Bounce Multiplyer", &appref->dynamicDiffuse_RTGI->infiniteBounceMultiplyer, 0, 1, "%.1f");
