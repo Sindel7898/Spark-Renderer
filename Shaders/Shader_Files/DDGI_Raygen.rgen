@@ -4,8 +4,21 @@
 layout(set = 0, binding = 0) uniform accelerationStructureEXT topLevelAS;
 layout(set = 0, binding = 8, rgba16f) uniform image2D IrradianceAtlasImage;
 
+
+const int PROBE_STATE_ACTIVE   = 0; //  this is for when a probe is activly collecting new scene data
+const int PROBE_STATE_SLEEP    = 1; //  this is for when a probe is always hitting the skybox
+const int PROBE_STATE_DISABLED = 2; //  this is for when a probe is inside an object and is not contributing meaningfully.
+//A probe that is disabled can be moved so it is active
+
+struct ProbeInformation {
+    vec4 probeLocations;
+    int  probeState;
+    vec3 Padding;
+};
+
+
 layout(set = 0, binding = 9) readonly buffer StorageBuffer {
-   vec4 Position[];
+      ProbeInformation  ProbeData[];
 } SB0;
 
 layout(set = 0, binding = 10) readonly buffer StorageBuffer2 {
@@ -40,8 +53,10 @@ void main() {
      
      int SkyBoxIndex = int(pc.ProbeCount.w);
  
-    vec3 probeOrigin  = SB0.Position[gl_LaunchIDEXT.y].xyz;
-    vec3 rayDirection = SB02.FibonacciDirections[gl_LaunchIDEXT.x].xyz;
+    ProbeInformation probe  = SB0.ProbeData[gl_LaunchIDEXT.y];
+
+    vec3 probeOrigin  = probe.probeLocations.xyz;
+    vec3 rayDirection = SB02.FibonacciDirections    [gl_LaunchIDEXT.x].xyz;
   
 
    // Trace the ray
@@ -52,11 +67,25 @@ void main() {
 
    vec3 CubeMapIrradiance = texture(samplerCubeMap[SkyBoxIndex], rayDirection).rgb;
 
-    traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, probeOrigin.xyz, tMin, rayDirection, tMax, 0);
-     
-     vec3  Radiance = payload.Color;
-     float Distance = payload.Distance;
+       if(probe.probeState ==  PROBE_STATE_ACTIVE){
 
-     if(payload.Hit == 0){ Radiance = CubeMapIrradiance;}
-    imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(Radiance,Distance));
+          traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, probeOrigin.xyz, tMin, rayDirection, tMax, 0);
+
+          vec3  Radiance = payload.Color;
+          float Distance = payload.Distance;
+          
+          if(payload.Hit == 0){ Radiance = CubeMapIrradiance;}
+
+          imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(Radiance,Distance));
+          return;
+       }
+         else if (probe.probeState ==  PROBE_STATE_SLEEP){
+          imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(CubeMapIrradiance,1000));
+          return;
+       }else if (probe.probeState == PROBE_STATE_DISABLED) {
+           imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(0.0, 0.0, 0.0, 0.0));
+           return;
+        }
+
+
 }

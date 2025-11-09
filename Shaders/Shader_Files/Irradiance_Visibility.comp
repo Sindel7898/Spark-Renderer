@@ -98,6 +98,7 @@ void main()
 
      const bool use_backfacing_blending = true;
     // int pass = pc.PassSpecifiyer;
+     float RAW_RAYDISTANCE = 0;
 
     if(!border_pixel){
       
@@ -106,7 +107,8 @@ void main()
               ivec2 Sample_Position = ivec2(ray_index, ProbeIndex);
               vec4  ray_data = imageLoad(Radiance_Visibility, Sample_Position);
               float ray_distance = ray_data.a;
-              
+                    RAW_RAYDISTANCE += ray_data.a;
+
               if ( ray_distance < 0.0f && use_backfacing_blending ) {
                     ++backfaces;
 
@@ -116,11 +118,12 @@ void main()
                        imageStore(Iradiance ,  ivec2(gl_GlobalInvocationID.xy), vec4(0,0,0,1)); 
                        return;
                   }
+
                 continue; 
             }
 
               
-              vec3 ray_direction = SB0.FibonacciDirections[ray_index].xyz;
+              vec3 ray_direction   = SB0.FibonacciDirections[ray_index].xyz;
               vec3 texel_direction = oct_decode(get_normalized_probe_texel_coord(fragCoord));
 
               // Calculate the cosine weighting term
@@ -137,13 +140,13 @@ void main()
 
               if (weight  > 0.0001) {
               
-                   float probe_max_ray_distance = 1.0f * 1.5f;
+                   float probe_max_ray_distance = 150.0f;
               
                    ray_distance = min(abs(ray_distance), probe_max_ray_distance);
                             
-                   visibility.x += ray_distance * weight;      
+                   visibility.x +=  ray_distance * weight;      
                    visibility.y += (ray_distance * ray_distance) * weight;
-                   visibility.z += weight;
+                   visibility.z +=  weight;
               }
              
       }
@@ -153,7 +156,7 @@ void main()
                irradiance /=  total_weight;
           
                vec3 previous_value = imageLoad( Prev_Iradiance, ivec2(gl_GlobalInvocationID.xy)).rgb;
-               vec3 result = mix(irradiance, previous_value,  0.95f);
+               vec3 result         = mix(irradiance, previous_value,  0.95f);
           
                imageStore(Iradiance , ivec2(gl_GlobalInvocationID.xy), vec4(result,1));
           }
@@ -167,9 +170,9 @@ void main()
                  vec2 Vsibility = vec2(mean,mean_sq);
           
                  vec2 previous_value = imageLoad(Prev_Visibility, ivec2(gl_GlobalInvocationID.xy)).rg;
-                 vec2 result = mix( Vsibility, previous_value, 0.95f);
+                 vec2 result         = mix( Vsibility, previous_value, 0.95f);
           
-                imageStore(Visibility, ivec2(gl_GlobalInvocationID.xy), vec4(result,1, 1.0));
+                imageStore(Visibility, ivec2(gl_GlobalInvocationID.xy), vec4(result,RAW_RAYDISTANCE, 1.0));
             }
     }
     

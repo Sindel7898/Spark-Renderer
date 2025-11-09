@@ -246,13 +246,19 @@
 void App::CreateDebugUtils()
 {
 
-	Gbuffer_Label.pLabelName        = "Gbuffer Pass";
-	SSAO_Label.pLabelName           = "SSAO Pass";
-	RTShadows_Label.pLabelName      = "Raytraced Shadow Pass";
-	DirectLighting_Label.pLabelName = "DirectLighting Pass";
-	SSGI_Label.pLabelName           = "SSGI Pass";
-	FXAA_Label.pLabelName           = "FXAA Pass";
-	RTReflections_Label.pLabelName  = "Raytraced Reflections Pass";
+	Gbuffer_Label.pLabelName                     = "Gbuffer Pass";
+	SSAO_Label.pLabelName                        = "SSAO Pass";
+	RTShadows_Label.pLabelName                   = "Raytraced Shadow Pass";
+	DirectLighting_Label.pLabelName              = "DirectLighting Pass";
+	SSGI_Label.pLabelName                        = "SSGI Pass";
+	FXAA_Label.pLabelName                        = "FXAA Pass";
+	RTReflections_Label.pLabelName               = "Raytraced Reflections Pass";
+	DDGI_Grid_Generation_Label.pLabelName        = "DDGI_Grid_Generation_Label";
+	DDGI_Trace_Ray_Label.pLabelName              = "DDGI_Trace_Ray_Label";
+	DDGI_Directions_Generation_Label.pLabelName  = "DDGI_Directions_Generation_Label";
+	DDGI_Calculate_Irradiance_Label.pLabelName   = "DDGI_Calculate_Irradiance_Label";
+	DDGI_Sample_From_PorbeLabel.pLabelName       = "DDGI_Sample_From_PorbeLabel";
+	DDGI_Update_Probe_Status_Label.pLabelName    = "DDGI_Update_Probe_Status_Label";
 
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -1729,6 +1735,36 @@ void App::CreateGraphicsPipeline()
 		vulkanContext.LogicalDevice.destroyShaderModule(ComputeShaderModule);
 	}
 
+	{
+		auto ComputeShaderCode = readFile("../Shaders/Compiled_Shader_Files/ProbeStatus.comp.spv");
+
+		VkShaderModule ComputeShaderModule = pipelineManager.createShaderModule(ComputeShaderCode);
+
+		vk::PipelineShaderStageCreateInfo ComputeShaderStageInfo{};
+		ComputeShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+		ComputeShaderStageInfo.stage = vk::ShaderStageFlagBits::eCompute;
+		ComputeShaderStageInfo.module = ComputeShaderModule;
+		ComputeShaderStageInfo.pName = "main";
+
+		vk::PushConstantRange range{};
+		range.setOffset(0);
+		range.setSize(sizeof(GeneralAtlasInfo));
+		range.setStageFlags(vk::ShaderStageFlagBits::eCompute);
+
+
+		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.pSetLayouts = &dynamicDiffuse_RTGI->ProbeStatusDescriptorSetLayout;
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges = &range;
+
+		ProbeStatusPipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+
+		ProbeStatusComputePassPipeline = pipelineManager.creatComputePipeline(ProbeStatusPipelineLayout, ComputeShaderStageInfo);
+
+		vulkanContext.LogicalDevice.destroyShaderModule(ComputeShaderModule);
+	}
+
 
 	{
 		auto ComputeShaderCode = readFile("../Shaders/Compiled_Shader_Files/Sample_GI_Probes.comp.spv");
@@ -2385,6 +2421,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 
 	{
+		vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DDGI_Grid_Generation_Label);
 
 		ImageTransitionData TransitiontoGeneralRT{};
 		TransitiontoGeneralRT.oldlayout = vk::ImageLayout::eUndefined;
@@ -2398,16 +2435,24 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->RadianceImageAtlasImage, TransitiontoGeneralRT);
 		bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->IradianceImageAtlasImage, TransitiontoGeneralRT);
 		bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->VisibilityImageAtlasImage, TransitiontoGeneralRT);
+		bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->Prev_IradianceImageAtlasImage, TransitiontoGeneralRT);
+		bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->Prev_VisibilityImageAtlasImage, TransitiontoGeneralRT);
 
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, GridComputePassPipeline);
-
+		
 		dynamicDiffuse_RTGI->DispatchGridCompute(commandBuffer, GridComputePipelineLayout, currentFrame);
+
+		vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
+
+		vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DDGI_Directions_Generation_Label);
 		dynamicDiffuse_RTGI->DispatchDirectionsCompute(commandBuffer, GridComputePipelineLayout, currentFrame,deltaTime);
+		vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
+
 
 		vk::BufferMemoryBarrier barrier{};
 		barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
 		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-		barrier.buffer = dynamicDiffuse_RTGI->ProbePositionsStorageBuffers[0].buffer;
+		barrier.buffer = dynamicDiffuse_RTGI->ProbeDataStorageBuffers[0].buffer;
 		barrier.offset = 0;
 		barrier.size = VK_WHOLE_SIZE;
 
@@ -2440,6 +2485,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	}
 
 	{
+		vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DDGI_Trace_Ray_Label);
 		{
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_DDGIPassPipeline);
 
@@ -2475,14 +2521,18 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 				1, & rtToComputeBarrier
 			);
 		}
-		
+		vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
+
 
 
 		{
 
 
-			commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, IrradianceComputePassPipeline);
+			vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DDGI_Calculate_Irradiance_Label);
+
 			{
+				commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, IrradianceComputePassPipeline);
+
 				dynamicDiffuse_RTGI->DispatchCalcProbeDataCompute(commandBuffer, IrradianceComputePipelineLayout, currentFrame);
 
 				vk::ImageMemoryBarrier imagebarrier;
@@ -2509,6 +2559,32 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 					1, &imagebarrier
 				);
 			}
+			vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
+
+			vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DDGI_Update_Probe_Status_Label);
+
+			{
+				commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, ProbeStatusComputePassPipeline);
+
+				dynamicDiffuse_RTGI->DispatchProbeStatus(commandBuffer, ProbeStatusPipelineLayout, currentFrame);
+
+				vk::BufferMemoryBarrier barrier{};
+				barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+				barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+				barrier.buffer = dynamicDiffuse_RTGI->ProbeDataStorageBuffers[0].buffer;
+				barrier.offset = 0;
+				barrier.size = VK_WHOLE_SIZE;
+
+				commandBuffer.pipelineBarrier(
+					vk::PipelineStageFlagBits::eComputeShader,
+					vk::PipelineStageFlagBits::eRayTracingShaderKHR,
+					{},
+					0, nullptr,
+					1, & barrier,
+					0, nullptr
+				);
+			}
+			vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 
 			{
@@ -2560,6 +2636,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		}
 
 
+		vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DDGI_Sample_From_PorbeLabel);
+
 		{
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, SampleDDGIComputePassPipeline);
 
@@ -2589,7 +2667,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 				1, &imagebarrier
 			);
 		}
-	
+		vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
+
 
 	}
 
@@ -3565,6 +3644,7 @@ void App::destroyPipeline()
 	vulkanContext.LogicalDevice.destroyPipeline(RT_DDGIPassPipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(IrradianceComputePassPipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(SampleDDGIComputePassPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(ProbeStatusComputePassPipeline);
 
 
 	vulkanContext.LogicalDevice.destroyPipelineLayout(DeferedLightingPassPipelineLayout);
@@ -3587,6 +3667,7 @@ void App::destroyPipeline()
 	vulkanContext.LogicalDevice.destroyPipelineLayout(RT_DDGIPipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(IrradianceComputePipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(SampleDDGIComputePipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(ProbeStatusPipelineLayout);
 
 }
 

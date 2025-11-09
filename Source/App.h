@@ -191,6 +191,7 @@ private:
 	vk::PipelineLayout         RT_DDGIPipelineLayout = nullptr;
 	vk::PipelineLayout         IrradianceComputePipelineLayout = nullptr;
 	vk::PipelineLayout         SampleDDGIComputePipelineLayout = nullptr;
+	vk::PipelineLayout         ProbeStatusPipelineLayout = nullptr;
 
 
 
@@ -214,6 +215,7 @@ private:
 	vk::Pipeline               RT_DDGIPassPipeline = nullptr;
 	vk::Pipeline               IrradianceComputePassPipeline = nullptr;
 	vk::Pipeline               SampleDDGIComputePassPipeline = nullptr;
+	vk::Pipeline               ProbeStatusComputePassPipeline = nullptr;
 
 
 	vk::CommandPool            commandPool = nullptr;
@@ -268,6 +270,12 @@ private:
 	vk::DebugUtilsLabelEXT SSGI_Label;
 	vk::DebugUtilsLabelEXT FXAA_Label;
 	vk::DebugUtilsLabelEXT RTReflections_Label;
+	vk::DebugUtilsLabelEXT DDGI_Grid_Generation_Label;
+	vk::DebugUtilsLabelEXT DDGI_Trace_Ray_Label;
+	vk::DebugUtilsLabelEXT DDGI_Directions_Generation_Label;
+	vk::DebugUtilsLabelEXT DDGI_Calculate_Irradiance_Label;
+	vk::DebugUtilsLabelEXT DDGI_Update_Probe_Status_Label;
+	vk::DebugUtilsLabelEXT DDGI_Sample_From_PorbeLabel;
 
 
 	///Tracy

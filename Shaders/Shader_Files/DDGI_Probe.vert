@@ -16,20 +16,35 @@ layout(push_constant) uniform PushConstants {
     int   NumRays;     
 }pc;
 
+const int PROBE_STATE_ACTIVE   = 0; //  this is for when a probe is activly collecting new scene data
+const int PROBE_STATE_SLEEP    = 1; //  this is for when a probe is always hitting the skybox
+const int PROBE_STATE_DISABLED = 2; //  this is for when a probe is inside an object and is not contributing meaningfully.
+//A probe that is disabled can be moved so it is active
+
+struct ProbeInformation {
+    vec4 probeLocations;
+    int  probeState;
+    vec3 Padding;
+};
+
 layout(set = 0,binding = 1) readonly  buffer StorageBufferObject {
-    vec4 Position[2000];
+      ProbeInformation  ProbeData[2000];
 }SBO;
 
 layout(location = 0) out flat int ProbeIndex;
 layout(location = 1) out vec2 TexCoord;
+layout(location = 2) out  flat int ProbeStatus;
 
 void main() {
     
-     vec4 instancePos = pc.model *  SBO.Position[gl_InstanceIndex];
+     ProbeInformation probe = SBO.ProbeData[gl_InstanceIndex];
+
+     vec4 instancePos = pc.model * probe.probeLocations;
      vec4 worldPos    = vec4(inPosition, 1.0) + instancePos;
 
-   ProbeIndex = gl_InstanceIndex;
-   TexCoord = inTexCoord;
+     ProbeIndex = gl_InstanceIndex;
+     TexCoord = inTexCoord;
+     ProbeStatus = probe.probeState;
 
     gl_Position = pc.proj * pc.view * worldPos;
 }

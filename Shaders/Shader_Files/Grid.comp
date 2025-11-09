@@ -1,7 +1,18 @@
 #version 450
+ 
+const int PROBE_STATE_ACTIVE   = 0; //  this is for when a probe is activly collecting new scene data
+const int PROBE_STATE_SLEEP    = 1; //  this is for when a probe is always hitting the skybox
+const int PROBE_STATE_DISABLED = 2; //  this is for when a probe is inside an object and is not contributing meaningfully.
+//A probe that is disabled can be moved so it is active
+
+struct ProbeInformation {
+    vec4 probeLocations;
+    int  probeState;
+    vec3 Padding;
+};
 
 layout(binding = 0) writeonly buffer StorageBuffer {
-   vec4 Position[];
+        ProbeInformation  ProbeData[];
 } SB0;
 
 layout(binding = 1) writeonly buffer StorageBuffer2 {
@@ -10,11 +21,12 @@ layout(binding = 1) writeonly buffer StorageBuffer2 {
 
 layout(push_constant) uniform PushConstants {
      vec4 probeCount_RayCount;      
-     vec4 probeOffset;     
+     vec4 probeOffset_UpdateFlag;     
      vec4 probeBaseLocation_Flag;
      mat4 Matrix; 
 
 } pc;
+
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
@@ -27,26 +39,33 @@ void main()
         // https://stackoverflow.com/questions/11712811/1d-index-to-3d-coordinates
         // Grid Generation
         // ----------------------------------------------------------
-       
-        uint gridSizeX = uint(pc.probeCount_RayCount.x); 
-        uint gridSizeY = uint(pc.probeCount_RayCount.y); 
-        uint gridSizeZ = uint(pc.probeCount_RayCount.z); 
-       
-        uint totalCount = gridSizeX * gridSizeY * gridSizeZ;
-       
-        if (index >= totalCount) return;
-       
-        uint z =  index / (gridSizeX  * gridSizeY);   
-        uint y = (index /  gridSizeX) % gridSizeY;
-        uint x =  index %  gridSizeX;
-        //////////////////////////////////////////
-       
-        vec3 position = vec3(x * pc.probeOffset.x,
-                             y * pc.probeOffset.y,
-                             z * pc.probeOffset.z) 
-                             + pc.probeBaseLocation_Flag.xyz;
-       
-        SB0.Position[index] = vec4(position, 0.0);  
+           if(int(pc.probeOffset_UpdateFlag.w) != 0) { 
+
+              uint gridSizeX = uint(pc.probeCount_RayCount.x); 
+              uint gridSizeY = uint(pc.probeCount_RayCount.y); 
+              uint gridSizeZ = uint(pc.probeCount_RayCount.z); 
+             
+              uint totalCount = gridSizeX * gridSizeY * gridSizeZ;
+             
+              if (index > totalCount) return;
+             
+              uint z =  index / (gridSizeX  * gridSizeY);   
+              uint y = (index /  gridSizeX) % gridSizeY;
+              uint x =  index %  gridSizeX;
+              //////////////////////////////////////////
+             
+              vec3 position = vec3(x * pc.probeOffset_UpdateFlag.x,
+                                   y * pc.probeOffset_UpdateFlag.y,
+                                   z * pc.probeOffset_UpdateFlag.z) 
+                                   + pc.probeBaseLocation_Flag.xyz;
+             
+             
+              SB0.ProbeData[index].probeLocations  = vec4(position, 0.0);
+         
+
+              SB0.ProbeData[index].probeState      = PROBE_STATE_ACTIVE;
+        }
+
     }else{
          // ----------------------------------------------------------
          //https://stackoverflow.com/questions/9600801/evenly-distributing-n-points-on-a-sphere

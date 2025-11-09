@@ -53,6 +53,20 @@ struct CameraConstantBuffer
     GeneralAtlasInfo generalAtlasInfo;
 };
 
+enum ProbeState {
+
+    ACTIVE,    // this is for when a probe is activly collecting new scene data
+    SLEEP,     // this is for when a probe is always hitting the skybox
+    DISSABLED //  this is for when a probe is inside an object and is not contributing meaningfully.
+   //A probe that is disabled can be moved so it is active
+};
+
+struct ProbeInformation
+{
+    glm::vec4 probeLocations;
+    ProbeState probeState;
+    glm::vec3 Padding;
+};
 
 class DynamicDiffuse_RTGI
 {
@@ -76,6 +90,8 @@ public:
     void DispatchCalcProbeDataCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex);
     void DispatchSampleGIFromProbeDataCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex);
 
+    void DispatchProbeStatus(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex);
+
     void DestroyAtlasImages();
     void DestroySampledGIImage();
     void CreateAtlasImages();
@@ -88,6 +104,7 @@ public:
     vk::DescriptorSetLayout        RaytracingDescriptorSetLayout;
     vk::DescriptorSetLayout        ConstructProbeDataDescriptorSetLayout;
     vk::DescriptorSetLayout        DDGISamplingDescriptorSetLayout;
+    vk::DescriptorSetLayout        ProbeStatusDescriptorSetLayout;
 
 
     std::vector<vk::DescriptorSet>  ProbeDescriptorSets;
@@ -95,10 +112,7 @@ public:
     std::vector<vk::DescriptorSet>  RaytracingDescriptorSets;
     std::vector<vk::DescriptorSet>  ConstructProbeDataDescriptorSets;
     std::vector<vk::DescriptorSet>  DDGISamplingDescriptorSets;
-
-    //ImageData DDGI_AlbedoImageAtlasImage;
-    //ImageData DDGI_NormalImageAtlasImage;
-    //ImageData DDGI_MaterialImageAtlasImage;
+    std::vector<vk::DescriptorSet>  ProbeStatusDescriptorSets;
 
     ImageData RadianceImageAtlasImage;
     ImageData IradianceImageAtlasImage;
@@ -110,17 +124,17 @@ public:
     vk::Extent3D RadianceImageExtent;
     vk::Extent3D IradianceImageExtent;
 
-    std::vector<glm::mat4> ProbeLocations;
+    std::vector<ProbeInformation> ProbeData;
 
-    int NumOfProbesX = 10;
-    int NumOfProbesY = 10;
-    int NumOfProbesZ = 10;
+    int NumOfProbesX = 9;
+    int NumOfProbesY = 9;
+    int NumOfProbesZ = 9;
 
     int RaysPerProbe = 128;
 
-    glm::vec3 ProbeOffset     = glm::vec3(8, 7.82, 8.68);
+    glm::vec3 ProbeOffset     = glm::vec3(11.42, 7.82, 10.35);
 
-    glm::vec3 GridLocation     = glm::vec3(-37.14, -14.82, -45.61);
+    glm::vec3 GridLocation     = glm::vec3(-42.85, -9.26, -45.61);
     float RayRotationRadians = 0;;
     float RotationSpeed = 1;
 
@@ -134,7 +148,7 @@ public:
     int Last_RaysPerProbe;
     glm::vec3 Last_ProbeOffset;
     glm::vec3 Last_GridLocation;
-    std::vector<BufferData> ProbePositionsStorageBuffers;
+    std::vector<BufferData> ProbeDataStorageBuffers;
     std::vector<BufferData> ProbeFibonacciDirectionsStorageBuffers;
 
 	bool DrawDEBUG_Probes = false;
@@ -157,6 +171,8 @@ private:
 
 
     SkyBox* skyboxRef = nullptr;
+
+    int UpdateGrid;
 };
 
 

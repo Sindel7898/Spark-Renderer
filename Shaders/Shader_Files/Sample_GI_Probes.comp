@@ -105,15 +105,22 @@ vec3 SampleIrradiance( vec3 Position, vec3 Normal)
          float r = length(dir);
          dir *= -1.0 / r;
 
-         float weightNoCheb;
+         ////////////////////////////////////////////////////////
          float weight = (dot(dir, Normal) + 1) * 0.5;
                weight = (weight * weight);
+
+         float weightNoCheb = (dot(dir, Normal) + 1) * 0.5;
+               weightNoCheb = (weightNoCheb * weightNoCheb) + 0.2;
+         ////////////////////////////////////////////////////////
+
 
         vec3 CornerWeight = mix(vec3(1.0) - Alpha, Alpha, vec3(Offset));
         float TrilinearWeight = CornerWeight.x * CornerWeight.y * CornerWeight.z;
                 if (TrilinearWeight <= 0.0001) continue;
 
-         weight *= (TrilinearWeight + 0.001f);
+          ///////////////////////////////////////////
+          weight       *= (TrilinearWeight + 0.001f);
+          weightNoCheb *= (TrilinearWeight + 0.001f);
 
           //////////////////////////////////////////////////////////////
           ivec2 visibility_texel = GetProbeTexel(dir, ProbeIndex);
@@ -122,7 +129,6 @@ vec3 SampleIrradiance( vec3 Position, vec3 Normal)
           float Mean  = DepthInfo.x; 
           float Mean2 = DepthInfo.y; 
          
-         weightNoCheb = weight;
          ///////Same as how shadow maps are calculated
          float chebyshev_weight = 1.0;
 
@@ -149,7 +155,7 @@ vec3 SampleIrradiance( vec3 Position, vec3 Normal)
        ComputedIrradiance       = ComputedIrradiance * ComputedIrradiance;
        ComputedIrradianceNoCheb = ComputedIrradianceNoCheb * ComputedIrradianceNoCheb;
        
-       vec3   Result =  mix(ComputedIrradianceNoCheb,ComputedIrradiance,clamp(Irradiance.a,0,1));
+       vec3   Result =  mix(ComputedIrradianceNoCheb,ComputedIrradiance,clamp(IrradianceNoCheb.a,0,1));
        return Result;
 }
 
