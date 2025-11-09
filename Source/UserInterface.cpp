@@ -218,8 +218,8 @@ void UserInterface::SetupDockingEnvironment()
 		ImGui::DockBuilderDockWindow("Main Viewport", dock_main_id);
 
 		ImGui::SetNextWindowDockID(dock_bottom_id, ImGuiCond_FirstUseEver);
-		ImGui::DockBuilderDockWindow("DDGI Irradiance Atlas", dock_bottom_id);
 		ImGui::DockBuilderDockWindow("DDGI Visibility Atlas", dock_bottom_id);
+		ImGui::DockBuilderDockWindow("DDGI Irradiance Atlas", dock_bottom_id);
 
 		ImGui::SetNextWindowDockID(dock_DetailsPanel_Bottom_id, ImGuiCond_FirstUseEver);
 		ImGui::DockBuilderDockWindow("Global Settings", dock_DetailsPanel_Bottom_id);
@@ -652,19 +652,19 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 	}
 
 	{
+		ImGui::Begin("DDGI Visibility Atlas");
+		viewportSize = ImGui::GetContentRegionAvail();
+		ImGui::Image((ImTextureID)appref->DDGIIVisibilityAtlasID, viewportSize);
+		ImGui::End();
+	}
+
+	{
 		ImGui::Begin("DDGI Irradiance Atlas");
 		viewportSize = ImGui::GetContentRegionAvail();
 		ImGui::Image((ImTextureID)appref->DDGIIrradianceAtlasID, viewportSize);
 		ImGui::End();
 	}
 
-
-	{
-		ImGui::Begin("DDGI Visibility Atlas");
-		viewportSize = ImGui::GetContentRegionAvail();
-		ImGui::Image((ImTextureID)appref->DDGIIVisibilityAtlasID, viewportSize);
-		ImGui::End();
-	}
 
 	ImGui::End();
 }

@@ -1497,6 +1497,7 @@ void DynamicDiffuse_RTGI::CleanUp()
 	vulkanContext->LogicalDevice.destroyDescriptorSetLayout(RaytracingDescriptorSetLayout);
 	vulkanContext->LogicalDevice.destroyDescriptorSetLayout(ConstructProbeDataDescriptorSetLayout);
 	vulkanContext->LogicalDevice.destroyDescriptorSetLayout(DDGISamplingDescriptorSetLayout);
+	vulkanContext->LogicalDevice.destroyDescriptorSetLayout(ProbeStatusDescriptorSetLayout);
 
 
 	DestroyAtlasImages();	

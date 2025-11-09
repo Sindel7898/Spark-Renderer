@@ -329,11 +329,11 @@ void main()
         Radiance +=  ((Lo) * light.CameraPositionAndLightIntensity.a);
      }
      
-       int UseInfiniteBounce =  int(pc.UseInfiniteBounce_infinite_bounces_multiplier_Padding.x);
-
-        if(UseInfiniteBounce > 0.5){
-          Radiance += Albedo * SampleIrradiance(WorldPos.xyz,Normal) *  pc.UseInfiniteBounce_infinite_bounces_multiplier_Padding.y;
-        }
+       //int UseInfiniteBounce =  int(pc.UseInfiniteBounce_infinite_bounces_multiplier_Padding.x);
+       //
+       // if(UseInfiniteBounce > 0.5){
+       //   Radiance += Albedo * SampleIrradiance(WorldPos.xyz,Normal) *  pc.UseInfiniteBounce_infinite_bounces_multiplier_Padding.y;
+       // }
 
      Distance = gl_RayTminEXT + gl_HitTEXT;
    }
