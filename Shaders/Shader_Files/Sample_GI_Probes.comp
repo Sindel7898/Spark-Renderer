@@ -92,7 +92,7 @@ vec3 SampleIrradiance( vec3 Position, vec3 Normal)
      vec4 IrradianceNoCheb = vec4(0);
 
          // Encode direction into [0,1] texture space
-    vec2 uv = (oct_encode(normalize(Normal)) * 0.5) + 0.5;
+    vec2 Normaluv = (oct_encode(normalize(Normal)) * 0.5) + 0.5;
 
      for(int i = 0; i < 8; i++){
 
@@ -100,7 +100,7 @@ vec3 SampleIrradiance( vec3 Position, vec3 Normal)
          ivec3 ProbeIndex         = clamp((GridIndex + Offsets[i]),ivec3(0),ProbeCount - 1);
          vec3  ProbeWorldPosition = GridBaseLocation + (vec3(ProbeIndex) * ProbeSpacing);
 
-         ivec2 irradiance_texel = GetProbeTexel(uv,ProbeIndex);
+         ivec2 irradiance_texel = GetProbeTexel(Normaluv,ProbeIndex);
 
          vec3 dir = SamplePosition  -  ProbeWorldPosition ;
          float r = length(dir);
@@ -124,7 +124,8 @@ vec3 SampleIrradiance( vec3 Position, vec3 Normal)
           weightNoCheb *= (TrilinearWeight + 0.001f);
 
           //////////////////////////////////////////////////////////////
-          ivec2 visibility_texel = GetProbeTexel(uv, ProbeIndex);
+          vec2  Diruv = (oct_encode(normalize(dir)) * 0.5) + 0.5;
+          ivec2 visibility_texel = GetProbeTexel(Diruv, ProbeIndex);
           vec2 DepthInfo =  imageLoad(VisibilityStorageImage, visibility_texel).rg;
 
           float Mean  = DepthInfo.x; 
