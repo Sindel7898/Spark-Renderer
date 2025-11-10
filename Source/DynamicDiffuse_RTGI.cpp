@@ -105,12 +105,9 @@ void DynamicDiffuse_RTGI::CreateAtlasImages() {
 
 	vk::CommandBuffer cmd = bufferManager->CreateSingleUseCommandBuffer(commandPool);
 
-	// 2. Define clear values and range
 	vk::ClearColorValue clearColor(std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f});
 	vk::ImageSubresourceRange range(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
 
-	// 3. Define transitions
-	// Transition: Undefined -> TransferDst (to allow clearing)
 	ImageTransitionData toClear{};
 	toClear.oldlayout = vk::ImageLayout::eUndefined;
 	toClear.newlayout = vk::ImageLayout::eTransferDstOptimal;
@@ -120,7 +117,6 @@ void DynamicDiffuse_RTGI::CreateAtlasImages() {
 	toClear.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
 	toClear.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
 
-	// Transition: TransferDst -> General (to be read by compute shader)
 	ImageTransitionData toGeneral{};
 	toGeneral.oldlayout = vk::ImageLayout::eTransferDstOptimal;
 	toGeneral.newlayout = vk::ImageLayout::eGeneral;
@@ -130,17 +126,14 @@ void DynamicDiffuse_RTGI::CreateAtlasImages() {
 	toGeneral.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
 	toGeneral.DestinationOnThePipeline = vk::PipelineStageFlagBits::eComputeShader;
 
-	// 4. Execute for Prev_IradianceImageAtlasImage
 	bufferManager->TransitionImage(cmd, &Prev_IradianceImageAtlasImage, toClear);
 	cmd.clearColorImage(Prev_IradianceImageAtlasImage.image, vk::ImageLayout::eTransferDstOptimal, clearColor, range);
 	bufferManager->TransitionImage(cmd, &Prev_IradianceImageAtlasImage, toGeneral);
 
-	// 5. Execute for Prev_VisibilityImageAtlasImage
 	bufferManager->TransitionImage(cmd, &Prev_VisibilityImageAtlasImage, toClear);
 	cmd.clearColorImage(Prev_VisibilityImageAtlasImage.image, vk::ImageLayout::eTransferDstOptimal, clearColor, range);
 	bufferManager->TransitionImage(cmd, &Prev_VisibilityImageAtlasImage, toGeneral);
 
-	// 6. Submit and clean up
 	bufferManager->SubmitAndDestoyCommandBuffer(commandPool, cmd, vulkanContext->graphicsQueue);
 
 }
