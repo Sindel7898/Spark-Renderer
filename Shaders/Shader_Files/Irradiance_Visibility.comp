@@ -101,7 +101,7 @@ void main()
 
     ProbeInformation info = SBO.ProbeData[ProbeIndex];
 
-    if(info.probeState == PROBE_STATE_ACTIVE ){
+    //if(info.probeState == PROBE_STATE_ACTIVE ){
         /// do not do any calculations on gutter pixels
     bool border_pixel   = ((gl_GlobalInvocationID.x % ProbeSideLength_With_Gutter) == 0) || ((gl_GlobalInvocationID.x % ProbeSideLength_With_Gutter ) == probe_last_pixel ); 
     border_pixel        = border_pixel || ((gl_GlobalInvocationID.y % ProbeSideLength_With_Gutter) == 0) || ((gl_GlobalInvocationID.y % ProbeSideLength_With_Gutter ) == probe_last_pixel );
@@ -155,11 +155,8 @@ void main()
                     irradiance += ray_radiance * weight;                                    
                     total_weight += weight;
                 
-              }
 
-              if (weight  > 0.0001) {
-              
-                   float probe_max_ray_distance = 100.0f;
+                float probe_max_ray_distance = 100.0f;
               
                    ray_distance = min(abs(ray_distance), probe_max_ray_distance);
                             
@@ -201,5 +198,5 @@ void main()
         imageStore(Iradiance,  ivec2(gl_GlobalInvocationID.xy), vec4(0.0, 0.0, 0.0, 1.0));
         imageStore(Visibility, ivec2(gl_GlobalInvocationID.xy), vec4(0.0, 0.0, 0.0, 1.0));
     }
-  }
+  //}
 }
