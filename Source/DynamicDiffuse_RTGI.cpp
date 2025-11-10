@@ -126,9 +126,22 @@ void DynamicDiffuse_RTGI::CreateAtlasImages() {
 	toGeneral.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
 	toGeneral.DestinationOnThePipeline = vk::PipelineStageFlagBits::eComputeShader;
 
+	bufferManager->TransitionImage(cmd, &RadianceImageAtlasImage, toClear);
+	cmd.clearColorImage(RadianceImageAtlasImage.image, vk::ImageLayout::eTransferDstOptimal, clearColor, range);
+	bufferManager->TransitionImage(cmd, &RadianceImageAtlasImage, toGeneral);
+
 	bufferManager->TransitionImage(cmd, &Prev_IradianceImageAtlasImage, toClear);
 	cmd.clearColorImage(Prev_IradianceImageAtlasImage.image, vk::ImageLayout::eTransferDstOptimal, clearColor, range);
 	bufferManager->TransitionImage(cmd, &Prev_IradianceImageAtlasImage, toGeneral);
+
+	bufferManager->TransitionImage(cmd, &IradianceImageAtlasImage, toClear);
+	cmd.clearColorImage(IradianceImageAtlasImage.image, vk::ImageLayout::eTransferDstOptimal, clearColor, range);
+	bufferManager->TransitionImage(cmd, &IradianceImageAtlasImage, toGeneral);
+
+	bufferManager->TransitionImage(cmd, &VisibilityImageAtlasImage, toClear);
+	cmd.clearColorImage(VisibilityImageAtlasImage.image, vk::ImageLayout::eTransferDstOptimal, clearColor, range);
+	bufferManager->TransitionImage(cmd, &VisibilityImageAtlasImage, toGeneral);
+
 
 	bufferManager->TransitionImage(cmd, &Prev_VisibilityImageAtlasImage, toClear);
 	cmd.clearColorImage(Prev_VisibilityImageAtlasImage.image, vk::ImageLayout::eTransferDstOptimal, clearColor, range);
@@ -147,6 +160,36 @@ void DynamicDiffuse_RTGI::CreateSampledGIImage() {
 	bufferManager->CreateImage(&Probe_Sampled_GI_Image, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled);
 	Probe_Sampled_GI_Image.imageView = bufferManager->CreateImageView(&Probe_Sampled_GI_Image, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	Probe_Sampled_GI_Image.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
+
+
+	vk::CommandBuffer cmd = bufferManager->CreateSingleUseCommandBuffer(commandPool);
+
+	vk::ClearColorValue clearColor(std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f});
+	vk::ImageSubresourceRange range(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+
+	ImageTransitionData toClear{};
+	toClear.oldlayout = vk::ImageLayout::eUndefined;
+	toClear.newlayout = vk::ImageLayout::eTransferDstOptimal;
+	toClear.AspectFlag = vk::ImageAspectFlagBits::eColor;
+	toClear.SourceAccessflag = vk::AccessFlagBits::eNone;
+	toClear.DestinationAccessflag = vk::AccessFlagBits::eTransferWrite;
+	toClear.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
+	toClear.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
+
+	ImageTransitionData toGeneral{};
+	toGeneral.oldlayout = vk::ImageLayout::eTransferDstOptimal;
+	toGeneral.newlayout = vk::ImageLayout::eGeneral;
+	toGeneral.AspectFlag = vk::ImageAspectFlagBits::eColor;
+	toGeneral.SourceAccessflag = vk::AccessFlagBits::eTransferWrite;
+	toGeneral.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
+	toGeneral.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
+	toGeneral.DestinationOnThePipeline = vk::PipelineStageFlagBits::eComputeShader;
+
+	bufferManager->TransitionImage(cmd, &Probe_Sampled_GI_Image, toClear);
+	cmd.clearColorImage(Probe_Sampled_GI_Image.image, vk::ImageLayout::eTransferDstOptimal, clearColor, range);
+	bufferManager->TransitionImage(cmd, &Probe_Sampled_GI_Image, toGeneral);
+
+	bufferManager->SubmitAndDestoyCommandBuffer(commandPool, cmd, vulkanContext->graphicsQueue);
 }
 
 

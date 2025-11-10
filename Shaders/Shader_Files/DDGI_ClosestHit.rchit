@@ -332,7 +332,12 @@ void main()
        int UseInfiniteBounce =  int(pc.UseInfiniteBounce_infinite_bounces_multiplier_Padding.x);
        
         if(UseInfiniteBounce > 0.5){
-          Radiance += Albedo * SampleIrradiance(WorldPos.xyz,Normal) *  pc.UseInfiniteBounce_infinite_bounces_multiplier_Padding.y;
+
+             vec3 GI = Albedo * SampleIrradiance(WorldPos.xyz,Normal) *  pc.UseInfiniteBounce_infinite_bounces_multiplier_Padding.y;
+              
+             if (any(greaterThan(GI, vec3(0)))) {
+                     Radiance += GI;
+             }
         }
 
      Distance = gl_RayTminEXT + gl_HitTEXT;
