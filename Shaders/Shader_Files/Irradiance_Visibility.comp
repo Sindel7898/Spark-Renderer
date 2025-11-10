@@ -17,6 +17,21 @@ layout(push_constant) uniform PushConstants {
     int   NumRays;
 }pc;
 
+const int PROBE_STATE_ACTIVE   = 0; //  this is for when a probe is activly collecting new scene data
+const int PROBE_STATE_SLEEP    = 1; //  this is for when a probe is always hitting the skybox
+const int PROBE_STATE_DISABLED = 2; //  this is for when a probe is inside an object and is not contributing meaningfully.
+//A probe that is disabled can be moved so it is active
+
+struct ProbeInformation {
+    vec4 probeLocations;
+    int  probeState;
+    vec3 Padding;
+};
+
+layout(set = 0,binding = 6) buffer StorageBufferObject {
+      ProbeInformation  ProbeData[];
+}SBO;
+
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 //https://stackoverflow.com/questions/1730961/convert-a-2d-array-index-into-a-1d-index
@@ -84,7 +99,10 @@ void main()
 
     int ProbeIndex =  get_probe_index_from_pixels(fragCoord,pc.AtlasWidthSize,ProbeSideLength_With_Gutter);
 
-     /// do not do any calculations on gutter pixels
+    ProbeInformation info = SBO.ProbeData[ProbeIndex];
+
+    if(info.probeState == PROBE_STATE_ACTIVE ){
+        /// do not do any calculations on gutter pixels
     bool border_pixel   = ((gl_GlobalInvocationID.x % ProbeSideLength_With_Gutter) == 0) || ((gl_GlobalInvocationID.x % ProbeSideLength_With_Gutter ) == probe_last_pixel ); 
     border_pixel        = border_pixel || ((gl_GlobalInvocationID.y % ProbeSideLength_With_Gutter) == 0) || ((gl_GlobalInvocationID.y % ProbeSideLength_With_Gutter ) == probe_last_pixel );
 
@@ -183,5 +201,5 @@ void main()
         imageStore(Iradiance,  ivec2(gl_GlobalInvocationID.xy), vec4(0.0, 0.0, 0.0, 1.0));
         imageStore(Visibility, ivec2(gl_GlobalInvocationID.xy), vec4(0.0, 0.0, 0.0, 1.0));
     }
-
+  }
 }

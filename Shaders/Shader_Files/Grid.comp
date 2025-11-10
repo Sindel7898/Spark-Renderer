@@ -47,8 +47,8 @@ void main()
              
               uint totalCount = gridSizeX * gridSizeY * gridSizeZ;
              
-              if (index > totalCount) return;
-             
+              if (index >= totalCount) return;     
+              
               uint z =  index / (gridSizeX  * gridSizeY);   
               uint y = (index /  gridSizeX) % gridSizeY;
               uint x =  index %  gridSizeX;

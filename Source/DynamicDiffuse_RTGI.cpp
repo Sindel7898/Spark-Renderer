@@ -250,9 +250,15 @@ void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
 		PrevVisibilityStorageImage.descriptorType = vk::DescriptorType::eStorageImage;
 		PrevVisibilityStorageImage.stageFlags = vk::ShaderStageFlagBits::eCompute;
 
-		std::array<vk::DescriptorSetLayoutBinding, 6> bindings = { FibonacciDirectionsStorageBufffer,RadianceStorageImage,
+		vk::DescriptorSetLayoutBinding ProbeData{};
+		ProbeData.binding = 6;
+		ProbeData.descriptorCount = 1;
+		ProbeData.descriptorType = vk::DescriptorType::eStorageBuffer;
+		ProbeData.stageFlags = vk::ShaderStageFlagBits::eCompute;
+
+		std::array<vk::DescriptorSetLayoutBinding, 7> bindings = { FibonacciDirectionsStorageBufffer,RadianceStorageImage,
 			                                                       IrradianceStorageImage,VisibilityStorageImage,
-		                                                           PrevIrradianceStorageImage,PrevVisibilityStorageImage };
+		                                                           PrevIrradianceStorageImage,PrevVisibilityStorageImage,ProbeData };
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -813,12 +819,27 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			Prev_VisibilityAtlasImageSamplerdescriptorWrite.descriptorCount = 1;
 			Prev_VisibilityAtlasImageSamplerdescriptorWrite.pImageInfo = &Prev_VisibilityAtlasImageInfo;
 
+			vk::DescriptorBufferInfo ProbeLocationbufferInfo{};
+			ProbeLocationbufferInfo.buffer = ProbeDataStorageBuffers[0].buffer;
+			ProbeLocationbufferInfo.offset = 0;
+			ProbeLocationbufferInfo.range = sizeof(ProbeInformation) * 2000;
 
-			std::array<vk::WriteDescriptorSet, 6> descriptorWrites{ FibonacciDirectionsbufferdescriptorWrite,
+			vk::WriteDescriptorSet ProbeLocationbufferdescriptorWrite{};
+			ProbeLocationbufferdescriptorWrite.dstSet = ConstructProbeDataDescriptorSets[i];
+			ProbeLocationbufferdescriptorWrite.dstBinding = 6;
+			ProbeLocationbufferdescriptorWrite.dstArrayElement = 0;
+			ProbeLocationbufferdescriptorWrite.descriptorType = vk::DescriptorType::eStorageBuffer;
+			ProbeLocationbufferdescriptorWrite.descriptorCount = 1;
+			ProbeLocationbufferdescriptorWrite.pBufferInfo = &ProbeLocationbufferInfo;
+
+
+			std::array<vk::WriteDescriptorSet, 7> descriptorWrites{ FibonacciDirectionsbufferdescriptorWrite,
 				                                                    radianceAtlasImageSamplerdescriptorWrite,
 			                                                        IradianceAtlasImageSamplerdescriptorWrite,
 				                                                    VisibilityAtlasImageSamplerdescriptorWrite,
-				                                                    Prev_IradianceAtlasImageSamplerdescriptorWrite,Prev_VisibilityAtlasImageSamplerdescriptorWrite };
+				                                                    Prev_IradianceAtlasImageSamplerdescriptorWrite,
+				                                                    Prev_VisibilityAtlasImageSamplerdescriptorWrite,
+				                                                    ProbeLocationbufferdescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 		}
