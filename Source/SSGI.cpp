@@ -134,6 +134,33 @@ void SSGI::CreateGIImage() {
 
 	bufferManager->TransitionImage(commandBuffer, &SSGIPassImage, transitionInfo);
 
+	{
+		vk::ClearColorValue clearColor(std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f});
+		vk::ImageSubresourceRange range(vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1);
+
+		ImageTransitionData toClear{};
+		toClear.oldlayout = vk::ImageLayout::eUndefined;
+		toClear.newlayout = vk::ImageLayout::eTransferDstOptimal;
+		toClear.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		toClear.SourceAccessflag = vk::AccessFlagBits::eNone;
+		toClear.DestinationAccessflag = vk::AccessFlagBits::eTransferWrite;
+		toClear.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
+		toClear.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
+
+		ImageTransitionData toGeneral{};
+		toGeneral.oldlayout = vk::ImageLayout::eTransferDstOptimal;
+		toGeneral.newlayout = vk::ImageLayout::eGeneral;
+		toGeneral.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		toGeneral.SourceAccessflag = vk::AccessFlagBits::eTransferWrite;
+		toGeneral.DestinationAccessflag = vk::AccessFlagBits::eTransferRead; 
+		toGeneral.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
+		toGeneral.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer; 
+
+		bufferManager->TransitionImage(commandBuffer, &SSGIAccumilationImage, toClear);
+		commandBuffer.clearColorImage(SSGIAccumilationImage.image, vk::ImageLayout::eTransferDstOptimal, clearColor, range);
+		bufferManager->TransitionImage(commandBuffer, &SSGIAccumilationImage, toGeneral);
+	}
+
 
 	bufferManager->SubmitAndDestoyCommandBuffer(commandPool, commandBuffer, vulkanContext->graphicsQueue);
 
