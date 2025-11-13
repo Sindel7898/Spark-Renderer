@@ -46,9 +46,9 @@
 	skyBox = std::shared_ptr<SkyBox>(new SkyBox(&vulkanContext, commandPool, &camera, &bufferManger), SkyBoxDeleter);
 
 
-	auto model1 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf" ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	//auto model1 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf" ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	//auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	//auto model3 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 
 	//auto model4 = std::shared_ptr<Model>(new Model("../Textures/EmptyCornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	//auto model5 = std::shared_ptr<Model>(new Model("../Textures/Dragon2/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
@@ -56,26 +56,26 @@
 
 	//auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	//auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	
 	//////////CORNEL SETUP////////////////////////////////////////
-    model1.get()->Instances[0]->SetPostion(glm::vec3(-5.936, 3.043, -9.525));
-    model1.get()->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
-    model1.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
-    model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-    model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-   
-
-    model3.get()->Instances[0]->SetPostion(glm::vec3(6.087, 13.277, 3.776));
-    model3.get()->Instances[0]->SetRotation(glm::vec3(-179.987, -49.785, 179.967));
-    model3.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
-    model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-    model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-
-	model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
-	model2.get()->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
-	model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+    //model1.get()->Instances[0]->SetPostion(glm::vec3(-5.936, 3.043, -9.525));
+    //model1.get()->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
+    //model1.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
+    //model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+    //model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+   	//
+	//
+    //model3.get()->Instances[0]->SetPostion(glm::vec3(6.087, 13.277, 3.776));
+    //model3.get()->Instances[0]->SetRotation(glm::vec3(-179.987, -49.785, 179.967));
+    //model3.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
+    //model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+    //model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	//
+	//model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
+	//model2.get()->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
+	//model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	//model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
 
 	//model1.get()->Instances[0]->SetPostion(glm::vec3(-14.224, -0.329, 0.357));
@@ -89,7 +89,7 @@
 	//model3.get()->Instances[0]->SetRotation(glm::vec3(179.997, 44.147, 179.993));
 	//model3.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
 	//model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	//model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
 	//
 	//model11.get()->Instances[0]->SetScale(glm::vec3(5.000, 5.000, 5.000));
@@ -111,12 +111,12 @@
 
 	////
 	////
-    Models.push_back(std::move(model1));
-    Models.push_back(std::move(model2));
-	Models.push_back(std::move(model3));
+    //Models.push_back(std::move(model1));
+    //Models.push_back(std::move(model2));
+	//Models.push_back(std::move(model3));
 	//Models.push_back(std::move(model4));
 	//Models.push_back(std::move(model5));
-	//Models.push_back(std::move(model11));
+    Models.push_back(std::move(model11));
 
 
 
@@ -124,8 +124,8 @@
 	//Models.push_back(std::move(model10));
 	////
 	UserInterfaceItems.push_back(Models[0].get());
-	UserInterfaceItems.push_back(Models[1].get());
-	UserInterfaceItems.push_back(Models[2].get());
+	//UserInterfaceItems.push_back(Models[1].get());
+	//UserInterfaceItems.push_back(Models[2].get());
 	//UserInterfaceItems.push_back(Models[4].get());
 
 	//UserInterfaceItems.push_back(Models[7].get());

@@ -480,6 +480,8 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
                     ImGui::Checkbox("Use Infinite Bounces", (bool*)&appref->dynamicDiffuse_RTGI->UseinfiniteBounce);
                     ImGui::SliderFloat("Bounce Multiplier", &appref->dynamicDiffuse_RTGI->infiniteBounceMultiplyer, 0, 1, "%.1f");
                     ImGui::SliderInt("Rays Per Probe", &appref->dynamicDiffuse_RTGI->RaysPerProbe, 1, 300, "%d");
+                    ImGui::SliderInt("Sample Count", &appref->dynamicDiffuse_RTGI->SampleCount, 0, 10, "%d");
+
 
                     ImGui::SeparatorText("Probe Grid");
                     ImGui::SliderInt("X Count", &appref->dynamicDiffuse_RTGI->NumOfProbesX, 1, 20, "%d");

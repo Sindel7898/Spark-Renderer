@@ -140,7 +140,7 @@ public:
     float RotationSpeed = 1;
 
 
-    int ProbeSideLength = (8 * 8);
+    int ProbeSideLength = (6 * 6);
     int GutterSize = 2;
 
     int Last_NumOfProbesX;
@@ -157,6 +157,8 @@ public:
 
     float infiniteBounceMultiplyer = 0.75f;
     int UseinfiniteBounce = 1;
+    int SampleCount = 2;
+    int FrameCount = 0;
 private:
 
     VulkanContext*   vulkanContext = nullptr;

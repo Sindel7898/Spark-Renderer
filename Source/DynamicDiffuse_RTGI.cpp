@@ -157,8 +157,7 @@ void DynamicDiffuse_RTGI::CreateSampledGIImage() {
 	vk::Extent3D SampledImageExtent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
 	Probe_Sampled_GI_Image.ImageID = " Sampled DDGI Image";
-	bufferManager->CreateImage(&Probe_Sampled_GI_Image, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled);
-	Probe_Sampled_GI_Image.imageView = bufferManager->CreateImageView(&Probe_Sampled_GI_Image, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	bufferManager->CreateImage(&Probe_Sampled_GI_Image, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);	Probe_Sampled_GI_Image.imageView = bufferManager->CreateImageView(&Probe_Sampled_GI_Image, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	Probe_Sampled_GI_Image.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
 
 
@@ -1347,7 +1346,7 @@ void DynamicDiffuse_RTGI::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer,
 	  rtpcInfo.sampleGridInfo.generalAtlasInfo.ProbeSideLength = ProbeSideLength;
 	  rtpcInfo.sampleGridInfo.generalAtlasInfo.GutterSize = GutterSize;
 	  rtpcInfo.sampleGridInfo.generalAtlasInfo.RaysPerProbe = RaysPerProbe;
-	  rtpcInfo.UseInfiniteBounce_infinite_bounces_multiplier_Padding = glm::vec4(UseinfiniteBounce, infiniteBounceMultiplyer, 0, 0);
+	  rtpcInfo.UseInfiniteBounce_infinite_bounces_multiplier_Padding = glm::vec4(UseinfiniteBounce, infiniteBounceMultiplyer, SampleCount, FrameCount);
 
 	  commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR, 0, sizeof(RTpcInfo), &rtpcInfo);
       commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, pipelinelayout, 0, 1, &RaytracingDescriptorSets[imageIndex],0,nullptr);
@@ -1363,7 +1362,7 @@ void DynamicDiffuse_RTGI::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer,
       	depth);
 
 
-
+	  FrameCount++;
 }
 
 bool DynamicDiffuse_RTGI::UpdateUniformBuffer(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, std::vector<BufferData>& fragmentUniformBuffers,GBuffer gbuffer)

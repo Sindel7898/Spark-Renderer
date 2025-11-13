@@ -212,7 +212,9 @@ vec3 SampleIrradiance( vec3 Position, vec3 Normal)
 struct Payload {
     vec3  Color;
     float Distance;
-    int Hit;
+    vec3  Normal;
+    int   Hit;
+    vec3  HitPosition;
 };
 
 layout(location = 0) rayPayloadInEXT Payload payload;
@@ -225,6 +227,9 @@ void main()
 {
 
    vec3 Radiance  = vec3(0.0);
+   vec3 HitNormal   = vec3(0.0);
+   vec3 HitPosition   = vec3(0.0);
+
    float Distance = 0;
 
   if(gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT){ // if we hit the inside of a triangle get the backface
@@ -290,6 +295,7 @@ void main()
        vec3 NormalTexture = texture(Normal_AssetImages[nonuniformEXT(primitiveID)], TexCoord).rgb * 2.0 - vec3(1.0);
        vec3 tnorm = normalize(WorldSpaceTBN * NormalTexture);
        Normal = tnorm;
+       HitNormal = Normal;
        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    
        vec3  LightDir = vec3(1,1,1);
@@ -299,7 +305,7 @@ void main()
        
        vec3  radiance  = vec3(0.0);
        vec4  WorldPos  =  Transformations.WorldMatrix[objectID] * vec4(VertexPosition,1);
-   
+       HitPosition = WorldPos.xyz;
        for (int i = 0; i < 4; i++) {
      
            LightData light = lights[i];
@@ -343,8 +349,9 @@ void main()
      Distance = gl_RayTminEXT + gl_HitTEXT;
    }
 
-   Radiance = 
-     payload.Color    = Radiance;
-     payload.Distance = Distance;
-     payload.Hit = 1;
+     payload.Color       = Radiance;
+     payload.Distance    = Distance;
+     payload.Hit         = 1;
+     payload.Normal      = HitNormal; 
+     payload.HitPosition = vec3(HitPosition.xyz);
  }
