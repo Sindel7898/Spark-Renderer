@@ -108,62 +108,9 @@ void main() {
 
           if(payload.Hit == 0){
               Radiance = CubeMapIrradiance;
-              imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(Radiance,Distance));
-              return;
              }
-      
-        vec3 totalRadiance = vec3(0.0);
-        float totalDistance = 0.0;
+          imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(Radiance,Distance));
 
-        totalRadiance += Radiance;
-        totalDistance += Distance;
-         
-         int FrameCount = int(pc.UseInfiniteBounce_infinite_bounces_multiplier_SampleCount_FrameCount.w);
-
-         int SampleCount = int(pc.UseInfiniteBounce_infinite_bounces_multiplier_SampleCount_FrameCount.z);
-             SampleCount = max(SampleCount, 0);
-
-
-          for(int i = 0; i < SampleCount; i++){
-                    
-                vec2 seed = vec2(float(gl_LaunchIDEXT.x), float(gl_LaunchIDEXT.y));
-                seed += vec2(float(i) * 37.0, FrameCount * 17.0);
-                vec2 Noise = rand2D(seed);
-                vec3 SampleDirection = GetHemisphereSample(Noise,Normal);
-                
-                payload.Hit = 0;
-                payload.Color = vec3(0.0);
-                payload.Distance = tMax;
-                payload.Normal = vec3(0.0);
-                payload.HitPosition = vec3(0.0);
-
-                traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, HitPosition.xyz, tMin, SampleDirection, tMax, 0);
-                
-                vec3  SecRadiance     = payload.Color;
-                float SecDistance     = payload.Distance;
-                 HitPosition          = payload.HitPosition;
-
-                if(payload.Hit == 0){
-                          SecRadiance   = CubeMapIrradiance;
-
-                          totalRadiance += SecRadiance;
-                          totalDistance += SecDistance;
-
-                     vec3 E_avgRadiance = totalRadiance / float(i + 1 + 1);
-                    float E_avgDistance = totalDistance / float(i + 1 + 1);
-
-                  imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(E_avgRadiance,E_avgDistance));
-                }
-
-                totalRadiance += SecRadiance;
-                totalDistance += SecDistance;
-          }
-
-          vec3 avgRadiance = totalRadiance / float(SampleCount + 1);
-         float avgDistance = totalDistance / float(SampleCount + 1);
-
-          imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(avgRadiance,avgDistance));
-          return;
        }
          else if (probe.probeState ==  PROBE_STATE_SLEEP){
           imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(CubeMapIrradiance,1000));

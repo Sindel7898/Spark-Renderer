@@ -474,7 +474,14 @@ void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
 	VisibilityImageStorageLayout.descriptorType = vk::DescriptorType::eStorageImage;
 	VisibilityImageStorageLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
 
-	std::array<vk::DescriptorSetLayoutBinding, 15> bindings = {
+	vk::DescriptorSetLayoutBinding EmmisiveAssetTexturesSamplerLayout{};
+	EmmisiveAssetTexturesSamplerLayout.binding = 15;
+	EmmisiveAssetTexturesSamplerLayout.descriptorCount = bufferManager->AllScene_Emissive_Images.size();
+	EmmisiveAssetTexturesSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	EmmisiveAssetTexturesSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+
+
+	std::array<vk::DescriptorSetLayoutBinding, 16> bindings = {
 															   TLASLayout,
 															   AlbedoAssetTexturesSamplerLayout,
 															   NormalAssetTexturesSamplerLayout,
@@ -486,7 +493,7 @@ void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
 															   IrradianceAtlasStorageLayout,
 															   ProbeDataBuffersLayout,FibonacciDirectionsBuffersLayout,
 															   LightInformationUniformBuffersLayout,SkyBoxImageSamplersLayout
-															   ,IrradianceImageStorageLayout,VisibilityImageStorageLayout
+															   ,IrradianceImageStorageLayout,VisibilityImageStorageLayout,EmmisiveAssetTexturesSamplerLayout
 	};
 
 
@@ -1268,14 +1275,40 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			VisibilityImagStoragedescriptorWrite.pImageInfo = &VisibilityImageInfo;
 
 
-			std::array<vk::WriteDescriptorSet, 15> descriptorWrites{ 
+			std::vector<vk::DescriptorImageInfo> EmmisiveImageAssetImagesInfos;
+
+			for (int j = 0; j < bufferManager->AllScene_Emissive_Images.size(); j++)
+			{
+				ImageData* imageData = bufferManager->AllScene_Emissive_Images[j];
+
+				if (imageData) {
+
+					vk::DescriptorImageInfo EmmisiveASSETImageInfo{};
+					EmmisiveASSETImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+					EmmisiveASSETImageInfo.imageView   = imageData->imageView;
+					EmmisiveASSETImageInfo.sampler     = imageData->imageSampler;
+
+					EmmisiveImageAssetImagesInfos.push_back(EmmisiveASSETImageInfo);
+				};
+			}
+
+			vk::WriteDescriptorSet EmmisiveAssetImagSamplerdescriptorWrite{};
+			EmmisiveAssetImagSamplerdescriptorWrite.dstSet = RaytracingDescriptorSets[i];
+			EmmisiveAssetImagSamplerdescriptorWrite.dstBinding = 15;
+			EmmisiveAssetImagSamplerdescriptorWrite.dstArrayElement = 0;
+			EmmisiveAssetImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			EmmisiveAssetImagSamplerdescriptorWrite.descriptorCount = EmmisiveImageAssetImagesInfos.size();
+			EmmisiveAssetImagSamplerdescriptorWrite.pImageInfo = EmmisiveImageAssetImagesInfos.data();
+
+
+			std::array<vk::WriteDescriptorSet, 16> descriptorWrites{ 
 			TLAS_descriptorWrite,AssetImagSamplerdescriptorWrite,
 			NormalAssetImagSamplerdescriptorWrite,MetalicRoughnessAssetImagSamplerdescriptorWrite,
 			IndexStorageBufferdescriptorWrite,VertexStorageBufferdescriptorWrite,OffsetStorageBufferdescriptorWrite,
 			TransformUniformBufferdescriptorWrite,IrradianceAtlasdescriptorWrite,
 			ProbeLocationbufferdescriptorWrite,FibonacciDirectionsbufferdescriptorWrite,
 			lightUniformBufferdescriptorWrite,SkyboxImagSamplerdescriptorWrite,
-			IrradianceImagStoragedescriptorWrite,VisibilityImagStoragedescriptorWrite };
+			IrradianceImagStoragedescriptorWrite,VisibilityImagStoragedescriptorWrite,EmmisiveAssetImagSamplerdescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 		}

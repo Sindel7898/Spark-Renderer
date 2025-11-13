@@ -6,6 +6,8 @@ const float PI = 3.14159265359;
 layout(set = 0, binding = 1)  uniform sampler2D         Albedo_AssetImages[];
 layout(set = 0, binding = 2)  uniform sampler2D         Normal_AssetImages[];
 layout(set = 0, binding = 3)  uniform sampler2D         MetalicRoughness_AssetImages[];
+layout(set = 0, binding = 15) uniform sampler2D         Emmisive_AssetImages[];
+
 layout(set = 0, binding = 13,rgba16f) uniform readonly image2D  IrradianceStorageImage;
 layout(set = 0, binding = 14,rgba16f) uniform readonly image2D  VisibilityStorageImage;
 
@@ -291,12 +293,16 @@ void main()
        vec3  Albedo     = texture(Albedo_AssetImages         [nonuniformEXT(primitiveID)], TexCoord).rgb;
        float Metallic  = texture(MetalicRoughness_AssetImages[nonuniformEXT(primitiveID)], TexCoord).r;
        float Roughness = texture(MetalicRoughness_AssetImages[nonuniformEXT(primitiveID)], TexCoord).r;
-   
+       vec3 Emissive   = texture(Emmisive_AssetImages        [nonuniformEXT(primitiveID)], TexCoord).rgb;
+
        vec3 NormalTexture = texture(Normal_AssetImages[nonuniformEXT(primitiveID)], TexCoord).rgb * 2.0 - vec3(1.0);
        vec3 tnorm = normalize(WorldSpaceTBN * NormalTexture);
        Normal = tnorm;
        HitNormal = Normal;
-       /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      
+      
+      
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    
        vec3  LightDir = vec3(1,1,1);
        const float Constant   = 1.0;
@@ -335,16 +341,19 @@ void main()
         Radiance +=  ((Lo) * light.CameraPositionAndLightIntensity.a);
      }
      
+		Radiance += Emissive;
+
        int UseInfiniteBounce =  int(pc.UseInfiniteBounce_infinite_bounces_multiplier_Padding.x);
        
         if(UseInfiniteBounce > 0.5){
 
-             vec3 GI = Albedo * SampleIrradiance(WorldPos.xyz,Normal) *  pc.UseInfiniteBounce_infinite_bounces_multiplier_Padding.y;
+             vec3 GI = SampleIrradiance(WorldPos.xyz,Normal) *  pc.UseInfiniteBounce_infinite_bounces_multiplier_Padding.y;
               
              if (any(greaterThan(GI, vec3(0)))) {
                      Radiance += GI;
              }
         }
+
 
      Distance = gl_RayTminEXT + gl_HitTEXT;
    }

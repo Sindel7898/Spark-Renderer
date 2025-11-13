@@ -110,6 +110,11 @@ void Model::LoadTextures()
 
 	}
 
+	for (ImageData& EmmisiveTexture : EmissiveTextures)
+	{
+		bufferManager->AllScene_Emissive_Images.push_back(&EmmisiveTexture);
+
+	}
 }
 
 void Model::CreateVertexAndIndexBuffer()
