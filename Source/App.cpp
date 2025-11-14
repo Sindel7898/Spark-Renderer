@@ -23,6 +23,7 @@
 #include "Lighting_FullScreenQuad.h"
 #include <pix.h>
 #include "Tracy.hpp"
+#include <random>
 
 #define DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
 
@@ -141,11 +142,25 @@
 	Combined_FullScreenQuad = std::unique_ptr<CombinedResult_FullScreenQuad, decltype(&CombinedResult_FullScreenQuadDeleter)>(new CombinedResult_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),CombinedResult_FullScreenQuadDeleter);
 	SSGI_FullScreenQuad     = std::unique_ptr<SSGI, decltype(&SSGIDeleter)>(new SSGI(&bufferManger, &vulkanContext, &camera, commandPool),SSGIDeleter);
 	dynamicDiffuse_RTGI     = std::unique_ptr<DynamicDiffuse_RTGI, decltype(&DynamicDiffuse_RTGIDeleter)>(new DynamicDiffuse_RTGI("../Textures/Sphere/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger, skyBox.get()), DynamicDiffuse_RTGIDeleter);
+	Restir_DI               = std::unique_ptr<ReSTIR_DI, decltype(&ReSTIR_DI_Deleter)>(new ReSTIR_DI(&vulkanContext, commandPool, &camera, &bufferManger, lighting_FullScreenQuad.get(), SSGI_FullScreenQuad.get()), ReSTIR_DI_Deleter);
 
 	lights.reserve(4);
 
-	for (int i = 0; i < 4; i++) {
+	std::random_device rd;
+
+	std::mt19937 gen(rd());
+
+	std::uniform_real_distribution<float> dis(1.0f, 100.0f);
+
+	for (int i = 0; i < 50; i++) {
 		std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(&vulkanContext, commandPool, &camera, &bufferManger), LightDeleter);
+
+		float randX = dis(gen);
+		float randY = dis(gen);
+		float randZ = dis(gen);
+
+		light->SetPosition(glm::vec3(randX, randY, randZ));
+
 		lights.push_back(std::move(light));
 	}
 
@@ -644,6 +659,8 @@ void App::createGBuffer()
 	ssao_FullScreenQuad->CreateImage();
 	RT_Reflection->CreateStorageImage();
 	dynamicDiffuse_RTGI->CreateSampledGIImage(); 
+	Restir_DI->CreateImage();
+
 
 	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&ReflectionMaskImageData,&RT_Reflection->FullBlurReflectionPassImage);
 	ssao_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
@@ -654,6 +671,7 @@ void App::createGBuffer()
 	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, LightingPassImageData,DepthTextureData);
 	RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer, lighting_FullScreenQuad->fragmentUniformBuffers);
 	dynamicDiffuse_RTGI->createDescriptorSets(DescriptorPool, gbuffer);
+	Restir_DI->createDescriptorSetsBasedOnGBuffer(DescriptorPool);
 
 
 	vk::CommandBuffer cmd =  bufferManger.CreateSingleUseCommandBuffer(commandPool);
@@ -741,8 +759,8 @@ void App::createGBuffer()
 		                                                 VK_IMAGE_LAYOUT_GENERAL);
 	
 
-	RT_BluredReflectionTextureId = ImGui_ImplVulkan_AddTexture(RT_Reflection->FullBlurReflectionPassImage.imageSampler,
-		                                                       RT_Reflection->FullBlurReflectionPassImage.imageView,
+	RT_BluredReflectionTextureId = ImGui_ImplVulkan_AddTexture(Restir_DI->ResevoirImage.imageSampler,
+		                                                       Restir_DI->ResevoirImage.imageView,
 		                                                       VK_IMAGE_LAYOUT_GENERAL);
 
    Sampled_GI_ID = ImGui_ImplVulkan_AddTexture(dynamicDiffuse_RTGI->Probe_Sampled_GI_Image.imageSampler,
@@ -1796,6 +1814,36 @@ void App::CreateGraphicsPipeline()
 	}
 
 
+	{
+		auto ComputeShaderCode = readFile("../Shaders/Compiled_Shader_Files/Reservoir_ReSTIR_DI.comp.spv");
+
+		VkShaderModule ComputeShaderModule = pipelineManager.createShaderModule(ComputeShaderCode);
+
+		vk::PipelineShaderStageCreateInfo ComputeShaderStageInfo{};
+		ComputeShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+		ComputeShaderStageInfo.stage = vk::ShaderStageFlagBits::eCompute;
+		ComputeShaderStageInfo.module = ComputeShaderModule;
+		ComputeShaderStageInfo.pName = "main";
+
+		vk::PushConstantRange range{};
+		range.setOffset(0);
+		range.setSize(sizeof(PushConstant));
+		range.setStageFlags(vk::ShaderStageFlagBits::eCompute);
+
+		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.pSetLayouts = &Restir_DI->RservoirSamplingDescriptorSetLayout;
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges = &range;
+
+		ReSTIResevoirComputePipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+
+		ReSTIResevoirComputePassPipeline = pipelineManager.creatComputePipeline(ReSTIResevoirComputePipelineLayout, ComputeShaderStageInfo);
+
+		vulkanContext.LogicalDevice.destroyShaderModule(ComputeShaderModule);
+	}
+
+
 }
 
 uint32_t App::alignedSize(uint32_t value, uint32_t alignment)
@@ -2673,6 +2721,12 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	}
 
 
+	{
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, ReSTIResevoirComputePassPipeline);
+
+		Restir_DI->DispatchResevoirCandidateCalcCompute(commandBuffer, ReSTIResevoirComputePipelineLayout, currentFrame);
+	}
+
 
 	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, RTShadows_Label);
 
@@ -3530,6 +3584,8 @@ void App::destroy_GbufferImages()
 	Combined_FullScreenQuad->DestroyImage();
 	RT_Reflection->DestroyStorageImage();
 	dynamicDiffuse_RTGI->DestroySampledGIImage();
+	Restir_DI->DestroyImage();
+
 }
 
 void App::recreateSwapChain() {
@@ -3611,6 +3667,7 @@ void App::DestroyBuffers()
 	Raytracing_Shadows.reset();
 	SSGI_FullScreenQuad.reset();
 	Combined_FullScreenQuad.reset();
+	Restir_DI.reset();
 	RT_Reflection.reset();
 	dynamicDiffuse_RTGI.reset();
 	bufferManger.DestroyBuffer(TLAS_Buffer);
@@ -3645,6 +3702,7 @@ void App::destroyPipeline()
 	vulkanContext.LogicalDevice.destroyPipeline(IrradianceComputePassPipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(SampleDDGIComputePassPipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(ProbeStatusComputePassPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(ReSTIResevoirComputePassPipeline);
 
 
 	vulkanContext.LogicalDevice.destroyPipelineLayout(DeferedLightingPassPipelineLayout);
@@ -3668,6 +3726,7 @@ void App::destroyPipeline()
 	vulkanContext.LogicalDevice.destroyPipelineLayout(IrradianceComputePipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(SampleDDGIComputePipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(ProbeStatusPipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(ReSTIResevoirComputePipelineLayout);
 
 }
 

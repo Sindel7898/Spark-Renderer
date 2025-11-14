@@ -24,6 +24,7 @@
 #include "Pipeline_Manager.h"
 #include "RT_Reflections.h"
 #include "DynamicDiffuse_RTGI.h"
+#include "ReSTIR_DI.h"
 
 
 class MeshLoader;
@@ -131,6 +132,8 @@ public:
 	std::unique_ptr<DynamicDiffuse_RTGI, decltype(&DynamicDiffuse_RTGIDeleter)>
 		dynamicDiffuse_RTGI { nullptr, &DynamicDiffuse_RTGIDeleter };
 
+	std::unique_ptr<ReSTIR_DI, decltype(&ReSTIR_DI_Deleter)>
+		Restir_DI{ nullptr, &ReSTIR_DI_Deleter };
 
 	VkDescriptorSet FinalRenderTextureId;
 	VkDescriptorSet LightingAndReflectionsRenderTextureId;
@@ -192,6 +195,7 @@ private:
 	vk::PipelineLayout         IrradianceComputePipelineLayout = nullptr;
 	vk::PipelineLayout         SampleDDGIComputePipelineLayout = nullptr;
 	vk::PipelineLayout         ProbeStatusPipelineLayout = nullptr;
+	vk::PipelineLayout         ReSTIResevoirComputePipelineLayout = nullptr;
 
 
 
@@ -216,6 +220,7 @@ private:
 	vk::Pipeline               IrradianceComputePassPipeline = nullptr;
 	vk::Pipeline               SampleDDGIComputePassPipeline = nullptr;
 	vk::Pipeline               ProbeStatusComputePassPipeline = nullptr;
+	vk::Pipeline               ReSTIResevoirComputePassPipeline = nullptr;
 
 
 	vk::CommandPool            commandPool = nullptr;

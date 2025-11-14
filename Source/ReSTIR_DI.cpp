@@ -1,23 +1,23 @@
 #include "ReSTIR_DI.h"
 #include "VulkanContext.h"
 #include "Lighting_FullScreenQuad.h"
+#include "SSGI.h"
 
 
 
-ReSTIR_DI::ReSTIR_DI(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, Lighting_FullScreenQuad* rLightingPass)
+ReSTIR_DI::ReSTIR_DI(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, Lighting_FullScreenQuad* rLightingPass, SSGI* rssgi)
 {
 	bufferManager = buffermanger;
 	vulkanContext = vulkancontext;
 	camera = rcamera;
 	commandPool = commandpool;
 	LightingPass = rLightingPass;
-
+	ssgi = rssgi;
 	createDescriptorSetLayout();
 }
 
 void ReSTIR_DI::CreateImage() {
 
-	// Note: This extent is deliberately different from the one in CreateAtlasImages
 	vk::Extent3D SampledImageExtent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
 	ResevoirImage.ImageID = " Resevoir  Image";
@@ -57,14 +57,12 @@ void ReSTIR_DI::CreateImage() {
 }
 
 
-void ReSTIR_DI::DestroyAtlasImages() {
+void ReSTIR_DI::DestroyImage() {
 
 	if (ResevoirImage.image)
 	{
 		bufferManager->DestroyImage(ResevoirImage);
 	}
-
-
 }
 
 
@@ -83,7 +81,41 @@ void ReSTIR_DI::createDescriptorSetLayout()
 		ResevoirStorageImageLayout.descriptorType = vk::DescriptorType::eStorageImage;
 		ResevoirStorageImageLayout.stageFlags = vk::ShaderStageFlagBits::eCompute;
 
-		std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {LightUniformBufferLayout,ResevoirStorageImageLayout };
+		vk::DescriptorSetLayoutBinding WorldPositionImageLayout{};
+		WorldPositionImageLayout.binding = 2;
+		WorldPositionImageLayout.descriptorCount = 1;
+		WorldPositionImageLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		WorldPositionImageLayout.stageFlags = vk::ShaderStageFlagBits::eCompute;
+
+		vk::DescriptorSetLayoutBinding NormalImageLayout{};
+		NormalImageLayout.binding = 3;
+		NormalImageLayout.descriptorCount = 1;
+		NormalImageLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		NormalImageLayout.stageFlags = vk::ShaderStageFlagBits::eCompute;
+
+
+		vk::DescriptorSetLayoutBinding AlbedoImageLayout{};
+		AlbedoImageLayout.binding = 4;
+		AlbedoImageLayout.descriptorCount = 1;
+		AlbedoImageLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		AlbedoImageLayout.stageFlags = vk::ShaderStageFlagBits::eCompute;
+
+
+		vk::DescriptorSetLayoutBinding MaterialImageLayout{};
+		MaterialImageLayout.binding = 5;
+		MaterialImageLayout.descriptorCount = 1;
+		MaterialImageLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		MaterialImageLayout.stageFlags = vk::ShaderStageFlagBits::eCompute;
+
+		vk::DescriptorSetLayoutBinding BluenoiseImageLayout{};
+		MaterialImageLayout.binding = 6;
+		MaterialImageLayout.descriptorCount = ssgi->BlueNoiseTextures.size();
+		MaterialImageLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		MaterialImageLayout.stageFlags = vk::ShaderStageFlagBits::eCompute;
+
+		std::array<vk::DescriptorSetLayoutBinding, 6> bindings = {LightUniformBufferLayout,ResevoirStorageImageLayout,
+			                                                      AlbedoImageLayout,NormalImageLayout,MaterialImageLayout,
+			                                                      WorldPositionImageLayout };
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -144,15 +176,102 @@ void ReSTIR_DI::UpdateDescrptorSets()
 		ResevoirImagedescriptorWrite.descriptorCount = 1;
 		ResevoirImagedescriptorWrite.pImageInfo = &ResevoirImageInfo;
 
-		std::array<vk::WriteDescriptorSet, 2> descriptorWrites = {LightUniformBufferDescriptorWrite,ResevoirImagedescriptorWrite };
 
+		vk::DescriptorImageInfo PositionimageInfo{};
+		PositionimageInfo.imageLayout = vk::ImageLayout::eGeneral;
+		PositionimageInfo.imageView   = LightingPass->GbufferRef->Position.imageView;
+		PositionimageInfo.sampler     = LightingPass->GbufferRef->Position.imageSampler;
+
+		vk::WriteDescriptorSet PositionSamplerdescriptorWrite{};
+		PositionSamplerdescriptorWrite.dstSet = RservoirSamplingProbeDescriptorSets[i];
+		PositionSamplerdescriptorWrite.dstBinding = 2;
+		PositionSamplerdescriptorWrite.dstArrayElement = 0;
+		PositionSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		PositionSamplerdescriptorWrite.descriptorCount = 1;
+		PositionSamplerdescriptorWrite.pImageInfo = &PositionimageInfo;
+		/////////////////////////////////////////////////////////////////////////////////////
+		;
+		vk::DescriptorImageInfo NormalimageInfo{};
+		NormalimageInfo.imageLayout = vk::ImageLayout::eGeneral;
+		NormalimageInfo.imageView = LightingPass->GbufferRef->Normal.imageView;
+		NormalimageInfo.sampler =   LightingPass->GbufferRef->Normal.imageSampler;
+
+		vk::WriteDescriptorSet NormalSamplerdescriptorWrite{};
+		NormalSamplerdescriptorWrite.dstSet = RservoirSamplingProbeDescriptorSets[i];
+		NormalSamplerdescriptorWrite.dstBinding = 3;
+		NormalSamplerdescriptorWrite.dstArrayElement = 0;
+		NormalSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		NormalSamplerdescriptorWrite.descriptorCount = 1;
+		NormalSamplerdescriptorWrite.pImageInfo = &NormalimageInfo;
+		/////////////////////////////////////////////////////////////////////////////////////
+
+		vk::DescriptorImageInfo AlbedoimageInfo{};
+		AlbedoimageInfo.imageLayout = vk::ImageLayout::eGeneral;
+		AlbedoimageInfo.imageView = LightingPass->GbufferRef->Albedo.imageView;
+		AlbedoimageInfo.sampler =   LightingPass->GbufferRef->Albedo.imageSampler;
+
+		vk::WriteDescriptorSet  AlbedoSamplerdescriptorWrite{};
+		AlbedoSamplerdescriptorWrite.dstSet = RservoirSamplingProbeDescriptorSets[i];
+		AlbedoSamplerdescriptorWrite.dstBinding = 4;
+		AlbedoSamplerdescriptorWrite.dstArrayElement = 0;
+		AlbedoSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		AlbedoSamplerdescriptorWrite.descriptorCount = 1;
+		AlbedoSamplerdescriptorWrite.pImageInfo = &AlbedoimageInfo;
+		/////////////////////////////////////////////////////////////////////////////////////
+
+		vk::DescriptorImageInfo MaterialsimageInfo{};
+		MaterialsimageInfo.imageLayout = vk::ImageLayout::eGeneral;
+		MaterialsimageInfo.imageView = LightingPass->GbufferRef->Materials.imageView;
+		MaterialsimageInfo.sampler =   LightingPass->GbufferRef->Materials.imageSampler;
+
+		vk::WriteDescriptorSet MaterialsSamplerdescriptorWrite{};
+		MaterialsSamplerdescriptorWrite.dstSet = RservoirSamplingProbeDescriptorSets[i];
+		MaterialsSamplerdescriptorWrite.dstBinding = 5;
+		MaterialsSamplerdescriptorWrite.dstArrayElement = 0;
+		MaterialsSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		MaterialsSamplerdescriptorWrite.descriptorCount = 1;
+		MaterialsSamplerdescriptorWrite.pImageInfo = &MaterialsimageInfo;
+
+		std::vector<vk::DescriptorImageInfo>BlueNoiseImagesInfos;
+
+		for (int i = 0; i < ssgi->BlueNoiseTextures.size(); i++)
+		{
+			vk::DescriptorImageInfo BlueNoiseimageInfo{};
+			BlueNoiseimageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			BlueNoiseimageInfo.imageView = ssgi->BlueNoiseTextures[i].imageView;
+			BlueNoiseimageInfo.sampler = ssgi->BlueNoiseTextures[i].imageSampler;
+
+			BlueNoiseImagesInfos.push_back(BlueNoiseimageInfo);
+		};
+
+		vk::WriteDescriptorSet BlueNoiseSamplerdescriptorWrite{};
+		BlueNoiseSamplerdescriptorWrite.dstSet = RservoirSamplingProbeDescriptorSets[i];
+		BlueNoiseSamplerdescriptorWrite.dstBinding = 6;
+		BlueNoiseSamplerdescriptorWrite.dstArrayElement = 0;
+		BlueNoiseSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		BlueNoiseSamplerdescriptorWrite.descriptorCount = BlueNoiseImagesInfos.size();
+		BlueNoiseSamplerdescriptorWrite.pImageInfo = BlueNoiseImagesInfos.data();
+
+
+		std::array<vk::WriteDescriptorSet, 7> descriptorWrites = {
+					LightUniformBufferDescriptorWrite,
+					ResevoirImagedescriptorWrite,
+					PositionSamplerdescriptorWrite,   
+					NormalSamplerdescriptorWrite,     
+					AlbedoSamplerdescriptorWrite,     
+					MaterialsSamplerdescriptorWrite,BlueNoiseSamplerdescriptorWrite
+		};
 		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	}
 }
 
 void ReSTIR_DI::DispatchResevoirCandidateCalcCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex)
 {
+	PushConstant pushConstant;
+	pushConstant.CameraPosition = glm::vec4(camera->GetPosition(),1);
+	pushConstant.ScreenSize     = glm::vec4(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, ssgi->NoiseIndex,1);
 
+	commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(PushConstant), &pushConstant);
 	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, 0, 1, &RservoirSamplingProbeDescriptorSets[imageIndex], 0, nullptr);
 
 	uint32_t workGroupsX = (vulkanContext->swapchainExtent.width  + 31) / 32;
@@ -160,3 +279,10 @@ void ReSTIR_DI::DispatchResevoirCandidateCalcCompute(vk::CommandBuffer commandBu
 
 	commandBuffer.dispatch(workGroupsX, workGroupsY, 1);
 }
+
+
+void ReSTIR_DI::CleanUp()
+{
+	vulkanContext->LogicalDevice.destroyDescriptorSetLayout(RservoirSamplingDescriptorSetLayout);
+}
+
