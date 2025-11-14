@@ -40,10 +40,10 @@ struct SurfaceData {
 
 struct Reservoir
 {
-    uint Y; // index of most important light
-    float W_y; // light weight
-    float W_sum; // sum of all weights for all lights processed
-    float M; // number of lights processed for this reservoir
+    uint  Light_Index; // index of most important light
+    float Light_Weight; // light weight
+    float Sum_Of_All_Weights; // sum of all weights for all lights processed
+    float Num_OF_Lights_In_Resevoir; // number of lights processed for this reservoir
 };
 
 vec3 GetPointLightRadiance(LightData light, vec3 cameraPos, SurfaceData surface)
@@ -75,28 +75,24 @@ vec3 GetPointLightRadiance(LightData light, vec3 cameraPos, SurfaceData surface)
    return approxRadiance;
 }
 
- 
-float hash13(vec3 p) {
-    p = fract(p * 0.1031);
-    p += dot(p, p.yzx + 33.33);
-    return fract((p.x + p.y) * p.z);
-}
-
-
-bool UpdateReservoir(inout Reservoir reservoir, uint X, float w, float c, vec2 seed)
+bool UpdateReservoir(inout Reservoir reservoir, uint LightIndex, float Weight, float TotalNumberOFLights)
 {
-    reservoir.W_sum += w;
-    reservoir.M += c;
-        ivec2 TextCoord = ivec2(gl_GlobalInvocationID.xy);
-     vec2 uv = (vec2(TextCoord) + 0.5) / PC.ScreenSize_Padding_FrameIndex.xy;
-     vec2 tiledUV = fract(uv * 64.0);  
+    reservoir.Sum_Of_All_Weights += Weight;
+    reservoir.Num_OF_Lights_In_Resevoir += TotalNumberOFLights;
 
-    // better random
+    ///************** NOISE********************************/// 
+    /////////////////////////////////////////////////////////
+    ivec2 TextCoord = ivec2(gl_GlobalInvocationID.xy);
+    vec2 uv = (vec2(TextCoord) + 0.2) / vec2(128);
+    vec2 tiledUV = fract(uv);  
+    /////////////////////////////////////////////////////////
+
+
    float noise = textureLod(BlueNoise[int(PC.ScreenSize_Padding_FrameIndex.z)], tiledUV,0).r;
 
-    if (noise < w / reservoir.W_sum)
+    if (noise < Weight / reservoir.Sum_Of_All_Weights)
     {
-        reservoir.Y = X;
+        reservoir.Light_Index = LightIndex;
         return true;
     }
     return false;
@@ -125,10 +121,10 @@ void main()
     vec3  CameraPos = PC.CameraPosition.xyz;
 
     Reservoir reservoir;
-              reservoir.Y = 0;
-              reservoir.W_y = 0.0;
-              reservoir.W_sum = 0.0;
-              reservoir.M = 0.0;
+              reservoir.Light_Index = 0;
+              reservoir.Light_Weight = 0.0;
+              reservoir.Sum_Of_All_Weights = 0.0;
+              reservoir.Num_OF_Lights_In_Resevoir = 0.0;
 
     int TotalNumOfLights = 50;
     int NoofPoint = 16; 
@@ -136,48 +132,55 @@ void main()
     float pdf = 1.0 / float(TotalNumOfLights); 
     float p_hat = 0;
 
-     vec2 uv = (vec2(TextCoord) + 0.5) / vec2(128);
+     /////////////////////////////////////////////////////////
+     vec2 uv = (vec2(TextCoord) + 0.5) / vec2(128,128);
      vec2 tiledUV = fract(uv);  
-
+     /////////////////////////////////////////////////////////
 
 for (uint i = 0; i < NoofPoint; i++)
 {
+    /////////////////////////////////////////////////////////////////////////////////////////
     float frame = float(PC.ScreenSize_Padding_FrameIndex.z);
+          frame -=i;
+    float noise = textureLod(BlueNoise[int(PC.ScreenSize_Padding_FrameIndex.z)], tiledUV,0).r;
+    //////////////////////////////////////////////////////////////////////////////////////////
 
+    uint lightIndex = uint(noise * float(TotalNumOfLights)); // Randomly select a light
 
-   float noise = textureLod(BlueNoise[int(PC.ScreenSize_Padding_FrameIndex.z)], tiledUV,0).r;
+    lightIndex = min(lightIndex, uint(TotalNumOfLights - 1)); //Clamp
 
-    uint lightIndex = uint(noise* float(TotalNumOfLights));
-    lightIndex = min(lightIndex, uint(TotalNumOfLights - 1));
-
+     // Calculate the out going radiance of the light ** THIS IS THE IMPORTANCE of the light***
     p_hat = length(GetPointLightRadiance(lights[lightIndex], CameraPos, surfaceData));
-    float w = p_hat / pdf;
 
-    UpdateReservoir(reservoir, lightIndex, w, 1.0, vec2(noise, frame));
+    float WeightOfLight = p_hat / pdf; // 
+
+    UpdateReservoir(reservoir, lightIndex, WeightOfLight, 1.0);
 }
 
-    p_hat = 0.0; 
-
-    if (reservoir.M > 0.0 && reservoir.W_sum > 0.0)
-    {
-        p_hat = length(GetPointLightRadiance(lights[reservoir.Y], CameraPos, surfaceData));
-        
-
-        reservoir.W_y = (p_hat > 0.0) ? (1.0 / p_hat) * reservoir.W_sum / reservoir.M : 0.0;
-    }
-    else
-    {
-        reservoir.Y = 0;
-        reservoir.W_y = 0.0;
-        reservoir.W_sum = 0.0;
-        reservoir.M = 0.0;
-    }
+     ///Move to RT Shader
+    //p_hat = 0.0; 
+    //
+    //if (reservoir.M > 0.0 && reservoir.W_sum > 0.0)
+    //{
+    //    p_hat = length(GetPointLightRadiance(lights[reservoir.Y], CameraPos, surfaceData));
+    //    
+    //
+    //    reservoir.Light_Weight = (p_hat > 0.0) ? (1.0 / p_hat) * reservoir.W_sum / reservoir.M : 0.0;
+    //}
+    //else
+    //{
+    //    reservoir.Y = 0;
+    //    reservoir.Light_Weight = 0.0;
+    //    reservoir.W_sum = 0.0;
+    //    reservoir.M = 0.0;
+    //}
+    //
 
     vec4 reservoirData = vec4(
-                           float(reservoir.Y),
-                           reservoir.W_y,     
-                           reservoir.W_sum,   
-                           reservoir.M);      
+                           reservoir.Light_Index,// convert to int on shadow pass
+                           reservoir.Light_Weight,     
+                           reservoir.Sum_Of_All_Weights,   
+                           reservoir.Num_OF_Lights_In_Resevoir);      
 
     imageStore(ResevoirImage, TextCoord, reservoirData);
 }
