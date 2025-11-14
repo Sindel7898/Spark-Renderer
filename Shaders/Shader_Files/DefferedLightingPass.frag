@@ -174,7 +174,7 @@ void main() {
 
     vec3  numerator    = NDF * G * F;
     float denominator  = 4.0 * max(dot(Normal, ViewDir), 0.0) * max(dot(Normal, LightDir), 0.0)  + 0.0001;
-    vec3  specular     = (numerator / denominator) ;
+    vec3  specular     = (numerator / denominator);
     
     vec3 kS = F;
     vec3 kD = vec3(1.0) - kS;
