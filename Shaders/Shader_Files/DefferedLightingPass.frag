@@ -13,6 +13,10 @@ layout (binding = 8) uniform sampler2D samplerReflections;
 
 layout(location = 0) in vec2 inTexCoord;           
 
+layout(push_constant) uniform PushConstant{
+       int LightCount;
+}PC;
+
 struct LightData{
     vec4    positionAndLightType;
     vec4    colorAndAmbientStrength;
@@ -138,7 +142,7 @@ void main() {
 
     vec3 F0          = vec3(0.04); 
 
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < PC.LightCount; i++) {
 
     LightData light = lights[i];
 

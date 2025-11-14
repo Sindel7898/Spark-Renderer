@@ -26,9 +26,10 @@ public:
     RT_Shadows* raytracingRef = nullptr;
     SkyBox* SkyBoxRef = nullptr;
     ImageData* RT_ReflectionRef = nullptr;
+    int LightCount = 0;
 
    private:
-        Camera* camera = nullptr;
+   Camera* camera = nullptr;
 };
 
 static inline void Lighting_FullScreenQuadDeleter(Lighting_FullScreenQuad* fullScreenQuad) {

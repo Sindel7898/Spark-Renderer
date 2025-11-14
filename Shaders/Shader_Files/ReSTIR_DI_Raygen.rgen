@@ -1,0 +1,263 @@
+#version 460
+#extension GL_EXT_ray_tracing : require
+
+struct LightData{
+    vec4    positionAndLightType;
+    vec4    colorAndAmbientStrength;
+    vec4    CameraPositionAndLightIntensity;
+};
+
+layout(binding = 0) uniform LightUniformBuffer {
+      LightData lights[100];
+};
+
+layout(binding = 1, rgba16f)  uniform image2D ResevoirImage;
+layout(binding = 2)  uniform sampler2D WorldPositionImage;
+layout(binding = 3)  uniform sampler2D NormalImage;
+layout(binding = 4)  uniform sampler2D AlbedoImage;
+layout(binding = 5)  uniform sampler2D MaterialImage;
+layout (binding = 6) uniform sampler2D BlueNoise[63];
+layout(set = 0, binding = 7) uniform accelerationStructureEXT topLevelAS;
+
+
+layout(push_constant) uniform PushConstant{
+      vec4 CameraPosition;
+      vec4 ScreenSize_Padding_FrameIndex_LightCount;
+}PC;
+
+const float PI = 3.14159265359;
+const float Constant  = 1.0;
+const float Linear    = 0.09;
+const float Quadratic = 0.032;
+
+struct SurfaceData {
+    vec3  worldPos;
+    vec3  normal;
+    vec3  albedo;
+    float metallic;
+    float roughness;
+};
+
+struct HitPayload {
+    bool Shadowed;
+};
+
+layout(location = 0) rayPayloadEXT HitPayload PayloadResults;
+
+bool TraceShadow(vec3 origin, vec3 direction, float MaxDistance) {
+    // Initialize payload before tracing
+    PayloadResults.Shadowed = true; // Start with not shadowed
+
+    const uint rayFlags = gl_RayFlagsOpaqueEXT | 
+                         gl_RayFlagsTerminateOnFirstHitEXT | 
+                         gl_RayFlagsSkipClosestHitShaderEXT | 
+                         gl_RayFlagsCullBackFacingTrianglesEXT;
+    const uint cullMask = 0xFF;
+    const float tMin = 0.1;
+    const float tMax = MaxDistance;
+
+    traceRayEXT(
+        topLevelAS,
+        rayFlags,
+        cullMask,
+        0,      // sbtRecordOffset
+        0,      // sbtRecordStride
+        0,      // missIndex
+        origin,
+        tMin,
+        direction,
+        tMax,
+        0       // payload location (0 is already specified in layout)
+    );
+
+    return PayloadResults.Shadowed;
+}
+
+vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal)
+{
+
+    return ViewPosition + 0.06 * normal;
+
+}
+
+struct Reservoir
+{
+    uint  Light_Index; // index of most important light
+    float Light_Weight; // light weight
+    float Sum_Of_All_Weights; // sum of all weights for all lights processed
+    float Num_OF_Lights_In_Resevoir; // number of lights processed for this reservoir
+};
+
+vec3 GetPointLightRadiance(LightData light, vec3 cameraPos, SurfaceData surface)
+{
+    vec3 radiance = vec3(0.0);
+    vec3 LightDir = vec3(0.0);
+
+    if (light.positionAndLightType.w > 0.5)
+    {
+        vec3  LightPos  = light.positionAndLightType.xyz;
+        LightDir        = normalize(LightPos - surface.worldPos);
+        float Distance    = length(LightPos - surface.worldPos);
+        float Attenuation = 1.0 / (Constant + Linear * Distance + Quadratic * (Distance * Distance));
+        radiance        = light.colorAndAmbientStrength.rgb * Attenuation;
+    }
+    else 
+    {
+        LightDir = normalize(-light.positionAndLightType.xyz);
+        radiance = light.colorAndAmbientStrength.rgb;
+    }
+
+ 
+
+    float NdotL = max(dot(surface.normal, LightDir), 0.0);
+    
+    float lightIntensity = light.CameraPositionAndLightIntensity.a;
+    
+   vec3 approxRadiance = (surface.albedo / PI) * radiance * NdotL * lightIntensity;
+
+   return approxRadiance;
+}
+
+bool UpdateReservoir(inout Reservoir reservoir, uint LightIndex, float Weight, float TotalNumberOFLights,float noise)
+{
+    reservoir.Sum_Of_All_Weights += Weight;
+    reservoir.Num_OF_Lights_In_Resevoir += TotalNumberOFLights;
+
+
+    if (noise < Weight / reservoir.Sum_Of_All_Weights)
+    {
+        reservoir.Light_Index = LightIndex;
+        return true;
+    }
+
+    return false;
+}
+
+
+void main() {
+
+    ivec2 TextCoord = ivec2(gl_LaunchIDEXT.xy);
+
+    SurfaceData surfaceData;
+
+    surfaceData.worldPos = texelFetch(WorldPositionImage,TextCoord,0).xyz;
+   
+    ///////////////////////////////////////////////////////
+    if (surfaceData.worldPos == vec3(0.0))
+    {
+        imageStore(ResevoirImage, TextCoord, vec4(0.0));
+        return; 
+    }
+    ////////////////////////////////////////////////////////
+
+
+    surfaceData.normal    = texelFetch(NormalImage  ,TextCoord,0).xyz;
+    surfaceData.albedo    = texelFetch(AlbedoImage  ,TextCoord,0).xyz;
+    surfaceData.metallic  = texelFetch(MaterialImage,TextCoord,0).x;
+    surfaceData.roughness = texelFetch(MaterialImage,TextCoord,0).y;
+       
+    vec3  CameraPos = PC.CameraPosition.xyz;
+
+    Reservoir reservoir;
+              reservoir.Light_Index = 0;
+              reservoir.Light_Weight = 0.0;
+              reservoir.Sum_Of_All_Weights = 0.0;
+              reservoir.Num_OF_Lights_In_Resevoir = 0.0;
+
+    int TotalNumOfLights = int(PC.ScreenSize_Padding_FrameIndex_LightCount.w);
+    int NoofPoint = TotalNumOfLights * 0.25; 
+
+    float pdf = 1.0 / float(TotalNumOfLights); 
+    float p_hat = 0;
+
+     /////////////////////////////////////////////////////////
+     vec2 uv = (vec2(TextCoord) + 0.5) / vec2(128,128);
+     vec2 tiledUV = fract(uv);  
+     /////////////////////////////////////////////////////////
+
+        for (uint i = 0; i < NoofPoint; i++)
+        {
+            /////////////////////////////////////////////////////////////////////////////////////////
+            int noiseTextureIndex = int(PC.ScreenSize_Padding_FrameIndex_LightCount.z + i) % 63;
+             float noise = textureLod(BlueNoise[noiseTextureIndex], tiledUV,0).r;
+            //////////////////////////////////////////////////////////////////////////////////////////
+        
+             uint lightIndex = uint(noise * float(TotalNumOfLights)); // Randomly select a light
+        
+             lightIndex = min(lightIndex, uint(TotalNumOfLights - 1)); //Clamp
+        
+             // Calculate the out going radiance of the light ** THIS IS THE IMPORTANCE of the light***
+             p_hat = length(GetPointLightRadiance(lights[lightIndex], CameraPos, surfaceData));
+        
+             float WeightOfLight = p_hat / pdf; // 
+        
+             float noise_update = textureLod(BlueNoise[noiseTextureIndex], tiledUV, 0).g;
+
+             UpdateReservoir(reservoir, lightIndex, WeightOfLight, 1.0, noise_update);
+        }
+
+        p_hat = 0.0; 
+        
+        if (reservoir.Num_OF_Lights_In_Resevoir > 0.0 && reservoir.Sum_Of_All_Weights > 0.0)
+        {
+            LightData light = lights[reservoir.Light_Index];
+               
+            vec3 RayDirection;
+            float tMax;
+          
+            if (light.positionAndLightType.w > 0.5) 
+            {
+                vec3 lightPos = light.positionAndLightType.xyz;
+                vec3 toLight = lightPos - surfaceData.worldPos;
+                RayDirection = normalize(toLight);
+                tMax = length(toLight); 
+            }
+            else 
+            {
+                RayDirection = normalize(-light.positionAndLightType.xyz); 
+                tMax = 10000.0; 
+            }
+
+           
+            vec3 rayOrigin = offsetPositionAlongNormal(surfaceData.worldPos, surfaceData.normal);
+
+            bool Hit = TraceShadow(rayOrigin, RayDirection, tMax);
+
+            vec3 radiance;
+
+            if(Hit){
+               radiance = vec3(0.0);
+            }else{
+               radiance = GetPointLightRadiance(light, CameraPos.xyz, surfaceData);
+            }
+
+            p_hat = length(radiance);
+
+            reservoir.Light_Weight = (p_hat > 0.0) ? (1.0 / p_hat) * reservoir.Sum_Of_All_Weights / reservoir.Num_OF_Lights_In_Resevoir : 0.0;
+
+            radiance *= reservoir.Light_Weight;
+
+            imageStore(ResevoirImage, TextCoord, vec4(radiance,1) );
+        }
+        else
+        {
+             reservoir;
+             reservoir.Light_Index = 0;
+             reservoir.Light_Weight = 0.0;
+             reservoir.Sum_Of_All_Weights = 0.0;
+             reservoir.Num_OF_Lights_In_Resevoir = 0.0;
+
+             imageStore(ResevoirImage, TextCoord, vec4(reservoir.Light_Index,
+                                                       reservoir.Light_Weight,
+                                                       reservoir.Sum_Of_All_Weights,
+                                                       reservoir.Num_OF_Lights_In_Resevoir));
+       }
+}
+
+//struct Reservoir
+//{
+//    uint Y; // index of most important light
+//    float W_y; // light weight
+//    float W_sum; // sum of all weights for all lights processed
+//    float M; // number of lights processed for this reservoir
+//};

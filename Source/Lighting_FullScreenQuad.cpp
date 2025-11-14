@@ -340,7 +340,7 @@ void Lighting_FullScreenQuad::UpdateUniformBuffer(uint32_t currentImage, std::ve
 		{
 			LightUniformData LightData;
 			LightData.lightPositionAndLightType = glm::vec4(lightref[i]->position,lightref[i]->lightType);
-			LightData.colorAndAmbientStrength  = glm::vec4(lightref[i]->color, lightref[i]->ambientStrength);
+			LightData.colorAndAmbientStrength   = glm::vec4(lightref[i]->color, lightref[i]->ambientStrength);
 			LightData.CameraPositionAndLightIntensity = glm::vec4(camera->GetPosition().x, 
 				                                                  camera->GetPosition().y,
 				                                                  camera->GetPosition().z, 
@@ -349,6 +349,7 @@ void Lighting_FullScreenQuad::UpdateUniformBuffer(uint32_t currentImage, std::ve
 		}
 	}
 
+	LightCount = lightDataspack.size();
 	memcpy(FragmentUniformBuffersMappedMem[currentImage], lightDataspack.data(), lightDataspack.size() * sizeof(LightUniformData));
 
 }
@@ -357,6 +358,8 @@ void Lighting_FullScreenQuad::Draw(vk::CommandBuffer commandbuffer, vk::Pipeline
 {
 	vk::DeviceSize offsets[] = { 0 };
 	vk::Buffer VertexBuffers[] = { 	bufferManager->FullScreenQuadVertexBufferData.buffer };
+
+	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &LightCount);
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
 	commandbuffer.bindIndexBuffer(bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);

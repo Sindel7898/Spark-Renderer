@@ -48,7 +48,7 @@
 
 
 	auto model1 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf" ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	//auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 
 	//auto model4 = std::shared_ptr<Model>(new Model("../Textures/EmptyCornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
@@ -57,45 +57,45 @@
 
 	//auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	//auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	
 	//////////CORNEL SETUP////////////////////////////////////////
-    model1.get()->Instances[0]->SetPostion(glm::vec3(-5.936, 3.043, -9.525));
-    model1.get()->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
-    model1.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
-    model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-    model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-   	
+    //model1.get()->Instances[0]->SetPostion(glm::vec3(-5.936, 3.043, -9.525));
+    //model1.get()->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
+    //model1.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
+    //model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+    //model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+   	//
+	//
+    //model3.get()->Instances[0]->SetPostion(glm::vec3(6.087, 13.277, 3.776));
+    //model3.get()->Instances[0]->SetRotation(glm::vec3(-179.987, -49.785, 179.967));
+    //model3.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
+    //model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+    //model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	//
+	//model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
+	//model2.get()->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
+	//model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	//model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+
+
+	model1.get()->Instances[0]->SetPostion(glm::vec3(-14.224, -0.329, 0.357));
+	model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
+	model1.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
+	model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 	
-    model3.get()->Instances[0]->SetPostion(glm::vec3(6.087, 13.277, 3.776));
-    model3.get()->Instances[0]->SetRotation(glm::vec3(-179.987, -49.785, 179.967));
-    model3.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
-    model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-    model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 	
-	model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
-	model2.get()->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
-	model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-
-
-	//model1.get()->Instances[0]->SetPostion(glm::vec3(-14.224, -0.329, 0.357));
-	//model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
-	//model1.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
-	//model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	//model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	model3.get()->Instances[0]->SetPostion(glm::vec3(7.153, -0.523, -2.166));
+	model3.get()->Instances[0]->SetRotation(glm::vec3(179.997, 44.147, 179.993));
+	model3.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
+	model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	
 	//
-	//
-	//model3.get()->Instances[0]->SetPostion(glm::vec3(7.153, -0.523, -2.166));
-	//model3.get()->Instances[0]->SetRotation(glm::vec3(179.997, 44.147, 179.993));
-	//model3.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
-	//model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	//model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-
-	//
-	//model11.get()->Instances[0]->SetScale(glm::vec3(5.000, 5.000, 5.000));
-	//model11.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	//model11.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	model11.get()->Instances[0]->SetScale(glm::vec3(5.000, 5.000, 5.000));
+	model11.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	model11.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
 	//model4.get()->Instances[0]->SetPostion(glm::vec3(-44.980, 0, 0));
 	//model4.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
@@ -113,11 +113,11 @@
 	////
 	////
     Models.push_back(std::move(model1));
-    Models.push_back(std::move(model2));
+    //Models.push_back(std::move(model2));
 	Models.push_back(std::move(model3));
 	//Models.push_back(std::move(model4));
 	//Models.push_back(std::move(model5));
-    //Models.push_back(std::move(model11));
+    Models.push_back(std::move(model11));
 
 
 
@@ -152,7 +152,7 @@
 
 	std::uniform_real_distribution<float> dis(1.0f, 100.0f);
 
-	for (int i = 0; i < 50; i++) {
+	for (int i = 0; i < 4; i++) {
 		std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(&vulkanContext, commandPool, &camera, &bufferManger), LightDeleter);
 
 		float randX = dis(gen);
@@ -164,78 +164,78 @@
 		lights.push_back(std::move(light));
 	}
 
-	//lights[0]->SetPosition(glm::vec3(-4.351, -10, -4.192));
-	//lights[0]->lightType = 1;
-	//lights[0]->lightIntensity = 0;
-	//lights[0]->CastShadowsSwitch(true);
-	//lights[0]->ambientStrength = 0.1;
-	//lights[0]->SetScale(glm::vec3(0.200, 0.200, 0.200));
-	//
-	//lights[1]->SetPosition(glm::vec3(23.352, -15.081, 24.001));
-	//lights[1]->SetScale(glm::vec3(0.200, 0.200, 0.200));
-	//lights[1]->CastShadowsSwitch(true);
-	//lights[1]->ambientStrength = 0;
-	//lights[1]->lightIntensity = 5.000;
-	//lights[1]->lightType = 0;
-	//
-	//
-	//lights[2]->SetPosition(glm::vec3(-1.830, -10, 10.112));
-	//lights[2]->lightType = 1;
-	//lights[2]->lightIntensity = 0;
-	//lights[2]->CastShadowsSwitch(true);
-	//lights[2]->ambientStrength = 0.1;
-	//lights[2]->SetScale(glm::vec3(0.200, 0.200, 0.200));
-	//
-	//
-	//lights[3]->SetPosition(glm::vec3(3.723, -10, -21.320));
-	//lights[3]->lightType = 1;
-	//lights[3]->lightIntensity = 0;
-	//lights[3]->CastShadowsSwitch(true);
-	//lights[3]->ambientStrength = 0.1;
-	//lights[3]->SetScale(glm::vec3(0.200, 0.200, 0.200));
-	//
-	//
-	//lights[0]->color = glm::vec3(0.431, 0.337, 0.318);
-	//lights[1]->color = glm::vec3(0.980, 0.357, 0.000);
-	//lights[2]->color = glm::vec3(0.431, 0.337, 0.318);
-	//lights[3]->color = glm::vec3(0.431, 0.337, 0.318);
-
-
-    lights[0]->SetPosition(glm::vec3(5.873, -50.574, -6.875));
-	lights[0]->lightType = 0;
-	lights[0]->lightIntensity = 4;
+	lights[0]->SetPosition(glm::vec3(-4.351, -10, -4.192));
+	lights[0]->lightType = 1;
+	lights[0]->lightIntensity = 0;
 	lights[0]->CastShadowsSwitch(true);
-	lights[0]->ambientStrength = 0;
+	lights[0]->ambientStrength = 0.1;
 	lights[0]->SetScale(glm::vec3(0.200, 0.200, 0.200));
 	
-	lights[1]->SetPosition(glm::vec3(28.060, 9.563, -1.864));
+	lights[1]->SetPosition(glm::vec3(23.352, -15.081, 24.001));
 	lights[1]->SetScale(glm::vec3(0.200, 0.200, 0.200));
-	lights[1]->CastShadowsSwitch(false);
+	lights[1]->CastShadowsSwitch(true);
 	lights[1]->ambientStrength = 0;
-	lights[1]->lightIntensity = 0;
-	lights[1]->lightType = 1;
+	lights[1]->lightIntensity = 5.000;
+	lights[1]->lightType = 0;
 	
 	
-	lights[2]->SetPosition(glm::vec3(22.204, 23.480, -1.704));
+	lights[2]->SetPosition(glm::vec3(-1.830, -10, 10.112));
 	lights[2]->lightType = 1;
 	lights[2]->lightIntensity = 0;
-	lights[2]->CastShadowsSwitch(false);
-	lights[2]->ambientStrength = 0;
+	lights[2]->CastShadowsSwitch(true);
+	lights[2]->ambientStrength = 0.1;
 	lights[2]->SetScale(glm::vec3(0.200, 0.200, 0.200));
 	
 	
-	lights[3]->SetPosition(glm::vec3(4.620, 22.513, -5.577));
+	lights[3]->SetPosition(glm::vec3(3.723, -10, -21.320));
 	lights[3]->lightType = 1;
 	lights[3]->lightIntensity = 0;
-	lights[3]->CastShadowsSwitch(false);
-	lights[3]->ambientStrength = 0;
+	lights[3]->CastShadowsSwitch(true);
+	lights[3]->ambientStrength = 0.1;
 	lights[3]->SetScale(glm::vec3(0.200, 0.200, 0.200));
 	
 	
-	lights[0]->color = glm::vec3(1, 1, 1);
-	lights[1]->color = glm::vec3(0, 0, 0);
-	lights[2]->color = glm::vec3(0, 0, 0);;
-	lights[3]->color = glm::vec3(0, 0, 0);;
+	lights[0]->color = glm::vec3(0.431, 0.337, 0.318);
+	lights[1]->color = glm::vec3(0.980, 0.357, 0.000);
+	lights[2]->color = glm::vec3(0.431, 0.337, 0.318);
+	lights[3]->color = glm::vec3(0.431, 0.337, 0.318);
+
+
+    //lights[0]->SetPosition(glm::vec3(5.873, -50.574, -6.875));
+	//lights[0]->lightType = 0;
+	//lights[0]->lightIntensity = 4;
+	//lights[0]->CastShadowsSwitch(true);
+	//lights[0]->ambientStrength = 0;
+	//lights[0]->SetScale(glm::vec3(0.200, 0.200, 0.200));
+	//
+	//lights[1]->SetPosition(glm::vec3(28.060, 9.563, -1.864));
+	//lights[1]->SetScale(glm::vec3(0.200, 0.200, 0.200));
+	//lights[1]->CastShadowsSwitch(false);
+	//lights[1]->ambientStrength = 0;
+	//lights[1]->lightIntensity = 0;
+	//lights[1]->lightType = 1;
+	//
+	//
+	//lights[2]->SetPosition(glm::vec3(22.204, 23.480, -1.704));
+	//lights[2]->lightType = 1;
+	//lights[2]->lightIntensity = 0;
+	//lights[2]->CastShadowsSwitch(false);
+	//lights[2]->ambientStrength = 0;
+	//lights[2]->SetScale(glm::vec3(0.200, 0.200, 0.200));
+	//
+	//
+	//lights[3]->SetPosition(glm::vec3(4.620, 22.513, -5.577));
+	//lights[3]->lightType = 1;
+	//lights[3]->lightIntensity = 0;
+	//lights[3]->CastShadowsSwitch(false);
+	//lights[3]->ambientStrength = 0;
+	//lights[3]->SetScale(glm::vec3(0.200, 0.200, 0.200));
+	//
+	//
+	//lights[0]->color = glm::vec3(1, 1, 1);
+	//lights[1]->color = glm::vec3(0, 0, 0);
+	//lights[2]->color = glm::vec3(0, 0, 0);;
+	//lights[3]->color = glm::vec3(0, 0, 0);;
 
 
 	for (auto& l : lights) {
@@ -526,7 +526,7 @@ void App::createDescriptorPool()
 
 	vk::DescriptorPoolSize Samplerpoolsize;
 	Samplerpoolsize.type = vk::DescriptorType::eCombinedImageSampler;
-	Samplerpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 100;
+	Samplerpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 300;
 
 	vk::DescriptorPoolSize AccelerationStructurepoolsize;
 	AccelerationStructurepoolsize.type = vk::DescriptorType::eAccelerationStructureKHR;
@@ -671,7 +671,7 @@ void App::createGBuffer()
 	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, LightingPassImageData,DepthTextureData);
 	RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer, lighting_FullScreenQuad->fragmentUniformBuffers);
 	dynamicDiffuse_RTGI->createDescriptorSets(DescriptorPool, gbuffer);
-	Restir_DI->createDescriptorSetsBasedOnGBuffer(DescriptorPool);
+	Restir_DI->createDescriptorSetsBasedOnGBuffer(DescriptorPool,&TLAS);
 
 
 	vk::CommandBuffer cmd =  bufferManger.CreateSingleUseCommandBuffer(commandPool);
@@ -876,10 +876,15 @@ void App::CreateGraphicsPipeline()
 
 	   vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
 
+	   vk::PushConstantRange range = {};
+	   range.stageFlags =  vk::ShaderStageFlagBits::eFragment;
+	   range.offset = 0;
+	   range.size = sizeof(int);
+
 	   pipelineLayoutInfo.setLayoutCount = 1;
 	   pipelineLayoutInfo.setSetLayouts(lighting_FullScreenQuad->descriptorSetLayout);
-	   pipelineLayoutInfo.pushConstantRangeCount = 0;
-	   pipelineLayoutInfo.pPushConstantRanges = nullptr;
+	   pipelineLayoutInfo.pushConstantRangeCount = 1;
+	   pipelineLayoutInfo.pPushConstantRanges = &range;
 
 	   FullScreen_Quad_Pipeline_Data  Lighting = pipelineManager.create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/DefferedLightingPass.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
 
@@ -1420,6 +1425,81 @@ void App::CreateGraphicsPipeline()
 
 	}
 
+
+	{
+		auto RayGen_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/ReSTIR_DI_Raygen.rgen.spv");
+		auto RayGenMiss_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/ReSTIRDI_Miss.rmiss.spv");
+
+		VkShaderModule RayGen_ShaderModule = pipelineManager.createShaderModule(RayGen_ShaderCode);
+		VkShaderModule RayMiss_ShaderModule = pipelineManager.createShaderModule(RayGenMiss_ShaderCode);
+
+
+		vk::PipelineShaderStageCreateInfo RayGen_ShaderStageInfo{};
+		RayGen_ShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+		RayGen_ShaderStageInfo.stage = vk::ShaderStageFlagBits::eRaygenKHR;
+		RayGen_ShaderStageInfo.module = RayGen_ShaderModule;
+		RayGen_ShaderStageInfo.pName = "main";
+
+		vk::PipelineShaderStageCreateInfo RayMiss_ShaderStageInfo{};
+		RayMiss_ShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+		RayMiss_ShaderStageInfo.stage = vk::ShaderStageFlagBits::eMissKHR;
+		RayMiss_ShaderStageInfo.module = RayMiss_ShaderModule;
+		RayMiss_ShaderStageInfo.pName = "main";
+
+		std::vector<vk::PipelineShaderStageCreateInfo> ShaderStages = { RayGen_ShaderStageInfo ,
+																		RayMiss_ShaderStageInfo };
+
+		vk::RayTracingShaderGroupCreateInfoKHR RayGen_GroupInfo{};
+		RayGen_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
+		RayGen_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
+		RayGen_GroupInfo.generalShader = 0;
+		RayGen_GroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
+		RayGen_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
+		RayGen_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+
+		vk::RayTracingShaderGroupCreateInfoKHR Miss_GroupInfo{};
+		Miss_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
+		Miss_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
+		Miss_GroupInfo.generalShader = 1;
+		Miss_GroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
+		Miss_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
+		Miss_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+
+		vk::RayTracingShaderGroupCreateInfoKHR Hit_GroupInfo{};
+		Hit_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
+		Hit_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup;
+		Hit_GroupInfo.generalShader = VK_SHADER_UNUSED_KHR;
+		Hit_GroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
+		Hit_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
+		Hit_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+
+
+
+		std::vector<vk::RayTracingShaderGroupCreateInfoKHR> ShaderGroups = {
+			RayGen_GroupInfo,
+			Miss_GroupInfo,
+			Hit_GroupInfo
+		};
+
+		vk::PushConstantRange pushConstantRange{};
+		pushConstantRange.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+		pushConstantRange.offset = 0;
+		pushConstantRange.size = sizeof(PushConstant);
+
+		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.pSetLayouts = &Restir_DI->RayTracingDescriptorSetLayout;
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+
+		ReSTIR_RT_PipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+
+		ReSTIR_RTPassPipeline = pipelineManager.createRayTracingGraphicsPipeline(ReSTIR_RT_PipelineLayout, ShaderStages, ShaderGroups);
+
+		vulkanContext.LogicalDevice.destroyShaderModule(RayGen_ShaderModule);
+		vulkanContext.LogicalDevice.destroyShaderModule(RayMiss_ShaderModule);
+	}
+
 	{
 		auto RayGen_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/Reflection_Raygen.rgen.spv");
 		auto RayClosestHit_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/Reflection_ClosestHit.rchit.spv");
@@ -1814,34 +1894,34 @@ void App::CreateGraphicsPipeline()
 	}
 
 
-	{
-		auto ComputeShaderCode = readFile("../Shaders/Compiled_Shader_Files/Reservoir_ReSTIR_DI.comp.spv");
-
-		VkShaderModule ComputeShaderModule = pipelineManager.createShaderModule(ComputeShaderCode);
-
-		vk::PipelineShaderStageCreateInfo ComputeShaderStageInfo{};
-		ComputeShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
-		ComputeShaderStageInfo.stage = vk::ShaderStageFlagBits::eCompute;
-		ComputeShaderStageInfo.module = ComputeShaderModule;
-		ComputeShaderStageInfo.pName = "main";
-
-		vk::PushConstantRange range{};
-		range.setOffset(0);
-		range.setSize(sizeof(PushConstant));
-		range.setStageFlags(vk::ShaderStageFlagBits::eCompute);
-
-		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &Restir_DI->RservoirSamplingDescriptorSetLayout;
-		pipelineLayoutInfo.pushConstantRangeCount = 1;
-		pipelineLayoutInfo.pPushConstantRanges = &range;
-
-		ReSTIResevoirComputePipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
-
-		ReSTIResevoirComputePassPipeline = pipelineManager.creatComputePipeline(ReSTIResevoirComputePipelineLayout, ComputeShaderStageInfo);
-
-		vulkanContext.LogicalDevice.destroyShaderModule(ComputeShaderModule);
-	}
+	//{
+	//	auto ComputeShaderCode = readFile("../Shaders/Compiled_Shader_Files/Reservoir_ReSTIR_DI.comp.spv");
+	//
+	//	VkShaderModule ComputeShaderModule = pipelineManager.createShaderModule(ComputeShaderCode);
+	//
+	//	vk::PipelineShaderStageCreateInfo ComputeShaderStageInfo{};
+	//	ComputeShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+	//	ComputeShaderStageInfo.stage = vk::ShaderStageFlagBits::eCompute;
+	//	ComputeShaderStageInfo.module = ComputeShaderModule;
+	//	ComputeShaderStageInfo.pName = "main";
+	//
+	//	vk::PushConstantRange range{};
+	//	range.setOffset(0);
+	//	range.setSize(sizeof(PushConstant));
+	//	range.setStageFlags(vk::ShaderStageFlagBits::eCompute);
+	//
+	//	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+	//	pipelineLayoutInfo.setLayoutCount = 1;
+	//	pipelineLayoutInfo.pSetLayouts = &Restir_DI->RservoirSamplingDescriptorSetLayout;
+	//	pipelineLayoutInfo.pushConstantRangeCount = 1;
+	//	pipelineLayoutInfo.pPushConstantRanges = &range;
+	//
+	//	ReSTIResevoirComputePipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+	//
+	//	ReSTIResevoirComputePassPipeline = pipelineManager.creatComputePipeline(ReSTIResevoirComputePipelineLayout, ComputeShaderStageInfo);
+	//
+	//	vulkanContext.LogicalDevice.destroyShaderModule(ComputeShaderModule);
+	//}
 
 
 }
@@ -1947,6 +2027,36 @@ void App::createShaderBindingTable() {
 	}
 
 
+	{
+		const size_t   handleSize = vulkanContext.RayTracingPipelineProperties.shaderGroupHandleSize;
+		const size_t   handleSizeAligned = alignedSize(handleSize, vulkanContext.RayTracingPipelineProperties.shaderGroupHandleAlignment);
+		const uint32_t groupCount = 3;
+		const uint32_t sbtSize = groupCount * handleSizeAligned;
+
+		// Get shader group handles
+		std::vector<uint8_t> shaderHandleStorage(sbtSize);
+
+		vulkanContext.vkGetRayTracingShaderGroupHandlesKHR(
+			static_cast<VkDevice>(vulkanContext.LogicalDevice),
+			static_cast<VkPipeline>(ReSTIR_RTPassPipeline),
+			0,  // First group
+			groupCount,
+			shaderHandleStorage.size(),
+			shaderHandleStorage.data());
+
+		ReSTIR_DI_raygenShaderBindingTableBuffer.BufferID = "ReSTIR_DI raygen Shader Binding Table Buffer";
+		ReSTIR_DI_missShaderBindingTableBuffer.BufferID   = "ReSTIR_DI miss Shader Binding Table Buffer";
+		ReSTIR_DI_hitShaderBindingTableBuffer.BufferID    = "ReSTIR_DI hit Shader Binding Table Buffer";
+
+		bufferManger.CreateBuffer(&ReSTIR_DI_raygenShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
+		bufferManger.CreateBuffer(&ReSTIR_DI_missShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
+		bufferManger.CreateBuffer(&ReSTIR_DI_hitShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
+
+		bufferManger.CopyDataToBuffer(shaderHandleStorage.data(), ReSTIR_DI_raygenShaderBindingTableBuffer);
+		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned, ReSTIR_DI_missShaderBindingTableBuffer);
+		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned * 2, ReSTIR_DI_hitShaderBindingTableBuffer);
+	}
+
 }
 
 void App::DestroyShaderBindingTable() {
@@ -1965,6 +2075,10 @@ void App::DestroyShaderBindingTable() {
 	bufferManger.DestroyBuffer(DDGI_raygenShaderBindingTableBuffer);
 	bufferManger.DestroyBuffer(DDGI_missShaderBindingTableBuffer);
 	bufferManger.DestroyBuffer(DDGI_hitShaderBindingTableBuffer);
+
+	bufferManger.DestroyBuffer(ReSTIR_DI_raygenShaderBindingTableBuffer);
+	bufferManger.DestroyBuffer(ReSTIR_DI_missShaderBindingTableBuffer);
+	bufferManger.DestroyBuffer(ReSTIR_DI_hitShaderBindingTableBuffer);
 }
 
 
@@ -2722,9 +2836,19 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 
 	{
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, ReSTIResevoirComputePassPipeline);
+		//commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, ReSTIResevoirComputePassPipeline);
 
-		Restir_DI->DispatchResevoirCandidateCalcCompute(commandBuffer, ReSTIResevoirComputePipelineLayout, currentFrame);
+		//Restir_DI->DispatchResevoirCandidateCalcCompute(commandBuffer, ReSTIResevoirComputePipelineLayout, currentFrame);
+
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, ReSTIR_RTPassPipeline);
+
+		Restir_DI->Draw(
+			ReSTIR_DI_raygenShaderBindingTableBuffer,
+			ReSTIR_DI_hitShaderBindingTableBuffer,
+			ReSTIR_DI_missShaderBindingTableBuffer,
+			commandBuffer,
+			ReSTIR_RT_PipelineLayout,
+			currentFrame);
 	}
 
 
@@ -3702,7 +3826,7 @@ void App::destroyPipeline()
 	vulkanContext.LogicalDevice.destroyPipeline(IrradianceComputePassPipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(SampleDDGIComputePassPipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(ProbeStatusComputePassPipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(ReSTIResevoirComputePassPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(ReSTIR_RTPassPipeline);
 
 
 	vulkanContext.LogicalDevice.destroyPipelineLayout(DeferedLightingPassPipelineLayout);
@@ -3726,7 +3850,7 @@ void App::destroyPipeline()
 	vulkanContext.LogicalDevice.destroyPipelineLayout(IrradianceComputePipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(SampleDDGIComputePipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(ProbeStatusPipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(ReSTIResevoirComputePipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(ReSTIR_RT_PipelineLayout);
 
 }
 
