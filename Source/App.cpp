@@ -152,7 +152,7 @@
 
 	std::uniform_real_distribution<float> dis(1.0f, 100.0f);
 
-	for (int i = 0; i < 50; i++) {
+	for (int i = 0; i < 4; i++) {
 		std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(&vulkanContext, commandPool, &camera, &bufferManger), LightDeleter);
 
 		float randX = dis(gen);
