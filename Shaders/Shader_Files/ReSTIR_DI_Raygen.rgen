@@ -128,16 +128,14 @@ struct Reservoir
     float Num_OF_Lights_In_Resevoir; // number of lights processed for this reservoir
 };
 
-vec3 GetPointLightRadiance(LightData light, vec3 cameraPos, SurfaceData surface)
+vec3 GetPointLightRadiance(LightData light, vec3 cameraPos, SurfaceData surface, vec3 ViewDir,vec3 F,vec3 diffuse )
 {
-    vec3  F0        = vec3(0.04); 
     vec3  worldPos  = surface.worldPos;
     vec3  normal    = surface.normal;
     vec3  albedo    = surface.albedo;
     float metallic  = surface.metallic;
     float roughness = surface.roughness;
 
-    vec3  ViewDir    = normalize(cameraPos -  worldPos);
         
     vec3 radiance = vec3(0.0);
     vec3 LightDir = vec3(0.0);
@@ -157,21 +155,14 @@ vec3 GetPointLightRadiance(LightData light, vec3 cameraPos, SurfaceData surface)
         radiance = light.colorAndAmbientStrength.rgb;
     }
 
-         F0          = mix(F0, albedo, metallic);
     vec3 halfwayDir  = normalize(LightDir + ViewDir);
 
-     vec3 F     = fresnelSchlick(max(dot(normal, ViewDir), 0.0), F0);//Calculates how much light is reflected vs. refracted on a surface based on the view angle.
     float NDF   = DistributionGGX(normal, halfwayDir, roughness); //describes how microfacet normal are distributed on a rough surface       
     float G     = GeometrySmith(normal, ViewDir, LightDir, roughness);// models shadowing and masking
 
     vec3  numerator    = NDF * G * F;
     float denominator  = 4.0 * max(dot(surface.normal, ViewDir), 0.0) * max(dot(normal, LightDir), 0.0)  + 0.0001;
     vec3  specular     = (numerator / denominator);
-
-    vec3 kS      = F;
-    vec3 kD      = vec3(1.0) - kS;
-         kD     *= 1.0 - metallic;	
-    vec3 diffuse = kD * (albedo / PI);
 
 
     float NdotL = max(dot(normal, LightDir), 0.0);
@@ -219,10 +210,20 @@ void main() {
 
     surfaceData.normal    = texelFetch(NormalImage  ,TextCoord,0).xyz;
     surfaceData.albedo    = texelFetch(AlbedoImage  ,TextCoord,0).xyz;
-    surfaceData.metallic  = texelFetch(MaterialImage,TextCoord,0).x;
-    surfaceData.roughness = texelFetch(MaterialImage,TextCoord,0).y;
-       
+    vec2 material = texelFetch(MaterialImage, TextCoord, 0).xy;
+    surfaceData.metallic  = material.x;
+    surfaceData.roughness = material.y; 
+
     vec3  CameraPos = PC.CameraPosition.xyz;
+    vec3  ViewDir   = normalize(CameraPos -  surfaceData.worldPos);
+    vec3  F0        = vec3(0.04); 
+          F0        = mix(F0, surfaceData.albedo, surfaceData.metallic);
+    vec3  F         = fresnelSchlick(max(dot(surfaceData.normal, ViewDir), 0.0), F0);//Calculates how much light is reflected vs. refracted on a surface based on the view angle.
+    vec3 kS         = F;
+    vec3 kD         = vec3(1.0) - kS;
+         kD        *= 1.0 - surfaceData.metallic;	
+    vec3 diffuse    = kD * (surfaceData.albedo / PI);
+
 
     Reservoir reservoir;
               reservoir.Light_Index = 0;
@@ -232,20 +233,21 @@ void main() {
 
     int TotalNumOfLights = int(PC.ScreenSize_Padding_FrameIndex_LightCount.w);
     int NoofPoint = int(TotalNumOfLights * 0.25); 
-
     float pdf = 1.0 / float(TotalNumOfLights); 
     float p_hat = 0;
 
      /////////////////////////////////////////////////////////
-     vec2 uv = (vec2(TextCoord) + 0.5) / vec2(128,128);
+     vec2 uv = (vec2(TextCoord) + 0.5) / vec2(528,528);
      vec2 tiledUV = fract(uv);  
      /////////////////////////////////////////////////////////
+      vec3 WINNER_Radiance;
 
         for (uint i = 0; i < NoofPoint; i++)
         {
             /////////////////////////////////////////////////////////////////////////////////////////
             int noiseTextureIndex = int(PC.ScreenSize_Padding_FrameIndex_LightCount.z + i) % 63;
-             float noise = textureLod(BlueNoise[noiseTextureIndex], tiledUV,0).r;
+            vec2 noise_rg = textureLod(BlueNoise[noiseTextureIndex], tiledUV, 0).rg;
+            float noise = noise_rg.r;
             //////////////////////////////////////////////////////////////////////////////////////////
         
              uint lightIndex = uint(noise * float(TotalNumOfLights)); // Randomly select a light
@@ -253,13 +255,17 @@ void main() {
              lightIndex = min(lightIndex, uint(TotalNumOfLights - 1)); //Clamp
         
              // Calculate the out going radiance of the light ** THIS IS THE IMPORTANCE of the light***
-             p_hat = length(GetPointLightRadiance(lights[lightIndex], CameraPos, surfaceData));
+             vec3 RadianceCandidate = GetPointLightRadiance(lights[lightIndex], CameraPos, surfaceData,ViewDir, F,diffuse);
+             p_hat = length(RadianceCandidate);
         
              float WeightOfLight = p_hat / pdf; // 
-        
-             float noise_update = textureLod(BlueNoise[noiseTextureIndex], tiledUV, 0).g;
 
-             UpdateReservoir(reservoir, lightIndex, WeightOfLight, 1.0, noise_update);
+             float noise_update = noise_rg.g;
+
+             if(UpdateReservoir(reservoir, lightIndex, WeightOfLight, 1.0, noise_update)){
+                 WINNER_Radiance = RadianceCandidate;
+             }
+
         }
 
         p_hat = 0.0; 
@@ -294,7 +300,7 @@ void main() {
             if(Hit){
                radiance = vec3(0.0);
             }else{
-               radiance = GetPointLightRadiance(light, CameraPos.xyz, surfaceData);
+               radiance = WINNER_Radiance;
             }
 
             p_hat = length(radiance);
@@ -319,11 +325,3 @@ void main() {
                                                        reservoir.Num_OF_Lights_In_Resevoir));
        }
 }
-
-//struct Reservoir
-//{
-//    uint Y; // index of most important light
-//    float W_y; // light weight
-//    float W_sum; // sum of all weights for all lights processed
-//    float M; // number of lights processed for this reservoir
-//};
