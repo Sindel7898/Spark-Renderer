@@ -34,6 +34,9 @@ glslc.exe Shaders\Shader_Files\ProbeStatus.comp                     -o  Shaders/
 glslc.exe Shaders\Shader_Files\Reservoir_ReSTIR_DI.comp             -o  Shaders/Compiled_Shader_Files\Reservoir_ReSTIR_DI.comp.spv         --target-env=vulkan1.4
 glslc.exe Shaders\Shader_Files\ReSTIR_DI_Raygen.rgen                -o  Shaders/Compiled_Shader_Files\ReSTIR_DI_Raygen.rgen.spv            --target-env=vulkan1.4
 glslc.exe Shaders\Shader_Files\ReSTIRDI_Miss.rmiss                  -o  Shaders/Compiled_Shader_Files\ReSTIRDI_Miss.rmiss.spv              --target-env=vulkan1.4
+glslc.exe Shaders\Shader_Files\ReSTIR_DI_ClosestHit.rchit           -o  Shaders/Compiled_Shader_Files\ReSTIR_DI_ClosestHit.rchit.spv            --target-env=vulkan1.4
+
+
 
 pause
 

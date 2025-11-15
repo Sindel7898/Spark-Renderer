@@ -78,15 +78,17 @@ struct SurfaceData {
     float roughness;
 };
 
-struct HitPayload {
-    bool Shadowed;
+struct UnifiedPayload {
+    int  rayType; 
+    vec3 data;   
 };
 
-layout(location = 0) rayPayloadEXT HitPayload PayloadResults;
+layout(location = 0) rayPayloadEXT UnifiedPayload payload;
 
 bool TraceShadow(vec3 origin, vec3 direction, float MaxDistance) {
     // Initialize payload before tracing
-    PayloadResults.Shadowed = true; // Start with not shadowed
+    payload.rayType = 0;
+    payload.data.x = 1.0;
 
     const uint rayFlags = gl_RayFlagsOpaqueEXT | 
                          gl_RayFlagsTerminateOnFirstHitEXT | 
@@ -110,7 +112,7 @@ bool TraceShadow(vec3 origin, vec3 direction, float MaxDistance) {
         0       // payload location (0 is already specified in layout)
     );
 
-    return PayloadResults.Shadowed;
+    return payload.data.x > 0.5;
 }
 
 vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal)
@@ -191,8 +193,23 @@ bool UpdateReservoir(inout Reservoir reservoir, uint LightIndex, float Weight, f
 }
 
 
+vec3 GetPerpendicularVector(vec3 v) {
+
+    return normalize(cross(v, abs(v.x) > abs(v.z) ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0)
+    ));
+}
+vec3 GetHemisphereSample(vec2 randVal, vec3 HitNormal) {
+    vec3 bitangent = GetPerpendicularVector(HitNormal);
+    vec3 tangent = cross(bitangent, HitNormal);
+    float r = sqrt(randVal.x);
+    float phi = 2.0 * 3.14159265 * randVal.y;
+    
+    return tangent * (r * cos(phi)) + bitangent * (r * sin(phi)) + HitNormal.xyz * sqrt(max(0.0, 1.0 - randVal.x));
+}
+
 void main() {
 
+     vec3 TotalRadiance = vec3(0);
     ivec2 TextCoord = ivec2(gl_LaunchIDEXT.xy);
 
     SurfaceData surfaceData;
@@ -224,6 +241,7 @@ void main() {
          kD        *= 1.0 - surfaceData.metallic;	
     vec3 diffuse    = kD * (surfaceData.albedo / PI);
 
+    vec3 rayOrigin = offsetPositionAlongNormal(surfaceData.worldPos, surfaceData.normal);
 
     Reservoir reservoir;
               reservoir.Light_Index = 0;
@@ -240,13 +258,13 @@ void main() {
      vec2 uv = (vec2(TextCoord) + 0.5) / vec2(528,528);
      vec2 tiledUV = fract(uv);  
      /////////////////////////////////////////////////////////
-      vec3 WINNER_Radiance;
+     vec3 WINNER_Radiance;
 
         for (uint i = 0; i < NoofPoint; i++)
         {
             /////////////////////////////////////////////////////////////////////////////////////////
             int noiseTextureIndex = int(PC.ScreenSize_Padding_FrameIndex_LightCount.z + i) % 63;
-            vec2 noise_rg = textureLod(BlueNoise[noiseTextureIndex], tiledUV, 0).rg;
+             vec2 noise_rg = textureLod(BlueNoise[noiseTextureIndex], tiledUV, 0).rg;
             float noise = noise_rg.r;
             //////////////////////////////////////////////////////////////////////////////////////////
         
@@ -291,8 +309,6 @@ void main() {
             }
 
            
-            vec3 rayOrigin = offsetPositionAlongNormal(surfaceData.worldPos, surfaceData.normal);
-
             bool Hit = TraceShadow(rayOrigin, RayDirection, tMax);
 
             vec3 radiance;
@@ -309,19 +325,47 @@ void main() {
 
             radiance *= reservoir.Light_Weight;
 
-            imageStore(ResevoirImage, TextCoord, vec4(radiance,1) );
+            TotalRadiance = radiance;
         }
-        else
-        {
-             reservoir;
-             reservoir.Light_Index = 0;
-             reservoir.Light_Weight = 0.0;
-             reservoir.Sum_Of_All_Weights = 0.0;
-             reservoir.Num_OF_Lights_In_Resevoir = 0.0;
 
-             imageStore(ResevoirImage, TextCoord, vec4(reservoir.Light_Index,
-                                                       reservoir.Light_Weight,
-                                                       reservoir.Sum_Of_All_Weights,
-                                                       reservoir.Num_OF_Lights_In_Resevoir));
-       }
+        else
+
+        {
+            TotalRadiance =  vec3(0);
+        }
+
+        int DiffuseRandIndex = int(PC.ScreenSize_Padding_FrameIndex_LightCount.z - 3) % 63;
+        vec2 noise_rg = textureLod(BlueNoise[DiffuseRandIndex], tiledUV, 0).rg;
+
+        vec3 DiffuseDirection = GetHemisphereSample(noise_rg,surfaceData.normal);
+
+
+         payload.rayType = 1;
+         payload.data = vec3(0.0);
+         const uint rayFlags = gl_RayFlagsOpaqueEXT | 
+                               gl_RayFlagsTerminateOnFirstHitEXT | 
+                               gl_RayFlagsCullBackFacingTrianglesEXT;
+         const uint cullMask = 0xFF;
+         const float tMin = 0.1;
+         const float tMax = 1000;
+         
+         traceRayEXT(topLevelAS,
+                     rayFlags,
+                     cullMask,
+                     0,      // sbtRecordOffset
+                     0,      // sbtRecordStride
+                     0,      // missIndex
+                     rayOrigin,
+                     tMin,
+                     DiffuseDirection,
+                     tMax,
+                     0);
+
+      vec3 indirectRadiance = payload.data * diffuse;
+      vec3 finalColor = TotalRadiance + indirectRadiance;
+
+      imageStore(ResevoirImage, TextCoord, vec4(finalColor,1) );
+
+   
+            
 }
