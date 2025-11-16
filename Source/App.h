@@ -101,7 +101,7 @@ public:
 	void destroy_GbufferImages();
 
 	bool framebufferResized = false;
-	int DefferedDecider = 10;
+	int DefferedDecider = 11;
 
 	bool bWireFrame = false;
 	//Drawables
@@ -114,8 +114,6 @@ public:
 	std::unique_ptr<FXAA_FullScreenQuad, decltype(&FXAA_FullScreenQuadDeleter)>
 		fxaa_FullScreenQuad{ nullptr, &FXAA_FullScreenQuadDeleter };
 
-	std::unique_ptr<SSR_FullScreenQuad, decltype(&SSR_FullScreenQuadDeleter)>
-		ssr_FullScreenQuad{ nullptr, &SSR_FullScreenQuadDeleter };
 
 	std::unique_ptr<RT_Shadows, decltype(&RT_ShadowsDeleter)>
 		Raytracing_Shadows{ nullptr, &RT_ShadowsDeleter };
@@ -144,7 +142,8 @@ public:
 	VkDescriptorSet SSAOTextureId;
 	VkDescriptorSet SSGITextureId;
 	VkDescriptorSet RT_ReflectionTextureId;
-	VkDescriptorSet RT_BluredReflectionTextureId;
+	VkDescriptorSet ReSTIR_DITextureId;
+	VkDescriptorSet MotionVectors;
 	VkDescriptorSet DDGIIrradianceAtlasID;
 	VkDescriptorSet Sampled_GI_ID;
 	VkDescriptorSet DDGIIVisibilityAtlasID;
@@ -246,7 +245,7 @@ private:
 	GBuffer gbuffer;
 
 	ImageData LightingPassImageData;
-	ImageData ReflectionMaskImageData;
+	ImageData MotionVectorsImageData;
 
 
 	//RT Acceleration Structures

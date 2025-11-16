@@ -48,7 +48,7 @@
 
 
 	auto model1 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf" ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	//auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 
 	//auto model4 = std::shared_ptr<Model>(new Model("../Textures/EmptyCornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
@@ -57,45 +57,45 @@
 
 	//auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	//auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	
-	//////////CORNEL SETUP////////////////////////////////////////
-    //model1.get()->Instances[0]->SetPostion(glm::vec3(-5.936, 3.043, -9.525));
-    //model1.get()->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
-    //model1.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
-    //model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-    //model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-   	//
-	//
-    //model3.get()->Instances[0]->SetPostion(glm::vec3(6.087, 13.277, 3.776));
-    //model3.get()->Instances[0]->SetRotation(glm::vec3(-179.987, -49.785, 179.967));
-    //model3.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
-    //model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-    //model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-	//
-	//model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
-	//model2.get()->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
-	//model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	//model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	////////CORNEL SETUP////////////////////////////////////////
+    model1.get()->Instances[0]->SetPostion(glm::vec3(-5.936, 3.043, -9.525));
+    model1.get()->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
+    model1.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
+    model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+    model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+   	
+	
+    model3.get()->Instances[0]->SetPostion(glm::vec3(6.087, 13.277, 3.776));
+    model3.get()->Instances[0]->SetRotation(glm::vec3(-179.987, -49.785, 179.967));
+    model3.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
+    model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+    model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	
+	model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
+	model2.get()->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
+	model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
 
-	model1.get()->Instances[0]->SetPostion(glm::vec3(-14.224, -0.329, 0.357));
-	model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
-	model1.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
-	model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-	
-	
-	model3.get()->Instances[0]->SetPostion(glm::vec3(7.153, -0.523, -2.166));
-	model3.get()->Instances[0]->SetRotation(glm::vec3(179.997, 44.147, 179.993));
-	model3.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
-	model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-	
+	//model1.get()->Instances[0]->SetPostion(glm::vec3(-14.224, -0.329, 0.357));
+	//model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
+	//model1.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
+	//model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	//model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 	//
-	model11.get()->Instances[0]->SetScale(glm::vec3(5.000, 5.000, 5.000));
-	model11.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	model11.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	//
+	//model3.get()->Instances[0]->SetPostion(glm::vec3(7.153, -0.523, -2.166));
+	//model3.get()->Instances[0]->SetRotation(glm::vec3(179.997, 44.147, 179.993));
+	//model3.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
+	//model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	//model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	//
+	////
+	//model11.get()->Instances[0]->SetScale(glm::vec3(5.000, 5.000, 5.000));
+	//model11.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	//model11.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
 	//model4.get()->Instances[0]->SetPostion(glm::vec3(-44.980, 0, 0));
 	//model4.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
@@ -113,11 +113,11 @@
 	////
 	////
     Models.push_back(std::move(model1));
-    //Models.push_back(std::move(model2));
+    Models.push_back(std::move(model2));
 	Models.push_back(std::move(model3));
 	//Models.push_back(std::move(model4));
 	//Models.push_back(std::move(model5));
-    Models.push_back(std::move(model11));
+    //Models.push_back(std::move(model11));
 
 
 
@@ -138,7 +138,6 @@
 	lighting_FullScreenQuad = std::unique_ptr<Lighting_FullScreenQuad, decltype(&Lighting_FullScreenQuadDeleter)>(new Lighting_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool, skyBox.get(), Raytracing_Shadows.get()),Lighting_FullScreenQuadDeleter);
 	ssao_FullScreenQuad     = std::unique_ptr<SSA0_FullScreenQuad, decltype(&SSA0_FullScreenQuadDeleter)>(new SSA0_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),SSA0_FullScreenQuadDeleter);
 	fxaa_FullScreenQuad     = std::unique_ptr<FXAA_FullScreenQuad, decltype(&FXAA_FullScreenQuadDeleter)>(new FXAA_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),FXAA_FullScreenQuadDeleter);
-	ssr_FullScreenQuad      = std::unique_ptr<SSR_FullScreenQuad, decltype(&SSR_FullScreenQuadDeleter)>(new SSR_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),SSR_FullScreenQuadDeleter);
 	Combined_FullScreenQuad = std::unique_ptr<CombinedResult_FullScreenQuad, decltype(&CombinedResult_FullScreenQuadDeleter)>(new CombinedResult_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),CombinedResult_FullScreenQuadDeleter);
 	SSGI_FullScreenQuad     = std::unique_ptr<SSGI, decltype(&SSGIDeleter)>(new SSGI(&bufferManger, &vulkanContext, &camera, commandPool),SSGIDeleter);
 	dynamicDiffuse_RTGI     = std::unique_ptr<DynamicDiffuse_RTGI, decltype(&DynamicDiffuse_RTGIDeleter)>(new DynamicDiffuse_RTGI("../Textures/Sphere/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger, skyBox.get()), DynamicDiffuse_RTGIDeleter);
@@ -645,15 +644,14 @@ void App::createGBuffer()
 	LightingPassImageData.imageView = bufferManger.CreateImageView(&LightingPassImageData, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	LightingPassImageData.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
-	ReflectionMaskImageData.ImageID = "ReflectionMask Texture";
-	bufferManger.CreateImage(&ReflectionMaskImageData, swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	ReflectionMaskImageData.imageView = bufferManger.CreateImageView(&ReflectionMaskImageData, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
-	ReflectionMaskImageData.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	MotionVectorsImageData.ImageID = "MotionVectors Texture";
+	bufferManger.CreateImage(&MotionVectorsImageData, swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	MotionVectorsImageData.imageView = bufferManger.CreateImageView(&MotionVectorsImageData, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	MotionVectorsImageData.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 
 	fxaa_FullScreenQuad->CreateImage(swapchainextent);
 	SSGI_FullScreenQuad->CreateGIImage();
-	ssr_FullScreenQuad->CreateImage(swapchainextent);
 	Raytracing_Shadows->CreateStorageImage();
 	Combined_FullScreenQuad->CreateImage(swapchainextent);
 	ssao_FullScreenQuad->CreateImage();
@@ -662,9 +660,8 @@ void App::createGBuffer()
 	Restir_DI->CreateImage();
 
 
-	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&ReflectionMaskImageData,&RT_Reflection->FullBlurReflectionPassImage);
+	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&RT_Reflection->FullBlurReflectionPassImage);
 	ssao_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
-	ssr_FullScreenQuad->createDescriptorSets(DescriptorPool, LightingPassImageData, gbuffer.ViewSpaceNormal,gbuffer.ViewSpacePosition, DepthTextureData, ReflectionMaskImageData,gbuffer.Materials);
 	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, LightingPassImageData, SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo, dynamicDiffuse_RTGI->Probe_Sampled_GI_Image);
 	fxaa_FullScreenQuad->createDescriptorSets(DescriptorPool, Combined_FullScreenQuad->FinalResultImage);
 	Raytracing_Shadows->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
@@ -694,8 +691,7 @@ void App::createGBuffer()
 	bufferManger.TransitionImage(cmd, &gbuffer.Emissive, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &gbuffer.Materials, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &LightingPassImageData, TransitionToGeneral);
-	bufferManger.TransitionImage(cmd, &ssr_FullScreenQuad->SSRImage, TransitionToGeneral);
-	bufferManger.TransitionImage(cmd, &ReflectionMaskImageData, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &MotionVectorsImageData, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &Combined_FullScreenQuad->FinalResultImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->SSGIPassImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionToGeneral);
@@ -759,9 +755,14 @@ void App::createGBuffer()
 		                                                 VK_IMAGE_LAYOUT_GENERAL);
 	
 
-	RT_BluredReflectionTextureId = ImGui_ImplVulkan_AddTexture(Restir_DI->ResevoirImage.imageSampler,
+	ReSTIR_DITextureId = ImGui_ImplVulkan_AddTexture(Restir_DI->ResevoirImage.imageSampler,
 		                                                       Restir_DI->ResevoirImage.imageView,
 		                                                       VK_IMAGE_LAYOUT_GENERAL);
+
+	MotionVectors = ImGui_ImplVulkan_AddTexture(MotionVectorsImageData.imageSampler,
+		                                    MotionVectorsImageData.imageView,
+		                                    VK_IMAGE_LAYOUT_GENERAL);
+
 
    Sampled_GI_ID = ImGui_ImplVulkan_AddTexture(dynamicDiffuse_RTGI->Probe_Sampled_GI_Image.imageSampler,
 	                                           dynamicDiffuse_RTGI->Probe_Sampled_GI_Image.imageView,
@@ -991,30 +992,30 @@ void App::CreateGraphicsPipeline()
 		CombinedImagePassPipeline = Temp.FQ_Pipeline;
 	}
 
-	{
-
-		std::array<vk::Format, 1> colorFormats = { vk::Format::eR16G16B16A16Sfloat };
-
-		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
-		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-		pipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats.data();;
-
-		vk::PushConstantRange range{};
-		range.setOffset(0);
-		range.setSize(sizeof(glm::mat4));
-		range.setStageFlags(vk::ShaderStageFlagBits::eFragment);
-
-		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.setSetLayouts(ssr_FullScreenQuad->descriptorSetLayout);
-		pipelineLayoutInfo.pushConstantRangeCount = 1;
-		pipelineLayoutInfo.pPushConstantRanges = &range;
-
-		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager.create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSR.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
-
-		SSRPipelineLayout = Temp.FQ_PipelineLayout;
-		SSRPipeline = Temp.FQ_Pipeline;
-	}
+	//{
+	//
+	//	std::array<vk::Format, 1> colorFormats = { vk::Format::eR16G16B16A16Sfloat };
+	//
+	//	vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
+	//	pipelineRenderingCreateInfo.colorAttachmentCount = 1;
+	//	pipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats.data();;
+	//
+	//	vk::PushConstantRange range{};
+	//	range.setOffset(0);
+	//	range.setSize(sizeof(glm::mat4));
+	//	range.setStageFlags(vk::ShaderStageFlagBits::eFragment);
+	//
+	//	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+	//	pipelineLayoutInfo.setLayoutCount = 1;
+	//	pipelineLayoutInfo.setSetLayouts(ssr_FullScreenQuad->descriptorSetLayout);
+	//	pipelineLayoutInfo.pushConstantRangeCount = 1;
+	//	pipelineLayoutInfo.pPushConstantRanges = &range;
+	//
+	//	FullScreen_Quad_Pipeline_Data  Temp = pipelineManager.create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSR.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
+	//
+	//	SSRPipelineLayout = Temp.FQ_PipelineLayout;
+	//	SSRPipeline = Temp.FQ_Pipeline;
+	//}
 
 	{
 		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/Light_Shader.vert.spv");
@@ -1256,7 +1257,7 @@ void App::CreateGraphicsPipeline()
 	                             vk::Format::eR8G8B8A8Srgb,       // Albedo
 								 vk::Format::eR8G8B8A8Srgb,       // Emmisive
 								 vk::Format::eR8G8B8A8Unorm,      //Material
-								 vk::Format::eR8G8B8A8Unorm       //ReflectionMask
+								 vk::Format::eR16G16B16A16Sfloat       //ReflectionMask
 	                             };
 
 
@@ -1270,7 +1271,7 @@ void App::CreateGraphicsPipeline()
 
 		vk::PushConstantRange range{};
 		range.setOffset(0);
-		range.setSize(sizeof(glm::mat4));
+		range.setSize(sizeof(glm::mat4) * 2);
 		range.setStageFlags(vk::ShaderStageFlagBits::eVertex);
 
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -2414,17 +2415,17 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		MaterialscolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
 		MaterialscolorAttachmentInfo.clearValue = clearColor;
 
-		vk::RenderingAttachmentInfo ReflectionMaskcolorAttachmentInfo{};
-		ReflectionMaskcolorAttachmentInfo.imageView = ReflectionMaskImageData.imageView;
-		ReflectionMaskcolorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		ReflectionMaskcolorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
-		ReflectionMaskcolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
-		ReflectionMaskcolorAttachmentInfo.clearValue = clearColor;
+		vk::RenderingAttachmentInfo MotionVectorcolorAttachmentInfo{};
+		MotionVectorcolorAttachmentInfo.imageView = MotionVectorsImageData.imageView;
+		MotionVectorcolorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		MotionVectorcolorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
+		MotionVectorcolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		MotionVectorcolorAttachmentInfo.clearValue = clearColor;
 
 		std::array<vk::RenderingAttachmentInfo, 8> ColorAttachments{ PositioncolorAttachmentInfo,ViewSpacePositioncolorAttachmentInfo,
 			                                                         NormalcolorAttachmentInfo, ViewSpaceNormalcolorAttachmentInfo,
 			                                                         AlbedocolorAttachmentInfo,EmmisivAttachmentInfo,
-			                                                         MaterialscolorAttachmentInfo,ReflectionMaskcolorAttachmentInfo };
+			                                                         MaterialscolorAttachmentInfo,MotionVectorcolorAttachmentInfo };
 
 		vk::RenderingAttachmentInfo depthStencilAttachment;
 		depthStencilAttachment.imageView = DepthTextureData.imageView;
@@ -3708,12 +3709,11 @@ void App::destroy_GbufferImages()
 	bufferManger.DestroyImage(gbuffer.Albedo);
 	bufferManger.DestroyImage(gbuffer.Emissive);
 	bufferManger.DestroyImage(LightingPassImageData);
-	bufferManger.DestroyImage(ReflectionMaskImageData);
+	bufferManger.DestroyImage(MotionVectorsImageData);
 
 	ssao_FullScreenQuad->DestroyImage();
 	Raytracing_Shadows->DestroyStorageImage();
 	fxaa_FullScreenQuad->DestroyImage();
-	ssr_FullScreenQuad->DestroyImage();
 	SSGI_FullScreenQuad->DestroyImage();
 	Combined_FullScreenQuad->DestroyImage();
 	RT_Reflection->DestroyStorageImage();
@@ -3797,7 +3797,6 @@ void App::DestroyBuffers()
 	lighting_FullScreenQuad.reset();
 	ssao_FullScreenQuad.reset();
 	fxaa_FullScreenQuad.reset();
-	ssr_FullScreenQuad.reset();
 	Raytracing_Shadows.reset();
 	SSGI_FullScreenQuad.reset();
 	Combined_FullScreenQuad.reset();

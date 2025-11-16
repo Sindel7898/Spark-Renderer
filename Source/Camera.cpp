@@ -32,6 +32,9 @@ void Camera::Initialize(float Fov, float NearClip, float FarClip) {
 
 void Camera::Update(float deltaTime) {
 
+    this->Prev_viewMatrix = this->viewMatrix;
+    this->Prev_projectionMatrix = this->projectionMatrix;
+
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS && !mouseCaptured) {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         mouseCaptured = true;
@@ -115,22 +118,12 @@ void Camera::UpdateCameraVectors() {
 void Camera::UpdateViewMatrix() {
 
     viewMatrix = glm::lookAt(position, position + forward, up);
-
-    if (Prev_viewMatrix != viewMatrix)
-    {
-        Prev_viewMatrix = viewMatrix;
-    }
 }
 
 void Camera::UpdateProjectionMatrix() {
     float aspectRatio = static_cast<float>(swapChainWidth) / static_cast<float>(swapChainHeight);
     projectionMatrix = glm::perspective(glm::radians(fov), aspectRatio, nearClip, farClip);
 
-
-    if (Prev_projectionMatrix != projectionMatrix)
-    {
-        Prev_projectionMatrix = projectionMatrix;
-    }
 }
 
 const glm::mat4& Camera::GetViewMatrix() const {

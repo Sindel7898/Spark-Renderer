@@ -14,7 +14,7 @@ public:
     Lighting_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext, Camera* cameraref, vk::CommandPool commandpool, SkyBox* skyboxref, RT_Shadows* raytracingref);
     void CreateUniformBuffer() override;
     void createDescriptorSetLayout() override;
-    void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer* Gbuffer, ImageData* ReflectionMask, ImageData* RT_Reflection);
+    void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer* Gbuffer, ImageData* RT_Reflection);
     void UpdateDescrptorSets();
     void UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
@@ -22,7 +22,6 @@ public:
     void CleanUp() ;
 
     GBuffer*   GbufferRef = nullptr;
-    ImageData* ReflectionMaskRef = nullptr;
     RT_Shadows* raytracingRef = nullptr;
     SkyBox* SkyBoxRef = nullptr;
     ImageData* RT_ReflectionRef = nullptr;

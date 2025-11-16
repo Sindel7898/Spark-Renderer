@@ -74,43 +74,36 @@ void Lighting_FullScreenQuad::createDescriptorSetLayout()
 		ReflectiveCubeSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		ReflectiveCubeSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-		vk::DescriptorSetLayoutBinding ReflectionMaskSamplerLayout{};
-		ReflectionMaskSamplerLayout.binding = 5;
-		ReflectionMaskSamplerLayout.descriptorCount = 1;
-		ReflectionMaskSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		ReflectionMaskSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
-
 		vk::DescriptorSetLayoutBinding ShadowMapSamplerLayout{};
-		ShadowMapSamplerLayout.binding = 6;
+		ShadowMapSamplerLayout.binding = 5;
 		ShadowMapSamplerLayout.descriptorCount = 4;
 		ShadowMapSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		ShadowMapSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 		vk::DescriptorSetLayoutBinding EmisiveSamplerLayout{};
-		EmisiveSamplerLayout.binding = 7;
+		EmisiveSamplerLayout.binding = 6;
 		EmisiveSamplerLayout.descriptorCount = 1;
 		EmisiveSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		EmisiveSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 		vk::DescriptorSetLayoutBinding RT_Reflection{};
-		RT_Reflection.binding = 8;
+		RT_Reflection.binding = 7;
 		RT_Reflection.descriptorCount = 1;
 		RT_Reflection.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		RT_Reflection.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 		vk::DescriptorSetLayoutBinding LightUniformBufferLayout{};
-		LightUniformBufferLayout.binding = 9;
+		LightUniformBufferLayout.binding = 8;
 		LightUniformBufferLayout.descriptorCount = 1;
 		LightUniformBufferLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
 		LightUniformBufferLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 
-		std::array<vk::DescriptorSetLayoutBinding, 10> bindings = { PositionSampleryLayout,        // binding 0
+		std::array<vk::DescriptorSetLayoutBinding, 9> bindings = { PositionSampleryLayout,        // binding 0
 																   NormalSamplerLayout,           // binding 1
 																   AlbedoSamplerLayout,           // binding 2
 			                                                       MaterialsSamplerLayout,
 																   ReflectiveCubeSamplerLayout,
-																   ReflectionMaskSamplerLayout,
 			                                                       ShadowMapSamplerLayout,
 			                                                       EmisiveSamplerLayout,
 			                                                       RT_Reflection,
@@ -130,11 +123,10 @@ void Lighting_FullScreenQuad::createDescriptorSetLayout()
 
 }
 
-void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer* Gbuffer, ImageData* ReflectionMask, ImageData* RT_Reflection)
+void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer* Gbuffer, ImageData* RT_Reflection)
 {
 
 	GbufferRef = Gbuffer;
-	ReflectionMaskRef = ReflectionMask;
 	RT_ReflectionRef = RT_Reflection;
 	// create sets from the pool based on the layout
 	std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
@@ -226,21 +218,6 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 		ReflectiveCubeSamplerdescriptorWrite.descriptorCount = 1;
 		ReflectiveCubeSamplerdescriptorWrite.pImageInfo = &ReflectiveCubeimageInfo;
 
-
-		vk::DescriptorImageInfo ReflectionMaskimageInfo{};
-		ReflectionMaskimageInfo.imageLayout = vk::ImageLayout::eGeneral;
-		ReflectionMaskimageInfo.imageView = ReflectionMaskRef->imageView;
-		ReflectionMaskimageInfo.sampler = ReflectionMaskRef->imageSampler;
-
-		vk::WriteDescriptorSet ReflectionMaskSamplerdescriptorWrite{};
-		ReflectionMaskSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		ReflectionMaskSamplerdescriptorWrite.dstBinding = 5;
-		ReflectionMaskSamplerdescriptorWrite.dstArrayElement = 0;
-		ReflectionMaskSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		ReflectionMaskSamplerdescriptorWrite.descriptorCount = 1;
-		ReflectionMaskSamplerdescriptorWrite.pImageInfo = &ReflectionMaskimageInfo;
-
-
 		std::vector<vk::DescriptorImageInfo>ShadowImagesInfos;
 
 		for (int i = 0; i < raytracingRef->ShadowPassImages.size(); i++)
@@ -256,7 +233,7 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 
 		vk::WriteDescriptorSet StoreageImagSamplerdescriptorWrite{};
 		StoreageImagSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		StoreageImagSamplerdescriptorWrite.dstBinding = 6;
+		StoreageImagSamplerdescriptorWrite.dstBinding = 5;
 		StoreageImagSamplerdescriptorWrite.dstArrayElement = 0;
 		StoreageImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		StoreageImagSamplerdescriptorWrite.descriptorCount = ShadowImagesInfos.size();
@@ -269,7 +246,7 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 
 		vk::WriteDescriptorSet EmisiveSamplerdescriptorWrite{};
 		EmisiveSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		EmisiveSamplerdescriptorWrite.dstBinding = 7;
+		EmisiveSamplerdescriptorWrite.dstBinding = 6;
 		EmisiveSamplerdescriptorWrite.dstArrayElement = 0;
 		EmisiveSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		EmisiveSamplerdescriptorWrite.descriptorCount = 1;
@@ -283,7 +260,7 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 
 		vk::WriteDescriptorSet RT_ReflectionsSamplerdescriptorWrite{};
 		RT_ReflectionsSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		RT_ReflectionsSamplerdescriptorWrite.dstBinding = 8;
+		RT_ReflectionsSamplerdescriptorWrite.dstBinding = 7;
 		RT_ReflectionsSamplerdescriptorWrite.dstArrayElement = 0;
 		RT_ReflectionsSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		RT_ReflectionsSamplerdescriptorWrite.descriptorCount = 1;
@@ -298,19 +275,18 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 
 		vk::WriteDescriptorSet LightUniformBufferDescriptorWrite{};
 		LightUniformBufferDescriptorWrite.dstSet = DescriptorSets[i];
-		LightUniformBufferDescriptorWrite.dstBinding = 9;
+		LightUniformBufferDescriptorWrite.dstBinding = 8;
 		LightUniformBufferDescriptorWrite.dstArrayElement = 0;
 		LightUniformBufferDescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
 		LightUniformBufferDescriptorWrite.descriptorCount = 1;
 		LightUniformBufferDescriptorWrite.pBufferInfo = &LightUniformBufferInfo;
 
-		std::array<vk::WriteDescriptorSet, 10> descriptorWrites = {
+		std::array<vk::WriteDescriptorSet, 9> descriptorWrites = {
 																	PositionSamplerdescriptorWrite,        // binding 0
 																	NormalSamplerdescriptorWrite,          // binding 1
 																	AlbedoSamplerdescriptorWrite,          // binding 2
 																	MaterialsSamplerdescriptorWrite,
 																	ReflectiveCubeSamplerdescriptorWrite,
-																	ReflectionMaskSamplerdescriptorWrite,
 																	StoreageImagSamplerdescriptorWrite,
 																	EmisiveSamplerdescriptorWrite,
 																	RT_ReflectionsSamplerdescriptorWrite,

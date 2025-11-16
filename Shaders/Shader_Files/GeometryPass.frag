@@ -11,7 +11,9 @@ layout(location = 1) in vec4 ViewSpacePosition;
 layout(location = 2) in vec2 fragTexCoord;           
 layout(location = 3) in mat3 WorldSpaceTBN; 
 layout(location = 6) in mat3 ViewSpaceTBN; 
-layout(location = 9) in vec4 bCubeMapReflection_bScreenSpaceReflection_Padding; 
+layout(location = 9) in vec4 CurrentPosition; 
+layout(location = 10) in vec4 PrevPosition; 
+
 
 layout (location = 0) out vec4 outWorldPosition;
 layout (location = 1) out vec4 outViewSpacePosition;
@@ -20,7 +22,7 @@ layout (location = 3) out vec4 outViewSpaceNormal;
 layout (location = 4) out vec4 outAlbedo;
 layout (location = 5) out vec4 outEmisive;
 layout (location = 6) out vec4 outMetallicRoughnessMapAO;
-layout (location = 7) out vec4 outReflectionMask;
+layout (location = 7) out vec4 outVelocity;
 
 
 
@@ -47,10 +49,13 @@ void main() {
 
   outAlbedo   = vec4(Albedo,1.0);
 
-  outReflectionMask   = vec4(bCubeMapReflection_bScreenSpaceReflection_Padding.rgb,1.0);
-
-
   vec3 Emisive = textureLod(samplerEmisive,fragTexCoord,0).rgb;
   outEmisive   = vec4(Emisive * 3,1);
 
+
+  vec3 currentPosNDC  =  CurrentPosition.xyz / CurrentPosition.w;
+  vec3 previousPosNDC = PrevPosition.xyz / PrevPosition.w;
+
+  vec2 velocity = currentPosNDC.xy - previousPosNDC.xy;
+   outVelocity = vec4(velocity, 0.0, 1.0);
 }

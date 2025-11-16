@@ -11,7 +11,7 @@
 
 struct PushConstantData {
    glm::mat4 worldMatrix;
-   glm::vec4 MaterialIndex_Padding;
+   glm::mat4 previousWorldMatrix;
 };
 
 struct BLASDATA {
@@ -24,6 +24,8 @@ struct BLASDATA {
 struct VertexData {
     alignas(16) glm::mat4 ViewMatrix;
     alignas(16) glm::mat4 ProjectionMatrix;
+    alignas(16) glm::mat4 Prev_ViewMatrix;
+    alignas(16) glm::mat4 Prev_ProjectionMatrix;
 };
 
 struct GPU_InstanceData {
@@ -62,6 +64,7 @@ struct InstanceData {
     glm::vec3 GetRotation() const { return Rotation;}
     glm::vec3 GetScale   () const { return Scale; }
     glm::mat4 GetTransformationMatrix() const { return TransformationMatrix; }
+    glm::mat4 GetPreviousTransformationMatrix() const { return PreviousTransformationMatrix; }
     glm::mat4 GetModelMatrix() const { return ModelMatrix; }
 
     void CubeMapReflectiveSwitch(bool breflective)
@@ -110,6 +113,7 @@ struct InstanceData {
 
     void UpdateTrasnformationMatrix()
     {
+        PreviousTransformationMatrix = TransformationMatrix;
         TransformationMatrix = glm::mat4(1.0f);
         TransformationMatrix = glm::translate(TransformationMatrix, Position);
         TransformationMatrix = glm::rotate(TransformationMatrix, glm::radians(Rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -145,6 +149,7 @@ struct InstanceData {
     glm::vec3 Scale     = glm::vec3(1);
     glm::vec3 Rotation  = glm::vec3(1);
     glm::mat4 TransformationMatrix = glm::mat4(1);
+    glm::mat4 PreviousTransformationMatrix = glm::mat4(1);
     glm::mat4 ModelMatrix = glm::mat4(1);
 };
 
@@ -162,7 +167,7 @@ public:
     void Destroy(int instanceIndex);
     void UpdateUniformBuffer(uint32_t currentImage);
     bool CalcDistanceCulling(glm::mat4 Matrix);
-    void DrawNode(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex, const std::vector<std::shared_ptr<Node>>& nodes, const glm::mat4& parentMatrix);
+    void DrawNode(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex, const std::vector<std::shared_ptr<Node>>& nodes, const glm::mat4& parentMatrix, const glm::mat4& previousParentMatrix);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
     void CreateBLAS();
 

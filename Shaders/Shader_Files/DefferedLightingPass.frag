@@ -6,10 +6,9 @@ layout (binding = 1) uniform sampler2D samplerNormal;
 layout (binding = 2) uniform sampler2D samplerAlbedo;
 layout (binding = 3) uniform sampler2D samplerMaterials;
 layout (binding = 4) uniform samplerCube samplerReflectiveCubeMap;
-layout (binding = 5) uniform sampler2D samplerReflectionMask;
-layout (binding = 6) uniform sampler2D samplerShadowMap[4];
-layout (binding = 7) uniform sampler2D samplerEmisive;
-layout (binding = 8) uniform sampler2D samplerReflections;
+layout (binding = 5) uniform sampler2D samplerShadowMap[4];
+layout (binding = 6) uniform sampler2D samplerEmisive;
+layout (binding = 7) uniform sampler2D samplerReflections;
 
 layout(location = 0) in vec2 inTexCoord;           
 
@@ -22,7 +21,7 @@ struct LightData{
     vec4    colorAndAmbientStrength;
     vec4    CameraPositionAndLightIntensity;
 };
-layout (binding = 9) uniform LightUniformBuffer {
+layout (binding = 8) uniform LightUniformBuffer {
    
    LightData lights[4];
 };
@@ -122,7 +121,6 @@ void main() {
     vec3  Albedo         = textureLod(samplerAlbedo,inTexCoord,0).rgb;
     float Metallic       = textureLod(samplerMaterials,inTexCoord,0).r;
     float Roughness      = textureLod(samplerMaterials,inTexCoord,0).g;
-    vec2  ReflectionMask = textureLod(samplerReflectionMask,inTexCoord,0).rg;
     vec3  Emmisive       = textureLod(samplerEmisive,inTexCoord,0).rgb;
     vec3  RTReflection       = textureLod(samplerReflections,inTexCoord,0).rgb;
 

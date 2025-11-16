@@ -8,7 +8,8 @@ layout(location = 3) in vec3 inTangent;
 layout(set = 0,binding = 0) uniform VertexUniformBufferObject {
       mat4 view;
       mat4 proj;
-      mat4 Model;
+      mat4 prev_view;
+      mat4 prev_proj;
 }vuob;
 
 struct InstanceData{
@@ -21,27 +22,39 @@ layout(set = 0,binding = 1) uniform UniformBufferObject {
 
 layout(push_constant) uniform PushConstants {
           mat4 Model;
+          mat4 previousWorldMatrix;
 } pc;
 
-layout(location = 0) out vec4 WorldSpacPosition;   
-layout(location = 1) out vec4 ViewSpacePosition;   
-layout(location = 2) out vec2 fragTexCoord;           
-layout(location = 3) out mat3 WorldSpaceTBN; 
-layout(location = 6) out mat3 ViewSpaceTBN; 
-layout(location = 9) out vec4 bCubeMapReflection_bScreenSpaceReflection_Padding; 
+layout(location = 0)  out vec4 WorldSpacePosition;   
+layout(location = 1)  out vec4 ViewSpacePosition;   
+layout(location = 2)  out vec2 fragTexCoord;           
+layout(location = 3)  out mat3 WorldSpaceTBN; 
+layout(location = 6)  out mat3 ViewSpaceTBN; 
+layout(location = 9) out vec4 CurrentPosition; 
+layout(location = 10) out vec4 PrevPosition; 
 
 void main() {
     
     mat4 model = pc.Model;
-    //mat4 model = vuob.Model;
 
+    /////////////////////////////////////////////////
     vec4 worldPos = model * vec4(inPosition, 1.0);
     vec4 viewPos = vuob.view * worldPos;
    
-    WorldSpacPosition = worldPos;
+    WorldSpacePosition = worldPos;
     ViewSpacePosition = viewPos;
+    vec4 Position = vuob.proj * viewPos;
+    CurrentPosition = Position;
 
-    gl_Position = vuob.proj * viewPos;
+    gl_Position = Position;
+   /////////////////////////////////////////////////
+
+
+   /////////////////////////////////////////////////
+    vec4 Prev_viewPos  = vuob.prev_view * pc.previousWorldMatrix * vec4(inPosition, 1.0);
+
+    PrevPosition = vuob.prev_proj * Prev_viewPos;
+   /////////////////////////////////////////////////
 
     mat3 normalMatrix = transpose(inverse(mat3(model)));
 
@@ -64,5 +77,4 @@ void main() {
     ViewSpaceTBN = mat3(vT, vB, vN);
 
     fragTexCoord = inTexCoord;
-    bCubeMapReflection_bScreenSpaceReflection_Padding = ModelInstance[gl_InstanceIndex].bCubeMapReflection_bScreenSpaceReflection_Padding;
 }

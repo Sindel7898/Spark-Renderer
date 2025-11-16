@@ -576,8 +576,12 @@ void Model::createDescriptorSets(vk::DescriptorPool descriptorpool)
 void Model::UpdateUniformBuffer(uint32_t currentImage)
 {
 	VertexData VertexData;
-	VertexData.ViewMatrix = camera->GetViewMatrix();
-	VertexData.ProjectionMatrix = camera->GetProjectionMatrix();
+	VertexData.ViewMatrix            = camera->GetViewMatrix();
+	VertexData.Prev_ViewMatrix       = camera->GetPrevViewMatrix();
+	VertexData.ProjectionMatrix      = camera->GetProjectionMatrix();
+	VertexData.Prev_ProjectionMatrix = camera->GetPrevProjectionMatrix();
+
+	VertexData.Prev_ProjectionMatrix[1][1] *= -1;
 	VertexData.ProjectionMatrix[1][1] *= -1;
 
 	memcpy(VertexUniformBuffersMappedMem[currentImage], &VertexData, sizeof(VertexData));
@@ -601,13 +605,14 @@ bool Model::CalcDistanceCulling(glm::mat4 Matrix)
 }
 
 
-void Model::DrawNode(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipelineLayout, uint32_t imageIndex,const std::vector<std::shared_ptr<Node>>& nodes,const glm::mat4& parentMatrix)
+void Model::DrawNode(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipelineLayout, uint32_t imageIndex,const std::vector<std::shared_ptr<Node>>& nodes,const glm::mat4& parentMatrix, const glm::mat4& previousParentMatrix)
 {
 	for (const auto& node : nodes) {
 		
 		if (!node) continue;
 
 		glm::mat4 worldMatrix = parentMatrix * node->matrix;
+		glm::mat4 previousWorldMatrix = previousParentMatrix * node->matrix;
 
 		Instances[0]->SetModelMatrix(worldMatrix);
 
@@ -617,9 +622,13 @@ void Model::DrawNode(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipeline
 			
 			if (node->meshPrimitives[i].numIndices > 0) {
 				
+				PushConstantData pushData;
+				pushData.worldMatrix = worldMatrix;
+				pushData.previousWorldMatrix = previousWorldMatrix;
+
 				commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &SceneDescriptorSets[node->meshPrimitives[i].materialIndex][imageIndex], 0, nullptr);
 				
-				commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(glm::mat4), &worldMatrix);
+				commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(PushConstantData), &pushData);
 				
 				commandBuffer.drawIndexed(node->meshPrimitives[i].numIndices, 1, node->meshPrimitives[i].indicesStart, 0, 0);
 			}
@@ -627,7 +636,7 @@ void Model::DrawNode(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipeline
 			
 		
 
-		DrawNode(commandBuffer, pipelineLayout, imageIndex,node->children, worldMatrix);
+		DrawNode(commandBuffer, pipelineLayout, imageIndex,node->children, worldMatrix, previousWorldMatrix);
 	}
 }
 
@@ -640,7 +649,7 @@ void Model::Draw(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipelineLayo
 	commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
 	commandBuffer.bindIndexBuffer(indexBufferData.buffer, 0, vk::IndexType::eUint32);
 
-	DrawNode(commandBuffer, pipelineLayout, imageIndex,storedModelData->nodes, Instances[0]->GetTransformationMatrix());
+	DrawNode(commandBuffer, pipelineLayout, imageIndex,storedModelData->nodes, Instances[0]->GetTransformationMatrix(), Instances[0]->GetPreviousTransformationMatrix());
 }
 
 void Model::CleanUp()

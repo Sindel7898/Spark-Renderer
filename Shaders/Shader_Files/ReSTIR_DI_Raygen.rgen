@@ -91,9 +91,8 @@ bool TraceShadow(vec3 origin, vec3 direction, float MaxDistance) {
     payload.data.x = 1.0;
 
     const uint rayFlags = gl_RayFlagsOpaqueEXT | 
-                         gl_RayFlagsTerminateOnFirstHitEXT | 
-                         gl_RayFlagsSkipClosestHitShaderEXT | 
-                         gl_RayFlagsCullBackFacingTrianglesEXT;
+                          gl_RayFlagsCullBackFacingTrianglesEXT;
+
     const uint cullMask = 0xFF;
     const float tMin = 0.1;
     const float tMax = MaxDistance;
@@ -314,9 +313,9 @@ void main() {
             vec3 radiance;
 
             if(Hit){
-               radiance = vec3(0.0);
+              radiance = WINNER_Radiance;
             }else{
-               radiance = WINNER_Radiance;
+               radiance = vec3(0.0);
             }
 
             p_hat = length(radiance);
@@ -345,6 +344,7 @@ void main() {
          const uint rayFlags = gl_RayFlagsOpaqueEXT | 
                                gl_RayFlagsTerminateOnFirstHitEXT | 
                                gl_RayFlagsCullBackFacingTrianglesEXT;
+
          const uint cullMask = 0xFF;
          const float tMin = 0.1;
          const float tMax = 1000;
@@ -364,8 +364,5 @@ void main() {
       vec3 indirectRadiance = payload.data * diffuse;
       vec3 finalColor = TotalRadiance + indirectRadiance;
 
-      imageStore(ResevoirImage, TextCoord, vec4(finalColor,1) );
-
-   
-            
+      imageStore(ResevoirImage, TextCoord, vec4(finalColor,1));            
 }

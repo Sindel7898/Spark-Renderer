@@ -13,7 +13,7 @@ void main() {
 
    if (payload.rayType == 0)
     {
-        payload.data.x = 0.0;
+        
     }
     else
     {
