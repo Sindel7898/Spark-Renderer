@@ -81,7 +81,7 @@ void main() {
 
      if(AO < 0.1){AO = 1;}
 
-    vec3 FinalColor = DirectLighting + (( SSGIGIresult) * AO) * GIboost;
+    vec3 FinalColor = DirectLighting + (( SSGIGIresult + DDGIresult) * AO) * GIboost;
 
 
      vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, Brightness, Saturation, Concentration);

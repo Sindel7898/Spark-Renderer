@@ -21,10 +21,19 @@ void ReSTIR_DI::CreateImage() {
 	vk::Extent3D SampledImageExtent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
 	ResevoirImage.ImageID = " Resevoir  Image";
-	bufferManager->CreateImage(&ResevoirImage, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst); 
+	bufferManager->CreateImage(&ResevoirImage, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
 	ResevoirImage.imageView = bufferManager->CreateImageView(&ResevoirImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	ResevoirImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
 
+	PrevResevoirImage.ImageID = " Prev Resevoir  Image";
+	bufferManager->CreateImage(&PrevResevoirImage, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
+	PrevResevoirImage.imageView = bufferManager->CreateImageView(&PrevResevoirImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	PrevResevoirImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
+
+	ReSTIRDI_Results.ImageID = " Prev ReSTIRDI  Image";
+	bufferManager->CreateImage(&ReSTIRDI_Results, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
+	ReSTIRDI_Results.imageView = bufferManager->CreateImageView(&ReSTIRDI_Results, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	ReSTIRDI_Results.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
 
 	vk::CommandBuffer cmd = bufferManager->CreateSingleUseCommandBuffer(commandPool);
 
@@ -63,6 +72,16 @@ void ReSTIR_DI::DestroyImage() {
 	{
 		bufferManager->DestroyImage(ResevoirImage);
 	}
+
+	if (PrevResevoirImage.image)
+	{
+		bufferManager->DestroyImage(PrevResevoirImage);
+	}
+
+	if (ReSTIRDI_Results.image)
+	{
+		bufferManager->DestroyImage(ReSTIRDI_Results);
+	}
 }
 
 
@@ -94,13 +113,11 @@ void ReSTIR_DI::createDescriptorSetLayout()
 		NormalImageLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		NormalImageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
-
 		vk::DescriptorSetLayoutBinding AlbedoImageLayout{};
 		AlbedoImageLayout.binding = 4;
 		AlbedoImageLayout.descriptorCount = 1;
 		AlbedoImageLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		AlbedoImageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
-
 
 		vk::DescriptorSetLayoutBinding MaterialImageLayout{};
 		MaterialImageLayout.binding = 5;
@@ -168,8 +185,31 @@ void ReSTIR_DI::createDescriptorSetLayout()
 		trasnformationUniformBuffersLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
 		trasnformationUniformBuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
 
+		vk::DescriptorSetLayoutBinding PrevResevoirStorageImageLayout{};
+		PrevResevoirStorageImageLayout.binding = 16;
+		PrevResevoirStorageImageLayout.descriptorCount = 1;
+		PrevResevoirStorageImageLayout.descriptorType = vk::DescriptorType::eStorageImage;
+		PrevResevoirStorageImageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
-		std::array<vk::DescriptorSetLayoutBinding, 16> bindings = {
+		vk::DescriptorSetLayoutBinding MotionVectorImageLayout{};
+		MotionVectorImageLayout.binding = 17;
+		MotionVectorImageLayout.descriptorCount = 1;
+		MotionVectorImageLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		MotionVectorImageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+
+		vk::DescriptorSetLayoutBinding ReSTIRDIImageLayout{};
+		ReSTIRDIImageLayout.binding = 18;
+		ReSTIRDIImageLayout.descriptorCount = 1;
+		ReSTIRDIImageLayout.descriptorType = vk::DescriptorType::eStorageImage;
+		ReSTIRDIImageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+
+		vk::DescriptorSetLayoutBinding PrevNormalImageLayout{};
+		PrevNormalImageLayout.binding = 19;
+		PrevNormalImageLayout.descriptorCount = 1;
+		PrevNormalImageLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		PrevNormalImageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+
+		std::array<vk::DescriptorSetLayoutBinding, 20> bindings = {
 					LightUniformBufferLayout, ResevoirStorageImageLayout,
 					WorldPositionImageLayout, NormalImageLayout,
 					AlbedoImageLayout, MaterialImageLayout,
@@ -177,7 +217,8 @@ void ReSTIR_DI::createDescriptorSetLayout()
 					TLAS,AlbedoAssetTexturesSamplerLayout,NormalAssetTexturesSamplerLayout,
 					MetalicRoughnessAssetTexturesSamplerLayout,EmmisiveAssetTexturesSamplerLayout,
 					IndexStorageBuffersLayout,VertexStorageBuffersLayout,offsetStorageBuffersLayout,
-					trasnformationUniformBuffersLayout,
+					trasnformationUniformBuffersLayout,PrevResevoirStorageImageLayout,MotionVectorImageLayout,
+					ReSTIRDIImageLayout,PrevNormalImageLayout
 		};
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
@@ -246,8 +287,8 @@ void ReSTIR_DI::UpdateDescrptorSets()
 
 			vk::DescriptorImageInfo PositionimageInfo{};
 			PositionimageInfo.imageLayout = vk::ImageLayout::eGeneral;
-			PositionimageInfo.imageView = LightingPass->GbufferRef->Position.imageView;
-			PositionimageInfo.sampler = LightingPass->GbufferRef->Position.imageSampler;
+			PositionimageInfo.imageView   = LightingPass->GbufferRef->Position.imageView;
+			PositionimageInfo.sampler     = LightingPass->GbufferRef->Position.imageSampler;
 
 			vk::WriteDescriptorSet PositionSamplerdescriptorWrite{};
 			PositionSamplerdescriptorWrite.dstSet = RaytracingDescriptorSets[i];
@@ -489,8 +530,61 @@ void ReSTIR_DI::UpdateDescrptorSets()
 			TransformUniformBufferdescriptorWrite.descriptorCount = 1;
 			TransformUniformBufferdescriptorWrite.pBufferInfo = &TransformUniformBuffersInfo;
 
+			vk::DescriptorImageInfo PrevResevoirImageInfo{};
+			PrevResevoirImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			PrevResevoirImageInfo.imageView = PrevResevoirImage.imageView;
+			PrevResevoirImageInfo.sampler = PrevResevoirImage.imageSampler;
 
-			std::array<vk::WriteDescriptorSet, 16> descriptorWrites = {
+			vk::WriteDescriptorSet PrevResevoirImagedescriptorWrite{};
+			PrevResevoirImagedescriptorWrite.dstSet = RaytracingDescriptorSets[i];
+			PrevResevoirImagedescriptorWrite.dstBinding = 16;
+			PrevResevoirImagedescriptorWrite.dstArrayElement = 0;
+			PrevResevoirImagedescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
+			PrevResevoirImagedescriptorWrite.descriptorCount = 1;
+			PrevResevoirImagedescriptorWrite.pImageInfo = &PrevResevoirImageInfo;
+
+			vk::DescriptorImageInfo MotionVectorImageInfo{};
+			MotionVectorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			MotionVectorImageInfo.imageView = LightingPass->GbufferRef->MotionVector.imageView;
+			MotionVectorImageInfo.sampler = LightingPass->GbufferRef->MotionVector.imageSampler;
+
+			vk::WriteDescriptorSet MotionVectorImagedescriptorWrite{};
+			MotionVectorImagedescriptorWrite.dstSet = RaytracingDescriptorSets[i];
+			MotionVectorImagedescriptorWrite.dstBinding = 17;
+			MotionVectorImagedescriptorWrite.dstArrayElement = 0;
+			MotionVectorImagedescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			MotionVectorImagedescriptorWrite.descriptorCount = 1;
+			MotionVectorImagedescriptorWrite.pImageInfo = &MotionVectorImageInfo;
+
+
+			vk::DescriptorImageInfo ReSTIRImageInfo{};
+			ReSTIRImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			ReSTIRImageInfo.imageView = ReSTIRDI_Results.imageView;
+			ReSTIRImageInfo.sampler = ReSTIRDI_Results.imageSampler;
+
+			vk::WriteDescriptorSet ReSTIRImagedescriptorWrite{};
+			ReSTIRImagedescriptorWrite.dstSet = RaytracingDescriptorSets[i];
+			ReSTIRImagedescriptorWrite.dstBinding = 18;
+			ReSTIRImagedescriptorWrite.dstArrayElement = 0;
+			ReSTIRImagedescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
+			ReSTIRImagedescriptorWrite.descriptorCount = 1;
+			ReSTIRImagedescriptorWrite.pImageInfo = &ReSTIRImageInfo;
+
+			vk::DescriptorImageInfo PrevNormalImageInfo{};
+			PrevNormalImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			PrevNormalImageInfo.imageView = LightingPass->GbufferRef->MotionVector.imageView;
+			PrevNormalImageInfo.sampler = LightingPass->GbufferRef->MotionVector.imageSampler;
+
+			vk::WriteDescriptorSet PrevNormalmagedescriptorWrite{};
+			PrevNormalmagedescriptorWrite.dstSet = RaytracingDescriptorSets[i];
+			PrevNormalmagedescriptorWrite.dstBinding = 19;
+			PrevNormalmagedescriptorWrite.dstArrayElement = 0;
+			PrevNormalmagedescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			PrevNormalmagedescriptorWrite.descriptorCount = 1;
+			PrevNormalmagedescriptorWrite.pImageInfo = &PrevNormalImageInfo;
+
+
+			std::array<vk::WriteDescriptorSet, 20> descriptorWrites = {
 							LightUniformBufferDescriptorWrite,
 							ResevoirImagedescriptorWrite,
 							PositionSamplerdescriptorWrite,
@@ -501,7 +595,8 @@ void ReSTIR_DI::UpdateDescrptorSets()
 							TLAS_descriptorWrite,AssetImagSamplerdescriptorWrite,NormalAssetImagSamplerdescriptorWrite,
 							MetalicRoughnessAssetImagSamplerdescriptorWrite,EmmisiveAssetImagSamplerdescriptorWrite,
 							IndexStorageBufferdescriptorWrite,VertexStorageBufferdescriptorWrite,
-							OffsetStorageBufferdescriptorWrite,TransformUniformBufferdescriptorWrite
+							OffsetStorageBufferdescriptorWrite,TransformUniformBufferdescriptorWrite,PrevResevoirImagedescriptorWrite,
+							MotionVectorImagedescriptorWrite,ReSTIRImagedescriptorWrite,PrevNormalmagedescriptorWrite
 
 			};
 

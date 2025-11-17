@@ -41,7 +41,8 @@ layout(set = 0, binding = 15) uniform Transformation {
 
 struct UnifiedPayload {
     int  rayType; 
-    vec3 data;    
+    vec3 data;
+    vec3 Emissive;   
 };
 
 layout(location = 0) rayPayloadInEXT UnifiedPayload payload;
@@ -88,10 +89,9 @@ void main()
           v2.texCoord_Padding.xy * bary.z;
    
    
-       vec3  Albedo    = texture(Albedo_AssetImages          [nonuniformEXT(primitiveID)], TexCoord).rgb;
-       vec3 Emissive   = texture(Emmisive_AssetImages        [nonuniformEXT(primitiveID)], TexCoord).rgb;
+       vec3  Albedo     = texture(Albedo_AssetImages          [nonuniformEXT(primitiveID)], TexCoord).rgb;
+       vec3 Emissive    = texture(Emmisive_AssetImages        [nonuniformEXT(primitiveID)], TexCoord).rgb;
+       payload.data = vec3(0.0);
+       payload.Emissive =  Emissive;
 
-      
-      
-      payload.data =  Albedo + Emissive ;
  }

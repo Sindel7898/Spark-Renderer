@@ -245,8 +245,6 @@ private:
 	GBuffer gbuffer;
 
 	ImageData LightingPassImageData;
-	ImageData MotionVectorsImageData;
-
 
 	//RT Acceleration Structures
 	BufferData TLAS_Buffer;

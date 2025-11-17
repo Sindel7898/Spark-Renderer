@@ -48,7 +48,7 @@
 
 
 	auto model1 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf" ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	//auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 
 	//auto model4 = std::shared_ptr<Model>(new Model("../Textures/EmptyCornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
@@ -57,43 +57,43 @@
 
 	//auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	//auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	
 	////////CORNEL SETUP////////////////////////////////////////
-    model1.get()->Instances[0]->SetPostion(glm::vec3(-5.936, 3.043, -9.525));
-    model1.get()->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
-    model1.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
-    model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-    model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-   	
+    //model1.get()->Instances[0]->SetPostion(glm::vec3(-5.936, 3.043, -9.525));
+    //model1.get()->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
+    //model1.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
+    //model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+    //model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+   	//
+	//
+    //model3.get()->Instances[0]->SetPostion(glm::vec3(6.087, 13.277, 3.776));
+    //model3.get()->Instances[0]->SetRotation(glm::vec3(-179.987, -49.785, 179.967));
+    //model3.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
+    //model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+    //model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 	
-    model3.get()->Instances[0]->SetPostion(glm::vec3(6.087, 13.277, 3.776));
-    model3.get()->Instances[0]->SetRotation(glm::vec3(-179.987, -49.785, 179.967));
-    model3.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
-    model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-    model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-	
-	model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
-	model2.get()->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
-	model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	//model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
+	//model2.get()->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
+	//model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	//model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
 
-	//model1.get()->Instances[0]->SetPostion(glm::vec3(-14.224, -0.329, 0.357));
-	//model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
-	//model1.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
-	//model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	//model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-	//
-	//
-	//model3.get()->Instances[0]->SetPostion(glm::vec3(7.153, -0.523, -2.166));
-	//model3.get()->Instances[0]->SetRotation(glm::vec3(179.997, 44.147, 179.993));
-	//model3.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
-	//model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	//model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	model1.get()->Instances[0]->SetPostion(glm::vec3(-14.224, -0.329, 0.357));
+	model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
+	model1.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
+	model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	
+	
+	model3.get()->Instances[0]->SetPostion(glm::vec3(7.153, -0.523, -2.166));
+	model3.get()->Instances[0]->SetRotation(glm::vec3(179.997, 44.147, 179.993));
+	model3.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
+	model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 	//
 	////
-	//model11.get()->Instances[0]->SetScale(glm::vec3(5.000, 5.000, 5.000));
+	model11.get()->Instances[0]->SetScale(glm::vec3(5.000, 5.000, 5.000));
 	//model11.get()->Instances[0]->CubeMapReflectiveSwitch(false);
 	//model11.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
@@ -113,11 +113,11 @@
 	////
 	////
     Models.push_back(std::move(model1));
-    Models.push_back(std::move(model2));
+    //Models.push_back(std::move(model2));
 	Models.push_back(std::move(model3));
 	//Models.push_back(std::move(model4));
 	//Models.push_back(std::move(model5));
-    //Models.push_back(std::move(model11));
+    Models.push_back(std::move(model11));
 
 
 
@@ -149,16 +149,24 @@
 
 	std::mt19937 gen(rd());
 
-	std::uniform_real_distribution<float> dis(1.0f, 100.0f);
+	std::uniform_real_distribution<float> disXZ(-20, 20);
+	std::uniform_real_distribution<float> disY(0, 40);
+	std::uniform_real_distribution<float> disc(0, 1);
 
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < 99; i++) {
 		std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(&vulkanContext, commandPool, &camera, &bufferManger), LightDeleter);
 
-		float randX = dis(gen);
-		float randY = dis(gen);
-		float randZ = dis(gen);
+		float randX = disXZ(gen);
+		float randY = disY(gen);
+		float randZ = disXZ(gen);
 
 		light->SetPosition(glm::vec3(randX, randY, randZ));
+
+		float R = disc(gen);
+		float G = disc(gen);
+		float B = disc(gen);
+
+		light->color = glm::vec3(R, G, B);
 
 		lights.push_back(std::move(light));
 	}
@@ -612,9 +620,14 @@ void App::createGBuffer()
 	gbuffer.ViewSpacePosition.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	gbuffer.Normal.ImageID = "Gbuffer WorldSpaceNormal Texture";
-	bufferManger.CreateImage(&gbuffer.Normal,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	bufferManger.CreateImage(&gbuffer.Normal,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferSrc);
 	gbuffer.Normal.imageView = bufferManger.CreateImageView(&gbuffer.Normal, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	gbuffer.Normal.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	
+	gbuffer.PrevNormal.ImageID = "Gbuffer prev WorldSpaceNormal Texture";
+	bufferManger.CreateImage(&gbuffer.PrevNormal, swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
+	gbuffer.PrevNormal.imageView = bufferManger.CreateImageView(&gbuffer.PrevNormal, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	gbuffer.PrevNormal.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	gbuffer.ViewSpaceNormal.ImageID = "Gbuffer ViewSpaceNormal Texture";
 	bufferManger.CreateImage(&gbuffer.ViewSpaceNormal,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
@@ -644,10 +657,10 @@ void App::createGBuffer()
 	LightingPassImageData.imageView = bufferManger.CreateImageView(&LightingPassImageData, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	LightingPassImageData.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
-	MotionVectorsImageData.ImageID = "MotionVectors Texture";
-	bufferManger.CreateImage(&MotionVectorsImageData, swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	MotionVectorsImageData.imageView = bufferManger.CreateImageView(&MotionVectorsImageData, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	MotionVectorsImageData.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+	gbuffer.MotionVector.ImageID = "MotionVectors Texture";
+	bufferManger.CreateImage(&gbuffer.MotionVector, swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.MotionVector.imageView = bufferManger.CreateImageView(&gbuffer.MotionVector, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	gbuffer.MotionVector.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 
 	fxaa_FullScreenQuad->CreateImage(swapchainextent);
@@ -691,7 +704,7 @@ void App::createGBuffer()
 	bufferManger.TransitionImage(cmd, &gbuffer.Emissive, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &gbuffer.Materials, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &LightingPassImageData, TransitionToGeneral);
-	bufferManger.TransitionImage(cmd, &MotionVectorsImageData, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &gbuffer.MotionVector, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &Combined_FullScreenQuad->FinalResultImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->SSGIPassImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionToGeneral);
@@ -710,6 +723,8 @@ void App::createGBuffer()
 	bufferManger.TransitionImage(cmd, &RT_Reflection->HorizontalBlurReflectionPassImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &RT_Reflection->FullBlurReflectionPassImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &dynamicDiffuse_RTGI->Probe_Sampled_GI_Image, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &Restir_DI->PrevResevoirImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &Restir_DI->ReSTIRDI_Results, TransitionToGeneral);
 
 	bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd,vulkanContext.graphicsQueue);
 
@@ -755,12 +770,12 @@ void App::createGBuffer()
 		                                                 VK_IMAGE_LAYOUT_GENERAL);
 	
 
-	ReSTIR_DITextureId = ImGui_ImplVulkan_AddTexture(Restir_DI->ResevoirImage.imageSampler,
-		                                                       Restir_DI->ResevoirImage.imageView,
+	ReSTIR_DITextureId = ImGui_ImplVulkan_AddTexture(Restir_DI->ReSTIRDI_Results.imageSampler,
+		                                                       Restir_DI->ReSTIRDI_Results.imageView,
 		                                                       VK_IMAGE_LAYOUT_GENERAL);
 
-	MotionVectors = ImGui_ImplVulkan_AddTexture(MotionVectorsImageData.imageSampler,
-		                                    MotionVectorsImageData.imageView,
+	MotionVectors = ImGui_ImplVulkan_AddTexture(gbuffer.MotionVector.imageSampler,
+		                                        gbuffer.MotionVector.imageView,
 		                                    VK_IMAGE_LAYOUT_GENERAL);
 
 
@@ -2352,6 +2367,45 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	 /////////////////// GBUFFER PASS ///////////////////////// 
 	{
+	
+
+	    ImageTransitionData TransitiontoGeneraRT{};
+	    TransitiontoGeneraRT.oldlayout = vk::ImageLayout::eUndefined;
+	    TransitiontoGeneraRT.newlayout = vk::ImageLayout::eGeneral;
+	    TransitiontoGeneraRT.AspectFlag = vk::ImageAspectFlagBits::eColor;
+	    TransitiontoGeneraRT.SourceAccessflag = vk::AccessFlagBits::eNone;
+	    TransitiontoGeneraRT.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
+	    TransitiontoGeneraRT.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
+	    TransitiontoGeneraRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
+	    
+	    bufferManger.TransitionImage(commandBuffer, &gbuffer.Normal   , TransitiontoGeneraRT);
+	    bufferManger.TransitionImage(commandBuffer, &gbuffer.PrevNormal, TransitiontoGeneraRT);
+	    
+	    vk::ImageSubresourceLayers SrcSubresourceLayers;
+	    SrcSubresourceLayers.mipLevel = 0;
+	    SrcSubresourceLayers.baseArrayLayer = 0;
+	    SrcSubresourceLayers.layerCount = 1;
+	    SrcSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
+	    
+	    vk::ImageSubresourceLayers DstSubresourceLayers;
+	    DstSubresourceLayers.mipLevel = 0;
+	    DstSubresourceLayers.baseArrayLayer = 0;
+	    DstSubresourceLayers.layerCount = 1;
+	    DstSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
+	    
+	    vk::Extent3D ImageSize = {
+	    	vulkanContext.swapchainExtent.width ,
+	    	vulkanContext.swapchainExtent.height,
+	    	1
+	    };
+	    
+	    bufferManger.CopyImageToAnotherImage(commandBuffer,
+	    	gbuffer.Normal, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
+	    	gbuffer.PrevNormal, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
+	    	ImageSize, vulkanContext.graphicsQueue);
+
+
+
 		ImageTransitionData TransitionToGeneral{};
 		TransitionToGeneral.oldlayout = vk::ImageLayout::eUndefined;
 		TransitionToGeneral.newlayout = vk::ImageLayout::eGeneral;
@@ -2416,7 +2470,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		MaterialscolorAttachmentInfo.clearValue = clearColor;
 
 		vk::RenderingAttachmentInfo MotionVectorcolorAttachmentInfo{};
-		MotionVectorcolorAttachmentInfo.imageView = MotionVectorsImageData.imageView;
+		MotionVectorcolorAttachmentInfo.imageView = gbuffer.MotionVector.imageView;
 		MotionVectorcolorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		MotionVectorcolorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
 		MotionVectorcolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
@@ -2847,9 +2901,42 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 
 	{
-		//commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, ReSTIResevoirComputePassPipeline);
 
-		//Restir_DI->DispatchResevoirCandidateCalcCompute(commandBuffer, ReSTIResevoirComputePipelineLayout, currentFrame);
+	    ImageTransitionData TransitiontoGeneraRT{};
+	    TransitiontoGeneraRT.oldlayout = vk::ImageLayout::eUndefined;
+	    TransitiontoGeneraRT.newlayout = vk::ImageLayout::eGeneral;
+	    TransitiontoGeneraRT.AspectFlag = vk::ImageAspectFlagBits::eColor;
+	    TransitiontoGeneraRT.SourceAccessflag = vk::AccessFlagBits::eNone;
+	    TransitiontoGeneraRT.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
+	    TransitiontoGeneraRT.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
+	    TransitiontoGeneraRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+	    
+	    bufferManger.TransitionImage(commandBuffer, &Restir_DI->ResevoirImage    , TransitiontoGeneraRT);
+	    bufferManger.TransitionImage(commandBuffer, &Restir_DI->PrevResevoirImage, TransitiontoGeneraRT);
+	    
+	    vk::ImageSubresourceLayers SrcSubresourceLayers;
+	    SrcSubresourceLayers.mipLevel = 0;
+	    SrcSubresourceLayers.baseArrayLayer = 0;
+	    SrcSubresourceLayers.layerCount = 1;
+	    SrcSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
+	    
+	    vk::ImageSubresourceLayers DstSubresourceLayers;
+	    DstSubresourceLayers.mipLevel = 0;
+	    DstSubresourceLayers.baseArrayLayer = 0;
+	    DstSubresourceLayers.layerCount = 1;
+	    DstSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
+	    
+	    vk::Extent3D ImageSize = {
+	    	vulkanContext.swapchainExtent.width ,
+	    	vulkanContext.swapchainExtent.height,
+	    	1
+	    };
+	    
+	    bufferManger.CopyImageToAnotherImage(commandBuffer,
+	    	Restir_DI->ResevoirImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
+	    	Restir_DI->PrevResevoirImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
+	    	ImageSize, vulkanContext.graphicsQueue);
+
 
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, ReSTIR_RTPassPipeline);
 
@@ -2860,6 +2947,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			commandBuffer,
 			ReSTIR_RT_PipelineLayout,
 			currentFrame);
+
 	}
 
 
@@ -3709,7 +3797,8 @@ void App::destroy_GbufferImages()
 	bufferManger.DestroyImage(gbuffer.Albedo);
 	bufferManger.DestroyImage(gbuffer.Emissive);
 	bufferManger.DestroyImage(LightingPassImageData);
-	bufferManger.DestroyImage(MotionVectorsImageData);
+	bufferManger.DestroyImage(gbuffer.MotionVector);
+	bufferManger.DestroyImage(gbuffer.PrevNormal);
 
 	ssao_FullScreenQuad->DestroyImage();
 	Raytracing_Shadows->DestroyStorageImage();

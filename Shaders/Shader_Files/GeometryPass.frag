@@ -53,9 +53,10 @@ void main() {
   outEmisive   = vec4(Emisive * 3,1);
 
 
-  vec3 currentPosNDC  =  CurrentPosition.xyz / CurrentPosition.w;
-  vec3 previousPosNDC = PrevPosition.xyz / PrevPosition.w;
+  vec3 currentPosNDC  =  (CurrentPosition.xyz / CurrentPosition.w) * 0.5 + 0.5;
+  vec3 previousPosNDC =  (PrevPosition.xyz / PrevPosition.w) * 0.5 + 0.5;
 
   vec2 velocity = currentPosNDC.xy - previousPosNDC.xy;
    outVelocity = vec4(velocity, 0.0, 1.0);
+
 }

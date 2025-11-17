@@ -5,6 +5,7 @@
 struct UnifiedPayload {
     int  rayType; 
     vec3 data;    
+    vec3 Emmisive;   
 };
 
 layout(location = 0) rayPayloadInEXT UnifiedPayload payload;
@@ -18,6 +19,8 @@ void main() {
     else
     {
         payload.data = vec3(0.0);
+        payload.Emmisive = vec3(0.0);
+
     }
 
 }

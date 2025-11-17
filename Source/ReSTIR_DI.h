@@ -32,6 +32,9 @@ public:
     vk::DescriptorSetLayout RayTracingDescriptorSetLayout;
 
     ImageData ResevoirImage;
+    ImageData PrevResevoirImage;
+    ImageData ReSTIRDI_Results;
+
 
 private:
 
