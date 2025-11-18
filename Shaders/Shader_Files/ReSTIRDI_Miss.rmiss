@@ -8,6 +8,7 @@ struct UnifiedPayload {
     vec3 Emmisive;   
     vec3 Position;
     vec3 Normal;
+    vec3 Albedo;
 };
 
 layout(location = 0) rayPayloadInEXT UnifiedPayload payload;
@@ -24,6 +25,7 @@ void main() {
         payload.Emmisive = vec3(0.0);
         payload.Position = vec3(0.0);
         payload.Normal = vec3(0.0);
+        payload.Albedo = vec3(0.0);
 
     }
 

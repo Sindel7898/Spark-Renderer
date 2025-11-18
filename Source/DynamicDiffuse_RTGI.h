@@ -104,9 +104,9 @@ public:
 
     int RaysPerProbe = 128;
 
-    glm::vec3 ProbeOffset     = glm::vec3(11.42, 7.82, 10.35);
+    glm::vec3 ProbeOffset     = glm::vec3(7.52, 8.62, 11.13);
 
-    glm::vec3 GridLocation     = glm::vec3(-42.85, -9.26, -45.61);
+    glm::vec3 GridLocation     = glm::vec3(-24.67, -12.66, -45.61);
     float RayRotationRadians = 0;;
     float RotationSpeed = 1;
 

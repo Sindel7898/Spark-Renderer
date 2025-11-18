@@ -257,6 +257,7 @@ struct UnifiedPayload {
 
     vec3 Position;
     vec3 Normal;
+    vec3 Albedo;
 
 };
 
@@ -596,13 +597,15 @@ void main() {
                  tMax,
                  0);
 
-      vec3 IncomingIndirectLight = payload.data; 
-      vec3 IncomingEmissive = payload.Emissive;
-      vec3 DDGI = SampleIrradiance(payload.Position.xyz,payload.Normal.xyz);
+      vec3 SecondaryAlbedo = payload.Albedo;
+      vec3 SecondaryEmissive = payload.Emissive;
+      vec3 SecondaryIrradiance = SampleIrradiance(payload.Position.xyz, payload.Normal.xyz);
+      
 
-      vec3 IndirectResult = (DDGI * surfaceData.albedo / PI) + (IncomingEmissive * surfaceData.albedo / PI );
-      IndirectResult;
+      vec3 RadianceLeavingSecondary = (SecondaryIrradiance * SecondaryAlbedo / PI);      
 
+      vec3 IndirectResult = RadianceLeavingSecondary * surfaceData.albedo;
+      
       vec3 finalColor = TotalRadiance + IndirectResult;
 
       vec4 Res = vec4(temporalReservoir.Light_Index,

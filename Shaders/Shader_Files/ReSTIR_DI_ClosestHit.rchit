@@ -46,6 +46,7 @@ struct UnifiedPayload {
     
     vec3 Position;
     vec3 Normal;
+    vec3 Albedo;
 };
 
 layout(location = 0) rayPayloadInEXT UnifiedPayload payload;
@@ -134,5 +135,6 @@ void main()
        payload.Emissive =  Emissive;
        payload.Position =  WorldPos.xyz;
        payload.Normal   =  Normal;
+       payload.Albedo   = Albedo;
 
  }

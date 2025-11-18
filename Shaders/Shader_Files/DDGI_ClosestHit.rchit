@@ -119,7 +119,7 @@ vec3 SampleIrradiance( vec3 Position, vec3 Normal)
 
  
  
-    float push_bias = 0.1; 
+    float push_bias = 0.01; 
     vec3 SamplePosition = Position + Normal * push_bias;
 
     vec3 GridIndexF = ((SamplePosition ) - GridBaseLocation) / ProbeSpacing;
@@ -350,7 +350,7 @@ void main()
              vec3 GI = SampleIrradiance(WorldPos.xyz,Normal) *  pc.UseInfiniteBounce_infinite_bounces_multiplier_Padding.y;
               
              if (any(greaterThan(GI, vec3(0)))) {
-                     Radiance += GI;
+                     Radiance += GI ;
              }
         }
 
