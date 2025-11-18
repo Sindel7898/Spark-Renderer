@@ -2,10 +2,11 @@
 #include "VulkanContext.h"
 #include "Lighting_FullScreenQuad.h"
 #include "SSGI.h"
+#include "DynamicDiffuse_RTGI.h"
 
 
 
-ReSTIR_DI::ReSTIR_DI(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, Lighting_FullScreenQuad* rLightingPass, SSGI* rssgi)
+ReSTIR_DI::ReSTIR_DI(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, Lighting_FullScreenQuad* rLightingPass, SSGI* rssgi, DynamicDiffuse_RTGI* DDGIr)
 {
 	bufferManager = buffermanger;
 	vulkanContext = vulkancontext;
@@ -13,6 +14,7 @@ ReSTIR_DI::ReSTIR_DI(VulkanContext* vulkancontext, vk::CommandPool commandpool, 
 	commandPool = commandpool;
 	LightingPass = rLightingPass;
 	ssgi = rssgi;
+	DDGIRef = DDGIr;
 	createDescriptorSetLayout();
 }
 
@@ -230,6 +232,80 @@ void ReSTIR_DI::createDescriptorSetLayout()
 		{
 			throw std::runtime_error("Failed to create descriptorset layout!");
 		}
+	}
+
+	{
+		vk::DescriptorSetLayoutBinding IrradianceAtlasImageLayout{};
+		IrradianceAtlasImageLayout.binding = 0;
+		IrradianceAtlasImageLayout.descriptorCount = 1;
+		IrradianceAtlasImageLayout.descriptorType = vk::DescriptorType::eStorageImage;
+		IrradianceAtlasImageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+
+		vk::DescriptorSetLayoutBinding VisibilityAtlasImageLayout{};
+		VisibilityAtlasImageLayout.binding = 1;
+		VisibilityAtlasImageLayout.descriptorCount = 1;
+		VisibilityAtlasImageLayout.descriptorType = vk::DescriptorType::eStorageImage;
+		VisibilityAtlasImageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+
+		std::array<vk::DescriptorSetLayoutBinding, 2> bindings = { IrradianceAtlasImageLayout ,VisibilityAtlasImageLayout };
+
+		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+		layoutInfo.pBindings = bindings.data();
+
+
+		if (vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &DDGIATLASDescriptorSetLayout) != vk::Result::eSuccess)
+		{
+			throw std::runtime_error("Failed to create descriptorset layout!");
+		}
+	}
+}
+
+void ReSTIR_DI::createDescriptorDDGIATLAS(vk::DescriptorPool descriptorpool)
+{
+	std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, DDGIATLASDescriptorSetLayout);
+
+	vk::DescriptorSetAllocateInfo allocinfo;
+	allocinfo.descriptorPool = descriptorpool;
+	allocinfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+	allocinfo.pSetLayouts = layouts.data();
+
+	RaytracingDDGIDescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+
+	vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, RaytracingDDGIDescriptorSets.data());
+
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+
+		vk::DescriptorImageInfo IradianceImageInfo{};
+		IradianceImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+		IradianceImageInfo.imageView = DDGIRef->IradianceImageAtlasImage.imageView;
+		IradianceImageInfo.sampler = nullptr;
+
+		vk::WriteDescriptorSet IrradianceImagStoragedescriptorWrite{};
+		IrradianceImagStoragedescriptorWrite.dstSet = RaytracingDDGIDescriptorSets[i];
+		IrradianceImagStoragedescriptorWrite.dstBinding = 0;
+		IrradianceImagStoragedescriptorWrite.dstArrayElement = 0;
+		IrradianceImagStoragedescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
+		IrradianceImagStoragedescriptorWrite.descriptorCount = 1;
+		IrradianceImagStoragedescriptorWrite.pImageInfo = &IradianceImageInfo;
+
+		vk::DescriptorImageInfo VisibilityImageInfo{};
+		VisibilityImageInfo.imageLayout = vk::ImageLayout::eGeneral;
+		VisibilityImageInfo.imageView = DDGIRef->VisibilityImageAtlasImage.imageView;
+		VisibilityImageInfo.sampler = nullptr;
+
+		vk::WriteDescriptorSet VisibilityImagStoragedescriptorWrite{};
+		VisibilityImagStoragedescriptorWrite.dstSet = RaytracingDDGIDescriptorSets[i];
+		VisibilityImagStoragedescriptorWrite.dstBinding = 1;
+		VisibilityImagStoragedescriptorWrite.dstArrayElement = 0;
+		VisibilityImagStoragedescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
+		VisibilityImagStoragedescriptorWrite.descriptorCount = 1;
+		VisibilityImagStoragedescriptorWrite.pImageInfo = &VisibilityImageInfo;
+
+
+		std::array<vk::WriteDescriptorSet, 2> descriptorWrites = {IrradianceImagStoragedescriptorWrite,VisibilityImagStoragedescriptorWrite};
+
+		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	}
 
 }
@@ -677,9 +753,22 @@ void ReSTIR_DI::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferDat
 	PushConstant pushConstant;
     pushConstant.CameraPosition = glm::vec4(camera->GetPosition(),1);
     pushConstant.ScreenSize     = glm::vec4(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, ssgi->NoiseIndex, LightingPass->LightCount);
-    
+	pushConstant.sampleGridInfo.GridBaseLocation_ScreenSizeWidth = glm::vec4(DDGIRef->GridLocation.x, DDGIRef->GridLocation.y, DDGIRef->GridLocation.z, vulkanContext->swapchainExtent.width);
+	pushConstant.sampleGridInfo.ProbeSpacing_ScreenSizeHeight = glm::vec4(DDGIRef->ProbeOffset.x, DDGIRef->ProbeOffset.y, DDGIRef->ProbeOffset.z, vulkanContext->swapchainExtent.height);
+	pushConstant.sampleGridInfo.ProbeCount = glm::vec4(DDGIRef->NumOfProbesX, DDGIRef->NumOfProbesY, DDGIRef->NumOfProbesZ, 0);
+	pushConstant.sampleGridInfo.generalAtlasInfo.AtlasWidthSize = DDGIRef->IradianceImageExtent.width;
+	pushConstant.sampleGridInfo.generalAtlasInfo.ProbeSideLength = DDGIRef->ProbeSideLength;
+	pushConstant.sampleGridInfo.generalAtlasInfo.GutterSize = DDGIRef->GutterSize;
+	pushConstant.sampleGridInfo.generalAtlasInfo.RaysPerProbe = DDGIRef->RaysPerProbe;
+
 	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eRaygenKHR, 0, sizeof(PushConstant), &pushConstant);
-	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, pipelinelayout, 0, 1, &RaytracingDescriptorSets[imageIndex], 0, nullptr);
+
+	vk::DescriptorSet sets[] = {
+	RaytracingDescriptorSets[imageIndex],
+	RaytracingDDGIDescriptorSets[imageIndex]
+	};
+
+	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, pipelinelayout, 0, 2, sets, 0, nullptr);
 
 	vulkanContext->vkCmdTraceRaysKHR(
 		commandbuffer,
@@ -697,5 +786,7 @@ void ReSTIR_DI::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferDat
 void ReSTIR_DI::CleanUp()
 {
 	vulkanContext->LogicalDevice.destroyDescriptorSetLayout(RayTracingDescriptorSetLayout);
+	vulkanContext->LogicalDevice.destroyDescriptorSetLayout(DDGIATLASDescriptorSetLayout);
+
 }
 

@@ -1,7 +1,7 @@
 #include "Camera.h"
 #include <GLFW/glfw3.h>
 
-Camera::Camera(uint32_t SwapChainHeight, uint32_t SwapChainWidth, GLFWwindow* Window) :
+Camera::Camera(uint32_t SwapchainHeight, uint32_t SwapchainWidth, GLFWwindow* Window) :
     position(-8.56827, 2.08025, 0.447241),
     worldUp(0.0f, 1.0f, 0.0f),
     pitch(-4.5),
@@ -14,8 +14,8 @@ Camera::Camera(uint32_t SwapChainHeight, uint32_t SwapChainWidth, GLFWwindow* Wi
     firstMouse(true),
     mouseCaptured(false),
     window(Window),
-    swapChainHeight(SwapChainHeight),
-    swapChainWidth(SwapChainWidth)
+    swapchainHeight(SwapchainHeight),
+    swapchainWidth(SwapchainWidth)
 {
     Initialize();
 }
@@ -121,7 +121,7 @@ void Camera::UpdateViewMatrix() {
 }
 
 void Camera::UpdateProjectionMatrix() {
-    float aspectRatio = static_cast<float>(swapChainWidth) / static_cast<float>(swapChainHeight);
+    float aspectRatio = static_cast<float>(swapchainWidth) / static_cast<float>(swapchainHeight);
     projectionMatrix = glm::perspective(glm::radians(fov), aspectRatio, nearClip, farClip);
 
 }
@@ -161,14 +161,14 @@ void Camera::SetMovementSpeed(float speed) {
     movementSpeed = speed;
 }
 
-void Camera::SetSwapChainHeight(float SwapChainHeight) {
+void Camera::SetSwapchainHeight(float SwapchainHeight) {
 
-    swapChainHeight = SwapChainHeight;
+    swapchainHeight = SwapchainHeight;
     UpdateProjectionMatrix();
 }
 
-void Camera::SetSwapChainWidth(float SwapChainWidth) {
-    swapChainWidth = SwapChainWidth;
+void Camera::SetSwapchainWidth(float SwapchainWidth) {
+    swapchainWidth = SwapchainWidth;
     UpdateProjectionMatrix();
 }
 

@@ -48,7 +48,7 @@
 
 
 	auto model1 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf" ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	//auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 
 	//auto model4 = std::shared_ptr<Model>(new Model("../Textures/EmptyCornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
@@ -57,43 +57,43 @@
 
 	//auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	//auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	
 	////////CORNEL SETUP////////////////////////////////////////
-    //model1.get()->Instances[0]->SetPostion(glm::vec3(-5.936, 3.043, -9.525));
-    //model1.get()->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
-    //model1.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
-    //model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-    //model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-   	//
+    model1.get()->Instances[0]->SetPostion(glm::vec3(-5.936, 3.043, -9.525));
+    model1.get()->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
+    model1.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
+    model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+    model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+   	
+	
+    model3.get()->Instances[0]->SetPostion(glm::vec3(6.087, 13.277, 3.776));
+    model3.get()->Instances[0]->SetRotation(glm::vec3(-179.987, -49.785, 179.967));
+    model3.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
+    model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+    model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	
+	model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
+	model2.get()->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
+	model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+
+
+	//model1.get()->Instances[0]->SetPostion(glm::vec3(-14.224, -0.329, 0.357));
+	//model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
+	//model1.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
+	//model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	//model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 	//
-    //model3.get()->Instances[0]->SetPostion(glm::vec3(6.087, 13.277, 3.776));
-    //model3.get()->Instances[0]->SetRotation(glm::vec3(-179.987, -49.785, 179.967));
-    //model3.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
-    //model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-    //model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-	
-	//model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
-	//model2.get()->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
-	//model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	//model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-
-
-	model1.get()->Instances[0]->SetPostion(glm::vec3(-14.224, -0.329, 0.357));
-	model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
-	model1.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
-	model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-	
-	
-	model3.get()->Instances[0]->SetPostion(glm::vec3(7.153, -0.523, -2.166));
-	model3.get()->Instances[0]->SetRotation(glm::vec3(179.997, 44.147, 179.993));
-	model3.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
-	model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	//
+	//model3.get()->Instances[0]->SetPostion(glm::vec3(7.153, -0.523, -2.166));
+	//model3.get()->Instances[0]->SetRotation(glm::vec3(179.997, 44.147, 179.993));
+	//model3.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
+	//model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	//model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 	//
 	////
-	model11.get()->Instances[0]->SetScale(glm::vec3(5.000, 5.000, 5.000));
+	//model11.get()->Instances[0]->SetScale(glm::vec3(5.000, 5.000, 5.000));
 	//model11.get()->Instances[0]->CubeMapReflectiveSwitch(false);
 	//model11.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
@@ -113,11 +113,11 @@
 	////
 	////
     Models.push_back(std::move(model1));
-    //Models.push_back(std::move(model2));
+    Models.push_back(std::move(model2));
 	Models.push_back(std::move(model3));
 	//Models.push_back(std::move(model4));
 	//Models.push_back(std::move(model5));
-    Models.push_back(std::move(model11));
+    //Models.push_back(std::move(model11));
 
 
 
@@ -141,7 +141,7 @@
 	Combined_FullScreenQuad = std::unique_ptr<CombinedResult_FullScreenQuad, decltype(&CombinedResult_FullScreenQuadDeleter)>(new CombinedResult_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),CombinedResult_FullScreenQuadDeleter);
 	SSGI_FullScreenQuad     = std::unique_ptr<SSGI, decltype(&SSGIDeleter)>(new SSGI(&bufferManger, &vulkanContext, &camera, commandPool),SSGIDeleter);
 	dynamicDiffuse_RTGI     = std::unique_ptr<DynamicDiffuse_RTGI, decltype(&DynamicDiffuse_RTGIDeleter)>(new DynamicDiffuse_RTGI("../Textures/Sphere/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger, skyBox.get()), DynamicDiffuse_RTGIDeleter);
-	Restir_DI               = std::unique_ptr<ReSTIR_DI, decltype(&ReSTIR_DI_Deleter)>(new ReSTIR_DI(&vulkanContext, commandPool, &camera, &bufferManger, lighting_FullScreenQuad.get(), SSGI_FullScreenQuad.get()), ReSTIR_DI_Deleter);
+	Restir_DI               = std::unique_ptr<ReSTIR_DI, decltype(&ReSTIR_DI_Deleter)>(new ReSTIR_DI(&vulkanContext, commandPool, &camera, &bufferManger, lighting_FullScreenQuad.get(), SSGI_FullScreenQuad.get(), dynamicDiffuse_RTGI.get()), ReSTIR_DI_Deleter);
 
 	lights.reserve(4);
 
@@ -153,7 +153,7 @@
 	std::uniform_real_distribution<float> disY(0, 40);
 	std::uniform_real_distribution<float> disc(0, 1);
 
-	for (int i = 0; i < 99; i++) {
+	for (int i = 0; i < 4; i++) {
 		std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(&vulkanContext, commandPool, &camera, &bufferManger), LightDeleter);
 
 		float randX = disXZ(gen);
@@ -1512,9 +1512,11 @@ void App::CreateGraphicsPipeline()
 		pushConstantRange.offset = 0;
 		pushConstantRange.size = sizeof(PushConstant);
 
+		vk::DescriptorSetLayout layouts[2] = { Restir_DI->RayTracingDescriptorSetLayout ,Restir_DI->DDGIATLASDescriptorSetLayout };
+
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &Restir_DI->RayTracingDescriptorSetLayout;
+		pipelineLayoutInfo.setLayoutCount = 2;
+		pipelineLayoutInfo.pSetLayouts = layouts;
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
@@ -1963,8 +1965,8 @@ void App::createShaderBindingTable() {
 	{
 		const size_t   handleSize = vulkanContext.RayTracingPipelineProperties.shaderGroupHandleSize;
 		const size_t   handleSizeAligned = alignedSize(handleSize, vulkanContext.RayTracingPipelineProperties.shaderGroupHandleAlignment);
-		const uint32_t groupCount = 3;
-		const uint32_t sbtSize = groupCount * handleSizeAligned;
+		const uint32_t groupcount = 3;
+		const uint32_t sbtSize = groupcount * handleSizeAligned;
 
 		// Get shader group handles
 		std::vector<uint8_t> shaderHandleStorage(sbtSize);
@@ -1973,7 +1975,7 @@ void App::createShaderBindingTable() {
 			static_cast<VkDevice>(vulkanContext.LogicalDevice),
 			static_cast<VkPipeline>(RT_ShadowsPassPipeline),
 			0,  // First group
-			groupCount,
+			groupcount,
 			shaderHandleStorage.size(),
 			shaderHandleStorage.data());
 
@@ -1994,8 +1996,8 @@ void App::createShaderBindingTable() {
 	{
 		const size_t   handleSize = vulkanContext.RayTracingPipelineProperties.shaderGroupHandleSize;
 		const size_t   handleSizeAligned = alignedSize(handleSize, vulkanContext.RayTracingPipelineProperties.shaderGroupHandleAlignment);
-		const uint32_t groupCount = 3;
-		const uint32_t sbtSize = groupCount * handleSizeAligned;
+		const uint32_t groupcount = 3;
+		const uint32_t sbtSize = groupcount * handleSizeAligned;
 
 		// Get shader group handles
 		std::vector<uint8_t> shaderHandleStorage(sbtSize);
@@ -2004,7 +2006,7 @@ void App::createShaderBindingTable() {
 			static_cast<VkDevice>(vulkanContext.LogicalDevice),
 			static_cast<VkPipeline>(RT_ReflectionPassPipeline),
 			0,  // First group
-			groupCount,
+			groupcount,
 			shaderHandleStorage.size(),
 			shaderHandleStorage.data());
 
@@ -2025,8 +2027,8 @@ void App::createShaderBindingTable() {
 	{
 		const size_t   handleSize = vulkanContext.RayTracingPipelineProperties.shaderGroupHandleSize;
 		const size_t   handleSizeAligned = alignedSize(handleSize, vulkanContext.RayTracingPipelineProperties.shaderGroupHandleAlignment);
-		const uint32_t groupCount = 3;
-		const uint32_t sbtSize = groupCount * handleSizeAligned;
+		const uint32_t groupcount = 3;
+		const uint32_t sbtSize = groupcount * handleSizeAligned;
 
 		// Get shader group handles
 		std::vector<uint8_t> shaderHandleStorage(sbtSize);
@@ -2035,7 +2037,7 @@ void App::createShaderBindingTable() {
 			static_cast<VkDevice>(vulkanContext.LogicalDevice),
 			static_cast<VkPipeline>(RT_DDGIPassPipeline),
 			0,  // First group
-			groupCount,
+			groupcount,
 			shaderHandleStorage.size(),
 			shaderHandleStorage.data());
 
@@ -2056,8 +2058,8 @@ void App::createShaderBindingTable() {
 	{
 		const size_t   handleSize = vulkanContext.RayTracingPipelineProperties.shaderGroupHandleSize;
 		const size_t   handleSizeAligned = alignedSize(handleSize, vulkanContext.RayTracingPipelineProperties.shaderGroupHandleAlignment);
-		const uint32_t groupCount = 3;
-		const uint32_t sbtSize = groupCount * handleSizeAligned;
+		const uint32_t groupcount = 3;
+		const uint32_t sbtSize = groupcount * handleSizeAligned;
 
 		// Get shader group handles
 		std::vector<uint8_t> shaderHandleStorage(sbtSize);
@@ -2066,7 +2068,7 @@ void App::createShaderBindingTable() {
 			static_cast<VkDevice>(vulkanContext.LogicalDevice),
 			static_cast<VkPipeline>(ReSTIR_RTPassPipeline),
 			0,  // First group
-			groupCount,
+			groupcount,
 			shaderHandleStorage.size(),
 			shaderHandleStorage.data());
 
@@ -2263,13 +2265,13 @@ void App::Draw()
 	}
 
 	// --- Presentation ---
-	vk::SwapchainKHR swapChains[] = { vulkanContext.swapChain };
+	vk::SwapchainKHR swapchains[] = { vulkanContext.swapChain };
 
 	vk::PresentInfoKHR presentInfo{};
 	presentInfo.waitSemaphoreCount = 1;
 	presentInfo.pWaitSemaphores    =  submitSemaphores;  // Wait for rendering completion
 	presentInfo.swapchainCount     = 1;
-	presentInfo.pSwapchains        = swapChains;
+	presentInfo.pSwapchains        = swapchains;
 	presentInfo.pImageIndices      = &imageIndex;
 
 	try {
@@ -2329,6 +2331,8 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 			VK_IMAGE_LAYOUT_GENERAL
 		);
 
+
+		Restir_DI->createDescriptorDDGIATLAS(DescriptorPool);
 	}
 }
 
@@ -3831,8 +3835,8 @@ void App::recreateSwapChain() {
 
 	vulkanContext.create_swapchain();
 
-	camera.SetSwapChainHeight(vulkanContext.swapchainExtent.height);
-	camera.SetSwapChainWidth(vulkanContext.swapchainExtent.width);
+	camera.SetSwapchainHeight(vulkanContext.swapchainExtent.height);
+	camera.SetSwapchainWidth(vulkanContext.swapchainExtent.width);
 	createDepthTextureImage();
 	createGBuffer();
 

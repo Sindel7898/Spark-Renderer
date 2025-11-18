@@ -101,3 +101,34 @@ struct alignas(16) LightUniformData {
     alignas(16) glm::vec4  colorAndAmbientStrength;
     alignas(16) glm::vec4  CameraPositionAndLightIntensity;
 };
+
+struct GridData
+{
+    glm::vec4 probeCount;
+    glm::vec4 probeOffset;
+    glm::vec4 probeBaseLocation;
+    glm::mat4 RotationMatrix;
+};
+
+struct GeneralAtlasInfo
+{
+    int  AtlasWidthSize;
+    int  ProbeSideLength;
+    int  GutterSize;
+    int  RaysPerProbe;
+};
+
+struct SampleGridInfo
+{
+    glm::vec4 GridBaseLocation_ScreenSizeWidth;
+    glm::vec4 ProbeSpacing_ScreenSizeHeight;
+    glm::vec4 ProbeCount;
+    GeneralAtlasInfo generalAtlasInfo;
+};
+
+struct RTpcInfo
+{
+    SampleGridInfo  sampleGridInfo;
+    glm::vec4 UseInfiniteBounce_infinite_bounces_multiplier_Padding;
+
+};

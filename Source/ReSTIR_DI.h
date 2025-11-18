@@ -8,17 +8,21 @@ class  VulkanContext;
 class  BufferManager;
 class  Lighting_FullScreenQuad;
 class  SSGI;
+class  DynamicDiffuse_RTGI;
 
 struct PushConstant {
     glm::vec4 CameraPosition;
     glm::vec4 ScreenSize;
+    SampleGridInfo sampleGridInfo;
 };
 
 class ReSTIR_DI
 {
 public:
-    ReSTIR_DI(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, Lighting_FullScreenQuad* rLightingPass, SSGI* rssgi);
+    ReSTIR_DI(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, Lighting_FullScreenQuad* rLightingPass, SSGI* rssgi, DynamicDiffuse_RTGI* DDGIr);
     void createDescriptorSetLayout();
+
+    void createDescriptorDDGIATLAS(vk::DescriptorPool descriptorpool);
 
     void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR* TLAS);
     void UpdateDescrptorSets();
@@ -30,6 +34,7 @@ public:
     uint32_t alignedSize(uint32_t value, uint32_t alignment);
     //vk::DescriptorSetLayout RservoirSamplingDescriptorSetLayout;
     vk::DescriptorSetLayout RayTracingDescriptorSetLayout;
+    vk::DescriptorSetLayout DDGIATLASDescriptorSetLayout;
 
     ImageData ResevoirImage;
     ImageData PrevResevoirImage;
@@ -45,9 +50,11 @@ private:
 
     Lighting_FullScreenQuad* LightingPass;
     SSGI* ssgi;
-
+    DynamicDiffuse_RTGI* DDGIRef;
    // std::vector<vk::DescriptorSet>  RservoirSamplingProbeDescriptorSets;
     std::vector<vk::DescriptorSet>  RaytracingDescriptorSets;
+    std::vector<vk::DescriptorSet>  RaytracingDDGIDescriptorSets;
+
     vk::AccelerationStructureKHR*   TLASr;
 
 };

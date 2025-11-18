@@ -8,7 +8,7 @@ struct GLFWwindow;
 class Camera {
 public:
     
-    Camera(uint32_t SwapChainHeight, uint32_t SwapChainWidth, GLFWwindow* window);
+    Camera(uint32_t SwapchainHeight, uint32_t SwapchainWidth, GLFWwindow* window);
 
     // Initialize camera with specific parameters
     void Initialize(float fov = 90.0f, float nearClip = 0.1f, float farClip = 500.0f);
@@ -30,8 +30,8 @@ public:
 
     // Camera control settings
     void SetMovementSpeed(float speed);
-    void SetSwapChainHeight(float SwapChainHeight);
-    void SetSwapChainWidth(float SwapChainWidth);
+    void SetSwapchainHeight(float SwapchainHeight);
+    void SetSwapchainWidth(float SwapchainWidth);
     void SetMouseSensitivity(float sensitivity);
     void SetFOV(float fov);
 
@@ -70,8 +70,8 @@ private:
     void UpdateProjectionMatrix();
 
     // Window/monitor info
-    float swapChainHeight;
-    float swapChainWidth;
+    float swapchainHeight;
+    float swapchainWidth;
 
     double lastMouseX;
     double lastMouseY;

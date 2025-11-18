@@ -42,7 +42,10 @@ layout(set = 0, binding = 15) uniform Transformation {
 struct UnifiedPayload {
     int  rayType; 
     vec3 data;
-    vec3 Emissive;   
+    vec3 Emissive;  
+    
+    vec3 Position;
+    vec3 Normal;
 };
 
 layout(location = 0) rayPayloadInEXT UnifiedPayload payload;
@@ -83,15 +86,53 @@ void main()
        vec3 bary = vec3(1.0 - attribs.hitUV.x - attribs.hitUV.y, attribs.hitUV.x, attribs.hitUV.y);
    
    
+        vec3 VertexPosition = 
+           v0.position_Padding.xyz * bary.x +
+           v1.position_Padding.xyz * bary.y +
+           v2.position_Padding.xyz * bary.z;
+   
+   
+       vec3 Normal = normalize(
+           v0.normal_Padding.xyz * bary.x +
+           v1.normal_Padding.xyz * bary.y +
+           v2.normal_Padding.xyz * bary.z
+       );
+   
+        vec3 Tangent = normalize(
+           v0.tangent_Padding.xyz * bary.x +
+           v1.tangent_Padding.xyz * bary.y +
+           v2.tangent_Padding.xyz * bary.z
+       );
+   
         vec2 TexCoord = 
           v0.texCoord_Padding.xy * bary.x +
           v1.texCoord_Padding.xy * bary.y +
           v2.texCoord_Padding.xy * bary.z;
    
    
-       vec3  Albedo     = texture(Albedo_AssetImages          [nonuniformEXT(primitiveID)], TexCoord).rgb;
-       vec3 Emissive    = texture(Emmisive_AssetImages        [nonuniformEXT(primitiveID)], TexCoord).rgb;
+       mat3 normalMatrix  = transpose(inverse(mat3(Transformations.WorldMatrix[objectID])));
+       vec3 WorldN        = normalize(normalMatrix * Normal);
+       vec3 WorldT        = normalize(normalMatrix * Tangent);
+       vec3 WorldB        = cross(WorldN,WorldT);
+   
+       mat3 WorldSpaceTBN = mat3(WorldT, WorldB, WorldN);
+   
+       vec3  Albedo     = texture(Albedo_AssetImages         [nonuniformEXT(primitiveID)], TexCoord).rgb;
+       float Metallic  = texture(MetalicRoughness_AssetImages[nonuniformEXT(primitiveID)], TexCoord).r;
+       float Roughness = texture(MetalicRoughness_AssetImages[nonuniformEXT(primitiveID)], TexCoord).r;
+       vec3 Emissive   = texture(Emmisive_AssetImages        [nonuniformEXT(primitiveID)], TexCoord).rgb;
+
+       vec3 NormalTexture = texture(Normal_AssetImages[nonuniformEXT(primitiveID)], TexCoord).rgb * 2.0 - vec3(1.0);
+       vec3 tnorm = normalize(WorldSpaceTBN * NormalTexture);
+       Normal = tnorm;
+
+       vec4  WorldPos  =  Transformations.WorldMatrix[objectID] * vec4(VertexPosition,1);
+
+
+
        payload.data = vec3(0.0);
        payload.Emissive =  Emissive;
+       payload.Position =  WorldPos.xyz;
+       payload.Normal   =  Normal;
 
  }
