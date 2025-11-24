@@ -132,10 +132,15 @@ void main() {
     float mipLevel = Roughness * (mipCount - 1.0);
     vec3 Reflection = textureLod(samplerReflectiveCubeMap, cR, mipLevel).rgb;
 
-    float shadows[4] = {PCF(samplerShadowMap[0],0,inTexCoord),
+    float shadows[8] = {PCF(samplerShadowMap[0],0,inTexCoord),
                         PCF(samplerShadowMap[0],1,inTexCoord),
                         PCF(samplerShadowMap[0],2,inTexCoord),
-                        PCF(samplerShadowMap[0],3,inTexCoord)};
+                        PCF(samplerShadowMap[0],3,inTexCoord),
+
+                        PCF(samplerShadowMap[1],0,inTexCoord),
+                        PCF(samplerShadowMap[1],1,inTexCoord),
+                        PCF(samplerShadowMap[1],2,inTexCoord),
+                        PCF(samplerShadowMap[1],3,inTexCoord),};
 
 
     vec3 F0          = vec3(0.04); 

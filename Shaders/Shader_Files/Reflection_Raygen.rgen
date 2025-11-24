@@ -41,9 +41,11 @@ void main() {
     vec3 hitNormal     = texelFetch(NormalImage    , fullCoord, 0).xyz;
     vec3 hitMaterial   = texelFetch(MaterialImage  , fullCoord, 0).xyz;
 
+    bool isGeometry = length(hitNormal) > 0.5;
+
    vec3 ReflectionColor;
 
-    if (hitMaterial.g < 0.3) {
+    if (hitMaterial.g < 0.3 && isGeometry ) {
 
         // offset the origin slightly along the normal to avoid self-intersection
         vec3 rayOrigin = hitPosition + hitNormal * 0.038;

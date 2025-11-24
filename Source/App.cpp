@@ -198,7 +198,7 @@ void App::SwitchScene(int index)
 			UserInterfaceItems.push_back(model.get());
 		}
 
-		int LightCount = 20;
+		int LightCount = 8;
 
 		lights.reserve(LightCount);
 
@@ -230,6 +230,15 @@ void App::SwitchScene(int index)
 			lights.push_back(std::move(light));
 		}
 
+		if (dynamicDiffuse_RTGI)
+		{
+			dynamicDiffuse_RTGI->NumOfProbesX = 9;
+			dynamicDiffuse_RTGI->NumOfProbesY = 9;
+			dynamicDiffuse_RTGI->NumOfProbesZ = 9;
+			dynamicDiffuse_RTGI->RaysPerProbe = 128;
+			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(7.52, 8.62, 11.13);
+			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-24.67, -12.66, -45.61);
+		}
 	}
 
 	else if (index == 1) 
@@ -239,7 +248,7 @@ void App::SwitchScene(int index)
 			UserInterfaceItems.push_back(model.get());
 		}
 
-		int LightCount = 20;
+		int LightCount = 50;
 
 		lights.reserve(LightCount);
 
@@ -269,6 +278,16 @@ void App::SwitchScene(int index)
 			light->color = glm::vec3(R, G, B);
 
 			lights.push_back(std::move(light));
+		}
+
+		if (dynamicDiffuse_RTGI)
+		{
+			dynamicDiffuse_RTGI->NumOfProbesX = 9;
+			dynamicDiffuse_RTGI->NumOfProbesY = 7;
+			dynamicDiffuse_RTGI->NumOfProbesZ = 10;
+			dynamicDiffuse_RTGI->RaysPerProbe = 128;
+			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(25.33, 17.90, 9.74);
+			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-100, 0.33, -46);
 		}
 	}
 
@@ -1542,6 +1561,7 @@ void App::CreateGraphicsPipeline()
 		ReSTIR_RTPassPipeline = pipelineManager.createRayTracingGraphicsPipeline(ReSTIR_RT_PipelineLayout, ShaderStages, ShaderGroups);
 
 		vulkanContext.LogicalDevice.destroyShaderModule(RayGen_ShaderModule);
+		vulkanContext.LogicalDevice.destroyShaderModule(RayClosestHit_ShaderModule); 
 		vulkanContext.LogicalDevice.destroyShaderModule(RayMiss_ShaderModule);
 	}
 
@@ -2922,53 +2942,53 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 
 	{
+		if (DefferedDecider == 8) { /// if we are looking at ReSTIR stop tracing
 
-	    ImageTransitionData TransitiontoGeneraRT{};
-	    TransitiontoGeneraRT.oldlayout = vk::ImageLayout::eUndefined;
-	    TransitiontoGeneraRT.newlayout = vk::ImageLayout::eGeneral;
-	    TransitiontoGeneraRT.AspectFlag = vk::ImageAspectFlagBits::eColor;
-	    TransitiontoGeneraRT.SourceAccessflag = vk::AccessFlagBits::eNone;
-	    TransitiontoGeneraRT.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
-	    TransitiontoGeneraRT.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
-	    TransitiontoGeneraRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
-	    
-	    bufferManger.TransitionImage(commandBuffer, &Restir_DI->ResevoirImage    , TransitiontoGeneraRT);
-	    bufferManger.TransitionImage(commandBuffer, &Restir_DI->PrevResevoirImage, TransitiontoGeneraRT);
-	    
-	    vk::ImageSubresourceLayers SrcSubresourceLayers;
-	    SrcSubresourceLayers.mipLevel = 0;
-	    SrcSubresourceLayers.baseArrayLayer = 0;
-	    SrcSubresourceLayers.layerCount = 1;
-	    SrcSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
-	    
-	    vk::ImageSubresourceLayers DstSubresourceLayers;
-	    DstSubresourceLayers.mipLevel = 0;
-	    DstSubresourceLayers.baseArrayLayer = 0;
-	    DstSubresourceLayers.layerCount = 1;
-	    DstSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
-	    
-	    vk::Extent3D ImageSize = {
-	    	vulkanContext.swapchainExtent.width ,
-	    	vulkanContext.swapchainExtent.height,
-	    	1
-	    };
-	    
-	    bufferManger.CopyImageToAnotherImage(commandBuffer,
-	    	Restir_DI->ResevoirImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
-	    	Restir_DI->PrevResevoirImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
-	    	ImageSize, vulkanContext.graphicsQueue);
+			ImageTransitionData TransitiontoGeneraRT{};
+			TransitiontoGeneraRT.oldlayout = vk::ImageLayout::eUndefined;
+			TransitiontoGeneraRT.newlayout = vk::ImageLayout::eGeneral;
+			TransitiontoGeneraRT.AspectFlag = vk::ImageAspectFlagBits::eColor;
+			TransitiontoGeneraRT.SourceAccessflag = vk::AccessFlagBits::eNone;
+			TransitiontoGeneraRT.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
+			TransitiontoGeneraRT.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
+			TransitiontoGeneraRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
 
+			bufferManger.TransitionImage(commandBuffer, &Restir_DI->ResevoirImage, TransitiontoGeneraRT);
+			bufferManger.TransitionImage(commandBuffer, &Restir_DI->PrevResevoirImage, TransitiontoGeneraRT);
 
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, ReSTIR_RTPassPipeline);
+			vk::ImageSubresourceLayers SrcSubresourceLayers;
+			SrcSubresourceLayers.mipLevel = 0;
+			SrcSubresourceLayers.baseArrayLayer = 0;
+			SrcSubresourceLayers.layerCount = 1;
+			SrcSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
 
-		Restir_DI->Draw(
-			ReSTIR_DI_raygenShaderBindingTableBuffer,
-			ReSTIR_DI_hitShaderBindingTableBuffer,
-			ReSTIR_DI_missShaderBindingTableBuffer,
-			commandBuffer,
-			ReSTIR_RT_PipelineLayout,
-			currentFrame);
+			vk::ImageSubresourceLayers DstSubresourceLayers;
+			DstSubresourceLayers.mipLevel = 0;
+			DstSubresourceLayers.baseArrayLayer = 0;
+			DstSubresourceLayers.layerCount = 1;
+			DstSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
 
+			vk::Extent3D ImageSize = {
+				vulkanContext.swapchainExtent.width ,
+				vulkanContext.swapchainExtent.height,
+				1
+			};
+
+			bufferManger.CopyImageToAnotherImage(commandBuffer,
+				Restir_DI->ResevoirImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
+				Restir_DI->PrevResevoirImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
+				ImageSize, vulkanContext.graphicsQueue);
+
+			commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, ReSTIR_RTPassPipeline);
+
+			Restir_DI->Draw(
+				ReSTIR_DI_raygenShaderBindingTableBuffer,
+				ReSTIR_DI_hitShaderBindingTableBuffer,
+				ReSTIR_DI_missShaderBindingTableBuffer,
+				commandBuffer,
+				ReSTIR_RT_PipelineLayout,
+				currentFrame);
+		}
 	}
 
 
@@ -2984,22 +3004,23 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TransitiontoGeneralRT.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
 		TransitiontoGeneralRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
 
-		for (int i = 0; i < Raytracing_Shadows->ShadowPassImages.size(); i++)
-		{
-			bufferManger.TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImages[i], TransitiontoGeneralRT);
+		if (DefferedDecider != 8){ /// if we are looking at ReSTIR stop tracing
 
-		}
+			for (int i = 0; i < Raytracing_Shadows->ShadowPassImages.size(); i++)
+			{
+				bufferManger.TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImages[i], TransitiontoGeneralRT);
 
+			}
+			commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_ShadowsPassPipeline);
 
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_ShadowsPassPipeline);
-		
-		Raytracing_Shadows->Draw(
-			Shadow_raygenShaderBindingTableBuffer,
-			Shadow_hitShaderBindingTableBuffer,
-			Shadow_missShaderBindingTableBuffer,
-			commandBuffer,
-			RT_ShadowsPipelineLayout,
-			currentFrame);
+			Raytracing_Shadows->Draw(
+				Shadow_raygenShaderBindingTableBuffer,
+				Shadow_hitShaderBindingTableBuffer,
+				Shadow_missShaderBindingTableBuffer,
+				commandBuffer,
+				RT_ShadowsPipelineLayout,
+				currentFrame);
+     	}
 	}
 
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);

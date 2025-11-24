@@ -114,7 +114,7 @@ void main()
      uint backfaces        = 0;
      uint max_backfaces    = uint(pc.NumRays * 0.1f); // 10% of the total amount of rays being cast
 
-     const bool use_backfacing_blending = true;
+     const bool use_backfacing_blending = false;
     // int pass = pc.PassSpecifiyer;
      float RAW_RAYDISTANCE = 0;
 

@@ -1,7 +1,7 @@
 #version 460
 #extension GL_EXT_ray_tracing : require
 
-const int MAX_LIGHTS = 4;
+const int MAX_LIGHTS = 8;
 
 layout(binding = 0) uniform accelerationStructureEXT topLevelAS;
 layout(binding = 1) uniform sampler2D Position;
@@ -20,7 +20,7 @@ struct LightStruct {
 };
 
 layout(binding = 5) uniform LightInformation {
-   LightStruct LightData[3]; 
+   LightStruct LightData[8]; 
 } Light_UBO;
 
 struct HitPayload {
@@ -69,7 +69,7 @@ vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal)
 
 void main() {
 
-    float shadowFactor[MAX_LIGHTS] = {1.0, 1.0,1.0,1.0};
+    float shadowFactor[MAX_LIGHTS] = {1.0, 1.0,1.0,1.0,1.0, 1.0,1.0,1.0};
     
     ivec2 halfCoord  = ivec2(gl_LaunchIDEXT.xy);
     ivec2 fullCoord = halfCoord;
@@ -77,8 +77,17 @@ void main() {
     
     // Add small bias to avoid self-intersection
     vec3 normal = texelFetch(Normal, fullCoord, 0).xyz;
+
      vec3 origin = offsetPositionAlongNormal(hitPosition,normal); 
 
+     if(length(normal) < 0.5){ 
+
+         imageStore(OutputImage[0], halfCoord, vec4(shadowFactor[0], shadowFactor[1], shadowFactor[2],shadowFactor[3]));
+         imageStore(OutputImage[1], halfCoord, vec4(shadowFactor[4], shadowFactor[5], shadowFactor[6], shadowFactor[7]));
+         return; 
+    }
+
+  
     for(int i = 0; i < MAX_LIGHTS; ++i) {
         // Check if light exists and casts shadows
         if(Light_UBO.LightData[i].LightType_CastShadow_AmbientStrength_Padding.y > 0.5) {
@@ -109,7 +118,7 @@ void main() {
 
     // Store results
     imageStore(OutputImage[0], halfCoord, vec4(shadowFactor[0], shadowFactor[1], shadowFactor[2],shadowFactor[3]));
-    imageStore(OutputImage[1], halfCoord, vec4(shadowFactor[0], shadowFactor[1], shadowFactor[2], 1.0));
+    imageStore(OutputImage[1], halfCoord, vec4(shadowFactor[4], shadowFactor[5], shadowFactor[6], shadowFactor[7]));
     //imageStore(OutputImage[2], texCoord, vec4(shadowFactor[2], shadowFactor[2], shadowFactor[2], 1.0));
     //imageStore(OutputImage[3], texCoord, vec4(shadowFactor[3], shadowFactor[3], shadowFactor[3], 1.0));
 
