@@ -99,7 +99,6 @@ void Camera::Update(float deltaTime) {
         UpdateViewMatrix();
     }
 
-
 }
 
 void Camera::UpdateCameraVectors() {
@@ -181,4 +180,20 @@ void Camera::SetMouseSensitivity(float sensitivity)
 void Camera::SetFOV(float fov) {
     this->fov = fov;
     UpdateProjectionMatrix();
+}
+
+void Camera::SetPosition(const glm::vec3& newPosition) {
+    position = newPosition;
+    UpdateViewMatrix();
+}
+
+void Camera::SetRotation(float newYaw, float newPitch) {
+    yaw = newYaw;
+    pitch = newPitch;
+
+    if (pitch > 89.0f) pitch = 89.0f;
+    if (pitch < -89.0f) pitch = -89.0f;
+
+    UpdateCameraVectors();
+    UpdateViewMatrix();
 }

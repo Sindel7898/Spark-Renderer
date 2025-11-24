@@ -34,18 +34,22 @@ public:
     void SetSwapchainWidth(float SwapchainWidth);
     void SetMouseSensitivity(float sensitivity);
     void SetFOV(float fov);
+    void SetPosition(const glm::vec3& newPosition);
+    void SetRotation(float newYaw, float newPitch);
+    glm::vec3 position;
+    float pitch;
+    float yaw;
+    bool mouseCaptured;
 
 private:
     // Camera properties
-    glm::vec3 position;
     glm::vec3 forward;
     glm::vec3 up;
     glm::vec3 right;
     glm::vec3 worldUp;
 
     // Camera angles for rotation
-    float pitch;
-    float yaw;
+
 
     // Camera settings
     float movementSpeed;
@@ -76,5 +80,4 @@ private:
     double lastMouseX;
     double lastMouseY;
     bool firstMouse;
-    bool mouseCaptured;
 };

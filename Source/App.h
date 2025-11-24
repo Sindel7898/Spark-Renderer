@@ -72,8 +72,6 @@ public:
 
 	void createSyncObjects();
 
-
-
 	void DestroySyncObjects();
 
 	void DestroyTLAS();
@@ -107,7 +105,7 @@ public:
 	void SwitchScene(int Index);
 
 	int currentSceneIndex = 0;
-	std::vector<std::string> SceneNames = { "Cornell Hybrid", "Sponza" };
+	std::vector<std::string> SceneNames = { "Cornell", "Sponza" };
 
 	bool framebufferResized = false;
 	int DefferedDecider = 11;

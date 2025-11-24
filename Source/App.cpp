@@ -48,7 +48,7 @@ userinterface(&vulkanContext, &window, &bufferManger), pipelineManager(&vulkanCo
 
 	bufferManger.CreateSharedBuffers(commandPool);
 
-	SwitchScene(0);
+	SwitchScene(1);
 
 	RT_Reflection = std::unique_ptr<RT_Reflections, decltype(&RT_ReflectionsDeleter)>(new RT_Reflections(&vulkanContext, commandPool, &camera, &bufferManger, skyBox.get()), RT_ReflectionsDeleter);
 	Raytracing_Shadows = std::unique_ptr<RT_Shadows, decltype(&RT_ShadowsDeleter)>(new RT_Shadows(&vulkanContext, commandPool, &camera, &bufferManger), RT_ShadowsDeleter);
@@ -239,6 +239,10 @@ void App::SwitchScene(int index)
 			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(7.52, 8.62, 11.13);
 			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-24.67, -12.66, -45.61);
 		}
+
+		camera.SetPosition(glm::vec3{ -0.896284, 12.566, -37.7205 });
+		camera.SetRotation(89.1, -2.5);
+		DefferedDecider = 11;
 	}
 
 	else if (index == 1) 
@@ -289,6 +293,10 @@ void App::SwitchScene(int index)
 			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(25.33, 17.90, 9.74);
 			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-100, 0.33, -46);
 		}
+
+		camera.SetPosition(glm::vec3{ 32.9095, 15.871, -0.912267 });
+		camera.SetRotation(-178.2, -13.4);
+		DefferedDecider = 8;
 	}
 
 	for (auto& l : lights) {
