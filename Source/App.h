@@ -76,6 +76,8 @@ public:
 
 	void DestroySyncObjects();
 
+	void DestroyTLAS();
+
 	void DestroyBuffers();
 
 	void SwapchainResizeCallback(GLFWwindow* window, int width, int height);
@@ -99,6 +101,13 @@ public:
 	void destroy_DepthImage();
 
 	void destroy_GbufferImages();
+
+	void LoadAllObjects();
+	void UpdateRayTracingDescriptors();
+	void SwitchScene(int Index);
+
+	int currentSceneIndex = 0;
+	std::vector<std::string> SceneNames = { "Cornell Hybrid", "Sponza" };
 
 	bool framebufferResized = false;
 	int DefferedDecider = 11;
@@ -149,7 +158,10 @@ public:
 	VkDescriptorSet DDGIIVisibilityAtlasID;
 	
 
-	std::vector<std::shared_ptr<Model>> Models;
+	std::vector<std::shared_ptr<Model>> SponzaSceneModels;
+	std::vector<std::shared_ptr<Model>> CornelSceneModels;
+
+	std::vector<Model*> Models;
 	std::vector<std::shared_ptr<Light>> lights;
 	std::vector<Drawable*> UserInterfaceItems;
 

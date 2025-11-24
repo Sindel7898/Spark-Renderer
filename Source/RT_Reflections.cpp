@@ -655,7 +655,7 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 }
 
 
-void RT_Reflections::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref, std::vector<std::shared_ptr<Model>>& Modelref)
+void RT_Reflections::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref, std::vector<Model*>& Modelref)
 {
 
 	Reflection_RayGen_UniformBufferData RayGent_UniformBufferData;

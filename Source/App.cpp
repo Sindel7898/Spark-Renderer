@@ -28,241 +28,266 @@
 #define DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
 
 
- App::App() :window(1920, 1080, "Spark Renderer"),           
-	         vulkanContext(window),                                  
-	         bufferManger(&vulkanContext),                           
-	         camera(vulkanContext.swapchainExtent.width,vulkanContext.swapchainExtent.height,window.GetWindow()),
-	         userinterface(&vulkanContext, &window, &bufferManger), pipelineManager(&vulkanContext)
+App::App() : window(1920, 1080, "Spark Renderer"),
+vulkanContext(window),
+bufferManger(&vulkanContext),
+camera(vulkanContext.swapchainExtent.width, vulkanContext.swapchainExtent.height, window.GetWindow()),
+userinterface(&vulkanContext, &window, &bufferManger), pipelineManager(&vulkanContext)
 {
-
 	glfwSetWindowUserPointer(window.GetWindow(), this);
 
-	createSyncObjects();	
-	//////////////////////////
+	createSyncObjects();
 	createCommandPool();
-
-
 
 
 	skyBox = std::shared_ptr<SkyBox>(new SkyBox(&vulkanContext, commandPool, &camera, &bufferManger), SkyBoxDeleter);
 
+	createDescriptorPool();
 
-	auto model1 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf" ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	auto model2 = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf"   ,&vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	auto model3 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-
-	//auto model4 = std::shared_ptr<Model>(new Model("../Textures/EmptyCornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	//auto model5 = std::shared_ptr<Model>(new Model("../Textures/Dragon2/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-
-
-	//auto model9 = std::shared_ptr<Model>(new Model("../Textures/Bistro/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	//auto model11 = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	
-	////////CORNEL SETUP////////////////////////////////////////
-    model1.get()->Instances[0]->SetPostion(glm::vec3(-5.936, 3.043, -9.525));
-    model1.get()->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
-    model1.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
-    model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-    model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-   	
-	
-    model3.get()->Instances[0]->SetPostion(glm::vec3(6.087, 13.277, 3.776));
-    model3.get()->Instances[0]->SetRotation(glm::vec3(-179.987, -49.785, 179.967));
-    model3.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
-    model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-    model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-	
-	model2.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
-	model2.get()->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
-	model2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	model2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-
-
-	//model1.get()->Instances[0]->SetPostion(glm::vec3(-14.224, -0.329, 0.357));
-	//model1.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
-	//model1.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
-	//model1.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	//model1.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-	//
-	//
-	//model3.get()->Instances[0]->SetPostion(glm::vec3(7.153, -0.523, -2.166));
-	//model3.get()->Instances[0]->SetRotation(glm::vec3(179.997, 44.147, 179.993));
-	//model3.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
-	//model3.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	//model3.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-	//
-	////
-	//model11.get()->Instances[0]->SetScale(glm::vec3(5.000, 5.000, 5.000));
-	//model11.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	//model11.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-
-	//model4.get()->Instances[0]->SetPostion(glm::vec3(-44.980, 0, 0));
-	//model4.get()->Instances[0]->SetScale(glm::vec3(1, 1, 1));
-	//model4.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	//model4.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-	//
-	//model5.get()->Instances[0]->SetPostion(glm::vec3(-44.144, -2.428, -2.953));
-	//model5.get()->Instances[0]->SetRotation(glm::vec3(-0.003, -65.028, 0.002));
-	//model5.get()->Instances[0]->SetScale(glm::vec3(0.100, 0.100, 0.100));
-	//model5.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	//model5.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-
-	//model9.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-
-	////
-	////
-    Models.push_back(std::move(model1));
-    Models.push_back(std::move(model2));
-	Models.push_back(std::move(model3));
-	//Models.push_back(std::move(model4));
-	//Models.push_back(std::move(model5));
-    //Models.push_back(std::move(model11));
-
-
-
-	//Models.push_back(std::move(model9));
-	//Models.push_back(std::move(model10));
-	////
-	UserInterfaceItems.push_back(Models[0].get());
-	UserInterfaceItems.push_back(Models[1].get());
-	UserInterfaceItems.push_back(Models[2].get());
-	//UserInterfaceItems.push_back(Models[4].get());
-
-	//UserInterfaceItems.push_back(Models[7].get());
+	LoadAllObjects();
 
 	bufferManger.CreateSharedBuffers(commandPool);
 
-	RT_Reflection           = std::unique_ptr<RT_Reflections, decltype(&RT_ReflectionsDeleter)>(new RT_Reflections(&vulkanContext, commandPool, &camera, &bufferManger, skyBox.get()), RT_ReflectionsDeleter);
-	Raytracing_Shadows      = std::unique_ptr<RT_Shadows, decltype(&RT_ShadowsDeleter)>(new RT_Shadows(&vulkanContext, commandPool, &camera, &bufferManger),RT_ShadowsDeleter);
-	lighting_FullScreenQuad = std::unique_ptr<Lighting_FullScreenQuad, decltype(&Lighting_FullScreenQuadDeleter)>(new Lighting_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool, skyBox.get(), Raytracing_Shadows.get()),Lighting_FullScreenQuadDeleter);
-	ssao_FullScreenQuad     = std::unique_ptr<SSA0_FullScreenQuad, decltype(&SSA0_FullScreenQuadDeleter)>(new SSA0_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),SSA0_FullScreenQuadDeleter);
-	fxaa_FullScreenQuad     = std::unique_ptr<FXAA_FullScreenQuad, decltype(&FXAA_FullScreenQuadDeleter)>(new FXAA_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),FXAA_FullScreenQuadDeleter);
-	Combined_FullScreenQuad = std::unique_ptr<CombinedResult_FullScreenQuad, decltype(&CombinedResult_FullScreenQuadDeleter)>(new CombinedResult_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool),CombinedResult_FullScreenQuadDeleter);
-	SSGI_FullScreenQuad     = std::unique_ptr<SSGI, decltype(&SSGIDeleter)>(new SSGI(&bufferManger, &vulkanContext, &camera, commandPool),SSGIDeleter);
-	dynamicDiffuse_RTGI     = std::unique_ptr<DynamicDiffuse_RTGI, decltype(&DynamicDiffuse_RTGIDeleter)>(new DynamicDiffuse_RTGI("../Textures/Sphere/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger, skyBox.get()), DynamicDiffuse_RTGIDeleter);
-	Restir_DI               = std::unique_ptr<ReSTIR_DI, decltype(&ReSTIR_DI_Deleter)>(new ReSTIR_DI(&vulkanContext, commandPool, &camera, &bufferManger, lighting_FullScreenQuad.get(), SSGI_FullScreenQuad.get(), dynamicDiffuse_RTGI.get()), ReSTIR_DI_Deleter);
+	SwitchScene(0);
 
-	lights.reserve(4);
+	RT_Reflection = std::unique_ptr<RT_Reflections, decltype(&RT_ReflectionsDeleter)>(new RT_Reflections(&vulkanContext, commandPool, &camera, &bufferManger, skyBox.get()), RT_ReflectionsDeleter);
+	Raytracing_Shadows = std::unique_ptr<RT_Shadows, decltype(&RT_ShadowsDeleter)>(new RT_Shadows(&vulkanContext, commandPool, &camera, &bufferManger), RT_ShadowsDeleter);
+	lighting_FullScreenQuad = std::unique_ptr<Lighting_FullScreenQuad, decltype(&Lighting_FullScreenQuadDeleter)>(new Lighting_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool, skyBox.get(), Raytracing_Shadows.get()), Lighting_FullScreenQuadDeleter);
+	ssao_FullScreenQuad = std::unique_ptr<SSA0_FullScreenQuad, decltype(&SSA0_FullScreenQuadDeleter)>(new SSA0_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), SSA0_FullScreenQuadDeleter);
+	fxaa_FullScreenQuad = std::unique_ptr<FXAA_FullScreenQuad, decltype(&FXAA_FullScreenQuadDeleter)>(new FXAA_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), FXAA_FullScreenQuadDeleter);
+	Combined_FullScreenQuad = std::unique_ptr<CombinedResult_FullScreenQuad, decltype(&CombinedResult_FullScreenQuadDeleter)>(new CombinedResult_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), CombinedResult_FullScreenQuadDeleter);
+	SSGI_FullScreenQuad = std::unique_ptr<SSGI, decltype(&SSGIDeleter)>(new SSGI(&bufferManger, &vulkanContext, &camera, commandPool), SSGIDeleter);
+	dynamicDiffuse_RTGI = std::unique_ptr<DynamicDiffuse_RTGI, decltype(&DynamicDiffuse_RTGIDeleter)>(new DynamicDiffuse_RTGI("../Textures/Sphere/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger, skyBox.get()), DynamicDiffuse_RTGIDeleter);
+	Restir_DI = std::unique_ptr<ReSTIR_DI, decltype(&ReSTIR_DI_Deleter)>(new ReSTIR_DI(&vulkanContext, commandPool, &camera, &bufferManger, lighting_FullScreenQuad.get(), SSGI_FullScreenQuad.get(), dynamicDiffuse_RTGI.get()), ReSTIR_DI_Deleter);
 
-	std::random_device rd;
+	createCommandBuffer();
+	CreateGraphicsPipeline();
+	createShaderBindingTable();
+	createDepthTextureImage();
+	createGBuffer();
 
-	std::mt19937 gen(rd());
+	recreateSwapChain();
+	CreateDebugUtils();
+}
 
-	std::uniform_real_distribution<float> disXZ(-20, 20);
-	std::uniform_real_distribution<float> disY(0, 40);
-	std::uniform_real_distribution<float> disc(0, 1);
+void App::LoadAllObjects()
+{
 
-	for (int i = 0; i < 4; i++) {
-		std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(&vulkanContext, commandPool, &camera, &bufferManger), LightDeleter);
+	////Sponza SETUP
+	auto Bunny = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto Dragon = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto Sponza = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 
-		float randX = disXZ(gen);
-		float randY = disY(gen);
-		float randZ = disXZ(gen);
+	Bunny.get()->Instances[0]->SetPostion(glm::vec3(-14.224, -0.329, 0.357));
+	Bunny.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
+	Bunny.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
+	Bunny.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	Bunny.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
-		light->SetPosition(glm::vec3(randX, randY, randZ));
+	Dragon.get()->Instances[0]->SetPostion(glm::vec3(7.153, -0.523, -2.166));
+	Dragon.get()->Instances[0]->SetRotation(glm::vec3(179.997, 44.147, 179.993));
+	Dragon.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
+	Dragon.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	Dragon.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
-		float R = disc(gen);
-		float G = disc(gen);
-		float B = disc(gen);
+	Sponza.get()->Instances[0]->SetScale(glm::vec3(5.000, 5.000, 5.000));
+	Sponza.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	Sponza.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
-		light->color = glm::vec3(R, G, B);
+	Bunny->createDescriptorSets(DescriptorPool);
+	Dragon->createDescriptorSets(DescriptorPool);
+	Sponza->createDescriptorSets(DescriptorPool);
 
-		lights.push_back(std::move(light));
+	SponzaSceneModels.push_back(std::move(Bunny));
+	SponzaSceneModels.push_back(std::move(Dragon));
+	SponzaSceneModels.push_back(std::move(Sponza));
+
+
+	////////CORNEL SETUP////////////////////////////////////////
+	auto Bunny2 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto Dragon2 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto CornelBox = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+
+	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	Bunny2.get()->Instances[0]->SetPostion(glm::vec3(-5.936, 3.043, -9.525));
+	Bunny2.get()->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
+	Bunny2.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
+	Bunny2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	Bunny2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	
+	
+	Dragon2.get()->Instances[0]->SetPostion(glm::vec3(6.087, 13.277, 3.776));
+	Dragon2.get()->Instances[0]->SetRotation(glm::vec3(-179.987, -49.785, 179.967));
+	Dragon2.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
+	Dragon2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	Dragon2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	
+	CornelBox.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
+	CornelBox.get()->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
+	CornelBox.get()->Instances[0]->CubeMapReflectiveSwitch(false);
+	CornelBox.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+
+	Bunny2->createDescriptorSets(DescriptorPool);
+	Dragon2->createDescriptorSets(DescriptorPool);
+	CornelBox->createDescriptorSets(DescriptorPool);
+
+	CornelSceneModels.push_back(std::move(Bunny2));
+	CornelSceneModels.push_back(std::move(Dragon2));
+	CornelSceneModels.push_back(std::move(CornelBox));
+}
+
+void App::UpdateRayTracingDescriptors()
+{
+	if (Raytracing_Shadows) {
+		Raytracing_Shadows->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
 	}
 
-	lights[0]->SetPosition(glm::vec3(-4.351, -10, -4.192));
-	lights[0]->lightType = 1;
-	lights[0]->lightIntensity = 0;
-	lights[0]->CastShadowsSwitch(true);
-	lights[0]->ambientStrength = 0.1;
-	lights[0]->SetScale(glm::vec3(0.200, 0.200, 0.200));
-	
-	lights[1]->SetPosition(glm::vec3(23.352, -15.081, 24.001));
-	lights[1]->SetScale(glm::vec3(0.200, 0.200, 0.200));
-	lights[1]->CastShadowsSwitch(true);
-	lights[1]->ambientStrength = 0;
-	lights[1]->lightIntensity = 5.000;
-	lights[1]->lightType = 0;
-	
-	
-	lights[2]->SetPosition(glm::vec3(-1.830, -10, 10.112));
-	lights[2]->lightType = 1;
-	lights[2]->lightIntensity = 0;
-	lights[2]->CastShadowsSwitch(true);
-	lights[2]->ambientStrength = 0.1;
-	lights[2]->SetScale(glm::vec3(0.200, 0.200, 0.200));
-	
-	
-	lights[3]->SetPosition(glm::vec3(3.723, -10, -21.320));
-	lights[3]->lightType = 1;
-	lights[3]->lightIntensity = 0;
-	lights[3]->CastShadowsSwitch(true);
-	lights[3]->ambientStrength = 0.1;
-	lights[3]->SetScale(glm::vec3(0.200, 0.200, 0.200));
-	
-	
-	lights[0]->color = glm::vec3(0.431, 0.337, 0.318);
-	lights[1]->color = glm::vec3(0.980, 0.357, 0.000);
-	lights[2]->color = glm::vec3(0.431, 0.337, 0.318);
-	lights[3]->color = glm::vec3(0.431, 0.337, 0.318);
+	if (RT_Reflection) {
+		RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer, lighting_FullScreenQuad->fragmentUniformBuffers);
+	}
 
+	bool ddgiRecreated = false;
+	if (dynamicDiffuse_RTGI) {
+		ddgiRecreated = dynamicDiffuse_RTGI->UpdateUniformBuffer(DescriptorPool, TLAS, lighting_FullScreenQuad->fragmentUniformBuffers, gbuffer, true, lights.size());
+	}
 
-    //lights[0]->SetPosition(glm::vec3(5.873, -50.574, -6.875));
-	//lights[0]->lightType = 0;
-	//lights[0]->lightIntensity = 4;
-	//lights[0]->CastShadowsSwitch(true);
-	//lights[0]->ambientStrength = 0;
-	//lights[0]->SetScale(glm::vec3(0.200, 0.200, 0.200));
-	//
-	//lights[1]->SetPosition(glm::vec3(28.060, 9.563, -1.864));
-	//lights[1]->SetScale(glm::vec3(0.200, 0.200, 0.200));
-	//lights[1]->CastShadowsSwitch(false);
-	//lights[1]->ambientStrength = 0;
-	//lights[1]->lightIntensity = 0;
-	//lights[1]->lightType = 1;
-	//
-	//
-	//lights[2]->SetPosition(glm::vec3(22.204, 23.480, -1.704));
-	//lights[2]->lightType = 1;
-	//lights[2]->lightIntensity = 0;
-	//lights[2]->CastShadowsSwitch(false);
-	//lights[2]->ambientStrength = 0;
-	//lights[2]->SetScale(glm::vec3(0.200, 0.200, 0.200));
-	//
-	//
-	//lights[3]->SetPosition(glm::vec3(4.620, 22.513, -5.577));
-	//lights[3]->lightType = 1;
-	//lights[3]->lightIntensity = 0;
-	//lights[3]->CastShadowsSwitch(false);
-	//lights[3]->ambientStrength = 0;
-	//lights[3]->SetScale(glm::vec3(0.200, 0.200, 0.200));
-	//
-	//
-	//lights[0]->color = glm::vec3(1, 1, 1);
-	//lights[1]->color = glm::vec3(0, 0, 0);
-	//lights[2]->color = glm::vec3(0, 0, 0);;
-	//lights[3]->color = glm::vec3(0, 0, 0);;
+	if (Restir_DI) {
+		Restir_DI->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &TLAS);
 
+		if (ddgiRecreated) {
+			Restir_DI->createDescriptorDDGIATLAS(DescriptorPool);
+		}
+	}
+
+	if (ddgiRecreated) {
+
+		DDGIIrradianceAtlasID = ImGui_ImplVulkan_AddTexture(
+			dynamicDiffuse_RTGI->IradianceImageAtlasImage.imageSampler,
+			dynamicDiffuse_RTGI->IradianceImageAtlasImage.imageView,
+			VK_IMAGE_LAYOUT_GENERAL
+		);
+
+		DDGIIVisibilityAtlasID = ImGui_ImplVulkan_AddTexture(
+			dynamicDiffuse_RTGI->VisibilityImageAtlasImage.imageSampler,
+			dynamicDiffuse_RTGI->VisibilityImageAtlasImage.imageView,
+			VK_IMAGE_LAYOUT_GENERAL
+		);
+
+		Sampled_GI_ID = ImGui_ImplVulkan_AddTexture(
+			dynamicDiffuse_RTGI->Probe_Sampled_GI_Image.imageSampler,
+			dynamicDiffuse_RTGI->Probe_Sampled_GI_Image.imageView,
+			VK_IMAGE_LAYOUT_GENERAL
+		);
+	}
+}
+
+void App::SwitchScene(int index)
+{
+	vulkanContext.LogicalDevice.waitIdle();
+
+	Models.clear();
+	UserInterfaceItems.clear();
+	lights.clear(); 
+
+	currentSceneIndex = index;
+
+	if (index == 0)
+	{
+		for (auto& model : CornelSceneModels) {
+			Models.push_back(model.get());
+			UserInterfaceItems.push_back(model.get());
+		}
+
+		int LightCount = 20;
+
+		lights.reserve(LightCount);
+
+		std::random_device rd;
+
+		std::mt19937 gen(rd());
+
+		std::uniform_real_distribution<float> disXZ(-20, 20);
+		std::uniform_real_distribution<float> disY(0, 40);
+		std::uniform_real_distribution<float> disc(0, 1);
+
+		for (int i = 0; i < LightCount; i++) {
+			std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(&vulkanContext, commandPool, &camera, &bufferManger), LightDeleter);
+
+			float randX = disXZ(gen);
+			float randY = disY(gen);
+			float randZ = disXZ(gen);
+
+			light->SetPosition(glm::vec3(randX, randY, randZ));
+			light->CastShadow = true;
+			light->createDescriptorSets(DescriptorPool);
+
+			float R = disc(gen);
+			float G = disc(gen);
+			float B = disc(gen);
+
+			light->color = glm::vec3(R, G, B);
+
+			lights.push_back(std::move(light));
+		}
+
+	}
+
+	else if (index == 1) 
+	{
+		for (auto& model : SponzaSceneModels) {
+			Models.push_back(model.get());
+			UserInterfaceItems.push_back(model.get());
+		}
+
+		int LightCount = 20;
+
+		lights.reserve(LightCount);
+
+		std::random_device rd;
+
+		std::mt19937 gen(rd());
+
+		std::uniform_real_distribution<float> disXZ(-20, 20);
+		std::uniform_real_distribution<float> disY(0, 40);
+		std::uniform_real_distribution<float> disc(0, 1);
+
+		for (int i = 0; i < LightCount; i++) {
+			std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(&vulkanContext, commandPool, &camera, &bufferManger), LightDeleter);
+
+			float randX = disXZ(gen);
+			float randY = disY(gen);
+			float randZ = disXZ(gen);
+
+			light->SetPosition(glm::vec3(randX, randY, randZ));
+			light->CastShadow = true;
+			light->createDescriptorSets(DescriptorPool);
+
+			float R = disc(gen);
+			float G = disc(gen);
+			float B = disc(gen);
+
+			light->color = glm::vec3(R, G, B);
+
+			lights.push_back(std::move(light));
+		}
+	}
 
 	for (auto& l : lights) {
 		UserInterfaceItems.push_back(l.get());
 	}
 
 
-	createDescriptorPool();
 
-	createCommandBuffer();
-	CreateGraphicsPipeline();
-	createShaderBindingTable();
-	createDepthTextureImage();
-
+	DestroyTLAS();
 	createTLAS();
 
-	createGBuffer();
+	UpdateRayTracingDescriptors();
 
-	recreateSwapChain();
-	CreateDebugUtils();
+	if (RT_ShadowsPassPipeline) {
+		updateUniformBuffer(currentFrame); 
+		vulkanContext.ResetTemporalAccumilation();
+	}
+
 }
 
 void App::CreateDebugUtils()
@@ -558,16 +583,8 @@ void App::createDescriptorPool()
 
 	DescriptorPool = vulkanContext.LogicalDevice.createDescriptorPool(poolInfo, nullptr);
 
-	for (auto& model : Models)
-	{
-		model->createDescriptorSets(DescriptorPool);
-	}
-
-	skyBox->createDescriptorSets(DescriptorPool);
-
-	for (auto& light : lights)
-	{
-		light->createDescriptorSets(DescriptorPool);
+	if (skyBox) {
+		skyBox->createDescriptorSets(DescriptorPool);
 	}
 }
 
@@ -1392,7 +1409,7 @@ void App::CreateGraphicsPipeline()
 		RayMiss_ShaderStageInfo.pName     = "main";
 
 	   std::vector<vk::PipelineShaderStageCreateInfo> ShaderStages = { RayGen_ShaderStageInfo ,
-																	  RayMiss_ShaderStageInfo};
+																	   RayMiss_ShaderStageInfo};
 
 	   vk::RayTracingShaderGroupCreateInfoKHR RayGen_GroupInfo{};
 	   RayGen_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
@@ -2314,7 +2331,7 @@ void App::updateUniformBuffer(uint32_t currentImage) {
     SSGI_FullScreenQuad->UpdateUniformBuffer(currentImage, lights,deltaTime);
 	RT_Reflection->UpdateUniformBuffer(currentImage, lights, Models);
 
-	bool ddgiRecreated = dynamicDiffuse_RTGI->UpdateUniformBuffer(DescriptorPool, TLAS, lighting_FullScreenQuad->fragmentUniformBuffers,gbuffer);
+	bool ddgiRecreated = dynamicDiffuse_RTGI->UpdateUniformBuffer(DescriptorPool, TLAS, lighting_FullScreenQuad->fragmentUniformBuffers,gbuffer,false, lights.size());
 
 	if (ddgiRecreated)
 	{
@@ -2529,7 +2546,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	/////////////////// GBUFFER PASS END ///////////////////////// 
 
-	vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
+ 	vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
 
 
 	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, SSAO_Label);
@@ -3815,6 +3832,7 @@ void App::destroy_GbufferImages()
 
 }
 
+
 void App::recreateSwapChain() {
 	
 	int width = 0, height = 0;
@@ -3869,17 +3887,32 @@ void App::DestroySyncObjects()
 	}
 }
 
+void App::DestroyTLAS()
+{
+	if (TLAS_Buffer.buffer) {
+
+		bufferManger.DestroyBuffer(TLAS_Buffer);
+		bufferManger.DestroyBuffer(TLAS_SCRATCH_Buffer);
+		bufferManger.DestroyBuffer(TLAS_InstanceData);
+		vulkanContext.vkDestroyAccelerationStructureKHR(vulkanContext.LogicalDevice, TLAS, nullptr);
+	}
+}
+
 void App::DestroyBuffers()
 {
 
 	destroy_DepthImage();
 	destroy_GbufferImages();
 
-	for (auto& model : Models)
+	for (auto& model : SponzaSceneModels)
 	{
 		model.reset();
 	}
 
+	for (auto& model : CornelSceneModels)
+	{
+		model.reset();
+	}
 	for (auto& light : lights)
 	{
 		light.reset();
@@ -3896,10 +3929,7 @@ void App::DestroyBuffers()
 	Restir_DI.reset();
 	RT_Reflection.reset();
 	dynamicDiffuse_RTGI.reset();
-	bufferManger.DestroyBuffer(TLAS_Buffer);
-	bufferManger.DestroyBuffer(TLAS_SCRATCH_Buffer);
-	bufferManger.DestroyBuffer(TLAS_InstanceData);
-	vulkanContext.vkDestroyAccelerationStructureKHR(vulkanContext.LogicalDevice, static_cast<VkAccelerationStructureKHR>(TLAS),nullptr);
+	DestroyTLAS();
 	bufferManger.DestroySharedBuffers();
 	DestroyShaderBindingTable();
 	//bufferManger.reset();

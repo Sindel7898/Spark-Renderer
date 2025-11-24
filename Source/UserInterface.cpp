@@ -390,6 +390,24 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
             {
                 ImGui::SeparatorText("Application");
 
+                if (ImGui::BeginCombo("Select Scene", appref->SceneNames[appref->currentSceneIndex].c_str()))
+                {
+                    for (int i = 0; i < appref->SceneNames.size(); i++)
+                    {
+                        bool is_selected = (appref->currentSceneIndex == i);
+                        if (ImGui::Selectable(appref->SceneNames[i].c_str(), is_selected))
+                        {
+                            if (appref->currentSceneIndex != i) {
+                                 appref->SwitchScene(i);
+                            }
+                        }
+                        if (is_selected) {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+
                 if (ImGui::Button("Refresh Shaders", ImVec2(100, 30))) {
 
                     appref->recreatePipeline();

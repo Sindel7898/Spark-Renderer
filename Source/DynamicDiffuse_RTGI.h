@@ -52,7 +52,7 @@ public:
     void CreateVertexAndIndexBuffer();
     uint32_t alignedSize(uint32_t value, uint32_t alignment);
     void Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferData RayMisBuffer, vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
-    bool UpdateUniformBuffer(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, std::vector<BufferData>& fragmentUniformBuffers, GBuffer gbuffer);
+    bool UpdateUniformBuffer(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, std::vector<BufferData>& fragmentUniformBuffers, GBuffer gbuffer, bool ForceUpdate, int lightcount);
     void DrawNode(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex, const std::vector<std::shared_ptr<Node>>& nodes);
 
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
@@ -130,6 +130,7 @@ public:
     int UseinfiniteBounce = 1;
     int SampleCount = 2;
     int FrameCount = 0;
+    int LightCount;
 private:
 
     VulkanContext*   vulkanContext = nullptr;

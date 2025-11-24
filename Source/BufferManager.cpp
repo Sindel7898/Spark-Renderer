@@ -44,6 +44,7 @@ void BufferManager::CreateBuffer(BufferData* bufferData,VkDeviceSize BufferSize,
 	VmaAllocation allocation;
 	VkBufferCreateInfo cBufferCreateInfo = StagingBufferCreateInfo;
 
+
 	if (vmaCreateBuffer(allocator, &cBufferCreateInfo, &AllocationInfo, &Buffer, &allocation, nullptr) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create buffer!");
 	}
@@ -791,6 +792,7 @@ void BufferManager::RemoveImageLog(ImageData imageData)
 }
 void BufferManager::CreateSharedBuffers(vk::CommandPool& commandPool)
 {
+
 	VkDeviceSize VertexBufferSize = sizeof(quad[0]) * quad.size();
 	FullScreenQuadVertexBufferData.BufferID = "Full Screen Quad Vertex Buffer";
 	CreateGPUOptimisedBuffer(&FullScreenQuadVertexBufferData, quad.data(), VertexBufferSize, vk::BufferUsageFlagBits::eVertexBuffer, commandPool, vulkanContext->graphicsQueue);
@@ -937,6 +939,7 @@ void BufferManager::DestroySharedBuffers() {
 	AllScene_Albedo_Images.clear();
 	AllScene_Normal_Images.clear();
 	AllScene_MetalicRoughness_Images.clear();
+	AllScene_Emissive_Images.clear();
 
 	AllScene_VertexGeometryData.clear();
 	AllScene_IndexGeometryData.clear();

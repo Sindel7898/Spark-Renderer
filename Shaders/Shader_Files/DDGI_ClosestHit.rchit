@@ -65,7 +65,7 @@ layout(push_constant) uniform PushConstant{
     int   ProbeSideLength; 
     int   GutterSize;      
     int   NumRays;
-    vec4 UseInfiniteBounce_infinite_bounces_multiplier_Padding;
+    vec4 UseInfiniteBounce_infinite_bounces_multiplier_LightCount;
 }pc;
 
 /////Move these stuff to header to be reused. bit cramped here
@@ -312,7 +312,7 @@ void main()
        vec3  radiance  = vec3(0.0);
        vec4  WorldPos  =  Transformations.WorldMatrix[objectID] * vec4(VertexPosition,1);
        HitPosition = WorldPos.xyz;
-       for (int i = 0; i < 4; i++) {
+       for (int i = 0; i < pc.UseInfiniteBounce_infinite_bounces_multiplier_LightCount.w; i++) {
      
            LightData light = lights[i];
            
@@ -343,11 +343,11 @@ void main()
      
 		Radiance += Emissive;
 
-       int UseInfiniteBounce =  int(pc.UseInfiniteBounce_infinite_bounces_multiplier_Padding.x);
+       int UseInfiniteBounce =  int(pc.UseInfiniteBounce_infinite_bounces_multiplier_LightCount.x);
        
         if(UseInfiniteBounce > 0.5){
 
-             vec3 GI = SampleIrradiance(WorldPos.xyz,Normal) *  pc.UseInfiniteBounce_infinite_bounces_multiplier_Padding.y;
+             vec3 GI = SampleIrradiance(WorldPos.xyz,Normal) *  pc.UseInfiniteBounce_infinite_bounces_multiplier_LightCount.y;
               
              if (any(greaterThan(GI, vec3(0)))) {
                      Radiance += GI ;

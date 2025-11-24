@@ -37,6 +37,7 @@ bool TraceShadow(vec3 origin, vec3 direction, float MaxDistance) {
                          gl_RayFlagsTerminateOnFirstHitEXT | 
                          gl_RayFlagsSkipClosestHitShaderEXT | 
                          gl_RayFlagsCullBackFacingTrianglesEXT;
+
     const uint cullMask = 0xFF;
     const float tMin = 0.1;
     const float tMax = MaxDistance;
@@ -67,6 +68,7 @@ vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal)
 
 
 void main() {
+
     float shadowFactor[MAX_LIGHTS] = {1.0, 1.0,1.0,1.0};
     
     ivec2 halfCoord  = ivec2(gl_LaunchIDEXT.xy);
@@ -100,7 +102,7 @@ void main() {
              bool isShadowed = TraceShadow(origin, lightDir, maxDistance);
              
              if(isShadowed) {
-                 shadowFactor[i] = 0.0 + Light_UBO.LightData[i].LightType_CastShadow_AmbientStrength_Padding.z;
+                 shadowFactor[i] = 0.0;
              }
         }
     }

@@ -1379,7 +1379,7 @@ void DynamicDiffuse_RTGI::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer,
 	  rtpcInfo.sampleGridInfo.generalAtlasInfo.ProbeSideLength = ProbeSideLength;
 	  rtpcInfo.sampleGridInfo.generalAtlasInfo.GutterSize = GutterSize;
 	  rtpcInfo.sampleGridInfo.generalAtlasInfo.RaysPerProbe = RaysPerProbe;
-	  rtpcInfo.UseInfiniteBounce_infinite_bounces_multiplier_Padding = glm::vec4(UseinfiniteBounce, infiniteBounceMultiplyer, SampleCount, FrameCount);
+	  rtpcInfo.UseInfiniteBounce_infinite_bounces_multiplier_Padding = glm::vec4(UseinfiniteBounce, infiniteBounceMultiplyer, SampleCount, LightCount);
 
 	  commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR, 0, sizeof(RTpcInfo), &rtpcInfo);
       commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, pipelinelayout, 0, 1, &RaytracingDescriptorSets[imageIndex],0,nullptr);
@@ -1398,10 +1398,10 @@ void DynamicDiffuse_RTGI::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer,
 	  FrameCount++;
 }
 
-bool DynamicDiffuse_RTGI::UpdateUniformBuffer(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, std::vector<BufferData>& fragmentUniformBuffers,GBuffer gbuffer)
+bool DynamicDiffuse_RTGI::UpdateUniformBuffer(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, std::vector<BufferData>& fragmentUniformBuffers,GBuffer gbuffer,bool ForceUpdate,int lightcount)
 {
 	if (Last_NumOfProbesX != NumOfProbesX || Last_NumOfProbesY != NumOfProbesY || Last_NumOfProbesZ != NumOfProbesZ
-		|| Last_ProbeOffset != ProbeOffset || Last_GridLocation != GridLocation || Last_RaysPerProbe != RaysPerProbe)
+		|| Last_ProbeOffset != ProbeOffset || Last_GridLocation != GridLocation || Last_RaysPerProbe != RaysPerProbe ||ForceUpdate)
 	{
 		Last_NumOfProbesX = NumOfProbesX;
 		Last_NumOfProbesY = NumOfProbesY;
@@ -1411,6 +1411,7 @@ bool DynamicDiffuse_RTGI::UpdateUniformBuffer(vk::DescriptorPool descriptorpool,
 		Last_RaysPerProbe = RaysPerProbe;
 
 		vulkanContext->LogicalDevice.waitIdle();
+
 		DestroyAtlasImages();
 
 		CreateAtlasImages();
@@ -1420,6 +1421,9 @@ bool DynamicDiffuse_RTGI::UpdateUniformBuffer(vk::DescriptorPool descriptorpool,
 		UpdateGrid = 1;
 		return true;
 	}
+
+	LightCount = lightcount;
+
 	return false;
 }
 
