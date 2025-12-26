@@ -2,79 +2,69 @@
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec2 inTexCoord;
-layout(location = 2) in vec3 inNormal;       
+layout(location = 2) in vec3 inNormal;
 layout(location = 3) in vec3 inTangent;
 
-layout(set = 0,binding = 0) uniform VertexUniformBufferObject {
-      mat4 view;
-      mat4 proj;
-      mat4 prev_view;
-      mat4 prev_proj;
-}vuob;
-
-struct InstanceData{
-       vec4 bCubeMapReflection_bScreenSpaceReflection_Padding;
-};
-
-layout(set = 0,binding = 1) uniform UniformBufferObject {
-     InstanceData ModelInstance[300];
-};
+layout(set = 0, binding = 0) uniform VertexUniformBufferObject {
+    mat4 view;
+    mat4 proj;
+    mat4 prev_view;
+    mat4 prev_proj;
+} vuob;
 
 layout(push_constant) uniform PushConstants {
-          mat4 Model;
-          mat4 previousWorldMatrix;
+    mat4 model;
+    mat4 prevModel;
 } pc;
 
-layout(location = 0)  out vec4 WorldSpacePosition;   
-layout(location = 1)  out vec4 ViewSpacePosition;   
-layout(location = 2)  out vec2 fragTexCoord;           
-layout(location = 3)  out mat3 WorldSpaceTBN; 
-layout(location = 6)  out mat3 ViewSpaceTBN; 
-layout(location = 9) out vec4 CurrentPosition; 
-layout(location = 10) out vec4 PrevPosition; 
 
-void main() {
-    
-    mat4 model = pc.Model;
+layout(location = 0) out vec4 outWorldPos;
+layout(location = 1) out vec4 outViewPos;
+layout(location = 2) out vec2 outTexCoord;
 
-    /////////////////////////////////////////////////
-    vec4 worldPos = model * vec4(inPosition, 1.0);
-    vec4 viewPos = vuob.view * worldPos;
-   
-    WorldSpacePosition = worldPos;
-    ViewSpacePosition = viewPos;
-    vec4 Position = vuob.proj * viewPos;
-    CurrentPosition = Position;
+layout(location = 3) out mat3 outWorldTBN;
+layout(location = 6) out mat3 outViewTBN;
 
-    gl_Position = Position;
-   /////////////////////////////////////////////////
+layout(location = 9)  out vec4 outCurrClipPos;
+layout(location = 10) out vec4 outPrevClipPos;
 
+void main()
+{
 
-   /////////////////////////////////////////////////
-    vec4 Prev_viewPos  = vuob.prev_view * pc.previousWorldMatrix * vec4(inPosition, 1.0);
+    vec4 worldPos = pc.model * vec4(inPosition, 1.0);
+    vec4 viewPos  = vuob.view * worldPos;
+    vec4 clipPos  = vuob.proj * viewPos;
 
-    PrevPosition = vuob.prev_proj * Prev_viewPos;
-   /////////////////////////////////////////////////
+    gl_Position   = clipPos;
 
-    mat3 normalMatrix = transpose(inverse(mat3(model)));
+    outWorldPos = worldPos;
+    outViewPos  = viewPos;
+    outTexCoord = inTexCoord;
+
+    outCurrClipPos = clipPos;
 
 
-    vec3 worldT  = normalize(vec3(normalMatrix * inTangent  ));
-    vec3 worldN  = normalize(vec3(normalMatrix * inNormal   ));
+    vec4 prevWorldPos = pc.prevModel * vec4(inPosition, 1.0);
+    vec4 prevViewPos  = vuob.prev_view * prevWorldPos;
+    vec4 prevClipPos  = vuob.prev_proj * prevViewPos;
 
-    vec3 worldB = cross(worldN,worldT);
-
-    WorldSpaceTBN = mat3(worldT, worldB, worldN);
+    outPrevClipPos = prevClipPos;
 
 
-    mat3 ViewSpacenormalMatrix = mat3(vuob.view);
+    mat3 normalMatrix = transpose(inverse(mat3(pc.model)));
 
-    vec3 vT = normalize(vec3(ViewSpacenormalMatrix * worldT));
-    vec3 vN = normalize(vec3(ViewSpacenormalMatrix * worldN));
+    vec3 T = normalize(normalMatrix * inTangent);
+    vec3 N = normalize(normalMatrix * inNormal);
+    vec3 B = cross(N, T);
 
-    vec3 vB = cross(vN,vT);
+    outWorldTBN = mat3(T, B, N);
 
-    ViewSpaceTBN = mat3(vT, vB, vN);
 
-    fragTexCoord = inTexCoord;
+    mat3 viewNormalMatrix = mat3(vuob.view);
+
+    vec3 vT = normalize(viewNormalMatrix * T);
+    vec3 vN = normalize(viewNormalMatrix * N);
+    vec3 vB = cross(vN, vT);
+
+    outViewTBN = mat3(vT, vB, vN);
 }

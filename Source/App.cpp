@@ -78,21 +78,21 @@ void App::LoadAllObjects()
 	auto Dragon = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto Sponza = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 
-	Bunny.get()->Instances[0]->SetPostion(glm::vec3(-14.224, -0.329, 0.357));
-	Bunny.get()->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
-	Bunny.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
-	Bunny.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	Bunny.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	Bunny->Instances[0]->SetPostion(glm::vec3(-14.224, -0.329, 0.357));
+	Bunny->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
+	Bunny->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
+	Bunny->Instances[0]->CubeMapReflectiveSwitch(false);
+	Bunny->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
-	Dragon.get()->Instances[0]->SetPostion(glm::vec3(7.153, -0.523, -2.166));
-	Dragon.get()->Instances[0]->SetRotation(glm::vec3(179.997, 44.147, 179.993));
-	Dragon.get()->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
-	Dragon.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	Dragon.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	Dragon->Instances[0]->SetPostion(glm::vec3(7.153, -0.523, -2.166));
+	Dragon->Instances[0]->SetRotation(glm::vec3(179.997, 44.147, 179.993));
+	Dragon->Instances[0]->SetScale(glm::vec3(0.120, 0.120, 0.120));
+	Dragon->Instances[0]->CubeMapReflectiveSwitch(false);
+	Dragon->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
-	Sponza.get()->Instances[0]->SetScale(glm::vec3(5.000, 5.000, 5.000));
-	Sponza.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	Sponza.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	Sponza->Instances[0]->SetScale(glm::vec3(5.000, 5.000, 5.000));
+	Sponza->Instances[0]->CubeMapReflectiveSwitch(false);
+	Sponza->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
 	Bunny->createDescriptorSets(DescriptorPool);
 	Dragon->createDescriptorSets(DescriptorPool);
@@ -109,23 +109,23 @@ void App::LoadAllObjects()
 	auto CornelBox = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 
 	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	Bunny2.get()->Instances[0]->SetPostion(glm::vec3(-5.936, 3.043, -9.525));
-	Bunny2.get()->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
-	Bunny2.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
-	Bunny2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	Bunny2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	Bunny2->Instances[0]->SetPostion(glm::vec3(-5.936, 3.043, -9.525));
+	Bunny2->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
+	Bunny2->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
+	Bunny2->Instances[0]->CubeMapReflectiveSwitch(false);
+	Bunny2->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 	
 	
-	Dragon2.get()->Instances[0]->SetPostion(glm::vec3(6.087, 13.277, 3.776));
-	Dragon2.get()->Instances[0]->SetRotation(glm::vec3(-179.987, -49.785, 179.967));
-	Dragon2.get()->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
-	Dragon2.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	Dragon2.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	Dragon2->Instances[0]->SetPostion(glm::vec3(6.087, 13.277, 3.776));
+	Dragon2->Instances[0]->SetRotation(glm::vec3(-179.987, -49.785, 179.967));
+	Dragon2->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
+	Dragon2->Instances[0]->CubeMapReflectiveSwitch(false);
+	Dragon2->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 	
-	CornelBox.get()->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
-	CornelBox.get()->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
-	CornelBox.get()->Instances[0]->CubeMapReflectiveSwitch(false);
-	CornelBox.get()->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	CornelBox->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
+	CornelBox->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
+	CornelBox->Instances[0]->CubeMapReflectiveSwitch(false);
+	CornelBox->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
 	Bunny2->createDescriptorSets(DescriptorPool);
 	Dragon2->createDescriptorSets(DescriptorPool);

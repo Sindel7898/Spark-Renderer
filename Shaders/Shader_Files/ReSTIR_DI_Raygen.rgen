@@ -490,11 +490,11 @@ void main() {
     ivec2 prevCoord = ivec2(screenPosPrevious);
     
 
-    vec3  prevNormal  = texelFetch(PrevNormalImage, TextCoord, 0).rgb;
+    vec3  prevNormal  = texelFetch(PrevNormalImage, prevCoord, 0).rgb;
 
     bool validHistory = dot(prevNormal, surfaceData.normal) >= 0.9;
 
-    if (validHistory)
+    if (false)
     {
         //// Grab the resevoir from the last frame
         vec4 PrevResData = imageLoad(PrevResevoirImage, prevCoord);
@@ -517,15 +517,85 @@ void main() {
                         p_hat_history * historyReservoir.Light_Weight * historyReservoir.Num_OF_Lights_In_Resevoir, 
                         historyReservoir.Num_OF_Lights_In_Resevoir, rngState);
     }
+
+    vec3 tempRadiance = GetLightRadiance(lights[temporalReservoir.Light_Index], CameraPos, surfaceData, ViewDir, F, diffuse);
+    float p_hat_temporal = length(tempRadiance);
+
+    if (p_hat_temporal > 0.0)
+    {    
+        temporalReservoir.Light_Weight = (1.0 / p_hat_temporal) * (temporalReservoir.Sum_Of_All_Weights / temporalReservoir.Num_OF_Lights_In_Resevoir);
+    }
+    else
+    {
+        temporalReservoir.Light_Weight = 0.0;
+    }
     ///////////////////////////////////////////////////////////////////////
+
+
+     /////////////////////Spatial REUSE/////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
+    Reservoir spatialReservoir;
+    spatialReservoir.Light_Index = 0;
+    spatialReservoir.Light_Weight = 0.0;
+    spatialReservoir.Sum_Of_All_Weights = 0.0;
+    spatialReservoir.Num_OF_Lights_In_Resevoir = 0.0;
+
+    //Add the winner to a new resevoir
+    UpdateReservoir(spatialReservoir,
+                    temporalReservoir.Light_Index, 
+                    p_hat_current * temporalReservoir.Light_Weight * temporalReservoir.Num_OF_Lights_In_Resevoir, 
+                    temporalReservoir.Num_OF_Lights_In_Resevoir, rngState);
+
+   // Spatial Reuse Loop
+   int noofNeighbours = 5;
+   int radius = 30;
+   
+   for(int i = 0; i < noofNeighbours; i++){
+       
+       vec2 offset = 2.0 * vec2(rand01(rngState), rand01(rngState)) - 1;
+       vec2 pixelOffset = offset * float(radius);
+       ivec2 neighborCoord = ivec2(TextCoord + pixelOffset);
+       
+       // Clamp to screen bounds
+       neighborCoord = clamp(neighborCoord, ivec2(0), ivec2(ScreenSize - 1));
+
+       // 1. Fetch Neighbor Geometry
+       vec3 neighborPos    = texelFetch(WorldPositionImage, neighborCoord, 0).xyz;
+       vec3 neighborNormal = texelFetch(NormalImage, neighborCoord, 0).xyz;
+
+       // 2. Geometric Similarity Checks (The "Jacobian Correction")
+       // Normal deviation check
+       if (dot(neighborNormal, surfaceData.normal) < 0.9) continue;
+
+       // Plane distance check (ensures neighbor is on the same plane)
+       float planeDist = dot(neighborPos - surfaceData.worldPos, surfaceData.normal);
+       if (abs(planeDist) > 0.05 * length(neighborPos - surfaceData.worldPos) + 0.01) continue;
+
+       // 3. Process Valid Neighbor
+       vec4 NeighbourResData = imageLoad(ResevoirImage, neighborCoord);
+
+       Reservoir neighbourReservoir;
+       neighbourReservoir.Light_Index = uint(NeighbourResData.x);
+       neighbourReservoir.Light_Weight = NeighbourResData.y;
+       neighbourReservoir.Num_OF_Lights_In_Resevoir = NeighbourResData.w;
+
+       vec3 neighbourRadiance = GetLightRadiance(lights[neighbourReservoir.Light_Index], CameraPos, surfaceData, ViewDir, F, diffuse);
+       float p_hat_neighbour = length(neighbourRadiance);
+
+       UpdateReservoir(spatialReservoir,
+                       neighbourReservoir.Light_Index, 
+                       p_hat_neighbour * neighbourReservoir.Light_Weight * neighbourReservoir.Num_OF_Lights_In_Resevoir, 
+                       neighbourReservoir.Num_OF_Lights_In_Resevoir, rngState);
+   }
+
 
 
     vec3 TotalRadiance = vec3(0.0);
     float p_hat_final = 0.0;
     
-    if (temporalReservoir.Sum_Of_All_Weights > 0.0)
+    if (spatialReservoir.Sum_Of_All_Weights > 0.0)
     {
-        LightData light = lights[temporalReservoir.Light_Index];
+        LightData light = lights[spatialReservoir.Light_Index];
             
         vec3 RayDirection;
         float tMax;
@@ -608,10 +678,10 @@ void main() {
       
       vec3 finalColor = TotalRadiance + IndirectResult;
 
-      vec4 Res = vec4(temporalReservoir.Light_Index,
-                      temporalReservoir.Light_Weight,
-                      temporalReservoir.Sum_Of_All_Weights,
-                      temporalReservoir.Num_OF_Lights_In_Resevoir);
+      vec4 Res = vec4(spatialReservoir.Light_Index,
+                      spatialReservoir.Light_Weight,
+                      spatialReservoir.Sum_Of_All_Weights,
+                      spatialReservoir.Num_OF_Lights_In_Resevoir);
 
       imageStore(ResevoirImage , TextCoord, Res);            
       imageStore(ReSTIR_DIImage, TextCoord, vec4(finalColor,1));            

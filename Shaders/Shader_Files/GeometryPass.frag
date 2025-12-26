@@ -1,62 +1,74 @@
 #version 450
 
-layout (binding = 2) uniform sampler2D   samplerColor;
-layout (binding = 3) uniform sampler2D   samplerNormal;
-layout (binding = 4) uniform sampler2D   samplerMetallicRoughness;
-layout (binding = 5) uniform sampler2D   samplerAO;
-layout (binding = 6) uniform sampler2D   samplerEmisive;
-
-layout(location = 0) in vec4 WorldSpacePosition;   
-layout(location = 1) in vec4 ViewSpacePosition;        
-layout(location = 2) in vec2 fragTexCoord;           
-layout(location = 3) in mat3 WorldSpaceTBN; 
-layout(location = 6) in mat3 ViewSpaceTBN; 
-layout(location = 9) in vec4 CurrentPosition; 
-layout(location = 10) in vec4 PrevPosition; 
+layout(binding = 2) uniform sampler2D samplerColor;
+layout(binding = 3) uniform sampler2D samplerNormal;
+layout(binding = 4) uniform sampler2D samplerMetallicRoughness;
+layout(binding = 5) uniform sampler2D samplerAO;
+layout(binding = 6) uniform sampler2D samplerEmisive;
 
 
-layout (location = 0) out vec4 outWorldPosition;
-layout (location = 1) out vec4 outViewSpacePosition;
-layout (location = 2) out vec4 outNormal;
-layout (location = 3) out vec4 outViewSpaceNormal;
-layout (location = 4) out vec4 outAlbedo;
-layout (location = 5) out vec4 outEmisive;
-layout (location = 6) out vec4 outMetallicRoughnessMapAO;
-layout (location = 7) out vec4 outVelocity;
+layout(location = 0) in vec4 inWorldPos;
+layout(location = 1) in vec4 inViewPos;
+layout(location = 2) in vec2 inTexCoord;
+
+layout(location = 3) in mat3 inWorldTBN;
+layout(location = 6) in mat3 inViewTBN;
+
+layout(location = 9)  in vec4 inCurrClipPos;
+layout(location = 10) in vec4 inPrevClipPos;
 
 
+layout(location = 0) out vec4 outWorldPosition;
+layout(location = 1) out vec4 outViewSpacePosition;
+layout(location = 2) out vec4 outNormal;
+layout(location = 3) out vec4 outViewSpaceNormal;
+layout(location = 4) out vec4 outAlbedo;
+layout(location = 5) out vec4 outEmissive;
+layout(location = 6) out vec4 outMetallicRoughnessAO;
+layout(location = 7) out vec4 outVelocity;
 
-void main() {
-  
-  outWorldPosition     = WorldSpacePosition;
-  outViewSpacePosition = ViewSpacePosition;
-  
-  vec3 NormalTexture = textureLod(samplerNormal, fragTexCoord,0).rgb * 2.0 - vec3(1.0);
+void main()
+{
+    // =======================
+    // Positions
+    // =======================
+    outWorldPosition     = inWorldPos;
+    outViewSpacePosition = inViewPos;
 
+    // =======================
+    // Normals
+    // =======================
+    vec3 normalTex = textureLod(samplerNormal, inTexCoord, 0).rgb * 2.0 - 1.0;
 
-  vec3 tnorm = normalize(WorldSpaceTBN * NormalTexture);
-  outNormal = vec4(tnorm, 1);
+    vec3 worldNormal = normalize(inWorldTBN * normalTex);
+    vec3 viewNormal  = normalize(inViewTBN  * normalTex);
 
-  vec3 vtnorm = normalize(ViewSpaceTBN * NormalTexture);
-  outViewSpaceNormal = vec4(vtnorm, 1);
+    outNormal          = vec4(worldNormal, 1.0);
+    outViewSpaceNormal = vec4(viewNormal,  1.0);
 
-  vec2 MetallicRoughness  = textureLod(samplerMetallicRoughness,fragTexCoord,0).rg;
-  float A0                = textureLod(samplerAO,fragTexCoord,0).b;
+    // =======================
+    // Material
+    // =======================
+    vec2 mr = textureLod(samplerMetallicRoughness, inTexCoord, 0).rg;
+    float ao = textureLod(samplerAO, inTexCoord, 0).b;
 
-  outMetallicRoughnessMapAO = vec4(MetallicRoughness,A0,1);
+    outMetallicRoughnessAO = vec4(mr, ao, 1.0);
+    outAlbedo              = vec4(textureLod(samplerColor, inTexCoord, 0).rgb, 1.0);
+    outEmissive            = vec4(textureLod(samplerEmisive, inTexCoord, 0).rgb * 3.0, 1.0);
 
-  vec3 Albedo = textureLod(samplerColor,fragTexCoord,0).rgb;
+    // =======================
+    // Motion vectors (ReSTIR-safe)
+    // =======================
+    vec3 currNDC = inCurrClipPos.xyz / inCurrClipPos.w;
+    vec3 prevNDC = inPrevClipPos.xyz / inPrevClipPos.w;
+    
+    if (inCurrClipPos.w <= 0.0 || currNDC.z >= 1.0) {
+        outVelocity = vec4(0.0);
+        return;
+    }
+    // 3. Convert to UV [0, 1]
+    vec2 currUV = currNDC.xy * 0.5 + 0.5;
+    vec2 prevUV = prevNDC.xy * 0.5 + 0.5;
 
-  outAlbedo   = vec4(Albedo,1.0);
-
-  vec3 Emisive = textureLod(samplerEmisive,fragTexCoord,0).rgb;
-  outEmisive   = vec4(Emisive * 3,1);
-
-
-  vec3 currentPosNDC  =  (CurrentPosition.xyz / CurrentPosition.w) * 0.5 + 0.5;
-  vec3 previousPosNDC =  (PrevPosition.xyz / PrevPosition.w) * 0.5 + 0.5;
-
-  vec2 velocity = currentPosNDC.xy - previousPosNDC.xy;
-   outVelocity = vec4(velocity, 0.0, 1.0);
-
+    outVelocity = vec4(currUV - prevUV, 0.0, 1.0);
 }

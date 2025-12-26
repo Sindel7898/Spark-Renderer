@@ -22,10 +22,10 @@ struct BLASDATA {
 };
 
 struct VertexData {
-    alignas(16) glm::mat4 ViewMatrix;
-    alignas(16) glm::mat4 ProjectionMatrix;
-    alignas(16) glm::mat4 Prev_ViewMatrix;
-    alignas(16) glm::mat4 Prev_ProjectionMatrix;
+   glm::mat4 ViewMatrix;
+   glm::mat4 ProjectionMatrix;
+   glm::mat4 Prev_ViewMatrix;
+   glm::mat4 Prev_ProjectionMatrix;
 };
 
 struct GPU_InstanceData {
