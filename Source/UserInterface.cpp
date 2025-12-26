@@ -509,6 +509,13 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
                     ImGui::SliderFloat3("Probe Offset", glm::value_ptr(appref->dynamicDiffuse_RTGI->ProbeOffset), -30, 30, "%.2f");
                 }
 
+                if (ImGui::CollapsingHeader("ReSTIR DI", ImGuiTreeNodeFlags_DefaultOpen)){
+                    ImGui::Checkbox("Enable ReSTIR Temporal Reuse", (bool*)&appref->Restir_DI->bTemporalReuse);
+                    ImGui::Checkbox("Enable ReSTIR Spatial  Reuse", (bool*)&appref->Restir_DI->bSpatialReuse);
+                    ImGui::Checkbox("Enable ReSTIR DDGI"          , (bool*)&appref->Restir_DI->bDDGI);
+
+                    
+                }
                 ImGui::EndTabItem();
             }
 

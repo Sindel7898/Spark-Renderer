@@ -760,6 +760,7 @@ void ReSTIR_DI::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferDat
 	pushConstant.sampleGridInfo.generalAtlasInfo.ProbeSideLength = DDGIRef->ProbeSideLength;
 	pushConstant.sampleGridInfo.generalAtlasInfo.GutterSize = DDGIRef->GutterSize;
 	pushConstant.sampleGridInfo.generalAtlasInfo.RaysPerProbe = DDGIRef->RaysPerProbe;
+	pushConstant.Temporal_SpatialReuseFlags = glm::vec4(bTemporalReuse, bSpatialReuse,bDDGI,0);
 
 	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eRaygenKHR, 0, sizeof(PushConstant), &pushConstant);
 

@@ -14,6 +14,7 @@ struct PushConstant {
     glm::vec4 CameraPosition;
     glm::vec4 ScreenSize;
     SampleGridInfo sampleGridInfo;
+	glm::vec4 Temporal_SpatialReuseFlags;
 };
 
 class ReSTIR_DI
@@ -40,6 +41,9 @@ public:
     ImageData PrevResevoirImage;
     ImageData ReSTIRDI_Results;
 
+    bool bTemporalReuse = true;
+	bool bSpatialReuse = true;
+    bool bDDGI = true;
 
 private:
 
