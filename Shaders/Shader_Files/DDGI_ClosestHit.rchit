@@ -340,7 +340,6 @@ void main()
 
         Radiance +=  ((Lo) * light.CameraPositionAndLightIntensity.a);
      }
-     
 		Radiance += Emissive;
 
        int UseInfiniteBounce =  int(pc.UseInfiniteBounce_infinite_bounces_multiplier_LightCount.x);

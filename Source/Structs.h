@@ -49,6 +49,8 @@ struct VertexAndIndexOffsets {
 
     uint32_t VertexOffset;
     uint32_t IndexOffset;
+    uint32_t MaterialIndex;
+    uint32_t Padding;
 };
 
 struct PaddedModelVertex {

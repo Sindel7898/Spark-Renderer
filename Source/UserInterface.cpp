@@ -513,9 +513,13 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
                     ImGui::Checkbox("Enable ReSTIR Temporal Reuse", (bool*)&appref->Restir_DI->bTemporalReuse);
                     ImGui::Checkbox("Enable ReSTIR Spatial  Reuse", (bool*)&appref->Restir_DI->bSpatialReuse);
                     ImGui::Checkbox("Enable ReSTIR DDGI"          , (bool*)&appref->Restir_DI->bDDGI);
-
-                    
                 }
+
+                if (ImGui::CollapsingHeader("RT Reflections", ImGuiTreeNodeFlags_DefaultOpen)) {
+                    ImGui::Checkbox("Enable Raytraced Reflections", (bool*)&appref->RT_Reflection->bReflections);
+
+                }
+
                 ImGui::EndTabItem();
             }
 

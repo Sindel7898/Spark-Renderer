@@ -737,7 +737,13 @@ void RT_Reflections::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, Buff
 	int width  = swapchainextent.width;
 	int height = swapchainextent.height;
 	int depth  = 1;
-	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eRaygenKHR, 0, sizeof(int), &skyboxRef->SkyBoxIndex);
+
+	ReflectionsFlags reflectionsFlags;
+	reflectionsFlags.SkyBoxIndex = skyboxRef->SkyBoxIndex;
+	reflectionsFlags.EnableReflections = int(bReflections);
+
+
+	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eRaygenKHR, 0, sizeof(ReflectionsFlags), &reflectionsFlags);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, pipelinelayout, 0, 1, &RayTracingDescriptorSets[imageIndex],0,nullptr);
 	
 	vulkanContext->vkCmdTraceRaysKHR(

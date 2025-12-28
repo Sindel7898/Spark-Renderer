@@ -16,6 +16,9 @@ layout(binding  = 14 ) uniform sampler2D MaterialImage;
 
 layout(push_constant) uniform PushConstants {
     int SkyboxIndex;    
+    int EnableReflections;
+    int Padding;
+    int Padding2;
 } pc;
 
 struct Payload {
@@ -45,7 +48,7 @@ void main() {
 
    vec3 ReflectionColor;
 
-    if (hitMaterial.g < 0.3 && isGeometry ) {
+    if (hitMaterial.g < 0.3 && isGeometry && pc.EnableReflections != 0 ) {
 
         // offset the origin slightly along the normal to avoid self-intersection
         vec3 rayOrigin = hitPosition + hitNormal * 0.038;

@@ -72,6 +72,38 @@ userinterface(&vulkanContext, &window, &bufferManger), pipelineManager(&vulkanCo
 
 void App::LoadAllObjects()
 {
+	////////CORNEL SETUP////////////////////////////////////////
+	auto Bunny2 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto Dragon2 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto CornelBox = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+
+	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	Bunny2->Instances[0]->SetPostion(glm::vec3(-5.936, 3.043, -9.525));
+	Bunny2->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
+	Bunny2->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
+	Bunny2->Instances[0]->CubeMapReflectiveSwitch(false);
+	Bunny2->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+
+
+	Dragon2->Instances[0]->SetPostion(glm::vec3(6.087, 13.277, 3.776));
+	Dragon2->Instances[0]->SetRotation(glm::vec3(-179.987, -49.785, 179.967));
+	Dragon2->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
+	Dragon2->Instances[0]->CubeMapReflectiveSwitch(false);
+	Dragon2->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+
+	CornelBox->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
+	CornelBox->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
+	CornelBox->Instances[0]->CubeMapReflectiveSwitch(false);
+	CornelBox->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+
+	Bunny2->createDescriptorSets(DescriptorPool);
+	Dragon2->createDescriptorSets(DescriptorPool);
+	CornelBox->createDescriptorSets(DescriptorPool);
+
+	CornelSceneModels.push_back(std::move(Bunny2));
+	CornelSceneModels.push_back(std::move(Dragon2));
+	CornelSceneModels.push_back(std::move(CornelBox));
+
 
 	////Sponza SETUP
 	auto Bunny = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
@@ -103,37 +135,6 @@ void App::LoadAllObjects()
 	SponzaSceneModels.push_back(std::move(Sponza));
 
 
-	////////CORNEL SETUP////////////////////////////////////////
-	auto Bunny2 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	auto Dragon2 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	auto CornelBox = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-
-	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	Bunny2->Instances[0]->SetPostion(glm::vec3(-5.936, 3.043, -9.525));
-	Bunny2->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
-	Bunny2->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
-	Bunny2->Instances[0]->CubeMapReflectiveSwitch(false);
-	Bunny2->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-	
-	
-	Dragon2->Instances[0]->SetPostion(glm::vec3(6.087, 13.277, 3.776));
-	Dragon2->Instances[0]->SetRotation(glm::vec3(-179.987, -49.785, 179.967));
-	Dragon2->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
-	Dragon2->Instances[0]->CubeMapReflectiveSwitch(false);
-	Dragon2->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-	
-	CornelBox->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
-	CornelBox->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
-	CornelBox->Instances[0]->CubeMapReflectiveSwitch(false);
-	CornelBox->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-
-	Bunny2->createDescriptorSets(DescriptorPool);
-	Dragon2->createDescriptorSets(DescriptorPool);
-	CornelBox->createDescriptorSets(DescriptorPool);
-
-	CornelSceneModels.push_back(std::move(Bunny2));
-	CornelSceneModels.push_back(std::move(Dragon2));
-	CornelSceneModels.push_back(std::move(CornelBox));
 }
 
 void App::UpdateRayTracingDescriptors()
@@ -252,7 +253,7 @@ void App::SwitchScene(int index)
 			UserInterfaceItems.push_back(model.get());
 		}
 
-		int LightCount = 50;
+		int LightCount = 20;
 
 		lights.reserve(LightCount);
 
@@ -1638,7 +1639,7 @@ void App::CreateGraphicsPipeline()
 		};
 		vk::PushConstantRange range{};
 		range.setOffset(0);
-		range.setSize(sizeof(int));
+		range.setSize(sizeof(ReflectionsFlags));
 		range.setStageFlags(vk::ShaderStageFlagBits::eRaygenKHR);
 
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};

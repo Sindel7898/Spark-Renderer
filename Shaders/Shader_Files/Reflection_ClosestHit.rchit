@@ -16,8 +16,10 @@ struct Vertex {
 
 struct VertexAndIndexOffsets {
 
-    uint VertexOffset;
-    uint IndexOffset;
+    uint     VertexOffset;
+    uint     IndexOffset;
+    uint MaterialIndex; 
+    uint Padding;       
 };
 
 layout(set = 0, binding = 6) buffer IndexBufferSSBO {
@@ -161,6 +163,7 @@ void main()
     mat3 WorldSpaceTBN = mat3(WorldT, WorldB, WorldN);
 
     vec2 hitUV = attribs.hitUV;
+    uint matIndex = offsets.MaterialIndex;
 
     vec3  Albedo     = texture(Albedo_AssetImages          [nonuniformEXT(primitiveID)], TexCoord).rgb;
     float Metallic  = texture(MetalicRoughness_AssetImages[nonuniformEXT(primitiveID)], TexCoord).r;

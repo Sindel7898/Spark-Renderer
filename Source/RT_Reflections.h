@@ -17,6 +17,13 @@ struct Reflection_RayGen_UniformBufferData {
     glm::mat4 ProjectionMatrix;
 };
 
+struct ReflectionsFlags {
+    int    SkyBoxIndex = 1;
+    int    EnableReflections = 2;
+    int    Padding = 1.0f;
+    int    Padding2;
+};
+
 class RT_Reflections
 {
 public:
@@ -56,6 +63,8 @@ public:
 
     vk::Extent3D swapchainextent;
     vk::Extent3D Blurextent;
+
+	bool bReflections = false;
 
 private:
 

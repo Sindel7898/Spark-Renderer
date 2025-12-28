@@ -198,6 +198,7 @@ void Model::CreateBLAS()
 				VertexAndIndexOffsets ModelOffset;
 				ModelOffset.VertexOffset = m_baseVertexOffset;
 				ModelOffset.IndexOffset = m_baseIndexOffset + primitive.indicesStart;
+				ModelOffset.MaterialIndex = primitive.materialIndex;
 
 				bufferManager->AllScene_VertexAndIndexOffsets.push_back(ModelOffset);
 
