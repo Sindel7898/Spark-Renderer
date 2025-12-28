@@ -312,6 +312,7 @@ void main()
        vec3  radiance  = vec3(0.0);
        vec4  WorldPos  =  Transformations.WorldMatrix[objectID] * vec4(VertexPosition,1);
        HitPosition = WorldPos.xyz;
+
        for (int i = 0; i < pc.UseInfiniteBounce_infinite_bounces_multiplier_LightCount.w; i++) {
      
            LightData light = lights[i];

@@ -48,7 +48,7 @@ userinterface(&vulkanContext, &window, &bufferManger), pipelineManager(&vulkanCo
 
 	bufferManger.CreateSharedBuffers(commandPool);
 
-	SwitchScene(1);
+	SwitchScene(0);
 
 	RT_Reflection = std::unique_ptr<RT_Reflections, decltype(&RT_ReflectionsDeleter)>(new RT_Reflections(&vulkanContext, commandPool, &camera, &bufferManger, skyBox.get()), RT_ReflectionsDeleter);
 	Raytracing_Shadows = std::unique_ptr<RT_Shadows, decltype(&RT_ShadowsDeleter)>(new RT_Shadows(&vulkanContext, commandPool, &camera, &bufferManger), RT_ShadowsDeleter);
@@ -253,7 +253,7 @@ void App::SwitchScene(int index)
 			UserInterfaceItems.push_back(model.get());
 		}
 
-		int LightCount = 20;
+		int LightCount = 90;
 
 		lights.reserve(LightCount);
 
