@@ -72,37 +72,6 @@ userinterface(&vulkanContext, &window, &bufferManger), pipelineManager(&vulkanCo
 
 void App::LoadAllObjects()
 {
-	////////CORNEL SETUP////////////////////////////////////////
-	auto Bunny2 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	auto Dragon2 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	auto CornelBox = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-
-	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	Bunny2->Instances[0]->SetPostion(glm::vec3(-5.936, 3.043, -9.525));
-	Bunny2->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
-	Bunny2->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
-	Bunny2->Instances[0]->CubeMapReflectiveSwitch(false);
-	Bunny2->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-
-
-	Dragon2->Instances[0]->SetPostion(glm::vec3(6.087, 13.277, 3.776));
-	Dragon2->Instances[0]->SetRotation(glm::vec3(-179.987, -49.785, 179.967));
-	Dragon2->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
-	Dragon2->Instances[0]->CubeMapReflectiveSwitch(false);
-	Dragon2->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-
-	CornelBox->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
-	CornelBox->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
-	CornelBox->Instances[0]->CubeMapReflectiveSwitch(false);
-	CornelBox->Instances[0]->ScreenSpaceReflectiveSwitch(false);
-
-	Bunny2->createDescriptorSets(DescriptorPool);
-	Dragon2->createDescriptorSets(DescriptorPool);
-	CornelBox->createDescriptorSets(DescriptorPool);
-
-	CornelSceneModels.push_back(std::move(Bunny2));
-	CornelSceneModels.push_back(std::move(Dragon2));
-	CornelSceneModels.push_back(std::move(CornelBox));
 
 
 	////Sponza SETUP
@@ -135,6 +104,37 @@ void App::LoadAllObjects()
 	SponzaSceneModels.push_back(std::move(Sponza));
 
 
+	////////CORNEL SETUP////////////////////////////////////////
+	auto Bunny2 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto Dragon2 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto CornelBox = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+
+	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	Bunny2->Instances[0]->SetPostion(glm::vec3(-5.936, 3.043, -9.525));
+	Bunny2->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
+	Bunny2->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
+	Bunny2->Instances[0]->CubeMapReflectiveSwitch(false);
+	Bunny2->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+
+
+	Dragon2->Instances[0]->SetPostion(glm::vec3(6.087, 13.277, 3.776));
+	Dragon2->Instances[0]->SetRotation(glm::vec3(-179.987, -49.785, 179.967));
+	Dragon2->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
+	Dragon2->Instances[0]->CubeMapReflectiveSwitch(false);
+	Dragon2->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+
+	CornelBox->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
+	CornelBox->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
+	CornelBox->Instances[0]->CubeMapReflectiveSwitch(false);
+	CornelBox->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+
+	Bunny2->createDescriptorSets(DescriptorPool);
+	Dragon2->createDescriptorSets(DescriptorPool);
+	CornelBox->createDescriptorSets(DescriptorPool);
+
+	CornelSceneModels.push_back(std::move(Bunny2));
+	CornelSceneModels.push_back(std::move(Dragon2));
+	CornelSceneModels.push_back(std::move(CornelBox));
 }
 
 void App::UpdateRayTracingDescriptors()
@@ -529,13 +529,9 @@ void App::UpdateTLAS()
 
 void App::UpdateTLASInstanceBuffer()
 {
-
-	std::vector< vk::AccelerationStructureInstanceKHR> Instances; // array of instances
-	uint32_t ParentObject = 0;
+	std::vector<vk::AccelerationStructureInstanceKHR> Instances;
 	uint32_t ObjectID = 0;
-	uint32_t TempID = 0;
 
-	// pupulate instance data into the array 
 	for (int i = 0; i < Models.size(); i++)
 	{
 		glm::mat4 modelInstanceTransform = Models[i]->Instances[0]->GetTransformationMatrix();
@@ -547,19 +543,18 @@ void App::UpdateTLASInstanceBuffer()
 
 			VkAccelerationStructureDeviceAddressInfoKHR Temp = blasinfo;
 
-			// glm::mat4 localNodeTransform = Models[i]->BLAS_Datas[j].ModelMatrix;
-
 			glm::mat4 finalMatrix = modelInstanceTransform;
 
 			VkTransformMatrixKHR transformMatrix = {
-				   finalMatrix[0][0], finalMatrix[1][0], finalMatrix[2][0], finalMatrix[3][0], // Row 0
-				   finalMatrix[0][1], finalMatrix[1][1], finalMatrix[2][1], finalMatrix[3][1], // Row 1
-				   finalMatrix[0][2], finalMatrix[1][2], finalMatrix[2][2], finalMatrix[3][2], // Row 2
+				finalMatrix[0][0], finalMatrix[1][0], finalMatrix[2][0], finalMatrix[3][0],
+				finalMatrix[0][1], finalMatrix[1][1], finalMatrix[2][1], finalMatrix[3][1],
+				finalMatrix[0][2], finalMatrix[1][2], finalMatrix[2][2], finalMatrix[3][2],
 			};
 
-			ParentObject = TempID++;
 
-			uint32_t packedID = (ObjectID << 12) | (ParentObject & 0xFFF); //I have no idea how this works but it packs stuff together... Come back to this
+			uint32_t globalPrimIndex = Models[i]->BLAS_Datas[j].GlobalPrimitiveIndex;
+
+			uint32_t packedID = (ObjectID << 12) | (globalPrimIndex & 0xFFF);
 
 			vk::AccelerationStructureInstanceKHR instance{};
 			instance.transform = transformMatrix;
@@ -573,7 +568,6 @@ void App::UpdateTLASInstanceBuffer()
 		}
 		ObjectID++;
 	}
-	// send all instance data into the buffer
 	bufferManger.CopyDataToBuffer(Instances.data(), TLAS_InstanceData);
 }
 

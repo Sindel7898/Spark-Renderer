@@ -19,6 +19,7 @@ struct BLASDATA {
     BufferData BLAS_Buffer;
     BufferData BLAS_ScratchBuffer;
     glm::mat4 ModelMatrix = glm::mat4(0);
+    uint32_t GlobalPrimitiveIndex = 0;
 };
 
 struct VertexData {
@@ -196,6 +197,7 @@ public:
 
     uint32_t m_baseVertexOffset = 0;
     uint32_t m_baseIndexOffset = 0;
+    uint32_t GlobalTextureOffset = 0;
 
 private:
 

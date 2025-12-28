@@ -65,7 +65,6 @@ public:
     vk::Extent3D Blurextent;
 
 	bool bReflections = false;
-
 private:
 
     VulkanContext*   vulkanContext = nullptr;

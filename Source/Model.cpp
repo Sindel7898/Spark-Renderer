@@ -16,10 +16,8 @@ Model::Model(const std::string filepath, VulkanContext* vulkancontext, vk::Comma
 
 	CreateVertexAndIndexBuffer();
 
-	CreateBLAS();
-
 	LoadTextures();
-
+	CreateBLAS();
 	CreateUniformBuffer();
 
 	createDescriptorSetLayout();
@@ -28,6 +26,7 @@ Model::Model(const std::string filepath, VulkanContext* vulkancontext, vk::Comma
 
 void Model::LoadTextures()
 {
+	GlobalTextureOffset = static_cast<uint32_t>(bufferManager->AllScene_Albedo_Images.size());
 
 	std::vector<StoredImageData> ModelTextures = AssetManager::GetInstance().GetStoredImageData(FilePath);
 
@@ -198,8 +197,8 @@ void Model::CreateBLAS()
 				VertexAndIndexOffsets ModelOffset;
 				ModelOffset.VertexOffset = m_baseVertexOffset;
 				ModelOffset.IndexOffset = m_baseIndexOffset + primitive.indicesStart;
-				ModelOffset.MaterialIndex = primitive.materialIndex;
-
+				ModelOffset.MaterialIndex = primitive.materialIndex + GlobalTextureOffset;
+				BLAS_Data.GlobalPrimitiveIndex = static_cast<uint32_t>(bufferManager->AllScene_VertexAndIndexOffsets.size());
 				bufferManager->AllScene_VertexAndIndexOffsets.push_back(ModelOffset);
 
 				//Geometry Data

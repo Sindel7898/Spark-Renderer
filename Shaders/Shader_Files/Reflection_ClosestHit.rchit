@@ -18,8 +18,8 @@ struct VertexAndIndexOffsets {
 
     uint     VertexOffset;
     uint     IndexOffset;
-    uint MaterialIndex; 
-    uint Padding;       
+    uint     MaterialIndex; 
+    uint     Padding;       
 };
 
 layout(set = 0, binding = 6) buffer IndexBufferSSBO {
@@ -166,10 +166,10 @@ void main()
     uint matIndex = offsets.MaterialIndex;
 
     vec3  Albedo     = texture(Albedo_AssetImages          [nonuniformEXT(primitiveID)], TexCoord).rgb;
-    float Metallic  = texture(MetalicRoughness_AssetImages[nonuniformEXT(primitiveID)], TexCoord).r;
-    float Roughness = texture(MetalicRoughness_AssetImages[nonuniformEXT(primitiveID)], TexCoord).g;
+    float Metallic  = texture(MetalicRoughness_AssetImages[nonuniformEXT (primitiveID)], TexCoord).r;
+    float Roughness = texture(MetalicRoughness_AssetImages[nonuniformEXT (primitiveID)], TexCoord).g;
 
-    vec3 NormalTexture = texture(Normal_AssetImages[nonuniformEXT(primitiveID)], TexCoord).rgb * 2.0 - vec3(1.0);
+    vec3 NormalTexture = texture(Normal_AssetImages[nonuniformEXT(offsets.MaterialIndex)], TexCoord).rgb * 2.0 - vec3(1.0);
     vec3 tnorm = normalize(WorldSpaceTBN * NormalTexture);
 
     Normal = tnorm;
