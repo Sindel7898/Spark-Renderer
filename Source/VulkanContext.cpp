@@ -47,6 +47,7 @@ void VulkanContext::SelectGPU_CreateDevice()
 		VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
 		VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
 		VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+		VK_KHR_RAY_QUERY_EXTENSION_NAME,
 	};
 
 	vkb::PhysicalDeviceSelector selector{ VKB_Instance };
@@ -66,10 +67,13 @@ void VulkanContext::SelectGPU_CreateDevice()
 
 	vkb::PhysicalDevice physicalDevice = physicalDeviceResult.value();
 
+	VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures{};
+	rayQueryFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
+	rayQueryFeatures.rayQuery = VK_TRUE;
 
 	vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelerationFeatures{};
 	accelerationFeatures.accelerationStructure = vk::True;
-	accelerationFeatures.pNext = nullptr;
+	accelerationFeatures.pNext = &rayQueryFeatures;
 
 	vk::PhysicalDeviceRayTracingPipelineFeaturesKHR   rtPipeLineFeatures{};
 	rtPipeLineFeatures.rayTracingPipeline = vk::True;
