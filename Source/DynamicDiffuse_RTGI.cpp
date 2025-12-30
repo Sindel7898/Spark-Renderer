@@ -388,7 +388,7 @@ void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
 	TLASLayout.binding = 0;
 	TLASLayout.descriptorCount = 1;
 	TLASLayout.descriptorType = vk::DescriptorType::eAccelerationStructureKHR;
-	TLASLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+	TLASLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR;
 
 	vk::DescriptorSetLayoutBinding AlbedoAssetTexturesSamplerLayout{};
 	AlbedoAssetTexturesSamplerLayout.binding = 1;

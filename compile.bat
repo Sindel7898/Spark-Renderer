@@ -27,6 +27,8 @@ glslc.exe Shaders\Shader_Files\Reflection_Miss.rmiss                -o  Shaders/
 glslc.exe Shaders\Shader_Files\DDGI_Raygen.rgen                     -o  Shaders/Compiled_Shader_Files\DDGI_Raygen.rgen.spv                 --target-env=vulkan1.4
 glslc.exe Shaders\Shader_Files\DDGI_ClosestHit.rchit                -o  Shaders/Compiled_Shader_Files\DDGI_ClosestHit.rchit.spv            --target-env=vulkan1.4
 glslc.exe Shaders\Shader_Files\DDGI_Miss.rmiss                      -o  Shaders/Compiled_Shader_Files\DDGI_Miss.rmiss.spv                  --target-env=vulkan1.4
+glslc.exe Shaders\Shader_Files\DDGI_Shadow_Miss.rmiss               -o  Shaders/Compiled_Shader_Files\DDGI_Shadow_Miss.rmiss.spv           --target-env=vulkan1.4
+
 glslc.exe Shaders\Shader_Files\Grid.comp                            -o  Shaders/Compiled_Shader_Files\Grid.comp.spv                        --target-env=vulkan1.4
 glslc.exe Shaders\Shader_Files\Irradiance_Visibility.comp           -o  Shaders/Compiled_Shader_Files\Irradiance_Visibility.comp.spv       --target-env=vulkan1.4
 glslc.exe Shaders\Shader_Files\Sample_GI_Probes.comp                -o  Shaders/Compiled_Shader_Files\Sample_GI_Probes.comp.spv            --target-env=vulkan1.4
