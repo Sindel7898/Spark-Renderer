@@ -253,7 +253,7 @@ void App::SwitchScene(int index)
 			UserInterfaceItems.push_back(model.get());
 		}
 
-		int LightCount = 2;
+		int LightCount = 90;
 
 		lights.reserve(LightCount);
 
@@ -291,8 +291,8 @@ void App::SwitchScene(int index)
 			dynamicDiffuse_RTGI->NumOfProbesY = 7;
 			dynamicDiffuse_RTGI->NumOfProbesZ = 10;
 			dynamicDiffuse_RTGI->RaysPerProbe = 128;
-			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(25.33, 17.90, 9.74);
-			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-100, 0.33, -46);
+			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(25.33, 17.90, 15.19);
+			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-100, 0.33, -53.79);
 		}
 
 		camera.SetPosition(glm::vec3{ 32.9095, 15.871, -0.912267 });
@@ -1753,6 +1753,8 @@ void App::CreateGraphicsPipeline()
 		vulkanContext.LogicalDevice.destroyShaderModule(RayGen_ShaderModule);
 		vulkanContext.LogicalDevice.destroyShaderModule(RayClosestHit_ShaderModule);
 		vulkanContext.LogicalDevice.destroyShaderModule(RayMiss_ShaderModule);
+		vulkanContext.LogicalDevice.destroyShaderModule(ShadowMiss_ShaderModule);
+
 
 	}
 

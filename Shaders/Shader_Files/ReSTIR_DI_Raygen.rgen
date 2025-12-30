@@ -566,7 +566,7 @@ void main() {
             if (p_hat_final > 0.0) {
                 spatialReservoir.Light_Weight = (1.0 / p_hat_final) * (spatialReservoir.Sum_Of_All_Weights / spatialReservoir.Num_OF_Lights_In_Resevoir);
                 
-                FinalRadiance = IndirectRadiance ;
+                FinalRadiance = IndirectRadiance * spatialReservoir.Light_Weight;
             } else {
                 spatialReservoir.Light_Weight = 0.0;
                 FinalRadiance = vec3(0.0);
