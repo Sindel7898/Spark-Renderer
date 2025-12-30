@@ -172,8 +172,7 @@ void main()
                irradiance /=  total_weight;
           
                vec3 previous_value = imageLoad( Prev_Iradiance, ivec2(gl_GlobalInvocationID.xy)).rgb;
-               vec3 result         = mix(previous_value, irradiance,  0.95f);
-          
+               vec3 result         = mix(irradiance, previous_value,  0.95f);
                imageStore(Iradiance , ivec2(gl_GlobalInvocationID.xy), vec4(result,1));
           }
           
@@ -186,7 +185,7 @@ void main()
                  vec2 Vsibility = vec2(mean,mean_sq);
           
                  vec2 previous_value = imageLoad(Prev_Visibility, ivec2(gl_GlobalInvocationID.xy)).rg;
-                 vec2 result         = mix( previous_value, Vsibility, 0.95f);
+                 vec2 result         = mix( Vsibility, previous_value, 0.95f);
           
                 imageStore(Visibility, ivec2(gl_GlobalInvocationID.xy), vec4(result,RAW_RAYDISTANCE, 1.0));
             }

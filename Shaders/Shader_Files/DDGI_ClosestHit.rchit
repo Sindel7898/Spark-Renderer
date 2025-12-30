@@ -312,7 +312,6 @@ void main()
         
         Radiance += Emissive;
 
-        // --- Infinite Bounce (DDGI) ---
         int UseInfiniteBounce = int(pc.UseInfiniteBounce_infinite_bounces_multiplier_LightCount.x);
         
         if(UseInfiniteBounce > 0.5) {

@@ -77,7 +77,7 @@ vec3 SampleIrradiance( vec3 Position, vec3 Normal)
     vec3 GridIndexF = ((SamplePosition ) - GridBaseLocation) / ProbeSpacing;
     vec3 Alpha = fract(GridIndexF);
 
-    ivec3 GridIndex = ivec3(GridIndexF);
+    ivec3 GridIndex = ivec3(floor(GridIndexF));
 
      ivec3 Offsets[8] = {
          ivec3(0,0,0), ivec3(1,0,0),

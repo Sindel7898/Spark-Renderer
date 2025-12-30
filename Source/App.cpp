@@ -253,7 +253,7 @@ void App::SwitchScene(int index)
 			UserInterfaceItems.push_back(model.get());
 		}
 
-		int LightCount = 90;
+		int LightCount = 2;
 
 		lights.reserve(LightCount);
 
