@@ -34,9 +34,8 @@ bool TraceShadow(vec3 origin, vec3 direction, float MaxDistance) {
     PayloadResults.Shadowed = true; // Start with not shadowed
 
     const uint rayFlags = gl_RayFlagsOpaqueEXT | 
-                         gl_RayFlagsTerminateOnFirstHitEXT | 
-                         gl_RayFlagsSkipClosestHitShaderEXT | 
-                         gl_RayFlagsCullBackFacingTrianglesEXT;
+                          gl_RayFlagsTerminateOnFirstHitEXT | 
+                          gl_RayFlagsSkipClosestHitShaderEXT;
 
     const uint cullMask = 0xFF;
     const float tMin = 0.1;
@@ -59,10 +58,10 @@ bool TraceShadow(vec3 origin, vec3 direction, float MaxDistance) {
     return PayloadResults.Shadowed;
 }
 
-vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal)
+vec3 offsetPositionAlongNormal(vec3 hitPosition, vec3 normal)
 {
 
-    return ViewPosition + 0.06 * normal;
+    return hitPosition + (normal * 0.01) ;
 
 }
 

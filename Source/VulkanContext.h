@@ -28,7 +28,7 @@ public:
 	void destroy_swapchain();
 
 #ifdef NDEBUG
-	const bool enableValidationLayers = true;
+	const bool enableValidationLayers = false;
 #else
 	const bool enableValidationLayers = true;
 #endif

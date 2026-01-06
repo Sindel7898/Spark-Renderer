@@ -295,6 +295,7 @@ private:
 	vk::DebugUtilsLabelEXT DDGI_Calculate_Irradiance_Label;
 	vk::DebugUtilsLabelEXT DDGI_Update_Probe_Status_Label;
 	vk::DebugUtilsLabelEXT DDGI_Sample_From_PorbeLabel;
+	vk::DebugUtilsLabelEXT ReSTIR_Label;
 
 
 	///Tracy

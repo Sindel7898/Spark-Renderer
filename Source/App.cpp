@@ -334,6 +334,7 @@ void App::CreateDebugUtils()
 	DDGI_Calculate_Irradiance_Label.pLabelName   = "DDGI_Calculate_Irradiance_Label";
 	DDGI_Sample_From_PorbeLabel.pLabelName       = "DDGI_Sample_From_PorbeLabel";
 	DDGI_Update_Probe_Status_Label.pLabelName    = "DDGI_Update_Probe_Status_Label";
+	ReSTIR_Label.pLabelName    = "ReSTIR_Label";
 
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -2920,7 +2921,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	}
 
-
+	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, ReSTIR_Label);
 	{
 		if (DefferedDecider == 8) { /// if we are looking at ReSTIR stop tracing
 
@@ -2970,6 +2971,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 				currentFrame);
 		}
 	}
+	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 
 	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, RTShadows_Label);
