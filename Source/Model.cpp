@@ -593,6 +593,13 @@ void Model::UpdateUniformBuffer(uint32_t currentImage)
 }
 
 void Model::UpdateHistory() {
+
+	for (auto& instance : Instances) {
+		if (instance) {
+			instance->UpdateHistory();
+		}
+	}
+
 	UpdateNodeHistory(storedModelData->nodes);
 }
 

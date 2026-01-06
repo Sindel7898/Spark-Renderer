@@ -44,7 +44,7 @@ void main()
     outCurrClipPos = clipPos;
 
 
-    vec4 prevWorldPos = pc.model * vec4(inPosition, 1.0);
+    vec4 prevWorldPos = pc.prevModel * vec4(inPosition, 1.0);
     vec4 prevViewPos  = vuob.prev_view * prevWorldPos;
     vec4 prevClipPos  = vuob.prev_proj * prevViewPos;
 

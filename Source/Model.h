@@ -58,6 +58,7 @@ struct InstanceData {
         }
         
         UpdateTrasnformationMatrix();
+        PreviousTransformationMatrix = TransformationMatrix;
         UpdateGPU_ReflectionFlags();
     }
 
@@ -83,6 +84,10 @@ struct InstanceData {
         gpu_InstanceData->bCubeMapReflection_bScreenSpaceReflectionWithPadding = glm::vec4(bCubeMapReflection, bScreenSpaceReflection, 0, 0);
      }
  
+    void UpdateHistory()
+    {
+        PreviousTransformationMatrix = TransformationMatrix;
+    }
     void SetPostion(glm::vec3 NewPosition)
     {
         Position = NewPosition;
@@ -114,7 +119,6 @@ struct InstanceData {
 
     void UpdateTrasnformationMatrix()
     {
-        PreviousTransformationMatrix = TransformationMatrix;
         TransformationMatrix = glm::mat4(1.0f);
         TransformationMatrix = glm::translate(TransformationMatrix, Position);
         TransformationMatrix = glm::rotate(TransformationMatrix, glm::radians(Rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -146,9 +150,9 @@ struct InstanceData {
 
     private:
 
-    glm::vec3 Position  = glm::vec3(1);
-    glm::vec3 Scale     = glm::vec3(1);
-    glm::vec3 Rotation  = glm::vec3(1);
+    glm::vec3 Position = glm::vec3(1);
+    glm::vec3 Scale = glm::vec3(1);
+    glm::vec3 Rotation = glm::vec3(1);
     glm::mat4 TransformationMatrix = glm::mat4(1);
     glm::mat4 PreviousTransformationMatrix = glm::mat4(1);
     glm::mat4 ModelMatrix = glm::mat4(1);

@@ -2245,20 +2245,20 @@ void App::Run()
 
 	while (!window.shouldClose())
 	{
+		for (auto& model : Models) {
+			model->UpdateHistory();
+		}
+
+		// 2. INPUT & LOGIC
 		glfwPollEvents();
 		CalculateFps(fpsCounter);
 
 		camera.OnFrameStart();
-
-		camera.Update(deltaTime);
+		camera.Update(deltaTime); 
 
 		userinterface.DrawUi(this, skyBox.get());
 
 		Draw();
-
-		for (auto& model : Models) {
-			model->UpdateHistory();
-		}
 	}
 
 	vulkanContext.LogicalDevice.waitIdle();
