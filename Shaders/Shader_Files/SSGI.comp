@@ -14,8 +14,8 @@ layout (binding = 6) uniform SSGIUniformBuffer {
 } ubo;
 
 
-const int MIN_ITERATION = 5;
-const int MAX_ITERATION = 10;
+const int MIN_ITERATION = 0;
+const int MAX_ITERATION = 20;
 const int MAX_RAYS = 2;
 const int MIN_RAYS = 1;
 
