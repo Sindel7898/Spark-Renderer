@@ -57,18 +57,10 @@ void main()
     outEmissive            = vec4(textureLod(samplerEmisive, inTexCoord, 0).rgb * 3.0, 1.0);
 
     // =======================
-    // Motion vectors (ReSTIR-safe)
+    // Motion vectors
     // =======================
-    vec3 currNDC = inCurrClipPos.xyz / inCurrClipPos.w;
-    vec3 prevNDC = inPrevClipPos.xyz / inPrevClipPos.w;
-    
-    if (inCurrClipPos.w <= 0.0 || currNDC.z >= 1.0) {
-        outVelocity = vec4(0.0);
-        return;
-    }
-    // 3. Convert to UV [0, 1]
-    vec2 currUV = currNDC.xy * 0.5 + 0.5;
-    vec2 prevUV = prevNDC.xy * 0.5 + 0.5;
+    vec3 NDCPos = (inCurrClipPos.xyz / inCurrClipPos.w).xyz;
+    vec3 PrevNDCPos  = (inPrevClipPos.xyz / inPrevClipPos.w).xyz;
 
-    outVelocity = vec4(currUV - prevUV, 0.0, 1.0);
+    outVelocity = vec4((NDCPos - PrevNDCPos).xyz, 1.0);
 }

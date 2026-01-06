@@ -2245,14 +2245,16 @@ void App::Run()
 
 	while (!window.shouldClose())
 	{
-		//FrameMarkNamed("main"); 
 		glfwPollEvents();
 		CalculateFps(fpsCounter);
+
+		camera.OnFrameStart();
+
 		camera.Update(deltaTime);
 
-		userinterface.DrawUi(this,skyBox.get());
-		Draw();		
+		userinterface.DrawUi(this, skyBox.get());
 
+		Draw();
 	}
 
 	vulkanContext.LogicalDevice.waitIdle();

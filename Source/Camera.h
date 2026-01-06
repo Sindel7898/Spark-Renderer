@@ -36,6 +36,7 @@ public:
     void SetFOV(float fov);
     void SetPosition(const glm::vec3& newPosition);
     void SetRotation(float newYaw, float newPitch);
+    void OnFrameStart();
     glm::vec3 position;
     float pitch;
     float yaw;
