@@ -135,6 +135,6 @@ void main()
        payload.Emissive =  Emissive;
        payload.Position =  WorldPos.xyz;
        payload.Normal   =  Normal;
-       payload.Albedo   = Albedo;
+       payload.Albedo   =  Albedo;
 
  }

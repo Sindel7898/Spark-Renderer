@@ -458,8 +458,15 @@ vec3 IndirectRadiance = vec3(0.0);
         
         traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsCullBackFacingTrianglesEXT, 0xFF, 0, 0, 0, rayOrigin, 0.1, DiffuseDirection, 1000.0, 0);
 
-        vec3 SecondaryIrradiance = SampleIrradiance(payload.Position.xyz, payload.Normal.xyz);
-        IndirectRadiance = (SecondaryIrradiance * payload.Albedo / PI) * surfaceData.albedo;
+        vec3 HitIrradiance       = SampleIrradiance(payload.Position.xyz, payload.Normal.xyz);
+    
+        vec3 ResultingIrradiance = HitIrradiance * (payload.Albedo / PI);
+
+        vec3 HitEmissive         = payload.Emissive;
+        
+        vec3 TotalIncomingLight  = HitEmissive + HitReflected;
+       
+        IndirectRadiance         = TotalIncomingLight * surfaceData.albedo;
 
         float GI_p_hat = length(IndirectRadiance);
         float WeightOfGI = GI_p_hat  * float(TotalNumOfLights);
