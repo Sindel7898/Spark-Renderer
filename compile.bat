@@ -1,3 +1,5 @@
+glslc.exe Shaders\Shader_Files\SSGI.comp                            -o  Shaders/Compiled_Shader_Files\SSGI.comp.spv                        --target-env=vulkan1.4
+
 glslc.exe Shaders\Shader_Files\SkyBox_Shader.vert                   -o  Shaders\Compiled_Shader_Files\SkyBox_Shader.vert.spv
 glslc.exe Shaders\Shader_Files\Light_Shader.vert                    -o  Shaders\Compiled_Shader_Files\Light_Shader.vert.spv
 glslc.exe Shaders\Shader_Files\GeometryPass.vert                    -o  Shaders\Compiled_Shader_Files\GeometryPass.vert.spv
@@ -36,9 +38,7 @@ glslc.exe Shaders\Shader_Files\ProbeStatus.comp                     -o  Shaders/
 glslc.exe Shaders\Shader_Files\Reservoir_ReSTIR_DI.comp             -o  Shaders/Compiled_Shader_Files\Reservoir_ReSTIR_DI.comp.spv         --target-env=vulkan1.4
 glslc.exe Shaders\Shader_Files\ReSTIR_DI_Raygen.rgen                -o  Shaders/Compiled_Shader_Files\ReSTIR_DI_Raygen.rgen.spv            --target-env=vulkan1.4
 glslc.exe Shaders\Shader_Files\ReSTIRDI_Miss.rmiss                  -o  Shaders/Compiled_Shader_Files\ReSTIRDI_Miss.rmiss.spv              --target-env=vulkan1.4
-glslc.exe Shaders\Shader_Files\ReSTIR_DI_ClosestHit.rchit           -o  Shaders/Compiled_Shader_Files\ReSTIR_DI_ClosestHit.rchit.spv            --target-env=vulkan1.4
-
-
+glslc.exe Shaders\Shader_Files\ReSTIR_DI_ClosestHit.rchit           -o  Shaders/Compiled_Shader_Files\ReSTIR_DI_ClosestHit.rchit.spv       --target-env=vulkan1.4
 
 pause
 

@@ -196,52 +196,57 @@ void SSGI::createDescriptorSetLayout(){
 	NormalsSamplerLayout.binding = 0;
 	NormalsSamplerLayout.descriptorCount = 1;
 	NormalsSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	NormalsSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+	NormalsSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eCompute;
 
 
 	vk::DescriptorSetLayoutBinding ViewSpacePositionsSamplerLayout{};
 	ViewSpacePositionsSamplerLayout.binding = 1;
 	ViewSpacePositionsSamplerLayout.descriptorCount = 1;
 	ViewSpacePositionsSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	ViewSpacePositionsSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+	ViewSpacePositionsSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eCompute;
 
 
 	vk::DescriptorSetLayoutBinding DepthTextureSamplerLayout{};
 	DepthTextureSamplerLayout.binding = 2;
 	DepthTextureSamplerLayout.descriptorCount = 1;
 	DepthTextureSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	DepthTextureSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+	DepthTextureSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eCompute;
 
 
 	vk::DescriptorSetLayoutBinding AlbedoPassSamplerLayout{};
 	AlbedoPassSamplerLayout.binding = 3;
 	AlbedoPassSamplerLayout.descriptorCount = 1;
 	AlbedoPassSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	AlbedoPassSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+	AlbedoPassSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eCompute;
 
 
 	vk::DescriptorSetLayoutBinding LightingPassSamplerLayout{};
 	LightingPassSamplerLayout.binding = 4;
 	LightingPassSamplerLayout.descriptorCount = 1;
 	LightingPassSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	LightingPassSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+	LightingPassSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eCompute;
 
 	vk::DescriptorSetLayoutBinding BlueNoiseSamplerLayout{};
 	BlueNoiseSamplerLayout.binding = 5;
 	BlueNoiseSamplerLayout.descriptorCount = BlueNoiseTextures.size();
 	BlueNoiseSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-	BlueNoiseSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+	BlueNoiseSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eCompute;
 
 	vk::DescriptorSetLayoutBinding  SSGIUniformBufferLayout{};
 	SSGIUniformBufferLayout.binding = 6;
 	SSGIUniformBufferLayout.descriptorCount = 1;
 	SSGIUniformBufferLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
-	SSGIUniformBufferLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+	SSGIUniformBufferLayout.stageFlags = vk::ShaderStageFlagBits::eCompute;
 
+	vk::DescriptorSetLayoutBinding SSGIImageLayout{};
+	SSGIImageLayout.binding = 7;
+	SSGIImageLayout.descriptorCount = 1;
+	SSGIImageLayout.descriptorType = vk::DescriptorType::eStorageImage;
+	SSGIImageLayout.stageFlags = vk::ShaderStageFlagBits::eCompute;
 
-	std::array<vk::DescriptorSetLayoutBinding, 7> bindings = { NormalsSamplerLayout,ViewSpacePositionsSamplerLayout,
+	std::array<vk::DescriptorSetLayoutBinding, 8> bindings = { NormalsSamplerLayout,ViewSpacePositionsSamplerLayout,
 												                DepthTextureSamplerLayout, AlbedoPassSamplerLayout, LightingPassSamplerLayout,
-		                                                        BlueNoiseSamplerLayout,  SSGIUniformBufferLayout };
+		                                                        BlueNoiseSamplerLayout,  SSGIUniformBufferLayout,SSGIImageLayout };
 
 	vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -438,9 +443,22 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 			fragmentUniformdescriptorWrite.pBufferInfo = &fragmentuniformbufferInfo;
 
 
-			std::array<vk::WriteDescriptorSet, 7> descriptorWrites{ NormalSamplerdescriptorWrite,ViewSpacePositionSamplerdescriptorWrite,DepthimageSamplerdescriptorWrite,
+			vk::DescriptorImageInfo SSGIStorgeimageInfo{};
+			SSGIStorgeimageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			SSGIStorgeimageInfo.imageView = SSGIPassImage.imageView;
+			SSGIStorgeimageInfo.sampler = SSGIPassImage.imageSampler;
+
+			vk::WriteDescriptorSet SSGIStorgedescriptorWrite{};
+			SSGIStorgedescriptorWrite.dstSet = DescriptorSets[i];
+			SSGIStorgedescriptorWrite.dstBinding = 7;
+			SSGIStorgedescriptorWrite.dstArrayElement = 0;
+			SSGIStorgedescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
+			SSGIStorgedescriptorWrite.descriptorCount = 1;
+			SSGIStorgedescriptorWrite.pImageInfo = &SSGIStorgeimageInfo;
+
+			std::array<vk::WriteDescriptorSet, 8> descriptorWrites{ NormalSamplerdescriptorWrite,ViewSpacePositionSamplerdescriptorWrite,DepthimageSamplerdescriptorWrite,
 																	AlbedoPassSamplerdescriptorWrite,LightingPassSamplerdescriptorWrite,BlueNoiseSamplerdescriptorWrite,
-																	fragmentUniformdescriptorWrite };
+																	fragmentUniformdescriptorWrite,SSGIStorgedescriptorWrite };
 
 			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 		}
@@ -934,7 +952,7 @@ void SSGI::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_pt
 	SSGI_UniformBufferData SSGI_UniformBufferData;
  	SSGI_UniformBufferData.ProjectionMatrix = camera->GetProjectionMatrix();
 	SSGI_UniformBufferData.ProjectionMatrix[1][1] *= -1;
-	SSGI_UniformBufferData.BlueNoiseImageIndex_WithPadding = glm::vec4(NoiseIndex, DeltaTime,0,0);
+	SSGI_UniformBufferData.BlueNoiseImageIndex_WithPadding = glm::vec4(NoiseIndex, DeltaTime, vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height);
 
 	memcpy(FragmentUniformBuffersMappedMem[currentImage], &SSGI_UniformBufferData, sizeof(SSGI_UniformBufferData));
 
@@ -948,16 +966,16 @@ void SSGI::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_pt
 	vulkanContext->AccumilationCount++;
 }
 
-
-void SSGI::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
+void SSGI::ComputeSSGI(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
 {
-	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { 	bufferManager->FullScreenQuadVertexBufferData.buffer };
 
-	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(	bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
-	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
+	uint32_t workGroupsX = (vulkanContext->swapchainExtent.width  + 31) / 32;
+	uint32_t workGroupsY = (vulkanContext->swapchainExtent.height + 31) / 32;
+
+	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
+	commandbuffer.dispatch(workGroupsX,workGroupsY,1);
+}
+void SSGI::Draw(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t currentFrame) {
 
 }
 

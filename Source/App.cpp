@@ -799,8 +799,8 @@ void App::createGBuffer()
 		                                                  gbuffer.Albedo.imageView,
 		VK_IMAGE_LAYOUT_GENERAL);
 
-	SSGITextureId            = ImGui_ImplVulkan_AddTexture(SSGI_FullScreenQuad->BlurPong_UPSampleFullRes.imageSampler,
-		                                                   SSGI_FullScreenQuad->BlurPong_UPSampleFullRes.imageView,
+	SSGITextureId            = ImGui_ImplVulkan_AddTexture(SSGI_FullScreenQuad->SSGIAccumilationImage.imageSampler,
+		                                                   SSGI_FullScreenQuad->SSGIAccumilationImage.imageView,
 		                                                   VK_IMAGE_LAYOUT_GENERAL);
 
 
@@ -1046,30 +1046,6 @@ void App::CreateGraphicsPipeline()
 		CombinedImagePassPipeline = Temp.FQ_Pipeline;
 	}
 
-	//{
-	//
-	//	std::array<vk::Format, 1> colorFormats = { vk::Format::eR16G16B16A16Sfloat };
-	//
-	//	vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
-	//	pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-	//	pipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats.data();;
-	//
-	//	vk::PushConstantRange range{};
-	//	range.setOffset(0);
-	//	range.setSize(sizeof(glm::mat4));
-	//	range.setStageFlags(vk::ShaderStageFlagBits::eFragment);
-	//
-	//	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-	//	pipelineLayoutInfo.setLayoutCount = 1;
-	//	pipelineLayoutInfo.setSetLayouts(ssr_FullScreenQuad->descriptorSetLayout);
-	//	pipelineLayoutInfo.pushConstantRangeCount = 1;
-	//	pipelineLayoutInfo.pPushConstantRanges = &range;
-	//
-	//	FullScreen_Quad_Pipeline_Data  Temp = pipelineManager.create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSR.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
-	//
-	//	SSRPipelineLayout = Temp.FQ_PipelineLayout;
-	//	SSRPipeline = Temp.FQ_Pipeline;
-	//}
 
 	{
 		auto VertShaderCode = readFile("../Shaders/Compiled_Shader_Files/Light_Shader.vert.spv");
@@ -1757,34 +1733,6 @@ void App::CreateGraphicsPipeline()
 
 
 	}
-
-
-	{	
-		vk::Format formats[1] = { vk::Format::eR16G16B16A16Sfloat };
-		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
-		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-		pipelineRenderingCreateInfo.pColorAttachmentFormats =  formats;
-
-		vk::PushConstantRange range{};
-		range.setOffset(0);
-		range.setSize(sizeof(int));
-		range.setStageFlags(vk::ShaderStageFlagBits::eFragment);
-
-		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.setSetLayouts(SSGI_FullScreenQuad->descriptorSetLayout);
-		pipelineLayoutInfo.pushConstantRangeCount = 1;
-		pipelineLayoutInfo.pPushConstantRanges = &range;
-
-
-		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager.create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/SSGI.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
-
-		SSGIPipelineLayout = Temp.FQ_PipelineLayout;
-		SSGIPipeline = Temp.FQ_Pipeline;
-
-	}
-
-
 	{
 
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
@@ -1982,34 +1930,30 @@ void App::CreateGraphicsPipeline()
 	}
 
 
-	//{
-	//	auto ComputeShaderCode = readFile("../Shaders/Compiled_Shader_Files/Reservoir_ReSTIR_DI.comp.spv");
-	//
-	//	VkShaderModule ComputeShaderModule = pipelineManager.createShaderModule(ComputeShaderCode);
-	//
-	//	vk::PipelineShaderStageCreateInfo ComputeShaderStageInfo{};
-	//	ComputeShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
-	//	ComputeShaderStageInfo.stage = vk::ShaderStageFlagBits::eCompute;
-	//	ComputeShaderStageInfo.module = ComputeShaderModule;
-	//	ComputeShaderStageInfo.pName = "main";
-	//
-	//	vk::PushConstantRange range{};
-	//	range.setOffset(0);
-	//	range.setSize(sizeof(PushConstant));
-	//	range.setStageFlags(vk::ShaderStageFlagBits::eCompute);
-	//
-	//	vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-	//	pipelineLayoutInfo.setLayoutCount = 1;
-	//	pipelineLayoutInfo.pSetLayouts = &Restir_DI->RservoirSamplingDescriptorSetLayout;
-	//	pipelineLayoutInfo.pushConstantRangeCount = 1;
-	//	pipelineLayoutInfo.pPushConstantRanges = &range;
-	//
-	//	ReSTIResevoirComputePipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
-	//
-	//	ReSTIResevoirComputePassPipeline = pipelineManager.creatComputePipeline(ReSTIResevoirComputePipelineLayout, ComputeShaderStageInfo);
-	//
-	//	vulkanContext.LogicalDevice.destroyShaderModule(ComputeShaderModule);
-	//}
+	{
+		auto ComputeShaderCode = readFile("../Shaders/Compiled_Shader_Files/SSGI.comp.spv");
+
+		VkShaderModule ComputeShaderModule = pipelineManager.createShaderModule(ComputeShaderCode);
+
+		vk::PipelineShaderStageCreateInfo ComputeShaderStageInfo{};
+		ComputeShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+		ComputeShaderStageInfo.stage = vk::ShaderStageFlagBits::eCompute;
+		ComputeShaderStageInfo.module = ComputeShaderModule;
+		ComputeShaderStageInfo.pName = "main";
+
+
+		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.pSetLayouts = &SSGI_FullScreenQuad->descriptorSetLayout;
+		pipelineLayoutInfo.pushConstantRangeCount = 0;
+		pipelineLayoutInfo.pPushConstantRanges = nullptr;
+
+		SSGIPipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+
+		SSGIPipeline = pipelineManager.creatComputePipeline(SSGIPipelineLayout, ComputeShaderStageInfo);
+
+		vulkanContext.LogicalDevice.destroyShaderModule(ComputeShaderModule);
+	}
 
 
 }
@@ -3205,40 +3149,22 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, SSGI_Label);
 	{
-		vk::RenderingAttachmentInfo SSGIImageAttachInfo;
-		SSGIImageAttachInfo.clearValue = clearColor;
-		SSGIImageAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		SSGIImageAttachInfo.imageView = SSGI_FullScreenQuad->SSGIPassImage.imageView;
-		SSGIImageAttachInfo.loadOp = vk::AttachmentLoadOp::eClear;
-		SSGIImageAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, SSGIPipeline);
+		SSGI_FullScreenQuad->ComputeSSGI(commandBuffer, SSGIPipelineLayout, currentFrame);
 
-		vk::RenderingInfo SSGIImageImageInfo{};
-		SSGIImageImageInfo.layerCount = 1;
-		SSGIImageImageInfo.colorAttachmentCount = 1;
-		SSGIImageImageInfo.pColorAttachments = &SSGIImageAttachInfo;
-		SSGIImageImageInfo.renderArea.extent.width  = SSGI_FullScreenQuad->SSGI_ImageFullResolution.width  ;
-		SSGIImageImageInfo.renderArea.extent.height = SSGI_FullScreenQuad->SSGI_ImageFullResolution.height ;
+		vk::ImageMemoryBarrier barrier{};
+		barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+		barrier.oldLayout = vk::ImageLayout::eGeneral;
+		barrier.newLayout = vk::ImageLayout::eGeneral;
+		barrier.image = SSGI_FullScreenQuad->SSGIPassImage.image;
+		barrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
 
-
-		vk::Viewport viewport50{};
-		viewport50.x = 0.0f;
-		viewport50.y = 0.0f;
-		viewport50.width  = SSGI_FullScreenQuad->SSGI_ImageFullResolution.width ;
-		viewport50.height = SSGI_FullScreenQuad->SSGI_ImageFullResolution.height ;
-		viewport50.minDepth = 0.0f;
-		viewport50.maxDepth = 1.0f;
-
-		vk::Rect2D scissor50{};
-		scissor50.offset = imageoffset;
-		scissor50.extent.width  = SSGI_FullScreenQuad->SSGI_ImageFullResolution.width ;
-		scissor50.extent.height = SSGI_FullScreenQuad->SSGI_ImageFullResolution.height ;
-
-		commandBuffer.setViewport(0, 1, &viewport50);
-		commandBuffer.setScissor(0, 1, &scissor50);
-		commandBuffer.beginRendering(SSGIImageImageInfo);
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SSGIPipeline);
-		SSGI_FullScreenQuad->Draw(commandBuffer, SSGIPipelineLayout, currentFrame);
-		commandBuffer.endRendering();
+		commandBuffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eComputeShader,
+			vk::PipelineStageFlagBits::eFragmentShader,
+			{}, 0, nullptr, 0, nullptr, 1, & barrier
+		);
 
 		ImageTransitionData TransitionDeptTODepthOptimal{};
 		TransitionDeptTODepthOptimal.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
