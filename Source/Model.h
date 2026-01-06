@@ -167,6 +167,8 @@ public:
     void Instantiate();
     void Destroy(int instanceIndex);
     void UpdateUniformBuffer(uint32_t currentImage);
+    void UpdateHistory();
+    void UpdateNodeHistory(const std::vector<std::shared_ptr<Node>>& nodes);
     bool CalcDistanceCulling(glm::mat4 Matrix);
     void DrawNode(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex, const std::vector<std::shared_ptr<Node>>& nodes, const glm::mat4& parentMatrix, const glm::mat4& previousParentMatrix);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
@@ -198,12 +200,12 @@ public:
     uint32_t m_baseVertexOffset = 0;
     uint32_t m_baseIndexOffset = 0;
     uint32_t GlobalTextureOffset = 0;
+    const StoredModelData* storedModelData = nullptr;
 
 private:
 
 
     std::string FilePath;
-    const StoredModelData* storedModelData = nullptr;
 };
 
 

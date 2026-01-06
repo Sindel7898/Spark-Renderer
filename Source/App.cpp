@@ -2255,6 +2255,10 @@ void App::Run()
 		userinterface.DrawUi(this, skyBox.get());
 
 		Draw();
+
+		for (auto& model : Models) {
+			model->UpdateHistory();
+		}
 	}
 
 	vulkanContext.LogicalDevice.waitIdle();

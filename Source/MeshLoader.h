@@ -18,6 +18,8 @@ struct Node {
 	std::vector<std::shared_ptr<Node>> children;
 	std::vector<Primitive> meshPrimitives; 
 	glm::mat4 matrix = glm::mat4(1.0f);
+	glm::mat4 prevMatrix = glm::mat4(1.0f);
+
 
 };
 

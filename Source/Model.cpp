@@ -592,7 +592,19 @@ void Model::UpdateUniformBuffer(uint32_t currentImage)
 	}
 }
 
+void Model::UpdateHistory() {
+	UpdateNodeHistory(storedModelData->nodes);
+}
 
+void Model::UpdateNodeHistory(const std::vector<std::shared_ptr<Node>>& nodes) {
+	for (const auto& node : nodes) {
+		if (!node) continue;
+
+		node->prevMatrix = node->matrix;
+
+		UpdateNodeHistory(node->children);
+	}
+}
 
 bool Model::CalcDistanceCulling(glm::mat4 Matrix)
 {
@@ -612,7 +624,7 @@ void Model::DrawNode(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipeline
 		if (!node) continue;
 
 		glm::mat4 worldMatrix = parentMatrix * node->matrix;
-		glm::mat4 previousWorldMatrix = previousParentMatrix * node->matrix;
+		glm::mat4 previousWorldMatrix = previousParentMatrix * node->prevMatrix;
 
 		Instances[0]->SetModelMatrix(worldMatrix);
 
@@ -636,7 +648,7 @@ void Model::DrawNode(vk::CommandBuffer commandBuffer,vk::PipelineLayout pipeline
 			
 		
 
-		DrawNode(commandBuffer, pipelineLayout, imageIndex,node->children, worldMatrix, previousWorldMatrix);
+		DrawNode(commandBuffer, pipelineLayout, imageIndex ,node->children, worldMatrix, previousWorldMatrix);
 	}
 }
 
