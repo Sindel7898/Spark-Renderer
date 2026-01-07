@@ -150,7 +150,7 @@ public:
 	VkDescriptorSet SSGITextureId;
 	VkDescriptorSet RT_ReflectionTextureId;
 	VkDescriptorSet ReSTIR_DITextureId;
-	VkDescriptorSet MotionVectors;
+	VkDescriptorSet DDGI_Radiance;
 	VkDescriptorSet DDGIIrradianceAtlasID;
 	VkDescriptorSet Sampled_GI_ID;
 	VkDescriptorSet DDGIIVisibilityAtlasID;

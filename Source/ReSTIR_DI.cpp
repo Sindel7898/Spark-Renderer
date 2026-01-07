@@ -648,8 +648,8 @@ void ReSTIR_DI::UpdateDescrptorSets()
 
 			vk::DescriptorImageInfo PrevNormalImageInfo{};
 			PrevNormalImageInfo.imageLayout = vk::ImageLayout::eGeneral;
-			PrevNormalImageInfo.imageView = LightingPass->GbufferRef->MotionVector.imageView;
-			PrevNormalImageInfo.sampler = LightingPass->GbufferRef->MotionVector.imageSampler;
+			PrevNormalImageInfo.imageView = LightingPass->GbufferRef->PrevNormal.imageView;
+			PrevNormalImageInfo.sampler = LightingPass->GbufferRef->PrevNormal.imageSampler;
 
 			vk::WriteDescriptorSet PrevNormalmagedescriptorWrite{};
 			PrevNormalmagedescriptorWrite.dstSet = RaytracingDescriptorSets[i];

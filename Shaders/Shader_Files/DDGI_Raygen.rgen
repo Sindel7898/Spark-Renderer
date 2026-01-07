@@ -13,7 +13,9 @@ const int PROBE_STATE_DISABLED = 2; //  this is for when a probe is inside an ob
 struct ProbeInformation {
     vec4 probeLocations;
     int  probeState;
-    vec3 Padding;
+    int pad0; 
+    int pad1;
+    int pad2;
 };
 
 
@@ -80,7 +82,7 @@ void main() {
     ProbeInformation probe  = SB0.ProbeData[gl_LaunchIDEXT.y];
 
     vec3 probeOrigin  = probe.probeLocations.xyz;
-    vec3 rayDirection = SB02.FibonacciDirections    [gl_LaunchIDEXT.x].xyz;
+    vec3 rayDirection = SB02.FibonacciDirections[gl_LaunchIDEXT.x].xyz;
   
 
    // Trace the ray
@@ -114,7 +116,7 @@ void main() {
 
        }
          else if (probe.probeState ==  PROBE_STATE_SLEEP){
-          imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(CubeMapIrradiance,1000));
+          imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(0,0,0, 100.0));
           return;
        }else if (probe.probeState == PROBE_STATE_DISABLED) {
            imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(0.0, 0.0, 0.0, 0.0));

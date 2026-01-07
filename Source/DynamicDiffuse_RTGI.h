@@ -36,8 +36,10 @@ enum ProbeState {
 struct ProbeInformation
 {
     glm::vec4 probeLocations;
-    ProbeState probeState;
-    glm::vec3 Padding;
+    int probeState;
+    int pad0;
+    int pad1;
+    int pad2;
 };
 
 class DynamicDiffuse_RTGI

@@ -253,7 +253,7 @@ void App::SwitchScene(int index)
 			UserInterfaceItems.push_back(model.get());
 		}
 
-		int LightCount = 90;
+		int LightCount = 4;
 
 		lights.reserve(LightCount);
 
@@ -287,12 +287,13 @@ void App::SwitchScene(int index)
 
 		if (dynamicDiffuse_RTGI)
 		{
-			dynamicDiffuse_RTGI->NumOfProbesX = 9;
-			dynamicDiffuse_RTGI->NumOfProbesY = 7;
-			dynamicDiffuse_RTGI->NumOfProbesZ = 10;
+			dynamicDiffuse_RTGI->NumOfProbesX = 14;
+			dynamicDiffuse_RTGI->NumOfProbesY = 16;
+			dynamicDiffuse_RTGI->NumOfProbesZ = 14;
 			dynamicDiffuse_RTGI->RaysPerProbe = 128;
-			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(25.33, 17.90, 15.19);
-			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-100, 0.33, -53.79);
+			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-100, 0.83, -48.60);
+			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(16.75, 7.40, 6.61);
+
 		}
 
 		camera.SetPosition(glm::vec3{ 32.9095, 15.871, -0.912267 });
@@ -814,8 +815,8 @@ void App::createGBuffer()
 		                                                       Restir_DI->ReSTIRDI_Results.imageView,
 		                                                       VK_IMAGE_LAYOUT_GENERAL);
 
-	MotionVectors = ImGui_ImplVulkan_AddTexture(gbuffer.MotionVector.imageSampler,
-		                                        gbuffer.MotionVector.imageView,
+	DDGI_Radiance = ImGui_ImplVulkan_AddTexture(dynamicDiffuse_RTGI->RadianceImageAtlasImage.imageSampler,
+		                                       dynamicDiffuse_RTGI->RadianceImageAtlasImage.imageView,
 		                                    VK_IMAGE_LAYOUT_GENERAL);
 
 
