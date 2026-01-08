@@ -37,9 +37,8 @@ struct ProbeInformation
 {
     glm::vec4 probeLocations;
     int probeState;
-    int pad0;
-    int pad1;
-    int pad2;
+    glm::vec3 Padding;
+
 };
 
 class DynamicDiffuse_RTGI
