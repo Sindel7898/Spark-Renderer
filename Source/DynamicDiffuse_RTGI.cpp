@@ -40,7 +40,7 @@ void DynamicDiffuse_RTGI::CreateStorageBuffer()
 	{
 		ProbeDataStorageBuffers.resize(1);
 
-		VkDeviceSize ComputeStorageBufferSize = sizeof(ProbeInformation) * 3000;
+		VkDeviceSize ComputeStorageBufferSize = sizeof(ProbeInformation) * 27000;
 
 		for (size_t i = 0; i < 1; i++)
 		{
@@ -737,7 +737,7 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			vk::DescriptorBufferInfo ProbeLocationbufferInfo{};
 			ProbeLocationbufferInfo.buffer = ProbeDataStorageBuffers[0].buffer;
 			ProbeLocationbufferInfo.offset = 0;
-			ProbeLocationbufferInfo.range = sizeof(ProbeInformation) * 3000;
+			ProbeLocationbufferInfo.range = sizeof(ProbeInformation) * 27000;
 
 			vk::WriteDescriptorSet ProbeLocationbufferdescriptorWrite{};
 			ProbeLocationbufferdescriptorWrite.dstSet = ProbeDescriptorSets[i];
@@ -775,7 +775,7 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			vk::DescriptorBufferInfo ProbeLocationbufferInfo{};
 			ProbeLocationbufferInfo.buffer = ProbeDataStorageBuffers[0].buffer;
 			ProbeLocationbufferInfo.offset = 0;
-			ProbeLocationbufferInfo.range = sizeof(ProbeInformation) * 3000;
+			ProbeLocationbufferInfo.range = sizeof(ProbeInformation) * 27000;
 
 			vk::WriteDescriptorSet ProbeLocationbufferdescriptorWrite{};
 			ProbeLocationbufferdescriptorWrite.dstSet = GridDescriptorSets[i];
@@ -903,7 +903,7 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			vk::DescriptorBufferInfo ProbeLocationbufferInfo{};
 			ProbeLocationbufferInfo.buffer = ProbeDataStorageBuffers[0].buffer;
 			ProbeLocationbufferInfo.offset = 0;
-			ProbeLocationbufferInfo.range = sizeof(ProbeInformation) * 3000;
+			ProbeLocationbufferInfo.range = sizeof(ProbeInformation) * 27000;
 
 			vk::WriteDescriptorSet ProbeLocationbufferdescriptorWrite{};
 			ProbeLocationbufferdescriptorWrite.dstSet = ConstructProbeDataDescriptorSets[i];
@@ -946,7 +946,7 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			vk::DescriptorBufferInfo ProbeLocationbufferInfo{};
 			ProbeLocationbufferInfo.buffer = ProbeDataStorageBuffers[0].buffer;
 			ProbeLocationbufferInfo.offset = 0;
-			ProbeLocationbufferInfo.range = sizeof(ProbeInformation) * 3000;
+			ProbeLocationbufferInfo.range = sizeof(ProbeInformation) * 27000;
 
 			vk::WriteDescriptorSet ProbeLocationbufferdescriptorWrite{};
 			ProbeLocationbufferdescriptorWrite.dstSet = ProbeStatusDescriptorSets[i];
@@ -1189,7 +1189,7 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			vk::DescriptorBufferInfo ProbeLocationbufferInfo{};
 			ProbeLocationbufferInfo.buffer = ProbeDataStorageBuffers[0].buffer;
 			ProbeLocationbufferInfo.offset = 0;
-			ProbeLocationbufferInfo.range = sizeof(ProbeInformation) * 3000;
+			ProbeLocationbufferInfo.range = sizeof(ProbeInformation) * 27000;
 
 			vk::WriteDescriptorSet ProbeLocationbufferdescriptorWrite{};
 			ProbeLocationbufferdescriptorWrite.dstSet = RaytracingDescriptorSets[i];
