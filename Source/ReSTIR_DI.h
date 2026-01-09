@@ -6,7 +6,7 @@
 class  Camera;
 class  VulkanContext;
 class  BufferManager;
-class  Lighting_FullScreenQuad;
+class  Lighting_RTX;
 class  SSGI;
 class  DynamicDiffuse_RTGI;
 
@@ -20,7 +20,7 @@ struct PushConstant {
 class ReSTIR_DI
 {
 public:
-    ReSTIR_DI(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, Lighting_FullScreenQuad* rLightingPass, SSGI* rssgi, DynamicDiffuse_RTGI* DDGIr);
+    ReSTIR_DI(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, Lighting_RTX* rLightingPass, SSGI* rssgi, DynamicDiffuse_RTGI* DDGIr);
     void createDescriptorSetLayout();
 
     void createDescriptorDDGIATLAS(vk::DescriptorPool descriptorpool);
@@ -52,7 +52,7 @@ private:
     Camera* camera = nullptr;
     vk::CommandPool commandPool = nullptr;
 
-    Lighting_FullScreenQuad* LightingPass;
+    Lighting_RTX* LightingPass;
     SSGI* ssgi;
     DynamicDiffuse_RTGI* DDGIRef;
    // std::vector<vk::DescriptorSet>  RservoirSamplingProbeDescriptorSets;

@@ -1,12 +1,12 @@
 #include "ReSTIR_DI.h"
 #include "VulkanContext.h"
-#include "Lighting_FullScreenQuad.h"
+#include "Lighting_RTX.h"
 #include "SSGI.h"
 #include "DynamicDiffuse_RTGI.h"
 
 
 
-ReSTIR_DI::ReSTIR_DI(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, Lighting_FullScreenQuad* rLightingPass, SSGI* rssgi, DynamicDiffuse_RTGI* DDGIr)
+ReSTIR_DI::ReSTIR_DI(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, Lighting_RTX* rLightingPass, SSGI* rssgi, DynamicDiffuse_RTGI* DDGIr)
 {
 	bufferManager = buffermanger;
 	vulkanContext = vulkancontext;
@@ -335,7 +335,7 @@ void ReSTIR_DI::UpdateDescrptorSets()
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
 			vk::DescriptorBufferInfo LightUniformBufferInfo;
-			LightUniformBufferInfo.buffer = LightingPass->fragmentUniformBuffers[i].buffer;
+			LightUniformBufferInfo.buffer = LightingPass->UniformBuffers[i].buffer;
 			LightUniformBufferInfo.offset = 0;
 			LightUniformBufferInfo.range = sizeof(LightUniformData) * 100;
 

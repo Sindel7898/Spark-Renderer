@@ -8,7 +8,7 @@
 #include <chrono>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "Lighting_FullScreenQuad.h"
+#include "Lighting_RTX.h"
 #include "SSAO_FullScreenQuad.h"
 #include "FXAA_FullScreenQuad.h"
 #include "SSR_FullScreenQuad.h"
@@ -111,8 +111,8 @@ public:
 
 	bool bWireFrame = false;
 	//Drawables
-	std::unique_ptr<Lighting_FullScreenQuad, decltype(&Lighting_FullScreenQuadDeleter)>
-		lighting_FullScreenQuad{ nullptr, &Lighting_FullScreenQuadDeleter };
+	std::unique_ptr<Lighting_RTX, decltype(&Lighting_RTXDeleter)>
+		lighting_RTX{ nullptr, &Lighting_RTXDeleter };
 
 	std::unique_ptr<SSA0_FullScreenQuad, decltype(&SSA0_FullScreenQuadDeleter)>
 		ssao_FullScreenQuad{ nullptr, &SSA0_FullScreenQuadDeleter };

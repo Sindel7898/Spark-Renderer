@@ -19,7 +19,7 @@
 #include "FXAA_FullScreenQuad.h"
 #include "SSR_FullScreenQuad.h"
 #include "SSAO_FullScreenQuad.h"
-#include "Lighting_FullScreenQuad.h"
+#include "Lighting_RTX.h"
 #include <pix.h>
 #include "Tracy.hpp"
 #include <random>
@@ -50,13 +50,13 @@ userinterface(&vulkanContext, &window, &bufferManger), pipelineManager(&vulkanCo
 	SwitchScene(0);
 
 	RT_Reflection = std::unique_ptr<RT_Reflections, decltype(&RT_ReflectionsDeleter)>(new RT_Reflections(&vulkanContext, commandPool, &camera, &bufferManger, skyBox.get()), RT_ReflectionsDeleter);
-	lighting_FullScreenQuad = std::unique_ptr<Lighting_FullScreenQuad, decltype(&Lighting_FullScreenQuadDeleter)>(new Lighting_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool, skyBox.get()), Lighting_FullScreenQuadDeleter);
+	lighting_RTX = std::unique_ptr<Lighting_RTX, decltype(&Lighting_RTXDeleter)>(new Lighting_RTX(&bufferManger, &vulkanContext, &camera, commandPool, skyBox.get()), Lighting_RTXDeleter);
 	ssao_FullScreenQuad = std::unique_ptr<SSA0_FullScreenQuad, decltype(&SSA0_FullScreenQuadDeleter)>(new SSA0_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), SSA0_FullScreenQuadDeleter);
 	fxaa_FullScreenQuad = std::unique_ptr<FXAA_FullScreenQuad, decltype(&FXAA_FullScreenQuadDeleter)>(new FXAA_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), FXAA_FullScreenQuadDeleter);
 	Combined_FullScreenQuad = std::unique_ptr<CombinedResult_FullScreenQuad, decltype(&CombinedResult_FullScreenQuadDeleter)>(new CombinedResult_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), CombinedResult_FullScreenQuadDeleter);
 	SSGI_FullScreenQuad = std::unique_ptr<SSGI, decltype(&SSGIDeleter)>(new SSGI(&bufferManger, &vulkanContext, &camera, commandPool), SSGIDeleter);
 	dynamicDiffuse_RTGI = std::unique_ptr<DynamicDiffuse_RTGI, decltype(&DynamicDiffuse_RTGIDeleter)>(new DynamicDiffuse_RTGI("../Textures/Sphere/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger, skyBox.get()), DynamicDiffuse_RTGIDeleter);
-	Restir_DI = std::unique_ptr<ReSTIR_DI, decltype(&ReSTIR_DI_Deleter)>(new ReSTIR_DI(&vulkanContext, commandPool, &camera, &bufferManger, lighting_FullScreenQuad.get(), SSGI_FullScreenQuad.get(), dynamicDiffuse_RTGI.get()), ReSTIR_DI_Deleter);
+	Restir_DI = std::unique_ptr<ReSTIR_DI, decltype(&ReSTIR_DI_Deleter)>(new ReSTIR_DI(&vulkanContext, commandPool, &camera, &bufferManger, lighting_RTX.get(), SSGI_FullScreenQuad.get(), dynamicDiffuse_RTGI.get()), ReSTIR_DI_Deleter);
 
 	createCommandBuffer();
 	CreateGraphicsPipeline();
@@ -137,17 +137,17 @@ void App::LoadAllObjects()
 
 void App::UpdateRayTracingDescriptors()
 {
-	if (lighting_FullScreenQuad) {
-		lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer, &TLAS);
+	if (lighting_RTX) {
+		lighting_RTX->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer, &TLAS);
 	}
 
 	if (RT_Reflection) {
-		RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer, lighting_FullScreenQuad->fragmentUniformBuffers);
+		RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer, lighting_RTX->UniformBuffers);
 	}
 
 	bool ddgiRecreated = false;
 	if (dynamicDiffuse_RTGI) {
-		ddgiRecreated = dynamicDiffuse_RTGI->UpdateUniformBuffer(DescriptorPool, TLAS, lighting_FullScreenQuad->fragmentUniformBuffers, gbuffer, true, lights.size());
+		ddgiRecreated = dynamicDiffuse_RTGI->UpdateUniformBuffer(DescriptorPool, TLAS, lighting_RTX->UniformBuffers, gbuffer, true, lights.size());
 	}
 
 	if (Restir_DI) {
@@ -704,14 +704,14 @@ void App::createGBuffer()
 	RT_Reflection->CreateStorageImage();
 	dynamicDiffuse_RTGI->CreateSampledGIImage(); 
 	Restir_DI->CreateImage();
-	lighting_FullScreenQuad->CreateStorageImage();
+	lighting_RTX->CreateStorageImage();
 
-	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&TLAS);
+	lighting_RTX->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&TLAS);
 	ssao_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
-	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, lighting_FullScreenQuad->ResultingStorageImage, SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo, dynamicDiffuse_RTGI->Probe_Sampled_GI_Image);
+	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, lighting_RTX->ResultingStorageImage, SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo, dynamicDiffuse_RTGI->Probe_Sampled_GI_Image);
 	fxaa_FullScreenQuad->createDescriptorSets(DescriptorPool, Combined_FullScreenQuad->FinalResultImage);
-	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, lighting_FullScreenQuad->ResultingStorageImage,DepthTextureData);
-	RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer, lighting_FullScreenQuad->fragmentUniformBuffers);
+	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, lighting_RTX->ResultingStorageImage,DepthTextureData);
+	RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer, lighting_RTX->UniformBuffers);
 	dynamicDiffuse_RTGI->createDescriptorSets(DescriptorPool, gbuffer);
 	Restir_DI->createDescriptorSetsBasedOnGBuffer(DescriptorPool,&TLAS);
 
@@ -756,7 +756,7 @@ void App::createGBuffer()
 	bufferManger.TransitionImage(cmd, &dynamicDiffuse_RTGI->Probe_Sampled_GI_Image, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &Restir_DI->PrevResevoirImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &Restir_DI->ReSTIRDI_Results, TransitionToGeneral);
-	bufferManger.TransitionImage(cmd, &lighting_FullScreenQuad->ResultingStorageImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &lighting_RTX->ResultingStorageImage, TransitionToGeneral);
 
 	bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd,vulkanContext.graphicsQueue);
 
@@ -765,8 +765,8 @@ void App::createGBuffer()
 		                                               fxaa_FullScreenQuad->FxaaImage.imageView,
 		VK_IMAGE_LAYOUT_GENERAL);
 
-	LightingAndReflectionsRenderTextureId = ImGui_ImplVulkan_AddTexture(lighting_FullScreenQuad->ResultingStorageImage.imageSampler,
-		                                                                lighting_FullScreenQuad->ResultingStorageImage.imageView,
+	LightingAndReflectionsRenderTextureId = ImGui_ImplVulkan_AddTexture(lighting_RTX->ResultingStorageImage.imageSampler,
+		                                                                lighting_RTX->ResultingStorageImage.imageView,
 		VK_IMAGE_LAYOUT_GENERAL);
 
 
@@ -1566,7 +1566,7 @@ void App::CreateGraphicsPipeline()
 
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &lighting_FullScreenQuad->descriptorSetLayout;
+		pipelineLayoutInfo.pSetLayouts = &lighting_RTX->descriptorSetLayout;
 		pipelineLayoutInfo.pushConstantRangeCount = 1;
 		pipelineLayoutInfo.pPushConstantRanges = &range;
 
@@ -2275,12 +2275,12 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 
 	skyBox->UpdateUniformBuffer(currentImage);
 
-	lighting_FullScreenQuad->UpdateUniformBuffer(currentImage, lights);
+	lighting_RTX->UpdateUniformBuffer(currentImage, lights);
 	ssao_FullScreenQuad->UpdataeUniformBufferData();
     SSGI_FullScreenQuad->UpdateUniformBuffer(currentImage, lights,deltaTime);
 	RT_Reflection->UpdateUniformBuffer(currentImage, lights, Models);
 
-	bool ddgiRecreated = dynamicDiffuse_RTGI->UpdateUniformBuffer(DescriptorPool, TLAS, lighting_FullScreenQuad->fragmentUniformBuffers,gbuffer,false, lights.size());
+	bool ddgiRecreated = dynamicDiffuse_RTGI->UpdateUniformBuffer(DescriptorPool, TLAS, lighting_RTX->UniformBuffers,gbuffer,false, lights.size());
 
 	if (ddgiRecreated)
 	{
@@ -3039,7 +3039,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, DeferedLightingPassPipeline);
 
-			lighting_FullScreenQuad->Draw(
+			lighting_RTX->Draw(
 				Lighting_raygenShaderBindingTableBuffer,
 				Lighting_hitShaderBindingTableBuffer,
 				Lighting_missShaderBindingTableBuffer,
@@ -3510,7 +3510,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
 		SkyBoxRenderAttachInfo.clearValue = clearColor;
 		SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		SkyBoxRenderAttachInfo.imageView = lighting_FullScreenQuad->ResultingStorageImage.imageView;
+		SkyBoxRenderAttachInfo.imageView = lighting_RTX->ResultingStorageImage.imageView;
 		SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
 		SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
 		
@@ -3716,7 +3716,7 @@ void App::destroy_GbufferImages()
 	RT_Reflection->DestroyStorageImage();
 	dynamicDiffuse_RTGI->DestroySampledGIImage();
 	Restir_DI->DestroyImage();
-	lighting_FullScreenQuad->DestroyStorageImage();
+	lighting_RTX->DestroyStorageImage();
 
 
 }
@@ -3809,7 +3809,7 @@ void App::DestroyBuffers()
 
 	skyBox.reset();
 
-	lighting_FullScreenQuad.reset();
+	lighting_RTX.reset();
 	ssao_FullScreenQuad.reset();
 	fxaa_FullScreenQuad.reset();
 	SSGI_FullScreenQuad.reset();

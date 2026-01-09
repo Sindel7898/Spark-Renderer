@@ -1,13 +1,12 @@
-#include "Lighting_FullScreenQuad.h"
+#include "Lighting_RTX.h"
 #include <stdexcept>
 #include <chrono>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
 #include "Light.h"
 #include "Camera.h"
-#include "RT_Shadows.h"
 
-Lighting_FullScreenQuad::Lighting_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext,Camera* cameraref, vk::CommandPool commandpool, SkyBox* skyboxref)
+Lighting_RTX::Lighting_RTX(BufferManager* buffermanager, VulkanContext* vulkancontext,Camera* cameraref, vk::CommandPool commandpool, SkyBox* skyboxref)
 {
 	camera = cameraref;
 	bufferManager = buffermanager;
@@ -19,27 +18,27 @@ Lighting_FullScreenQuad::Lighting_FullScreenQuad(BufferManager* buffermanager, V
 }
 
 
-void Lighting_FullScreenQuad::CreateUniformBuffer()
+void Lighting_RTX::CreateUniformBuffer()
 {
 	//////////////////////////////////////////////////////////////
-	fragmentUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-	FragmentUniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
+	UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+	UniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
 
 	VkDeviceSize FragmentuniformBufferSize = sizeof(LightUniformData) * 100;
 
-	for (size_t i = 0; i < fragmentUniformBuffers.size(); i++)
+	for (size_t i = 0; i < UniformBuffers.size(); i++)
 	{
 		BufferData bufferdata;
 
 		bufferdata.BufferID = " Lighting FullScreen Quad Fragment Uniform Buffer" + i;
 		bufferManager->CreateBuffer(&bufferdata,FragmentuniformBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
-		fragmentUniformBuffers[i] = bufferdata;
+		UniformBuffers[i] = bufferdata;
 
-		FragmentUniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
+		UniformBuffersMappedMem[i] = bufferManager->MapMemory(bufferdata);
 	}
 }
 
-void Lighting_FullScreenQuad::CreateStorageImage() {
+void Lighting_RTX::CreateStorageImage() {
 
     swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
@@ -49,14 +48,14 @@ void Lighting_FullScreenQuad::CreateStorageImage() {
 	ResultingStorageImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 }
 
-void Lighting_FullScreenQuad::DestroyStorageImage() {
+void Lighting_RTX::DestroyStorageImage() {
 
 	bufferManager->DestroyImage(ResultingStorageImage);
 
 
 }
 
-void Lighting_FullScreenQuad::createDescriptorSetLayout()
+void Lighting_RTX::createDescriptorSetLayout()
 {
 	{
 		//////// Create set for Final Lighting Pass ////////////
@@ -138,7 +137,7 @@ void Lighting_FullScreenQuad::createDescriptorSetLayout()
 
 }
 
-void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer* Gbuffer, vk::AccelerationStructureKHR* TLAS)
+void Lighting_RTX::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer* Gbuffer, vk::AccelerationStructureKHR* TLAS)
 {
 	TLASr = TLAS;
 
@@ -158,7 +157,7 @@ void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorP
 	UpdateDescrptorSets();
 }
 
-void Lighting_FullScreenQuad::UpdateDescrptorSets()
+void Lighting_RTX::UpdateDescrptorSets()
 {
 	//specifies what exactly to send
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -262,7 +261,7 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 		/////////////////////////////////////////////////////////////////////////////////////
 
 		vk::DescriptorBufferInfo LightUniformBufferInfo;
-		LightUniformBufferInfo.buffer = fragmentUniformBuffers[i].buffer;
+		LightUniformBufferInfo.buffer = UniformBuffers[i].buffer;
 		LightUniformBufferInfo.offset = 0;
 		LightUniformBufferInfo.range = sizeof(LightUniformData) * 100;
 
@@ -301,7 +300,7 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 	}
 }
 
-void Lighting_FullScreenQuad::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref)
+void Lighting_RTX::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref)
 {
 	if (SkyBoxRef->bSkyBoxUpdate)
 	{
@@ -328,16 +327,16 @@ void Lighting_FullScreenQuad::UpdateUniformBuffer(uint32_t currentImage, std::ve
 	}
 
 	LightCount = lightDataspack.size();
-	memcpy(FragmentUniformBuffersMappedMem[currentImage], lightDataspack.data(), lightDataspack.size() * sizeof(LightUniformData));
+	memcpy(UniformBuffersMappedMem[currentImage], lightDataspack.data(), lightDataspack.size() * sizeof(LightUniformData));
 
 }
 
-uint32_t Lighting_FullScreenQuad::alignedSize(uint32_t value, uint32_t alignment)
+uint32_t Lighting_RTX::alignedSize(uint32_t value, uint32_t alignment)
 {
 	return (value + alignment - 1) & ~(alignment - 1);
 }
 
-void Lighting_FullScreenQuad::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferData RayMisBuffer, vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
+void Lighting_RTX::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferData RayMisBuffer, vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
 {
 	vk::BufferDeviceAddressInfo raygenShaderBindingTableDeviceAdressesInfo;
 	raygenShaderBindingTableDeviceAdressesInfo.buffer = RayGenBuffer.buffer;
@@ -399,11 +398,11 @@ void Lighting_FullScreenQuad::Draw(BufferData RayGenBuffer, BufferData RayHitBuf
 		depth);
 }
 
-void Lighting_FullScreenQuad::CleanUp()
+void Lighting_RTX::CleanUp()
 {
 	if (bufferManager)
 	{
-		for (auto& RayGen_Buffer : fragmentUniformBuffers)
+		for (auto& RayGen_Buffer : UniformBuffers)
 		{
 			if (RayGen_Buffer.buffer)
 			{
@@ -414,7 +413,7 @@ void Lighting_FullScreenQuad::CleanUp()
 
 		vulkanContext->LogicalDevice.destroyDescriptorSetLayout(descriptorSetLayout);
 
-		fragmentUniformBuffers.clear();
+		UniformBuffers.clear();
 	}
 	
 }

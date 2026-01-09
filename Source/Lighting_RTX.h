@@ -6,11 +6,11 @@
 #include "SkyBox.h"
 class RT_Shadows;
 
-class Lighting_FullScreenQuad
+class Lighting_RTX
 {
 public:
 
-    Lighting_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext, Camera* cameraref, vk::CommandPool commandpool, SkyBox* skyboxref);
+    Lighting_RTX(BufferManager* buffermanager, VulkanContext* vulkancontext, Camera* cameraref, vk::CommandPool commandpool, SkyBox* skyboxref);
     void CreateUniformBuffer();
     void CreateStorageImage();
     void DestroyStorageImage();
@@ -32,8 +32,8 @@ public:
     vk::CommandPool                commandPool;
     std::vector<vk::DescriptorSet> DescriptorSets;
 
-    std::vector<BufferData> fragmentUniformBuffers;
-    std::vector<void*> FragmentUniformBuffersMappedMem;
+    std::vector<BufferData> UniformBuffers;
+    std::vector<void*>      UniformBuffersMappedMem;
 
     GBuffer*   GbufferRef = nullptr;
     SkyBox* SkyBoxRef = nullptr;
@@ -48,12 +48,12 @@ public:
 
 };
 
-static inline void Lighting_FullScreenQuadDeleter(Lighting_FullScreenQuad* fullScreenQuad) {
+static inline void Lighting_RTXDeleter(Lighting_RTX* ref) {
   
-    if (fullScreenQuad)
+    if (ref)
     {
-        fullScreenQuad->CleanUp();
-        delete fullScreenQuad;
+        ref->CleanUp();
+        delete ref;
     }
 }
 
