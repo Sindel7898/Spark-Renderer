@@ -7,14 +7,13 @@
 #include "Camera.h"
 #include "RT_Shadows.h"
 
-Lighting_FullScreenQuad::Lighting_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext,Camera* cameraref, vk::CommandPool commandpool, SkyBox* skyboxref, RT_Shadows* raytracingref): Drawable()
+Lighting_FullScreenQuad::Lighting_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext,Camera* cameraref, vk::CommandPool commandpool, SkyBox* skyboxref)
 {
 	camera = cameraref;
 	bufferManager = buffermanager;
 	vulkanContext = vulkancontext;
 	commandPool   = commandpool;
 	SkyBoxRef = skyboxref;
-	raytracingRef = raytracingref;
 	CreateUniformBuffer();
 	createDescriptorSetLayout();
 }
@@ -40,74 +39,90 @@ void Lighting_FullScreenQuad::CreateUniformBuffer()
 	}
 }
 
+void Lighting_FullScreenQuad::CreateStorageImage() {
+
+    swapchainextent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
+
+	ResultingStorageImage.ImageID = " Lighting with rt Pass Image";
+	bufferManager->CreateImage(&ResultingStorageImage, swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc, false);
+	ResultingStorageImage.imageView = bufferManager->CreateImageView(&ResultingStorageImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	ResultingStorageImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+}
+
+void Lighting_FullScreenQuad::DestroyStorageImage() {
+
+	bufferManager->DestroyImage(ResultingStorageImage);
+
+
+}
+
 void Lighting_FullScreenQuad::createDescriptorSetLayout()
 {
 	{
 		//////// Create set for Final Lighting Pass ////////////
-		vk::DescriptorSetLayoutBinding PositionSampleryLayout{};
-		PositionSampleryLayout.binding = 0;
-		PositionSampleryLayout.descriptorCount = 1;
-		PositionSampleryLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		PositionSampleryLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+		vk::DescriptorSetLayoutBinding PositionSamplerLayout{};
+		PositionSamplerLayout.binding = 0;
+		PositionSamplerLayout.descriptorCount = 1;
+		PositionSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		PositionSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
 		vk::DescriptorSetLayoutBinding NormalSamplerLayout{};
 		NormalSamplerLayout.binding = 1;
 		NormalSamplerLayout.descriptorCount = 1;
 		NormalSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		NormalSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+		NormalSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
 		vk::DescriptorSetLayoutBinding AlbedoSamplerLayout{};
 		AlbedoSamplerLayout.binding = 2;
 		AlbedoSamplerLayout.descriptorCount = 1;
 		AlbedoSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		AlbedoSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+		AlbedoSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
 		vk::DescriptorSetLayoutBinding MaterialsSamplerLayout{};
 		MaterialsSamplerLayout.binding = 3;
 		MaterialsSamplerLayout.descriptorCount = 1;
 		MaterialsSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		MaterialsSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+		MaterialsSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
 		vk::DescriptorSetLayoutBinding ReflectiveCubeSamplerLayout{};
 		ReflectiveCubeSamplerLayout.binding = 4;
 		ReflectiveCubeSamplerLayout.descriptorCount = 1;
 		ReflectiveCubeSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		ReflectiveCubeSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
-
-		vk::DescriptorSetLayoutBinding ShadowMapSamplerLayout{};
-		ShadowMapSamplerLayout.binding = 5;
-		ShadowMapSamplerLayout.descriptorCount = 4;
-		ShadowMapSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		ShadowMapSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+		ReflectiveCubeSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
 		vk::DescriptorSetLayoutBinding EmisiveSamplerLayout{};
-		EmisiveSamplerLayout.binding = 6;
+		EmisiveSamplerLayout.binding = 5;
 		EmisiveSamplerLayout.descriptorCount = 1;
 		EmisiveSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		EmisiveSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+		EmisiveSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
-		vk::DescriptorSetLayoutBinding RT_Reflection{};
-		RT_Reflection.binding = 7;
-		RT_Reflection.descriptorCount = 1;
-		RT_Reflection.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		RT_Reflection.stageFlags = vk::ShaderStageFlagBits::eFragment;
+		vk::DescriptorSetLayoutBinding ResultingImageLayout{};
+		ResultingImageLayout.binding = 6;
+		ResultingImageLayout.descriptorCount = 1;
+		ResultingImageLayout.descriptorType = vk::DescriptorType::eStorageImage;
+		ResultingImageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
 		vk::DescriptorSetLayoutBinding LightUniformBufferLayout{};
-		LightUniformBufferLayout.binding = 8;
+		LightUniformBufferLayout.binding = 7;
 		LightUniformBufferLayout.descriptorCount = 1;
 		LightUniformBufferLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
-		LightUniformBufferLayout.stageFlags = vk::ShaderStageFlagBits::eFragment;
+		LightUniformBufferLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+
+		vk::DescriptorSetLayoutBinding TLASLayout{};
+		TLASLayout.binding = 8;
+		TLASLayout.descriptorCount = 1;
+		TLASLayout.descriptorType = vk::DescriptorType::eAccelerationStructureKHR;
+		TLASLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
 
-		std::array<vk::DescriptorSetLayoutBinding, 9> bindings = { PositionSampleryLayout,        // binding 0
-																   NormalSamplerLayout,           // binding 1
-																   AlbedoSamplerLayout,           // binding 2
+		std::array<vk::DescriptorSetLayoutBinding, 9> bindings = { PositionSamplerLayout,
+																   NormalSamplerLayout,          
+																   AlbedoSamplerLayout,          
 			                                                       MaterialsSamplerLayout,
 																   ReflectiveCubeSamplerLayout,
-			                                                       ShadowMapSamplerLayout,
 			                                                       EmisiveSamplerLayout,
-			                                                       RT_Reflection,
-																   LightUniformBufferLayout       // binding 3
+																   ResultingImageLayout,
+																   LightUniformBufferLayout,TLASLayout
 		};
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
@@ -123,11 +138,11 @@ void Lighting_FullScreenQuad::createDescriptorSetLayout()
 
 }
 
-void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer* Gbuffer, ImageData* RT_Reflection)
+void Lighting_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer* Gbuffer, vk::AccelerationStructureKHR* TLAS)
 {
+	TLASr = TLAS;
 
 	GbufferRef = Gbuffer;
-	RT_ReflectionRef = RT_Reflection;
 	// create sets from the pool based on the layout
 	std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
 
@@ -218,27 +233,6 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 		ReflectiveCubeSamplerdescriptorWrite.descriptorCount = 1;
 		ReflectiveCubeSamplerdescriptorWrite.pImageInfo = &ReflectiveCubeimageInfo;
 
-		std::vector<vk::DescriptorImageInfo>ShadowImagesInfos;
-
-		for (int i = 0; i < raytracingRef->ShadowPassImages.size(); i++)
-		{
-
-			vk::DescriptorImageInfo StoreageImageInfo{};
-			StoreageImageInfo.imageLayout = vk::ImageLayout::eGeneral;
-			StoreageImageInfo.imageView = raytracingRef->ShadowPassImages[i].imageView;
-			StoreageImageInfo.sampler = raytracingRef->ShadowPassImages[i].imageSampler;
-
-			ShadowImagesInfos.push_back(StoreageImageInfo);
-		}
-
-		vk::WriteDescriptorSet StoreageImagSamplerdescriptorWrite{};
-		StoreageImagSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		StoreageImagSamplerdescriptorWrite.dstBinding = 5;
-		StoreageImagSamplerdescriptorWrite.dstArrayElement = 0;
-		StoreageImagSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		StoreageImagSamplerdescriptorWrite.descriptorCount = ShadowImagesInfos.size();
-		StoreageImagSamplerdescriptorWrite.pImageInfo = ShadowImagesInfos.data();
-
 		vk::DescriptorImageInfo EmisiveimageInfo{};
 		EmisiveimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		EmisiveimageInfo.imageView = GbufferRef->Emissive.imageView;
@@ -246,25 +240,24 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 
 		vk::WriteDescriptorSet EmisiveSamplerdescriptorWrite{};
 		EmisiveSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		EmisiveSamplerdescriptorWrite.dstBinding = 6;
+		EmisiveSamplerdescriptorWrite.dstBinding = 5;
 		EmisiveSamplerdescriptorWrite.dstArrayElement = 0;
 		EmisiveSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		EmisiveSamplerdescriptorWrite.descriptorCount = 1;
 		EmisiveSamplerdescriptorWrite.pImageInfo = &EmisiveimageInfo;
 
+		vk::DescriptorImageInfo ResultingimageInfo{};
+		ResultingimageInfo.imageLayout = vk::ImageLayout::eGeneral;
+		ResultingimageInfo.imageView = ResultingStorageImage.imageView;
+		ResultingimageInfo.sampler = ResultingStorageImage.imageSampler;
 
-		vk::DescriptorImageInfo RT_ReflectionimageInfo{};
-		RT_ReflectionimageInfo.imageLayout = vk::ImageLayout::eGeneral;
-		RT_ReflectionimageInfo.imageView = RT_ReflectionRef->imageView;
-		RT_ReflectionimageInfo.sampler = RT_ReflectionRef->imageSampler;
-
-		vk::WriteDescriptorSet RT_ReflectionsSamplerdescriptorWrite{};
-		RT_ReflectionsSamplerdescriptorWrite.dstSet = DescriptorSets[i];
-		RT_ReflectionsSamplerdescriptorWrite.dstBinding = 7;
-		RT_ReflectionsSamplerdescriptorWrite.dstArrayElement = 0;
-		RT_ReflectionsSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
-		RT_ReflectionsSamplerdescriptorWrite.descriptorCount = 1;
-		RT_ReflectionsSamplerdescriptorWrite.pImageInfo = &RT_ReflectionimageInfo;
+		vk::WriteDescriptorSet ResultingdescriptorWrite{};
+		ResultingdescriptorWrite.dstSet = DescriptorSets[i];
+		ResultingdescriptorWrite.dstBinding = 6;
+		ResultingdescriptorWrite.dstArrayElement = 0;
+		ResultingdescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
+		ResultingdescriptorWrite.descriptorCount = 1;
+		ResultingdescriptorWrite.pImageInfo = &ResultingimageInfo;
 
 		/////////////////////////////////////////////////////////////////////////////////////
 
@@ -275,22 +268,33 @@ void Lighting_FullScreenQuad::UpdateDescrptorSets()
 
 		vk::WriteDescriptorSet LightUniformBufferDescriptorWrite{};
 		LightUniformBufferDescriptorWrite.dstSet = DescriptorSets[i];
-		LightUniformBufferDescriptorWrite.dstBinding = 8;
+		LightUniformBufferDescriptorWrite.dstBinding = 7;
 		LightUniformBufferDescriptorWrite.dstArrayElement = 0;
 		LightUniformBufferDescriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
 		LightUniformBufferDescriptorWrite.descriptorCount = 1;
 		LightUniformBufferDescriptorWrite.pBufferInfo = &LightUniformBufferInfo;
 
+		vk::WriteDescriptorSetAccelerationStructureKHR descriptorAccelerationStructureInfo{};
+		descriptorAccelerationStructureInfo.accelerationStructureCount = 1;
+		descriptorAccelerationStructureInfo.pAccelerationStructures = TLASr;
+
+		vk::WriteDescriptorSet TLAS_descriptorWrite{};
+		TLAS_descriptorWrite.dstSet = DescriptorSets[i];
+		TLAS_descriptorWrite.dstBinding = 8;
+		TLAS_descriptorWrite.dstArrayElement = 0;
+		TLAS_descriptorWrite.descriptorType = vk::DescriptorType::eAccelerationStructureKHR;
+		TLAS_descriptorWrite.descriptorCount = 1;
+		TLAS_descriptorWrite.pNext = &descriptorAccelerationStructureInfo;
+
+
 		std::array<vk::WriteDescriptorSet, 9> descriptorWrites = {
-																	PositionSamplerdescriptorWrite,        // binding 0
-																	NormalSamplerdescriptorWrite,          // binding 1
-																	AlbedoSamplerdescriptorWrite,          // binding 2
+																	PositionSamplerdescriptorWrite,      
+																	NormalSamplerdescriptorWrite,        
+																	AlbedoSamplerdescriptorWrite,        
 																	MaterialsSamplerdescriptorWrite,
 																	ReflectiveCubeSamplerdescriptorWrite,
-																	StoreageImagSamplerdescriptorWrite,
-																	EmisiveSamplerdescriptorWrite,
-																	RT_ReflectionsSamplerdescriptorWrite,
-																	LightUniformBufferDescriptorWrite      // binding 3
+																	EmisiveSamplerdescriptorWrite,ResultingdescriptorWrite,
+																	LightUniformBufferDescriptorWrite,TLAS_descriptorWrite
 		};
 
 		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
@@ -310,8 +314,6 @@ void Lighting_FullScreenQuad::UpdateUniformBuffer(uint32_t currentImage, std::ve
 
 	for (int  i = 0; i < lightref.size(); i++)
 	{
-		Drawable::UpdateUniformBuffer(currentImage);
-
 		if (lightref[i])
 		{
 			LightUniformData LightData;
@@ -330,21 +332,90 @@ void Lighting_FullScreenQuad::UpdateUniformBuffer(uint32_t currentImage, std::ve
 
 }
 
-void Lighting_FullScreenQuad::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)
+uint32_t Lighting_FullScreenQuad::alignedSize(uint32_t value, uint32_t alignment)
 {
-	vk::DeviceSize offsets[] = { 0 };
-	vk::Buffer VertexBuffers[] = { 	bufferManager->FullScreenQuadVertexBufferData.buffer };
+	return (value + alignment - 1) & ~(alignment - 1);
+}
 
-	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(int), &LightCount);
-	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
-	commandbuffer.bindIndexBuffer(bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
-	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
-	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
+void Lighting_FullScreenQuad::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferData RayMisBuffer, vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
+{
+	vk::BufferDeviceAddressInfo raygenShaderBindingTableDeviceAdressesInfo;
+	raygenShaderBindingTableDeviceAdressesInfo.buffer = RayGenBuffer.buffer;
+
+	vk::BufferDeviceAddressInfo missShaderBindingTableDeviceAdressesInfo;
+	missShaderBindingTableDeviceAdressesInfo.buffer = RayMisBuffer.buffer;
+
+	vk::BufferDeviceAddressInfo hitShaderBindingTableDeviceAdressesInfo;
+	hitShaderBindingTableDeviceAdressesInfo.buffer = RayHitBuffer.buffer;
+
+	auto raygenShaderBindingTableAdress = vulkanContext->LogicalDevice.getBufferAddress(raygenShaderBindingTableDeviceAdressesInfo);
+	auto missShaderBindingTableAdress = vulkanContext->LogicalDevice.getBufferAddress(missShaderBindingTableDeviceAdressesInfo);
+	auto hitShaderBindingTableAdress = vulkanContext->LogicalDevice.getBufferAddress(hitShaderBindingTableDeviceAdressesInfo);
+
+
+	const uint32_t handleSizeAligned = alignedSize(
+		vulkanContext->RayTracingPipelineProperties.shaderGroupHandleSize,
+		vulkanContext->RayTracingPipelineProperties.shaderGroupHandleAlignment);
+
+	vk::StridedDeviceAddressRegionKHR    raygenShaderSbtEntry{};
+	raygenShaderSbtEntry.deviceAddress = raygenShaderBindingTableAdress;
+	raygenShaderSbtEntry.stride = handleSizeAligned;
+	raygenShaderSbtEntry.size = handleSizeAligned;
+
+
+	vk::StridedDeviceAddressRegionKHR  missShaderSbtEntry{};
+	missShaderSbtEntry.deviceAddress = missShaderBindingTableAdress;
+	missShaderSbtEntry.stride = handleSizeAligned;
+	missShaderSbtEntry.size = handleSizeAligned;
+
+	vk::StridedDeviceAddressRegionKHR hitShaderSbtEntry{};
+	hitShaderSbtEntry.deviceAddress = hitShaderBindingTableAdress;
+	hitShaderSbtEntry.stride = handleSizeAligned;
+	hitShaderSbtEntry.size = handleSizeAligned;
+
+	vk::StridedDeviceAddressRegionKHR callableShaderSbtEntry{};
+
+	VkStridedDeviceAddressRegionKHR  TEMP_raygenShaderSbtEntry = static_cast<VkStridedDeviceAddressRegionKHR>(raygenShaderSbtEntry);
+	VkStridedDeviceAddressRegionKHR  TEMP_missShaderSbtEntry = static_cast<VkStridedDeviceAddressRegionKHR>(missShaderSbtEntry);;
+	VkStridedDeviceAddressRegionKHR  TEMP_hitShaderSbtEntry = static_cast<VkStridedDeviceAddressRegionKHR>(hitShaderSbtEntry);;
+	VkStridedDeviceAddressRegionKHR  TEMP_callableShaderSbtEntry = static_cast<VkStridedDeviceAddressRegionKHR>(callableShaderSbtEntry);;
+
+	int width  = vulkanContext->swapchainExtent.width;
+	int height = vulkanContext->swapchainExtent.height;
+	int depth = 1;
+
+
+	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eRaygenKHR, 0, sizeof(int), &LightCount);
+	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
+
+	vulkanContext->vkCmdTraceRaysKHR(
+		commandbuffer,
+		&TEMP_raygenShaderSbtEntry,
+		&TEMP_missShaderSbtEntry,
+		&TEMP_hitShaderSbtEntry,
+		&TEMP_callableShaderSbtEntry,
+		width,
+		height,
+		depth);
 }
 
 void Lighting_FullScreenQuad::CleanUp()
 {
+	if (bufferManager)
+	{
+		for (auto& RayGen_Buffer : fragmentUniformBuffers)
+		{
+			if (RayGen_Buffer.buffer)
+			{
+				bufferManager->UnmapMemory(RayGen_Buffer);
+				bufferManager->DestroyBuffer(RayGen_Buffer);
+			}
+		}
 
-	Drawable::Destructor();
+		vulkanContext->LogicalDevice.destroyDescriptorSetLayout(descriptorSetLayout);
+
+		fragmentUniformBuffers.clear();
+	}
+	
 }
 

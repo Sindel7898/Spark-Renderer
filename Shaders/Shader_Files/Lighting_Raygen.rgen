@@ -1,0 +1,169 @@
+#version 460
+#extension GL_EXT_ray_tracing : require
+const float PI = 3.14159265359;
+
+
+layout(push_constant) uniform PushConstant{
+       int LightCount;
+}PC;
+
+struct LightData{
+    vec4    positionAndLightType;
+    vec4    colorAndAmbientStrength;
+    vec4    CameraPositionAndLightIntensity;
+
+};
+layout(binding  = 0 ) uniform sampler2D   PositionImage;
+layout(binding  = 1 ) uniform sampler2D   NormalImage;
+layout(binding  = 2 ) uniform sampler2D   AlbedoImage;
+layout(binding  = 3 ) uniform sampler2D   MaterialImage;
+layout(binding  = 4 ) uniform samplerCube SamplerReflectiveCubeMap[2];
+layout(binding  = 5 ) uniform sampler2D   EmisiveImage;
+layout(binding  = 6, rgba16f) uniform image2D OutputImage;
+
+
+layout(set = 0, binding = 7) uniform LightUniformBuffer {
+         LightData lights[4];
+};
+
+layout(binding  = 8) uniform accelerationStructureEXT topLevelAS;
+
+
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}  
+
+float DistributionGGX(vec3 N, vec3 H, float roughness)
+{
+    float safeRoughness = max(roughness, 0.05);
+    float a      = safeRoughness*safeRoughness;
+    float a2     = a*a;
+    float NdotH  = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH*NdotH;
+	
+    float num   = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+	
+    return num / denom;
+}
+
+float GeometrySchlickGGX(float NdotV, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
+
+    float num   = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+	
+    return num / denom;
+}
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+{
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2  = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1  = GeometrySchlickGGX(NdotL, roughness);
+	
+    return ggx1 * ggx2;
+}
+
+struct ShadowPayload {
+       int visibility;
+};
+
+layout(location = 0) rayPayloadEXT ShadowPayload shadowPayload;
+
+void main() {
+
+    ivec2 halfCoord  = ivec2(gl_LaunchIDEXT.xy);
+    ivec2 fullCoord = halfCoord;
+
+
+    //Defaults/////////////////////////////
+    vec3  LightDir = vec3(1,1,1);
+
+    const float Constant   = 1.0;
+    const float Linear     = 0.09;
+    const float Quadratic  = 0.032;
+
+    vec3 radiance          = vec3(0.0);
+    vec3 totalLighting     = vec3(0.0);
+    ///////////////////////////////////////
+
+    vec3  WorldPos       = texelFetch(PositionImage,fullCoord,0).rgb;
+    vec3  Normal         = normalize(texelFetch(NormalImage,fullCoord,0).rgb);
+    vec3  Albedo         = texelFetch(AlbedoImage,fullCoord,0).rgb;
+    float Metallic       = texelFetch(MaterialImage,fullCoord,0).r;
+    float Roughness      = texelFetch(MaterialImage,fullCoord,0).g;
+    vec3  Emmisive       = texelFetch(EmisiveImage,fullCoord,0).rgb;
+
+    vec3  ViewDir    = normalize(lights[0].CameraPositionAndLightIntensity.xyz -  WorldPos);
+
+    const uint rayFlags = gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
+    const uint cullMask = 0xFF;
+    const float tMin = 0.001;
+    vec3 F0          = vec3(0.04); 
+
+  for (int i = 0; i < PC.LightCount; i++) {
+
+    LightData light = lights[i];
+
+
+     vec3 Lo      = vec3(0.0);
+     float tMax = 10000.0;
+
+      if(light.positionAndLightType.w < 0.5){
+
+         LightDir = normalize(-light.positionAndLightType.xyz);
+         radiance = light.colorAndAmbientStrength.rgb;
+         tMax = 10000.0;
+
+       }
+      else if (light.positionAndLightType.w > 0.5){
+               
+           vec3 LightPos   = light.positionAndLightType.xyz;
+               LightDir    = normalize(LightPos - WorldPos);
+         float Distance    = length(LightPos -  WorldPos);
+         float Attenuation = 1.0 / (Constant + Linear * Distance + Quadratic * (Distance * Distance));
+               radiance    = light.colorAndAmbientStrength.rgb * Attenuation;
+               tMax        = Distance;
+       }  
+
+         F0          = mix(F0, Albedo, Metallic);
+    vec3 halfwayDir  = normalize(LightDir + ViewDir);
+    
+    vec3 F    = fresnelSchlick(max(dot(Normal, ViewDir), 0.0), F0);//Calculates how much light is reflected vs. refracted on a surface based on the view angle.
+    float NDF = DistributionGGX(Normal, halfwayDir, Roughness); //describes how microfacet normal are distributed on a rough surface       
+    float G   = GeometrySmith(Normal, ViewDir, LightDir, Roughness);// models shadowing and masking
+
+    vec3  numerator    = NDF * G * F;
+    float denominator  = 4.0 * max(dot(Normal, ViewDir), 0.0) * max(dot(Normal, LightDir), 0.0)  + 0.0001;
+    vec3  specular     = (numerator / denominator);
+    
+    vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+    kD *= 1.0 - Metallic;	
+    vec3 diffuse = kD * (Albedo / PI);
+
+     float NdotL = max(dot(Normal, LightDir), 0.0);        
+             Lo += (diffuse + specular) * radiance * NdotL;
+
+
+     shadowPayload.visibility = 0;
+     traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, WorldPos.xyz + (Normal * 0.05) , tMin, LightDir, tMax, 0);
+
+     totalLighting +=  ((Lo) * light.CameraPositionAndLightIntensity.a) *  shadowPayload.visibility;
+  }
+
+     vec3 kS_env  = fresnelSchlick(max(dot(Normal, ViewDir), 0.0), F0);
+     vec3 kD_env  = vec3(1.0) - kS_env;
+          kD_env *= 1.0 - Metallic;
+
+  totalLighting +=  Emmisive;
+
+  vec3 gammaCorrected = pow(clamp(totalLighting, 0.0, 1.0), vec3(1.4 / 2.2));
+
+   imageStore(OutputImage, halfCoord, vec4(gammaCorrected, 1.0));
+}

@@ -12,7 +12,6 @@
 #include "SSAO_FullScreenQuad.h"
 #include "FXAA_FullScreenQuad.h"
 #include "SSR_FullScreenQuad.h"
-#include "RT_Shadows.h"
 #include "SSGI.h"
 #include "CombinedResult_FullScreenQuad.h"
 
@@ -108,7 +107,7 @@ public:
 	std::vector<std::string> SceneNames = { "Cornell", "Sponza" };
 
 	bool framebufferResized = false;
-	int DefferedDecider = 11;
+	int DefferedDecider = 3;
 
 	bool bWireFrame = false;
 	//Drawables
@@ -120,10 +119,6 @@ public:
 
 	std::unique_ptr<FXAA_FullScreenQuad, decltype(&FXAA_FullScreenQuadDeleter)>
 		fxaa_FullScreenQuad{ nullptr, &FXAA_FullScreenQuadDeleter };
-
-
-	std::unique_ptr<RT_Shadows, decltype(&RT_ShadowsDeleter)>
-		Raytracing_Shadows{ nullptr, &RT_ShadowsDeleter };
 
 	std::unique_ptr<SSGI, decltype(&SSGIDeleter)>
 		SSGI_FullScreenQuad{ nullptr, &SSGIDeleter };
@@ -142,13 +137,7 @@ public:
 
 	VkDescriptorSet FinalRenderTextureId;
 	VkDescriptorSet LightingAndReflectionsRenderTextureId;
-	VkDescriptorSet Shadow_TextureId;
-	VkDescriptorSet PositionRenderTextureId;
-	VkDescriptorSet NormalTextureId;
-	VkDescriptorSet AlbedoTextureId;
-	VkDescriptorSet SSAOTextureId;
 	VkDescriptorSet SSGITextureId;
-	VkDescriptorSet RT_ReflectionTextureId;
 	VkDescriptorSet ReSTIR_DITextureId;
 	VkDescriptorSet DDGI_Radiance;
 	VkDescriptorSet DDGIIrradianceAtlasID;
@@ -254,8 +243,6 @@ private:
 
 	GBuffer gbuffer;
 
-	ImageData LightingPassImageData;
-
 	//RT Acceleration Structures
 	BufferData TLAS_Buffer;
 	BufferData TLAS_SCRATCH_Buffer;
@@ -264,13 +251,14 @@ private:
 
 
 	//RT Bind Tables
-	BufferData Shadow_raygenShaderBindingTableBuffer;
-	BufferData Shadow_missShaderBindingTableBuffer;
-	BufferData Shadow_hitShaderBindingTableBuffer;
-
 	BufferData Reflection_raygenShaderBindingTableBuffer;
 	BufferData Reflection_missShaderBindingTableBuffer;
 	BufferData Reflection_hitShaderBindingTableBuffer;
+
+	BufferData Lighting_raygenShaderBindingTableBuffer;
+	BufferData Lighting_missShaderBindingTableBuffer;
+	BufferData Lighting_hitShaderBindingTableBuffer;
+
 
 	BufferData	DDGI_raygenShaderBindingTableBuffer;
 	BufferData	DDGI_missShaderBindingTableBuffer;

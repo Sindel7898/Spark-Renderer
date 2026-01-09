@@ -969,8 +969,8 @@ void SSGI::UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_pt
 void SSGI::ComputeSSGI(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
 {
 
-	uint32_t workGroupsX = (vulkanContext->swapchainExtent.width  + 31) / 32;
-	uint32_t workGroupsY = (vulkanContext->swapchainExtent.height + 31) / 32;
+	uint32_t workGroupsX = (SSGI_ImageFullResolution.width  + 31) / 32;
+	uint32_t workGroupsY = (SSGI_ImageFullResolution.height + 31) / 32;
 
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
 	commandbuffer.dispatch(workGroupsX,workGroupsY,1);

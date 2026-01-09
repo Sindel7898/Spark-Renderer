@@ -540,18 +540,10 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 
         // Display the appropriate texture based on current render pass
         switch (appref->DefferedDecider) {
-                case 0: ImGui::Image((ImTextureID)appref->PositionRenderTextureId, viewportSize); break;
-                case 1: ImGui::Image((ImTextureID)appref->NormalTextureId, viewportSize); break;
-                case 2: ImGui::Image((ImTextureID)appref->AlbedoTextureId, viewportSize); break;
-                case 3: ImGui::Image((ImTextureID)appref->SSAOTextureId, viewportSize); break;
-                case 4: ImGui::Image((ImTextureID)appref->Shadow_TextureId, viewportSize); break;
-                case 5: ImGui::Image((ImTextureID)appref->LightingAndReflectionsRenderTextureId, viewportSize); break;
-                case 6: ImGui::Image((ImTextureID)appref->SSGITextureId, viewportSize); break;
-                case 7: ImGui::Image((ImTextureID)appref->RT_ReflectionTextureId, viewportSize); break;
-                case 8: ImGui::Image((ImTextureID)appref->ReSTIR_DITextureId, viewportSize); break;
-                case 9: ImGui::Image((ImTextureID)appref->DDGI_Radiance, viewportSize); break;
-                case 10: ImGui::Image((ImTextureID)appref->Sampled_GI_ID, viewportSize); break;
-                case 11: ImGui::Image((ImTextureID)appref->FinalRenderTextureId, viewportSize); break;
+                case 0: ImGui::Image((ImTextureID)appref->SSGITextureId, viewportSize); break;
+                case 1: ImGui::Image((ImTextureID)appref->Sampled_GI_ID, viewportSize); break;
+                case 2: ImGui::Image((ImTextureID)appref->ReSTIR_DITextureId, viewportSize); break;
+                case 3: ImGui::Image((ImTextureID)appref->FinalRenderTextureId, viewportSize); break;
         }
 
         ImGuizmo::SetRect(imageTopLeft.x, imageTopLeft.y, viewportSize.x, viewportSize.y);

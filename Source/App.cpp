@@ -18,7 +18,6 @@
 #include "Pipeline_Manager.h"
 #include "FXAA_FullScreenQuad.h"
 #include "SSR_FullScreenQuad.h"
-#include "RT_Shadows.h"
 #include "SSAO_FullScreenQuad.h"
 #include "Lighting_FullScreenQuad.h"
 #include <pix.h>
@@ -51,8 +50,7 @@ userinterface(&vulkanContext, &window, &bufferManger), pipelineManager(&vulkanCo
 	SwitchScene(0);
 
 	RT_Reflection = std::unique_ptr<RT_Reflections, decltype(&RT_ReflectionsDeleter)>(new RT_Reflections(&vulkanContext, commandPool, &camera, &bufferManger, skyBox.get()), RT_ReflectionsDeleter);
-	Raytracing_Shadows = std::unique_ptr<RT_Shadows, decltype(&RT_ShadowsDeleter)>(new RT_Shadows(&vulkanContext, commandPool, &camera, &bufferManger), RT_ShadowsDeleter);
-	lighting_FullScreenQuad = std::unique_ptr<Lighting_FullScreenQuad, decltype(&Lighting_FullScreenQuadDeleter)>(new Lighting_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool, skyBox.get(), Raytracing_Shadows.get()), Lighting_FullScreenQuadDeleter);
+	lighting_FullScreenQuad = std::unique_ptr<Lighting_FullScreenQuad, decltype(&Lighting_FullScreenQuadDeleter)>(new Lighting_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool, skyBox.get()), Lighting_FullScreenQuadDeleter);
 	ssao_FullScreenQuad = std::unique_ptr<SSA0_FullScreenQuad, decltype(&SSA0_FullScreenQuadDeleter)>(new SSA0_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), SSA0_FullScreenQuadDeleter);
 	fxaa_FullScreenQuad = std::unique_ptr<FXAA_FullScreenQuad, decltype(&FXAA_FullScreenQuadDeleter)>(new FXAA_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), FXAA_FullScreenQuadDeleter);
 	Combined_FullScreenQuad = std::unique_ptr<CombinedResult_FullScreenQuad, decltype(&CombinedResult_FullScreenQuadDeleter)>(new CombinedResult_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), CombinedResult_FullScreenQuadDeleter);
@@ -139,8 +137,8 @@ void App::LoadAllObjects()
 
 void App::UpdateRayTracingDescriptors()
 {
-	if (Raytracing_Shadows) {
-		Raytracing_Shadows->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
+	if (lighting_FullScreenQuad) {
+		lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer, &TLAS);
 	}
 
 	if (RT_Reflection) {
@@ -243,7 +241,7 @@ void App::SwitchScene(int index)
 
 		camera.SetPosition(glm::vec3{ -0.896284, 12.566, -37.7205 });
 		camera.SetRotation(89.1, -2.5);
-		DefferedDecider = 11;
+		DefferedDecider = 3;
 	}
 
 	else if (index == 1) 
@@ -298,7 +296,7 @@ void App::SwitchScene(int index)
 
 		camera.SetPosition(glm::vec3{ 32.9095, 15.871, -0.912267 });
 		camera.SetRotation(-178.2, -13.4);
-		DefferedDecider = 8;
+		DefferedDecider = 2;
 	}
 
 	for (auto& l : lights) {
@@ -693,11 +691,6 @@ void App::createGBuffer()
 	gbuffer.Emissive.imageView = bufferManger.CreateImageView(&gbuffer.Emissive, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor);
 	gbuffer.Emissive.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
-	LightingPassImageData.ImageID = "Gbuffer LightingPass Texture";
-	bufferManger.CreateImage(&LightingPassImageData,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	LightingPassImageData.imageView = bufferManger.CreateImageView(&LightingPassImageData, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	LightingPassImageData.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
-
 	gbuffer.MotionVector.ImageID = "MotionVectors Texture";
 	bufferManger.CreateImage(&gbuffer.MotionVector, swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 	gbuffer.MotionVector.imageView = bufferManger.CreateImageView(&gbuffer.MotionVector, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
@@ -706,20 +699,18 @@ void App::createGBuffer()
 
 	fxaa_FullScreenQuad->CreateImage(swapchainextent);
 	SSGI_FullScreenQuad->CreateGIImage();
-	Raytracing_Shadows->CreateStorageImage();
 	Combined_FullScreenQuad->CreateImage(swapchainextent);
 	ssao_FullScreenQuad->CreateImage();
 	RT_Reflection->CreateStorageImage();
 	dynamicDiffuse_RTGI->CreateSampledGIImage(); 
 	Restir_DI->CreateImage();
+	lighting_FullScreenQuad->CreateStorageImage();
 
-
-	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&RT_Reflection->FullBlurReflectionPassImage);
+	lighting_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&TLAS);
 	ssao_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
-	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, LightingPassImageData, SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo, dynamicDiffuse_RTGI->Probe_Sampled_GI_Image);
+	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, lighting_FullScreenQuad->ResultingStorageImage, SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo, dynamicDiffuse_RTGI->Probe_Sampled_GI_Image);
 	fxaa_FullScreenQuad->createDescriptorSets(DescriptorPool, Combined_FullScreenQuad->FinalResultImage);
-	Raytracing_Shadows->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer);
-	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, LightingPassImageData,DepthTextureData);
+	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, lighting_FullScreenQuad->ResultingStorageImage,DepthTextureData);
 	RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer, lighting_FullScreenQuad->fragmentUniformBuffers);
 	dynamicDiffuse_RTGI->createDescriptorSets(DescriptorPool, gbuffer);
 	Restir_DI->createDescriptorSetsBasedOnGBuffer(DescriptorPool,&TLAS);
@@ -744,7 +735,6 @@ void App::createGBuffer()
 	bufferManger.TransitionImage(cmd, &gbuffer.Albedo, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &gbuffer.Emissive, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &gbuffer.Materials, TransitionToGeneral);
-	bufferManger.TransitionImage(cmd, &LightingPassImageData, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &gbuffer.MotionVector, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &Combined_FullScreenQuad->FinalResultImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->SSGIPassImage, TransitionToGeneral);
@@ -766,6 +756,7 @@ void App::createGBuffer()
 	bufferManger.TransitionImage(cmd, &dynamicDiffuse_RTGI->Probe_Sampled_GI_Image, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &Restir_DI->PrevResevoirImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &Restir_DI->ReSTIRDI_Results, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &lighting_FullScreenQuad->ResultingStorageImage, TransitionToGeneral);
 
 	bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd,vulkanContext.graphicsQueue);
 
@@ -774,41 +765,14 @@ void App::createGBuffer()
 		                                               fxaa_FullScreenQuad->FxaaImage.imageView,
 		VK_IMAGE_LAYOUT_GENERAL);
 
-	LightingAndReflectionsRenderTextureId = ImGui_ImplVulkan_AddTexture(LightingPassImageData.imageSampler,
-		LightingPassImageData.imageView,
-		VK_IMAGE_LAYOUT_GENERAL);
-
-	Shadow_TextureId       = ImGui_ImplVulkan_AddTexture (Raytracing_Shadows->ShadowPassImages[1].imageSampler,
-		                                                  Raytracing_Shadows->ShadowPassImages[1].imageView,
-		VK_IMAGE_LAYOUT_GENERAL);
-
-	
-	SSAOTextureId           = ImGui_ImplVulkan_AddTexture(ssao_FullScreenQuad->BluredSSAOImage.imageSampler,
-		                                                  ssao_FullScreenQuad->BluredSSAOImage.imageView,
+	LightingAndReflectionsRenderTextureId = ImGui_ImplVulkan_AddTexture(lighting_FullScreenQuad->ResultingStorageImage.imageSampler,
+		                                                                lighting_FullScreenQuad->ResultingStorageImage.imageView,
 		VK_IMAGE_LAYOUT_GENERAL);
 
 
-	PositionRenderTextureId = ImGui_ImplVulkan_AddTexture(gbuffer.Position.imageSampler,
-		                                                  gbuffer.Position.imageView,
-		VK_IMAGE_LAYOUT_GENERAL);
-
-	NormalTextureId         = ImGui_ImplVulkan_AddTexture(gbuffer.Normal.imageSampler,
-		                                                  gbuffer.Normal.imageView,
-		VK_IMAGE_LAYOUT_GENERAL);
-
-
-	AlbedoTextureId         = ImGui_ImplVulkan_AddTexture(gbuffer.Albedo.imageSampler,
-		                                                  gbuffer.Albedo.imageView,
-		VK_IMAGE_LAYOUT_GENERAL);
-
-	SSGITextureId            = ImGui_ImplVulkan_AddTexture(SSGI_FullScreenQuad->SSGIAccumilationImage.imageSampler,
+	SSGITextureId    = ImGui_ImplVulkan_AddTexture(SSGI_FullScreenQuad->SSGIAccumilationImage.imageSampler,
 		                                                   SSGI_FullScreenQuad->SSGIAccumilationImage.imageView,
 		                                                   VK_IMAGE_LAYOUT_GENERAL);
-
-
-	RT_ReflectionTextureId = ImGui_ImplVulkan_AddTexture(RT_Reflection->ReflectionPassImage.imageSampler,
-		                                                 RT_Reflection->ReflectionPassImage.imageView,
-		                                                 VK_IMAGE_LAYOUT_GENERAL);
 	
 
 	ReSTIR_DITextureId = ImGui_ImplVulkan_AddTexture(Restir_DI->ReSTIRDI_Results.imageSampler,
@@ -922,33 +886,6 @@ void App::CreateGraphicsPipeline()
 	DynamicState.dynamicStateCount = static_cast<uint32_t>(DynamicStates.size());
 	DynamicState.pDynamicStates = DynamicStates.data();
 
-
-
-	{
-		std::array<vk::Format, 1> colorFormats = { vk::Format::eR16G16B16A16Sfloat };
-
-	   vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
-	   pipelineRenderingCreateInfo.colorAttachmentCount = 1;
-	   pipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats.data();
-
-	   vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-
-	   vk::PushConstantRange range = {};
-	   range.stageFlags =  vk::ShaderStageFlagBits::eFragment;
-	   range.offset = 0;
-	   range.size = sizeof(int);
-
-	   pipelineLayoutInfo.setLayoutCount = 1;
-	   pipelineLayoutInfo.setSetLayouts(lighting_FullScreenQuad->descriptorSetLayout);
-	   pipelineLayoutInfo.pushConstantRangeCount = 1;
-	   pipelineLayoutInfo.pPushConstantRanges = &range;
-
-	   FullScreen_Quad_Pipeline_Data  Lighting = pipelineManager.create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/DefferedLightingPass.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
-
-	   DeferedLightingPassPipelineLayout = Lighting.FQ_PipelineLayout;
-	   DeferedLightingPassPipeline = Lighting.FQ_Pipeline;
-
-	}
 
 	{
 		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
@@ -1387,78 +1324,6 @@ void App::CreateGraphicsPipeline()
 	}
 
 	///////////////////////////////////////////RAY TRACING PIPELINES////////////////////////////////////////////////////////////////
-
-	{
-		auto RayGen_ShaderCode        = readFile("../Shaders/Compiled_Shader_Files/raygen.rgen.spv");
-		auto RayGenMiss_ShaderCode    = readFile("../Shaders/Compiled_Shader_Files/RayGenMiss.rmiss.spv");
-
-		VkShaderModule RayGen_ShaderModule        = pipelineManager.createShaderModule(RayGen_ShaderCode);
-		VkShaderModule RayMiss_ShaderModule       = pipelineManager.createShaderModule(RayGenMiss_ShaderCode);
-
-
-		vk::PipelineShaderStageCreateInfo RayGen_ShaderStageInfo{};
-		RayGen_ShaderStageInfo.sType      = vk::StructureType::ePipelineShaderStageCreateInfo;
-		RayGen_ShaderStageInfo.stage      = vk::ShaderStageFlagBits::eRaygenKHR;
-		RayGen_ShaderStageInfo.module     = RayGen_ShaderModule;
-		RayGen_ShaderStageInfo.pName      = "main";
-
-		vk::PipelineShaderStageCreateInfo RayMiss_ShaderStageInfo{};
-		RayMiss_ShaderStageInfo.sType     = vk::StructureType::ePipelineShaderStageCreateInfo;
-		RayMiss_ShaderStageInfo.stage     = vk::ShaderStageFlagBits::eMissKHR;
-		RayMiss_ShaderStageInfo.module    = RayMiss_ShaderModule;
-		RayMiss_ShaderStageInfo.pName     = "main";
-
-	   std::vector<vk::PipelineShaderStageCreateInfo> ShaderStages = { RayGen_ShaderStageInfo ,
-																	   RayMiss_ShaderStageInfo};
-
-	   vk::RayTracingShaderGroupCreateInfoKHR RayGen_GroupInfo{};
-	   RayGen_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
-	   RayGen_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
-	   RayGen_GroupInfo.generalShader = 0;
-	   RayGen_GroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
-	   RayGen_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
-	   RayGen_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
-
-	   vk::RayTracingShaderGroupCreateInfoKHR Miss_GroupInfo{};
-	   Miss_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
-	   Miss_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
-	   Miss_GroupInfo.generalShader = 1;
-	   Miss_GroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
-	   Miss_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
-	   Miss_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
-
-	   vk::RayTracingShaderGroupCreateInfoKHR Hit_GroupInfo{};
-	   Hit_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
-	   Hit_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup;
-	   Hit_GroupInfo.generalShader = VK_SHADER_UNUSED_KHR;
-	   Hit_GroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
-	   Hit_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
-	   Hit_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
-
-
-
-	   std::vector<vk::RayTracingShaderGroupCreateInfoKHR> ShaderGroups = {
-		   RayGen_GroupInfo,
-		   Miss_GroupInfo,
-		   Hit_GroupInfo
-	   };
-
-	   vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
-	   pipelineLayoutInfo.setLayoutCount = 1;
-	   pipelineLayoutInfo.pSetLayouts = &Raytracing_Shadows->RayTracingDescriptorSetLayout;
-	   pipelineLayoutInfo.pushConstantRangeCount = 0;
-	   pipelineLayoutInfo.pPushConstantRanges = nullptr;
-
-	   RT_ShadowsPipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
-	   
-	   RT_ShadowsPassPipeline = pipelineManager.createRayTracingGraphicsPipeline(RT_ShadowsPipelineLayout, ShaderStages, ShaderGroups);
-	   
-	   vulkanContext.LogicalDevice.destroyShaderModule(RayGen_ShaderModule);
-	   vulkanContext.LogicalDevice.destroyShaderModule(RayMiss_ShaderModule);
-
-	}
-
-
 	{
 	
 		auto RayGen_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/ReSTIR_DI_Raygen.rgen.spv");
@@ -1630,6 +1495,90 @@ void App::CreateGraphicsPipeline()
 
 	}
 
+	{
+		auto RayGen_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/Lighting_Raygen.rgen.spv");
+		auto RayClosestHit_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/Lighting_ClosestHit.rchit.spv");
+		auto RayGenMiss_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/Lighting_Miss.rmiss.spv");
+
+		VkShaderModule RayGen_ShaderModule = pipelineManager.createShaderModule(RayGen_ShaderCode);
+		VkShaderModule RayClosestHit_ShaderModule = pipelineManager.createShaderModule(RayClosestHit_ShaderCode);
+		VkShaderModule RayMiss_ShaderModule = pipelineManager.createShaderModule(RayGenMiss_ShaderCode);
+
+
+		vk::PipelineShaderStageCreateInfo RayGen_ShaderStageInfo{};
+		RayGen_ShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+		RayGen_ShaderStageInfo.stage = vk::ShaderStageFlagBits::eRaygenKHR;
+		RayGen_ShaderStageInfo.module = RayGen_ShaderModule;
+		RayGen_ShaderStageInfo.pName = "main";
+
+		vk::PipelineShaderStageCreateInfo RayClosestHit_ShaderStageInfo{};
+		RayClosestHit_ShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+		RayClosestHit_ShaderStageInfo.stage = vk::ShaderStageFlagBits::eClosestHitKHR;
+		RayClosestHit_ShaderStageInfo.module = RayClosestHit_ShaderModule;
+		RayClosestHit_ShaderStageInfo.pName = "main";
+
+		vk::PipelineShaderStageCreateInfo RayMiss_ShaderStageInfo{};
+		RayMiss_ShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+		RayMiss_ShaderStageInfo.stage = vk::ShaderStageFlagBits::eMissKHR;
+		RayMiss_ShaderStageInfo.module = RayMiss_ShaderModule;
+		RayMiss_ShaderStageInfo.pName = "main";
+
+		std::vector<vk::PipelineShaderStageCreateInfo> ShaderStages = { RayGen_ShaderStageInfo ,
+																		RayClosestHit_ShaderStageInfo,
+																		RayMiss_ShaderStageInfo };
+
+		vk::RayTracingShaderGroupCreateInfoKHR RayGen_GroupInfo{};
+		RayGen_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
+		RayGen_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
+		RayGen_GroupInfo.generalShader = 0;
+		RayGen_GroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
+		RayGen_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
+		RayGen_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+
+		vk::RayTracingShaderGroupCreateInfoKHR RayClosestHit_GroupInfo{};
+		RayClosestHit_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
+		RayClosestHit_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup;
+		RayClosestHit_GroupInfo.generalShader = VK_SHADER_UNUSED_KHR;
+		RayClosestHit_GroupInfo.closestHitShader = 1;
+		RayClosestHit_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
+		RayClosestHit_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+
+		vk::RayTracingShaderGroupCreateInfoKHR Miss_GroupInfo{};
+		Miss_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
+		Miss_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
+		Miss_GroupInfo.generalShader = 2;
+		Miss_GroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
+		Miss_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
+		Miss_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+
+
+		std::vector<vk::RayTracingShaderGroupCreateInfoKHR> ShaderGroups = {
+			RayGen_GroupInfo,
+			RayClosestHit_GroupInfo,
+			Miss_GroupInfo,
+			Miss_GroupInfo,
+		};
+
+		vk::PushConstantRange range{};
+		range.setOffset(0);
+		range.setSize(sizeof(int));
+		range.setStageFlags(vk::ShaderStageFlagBits::eRaygenKHR);
+
+		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.pSetLayouts = &lighting_FullScreenQuad->descriptorSetLayout;
+		pipelineLayoutInfo.pushConstantRangeCount = 1;
+		pipelineLayoutInfo.pPushConstantRanges = &range;
+
+		DeferedLightingPassPipelineLayout = vulkanContext.LogicalDevice.createPipelineLayout(pipelineLayoutInfo, nullptr);
+
+		DeferedLightingPassPipeline = pipelineManager.createRayTracingGraphicsPipeline(DeferedLightingPassPipelineLayout, ShaderStages, ShaderGroups);
+
+		vulkanContext.LogicalDevice.destroyShaderModule(RayGen_ShaderModule);
+		vulkanContext.LogicalDevice.destroyShaderModule(RayClosestHit_ShaderModule);
+		vulkanContext.LogicalDevice.destroyShaderModule(RayMiss_ShaderModule);
+
+	}
 
 	{
 		auto RayGen_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/DDGI_Raygen.rgen.spv");
@@ -1967,37 +1916,6 @@ uint32_t App::alignedSize(uint32_t value, uint32_t alignment)
 
 void App::createShaderBindingTable() {
 
-	///Binding Table for Shadows
-	{
-		const size_t   handleSize = vulkanContext.RayTracingPipelineProperties.shaderGroupHandleSize;
-		const size_t   handleSizeAligned = alignedSize(handleSize, vulkanContext.RayTracingPipelineProperties.shaderGroupHandleAlignment);
-		const uint32_t groupcount = 3;
-		const uint32_t sbtSize = groupcount * handleSizeAligned;
-
-		// Get shader group handles
-		std::vector<uint8_t> shaderHandleStorage(sbtSize);
-
-		vulkanContext.vkGetRayTracingShaderGroupHandlesKHR(
-			static_cast<VkDevice>(vulkanContext.LogicalDevice),
-			static_cast<VkPipeline>(RT_ShadowsPassPipeline),
-			0,  // First group
-			groupcount,
-			shaderHandleStorage.size(),
-			shaderHandleStorage.data());
-
-		Shadow_raygenShaderBindingTableBuffer.BufferID = "Shadow raygen Shader Binding Table Buffer";
-		Shadow_missShaderBindingTableBuffer.BufferID = "Shadow miss Shader Binding Table Buffer";
-		Shadow_hitShaderBindingTableBuffer.BufferID = "Shadow hit Shader Binding Table Buffer";
-
-		bufferManger.CreateBuffer(&Shadow_raygenShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
-		bufferManger.CreateBuffer(&Shadow_missShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
-		bufferManger.CreateBuffer(&Shadow_hitShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
-
-		bufferManger.CopyDataToBuffer(shaderHandleStorage.data(), Shadow_raygenShaderBindingTableBuffer);
-		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned, Shadow_missShaderBindingTableBuffer);
-		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned * 2, Shadow_hitShaderBindingTableBuffer);
-	}
-
 	///Binding Table for Reflection
 	{
 		const size_t   handleSize = vulkanContext.RayTracingPipelineProperties.shaderGroupHandleSize;
@@ -2028,6 +1946,37 @@ void App::createShaderBindingTable() {
 		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned, Reflection_hitShaderBindingTableBuffer);
 		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned * 2, Reflection_missShaderBindingTableBuffer);
 	}
+
+	{
+		const size_t   handleSize = vulkanContext.RayTracingPipelineProperties.shaderGroupHandleSize;
+		const size_t   handleSizeAligned = alignedSize(handleSize, vulkanContext.RayTracingPipelineProperties.shaderGroupHandleAlignment);
+		const uint32_t groupcount = 3;
+		const uint32_t sbtSize = groupcount * handleSizeAligned;
+
+		// Get shader group handles
+		std::vector<uint8_t> shaderHandleStorage(sbtSize);
+
+		vulkanContext.vkGetRayTracingShaderGroupHandlesKHR(
+			static_cast<VkDevice>(vulkanContext.LogicalDevice),
+			static_cast<VkPipeline>(DeferedLightingPassPipeline),
+			0,  // First group
+			groupcount,
+			shaderHandleStorage.size(),
+			shaderHandleStorage.data());
+
+		Lighting_raygenShaderBindingTableBuffer.BufferID = "Lighting raygen Shader Binding Table Buffer";
+		Lighting_missShaderBindingTableBuffer.BufferID   = "Lighting miss Shader Binding Table Buffer";
+		Lighting_hitShaderBindingTableBuffer.BufferID    = "Lighting hit Shader Binding Table Buffer";
+
+		bufferManger.CreateBuffer(&Lighting_raygenShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
+		bufferManger.CreateBuffer(&Lighting_missShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
+		bufferManger.CreateBuffer(&Lighting_hitShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
+
+		bufferManger.CopyDataToBuffer(shaderHandleStorage.data(), Lighting_raygenShaderBindingTableBuffer);
+		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned, Lighting_hitShaderBindingTableBuffer);
+		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned * 2, Lighting_missShaderBindingTableBuffer);
+	}
+
 
 	///Binding Table for DDGI
 	{
@@ -2101,12 +2050,6 @@ void App::createShaderBindingTable() {
 }
 
 void App::DestroyShaderBindingTable() {
-	///Binding Table for Shadows
-
-	bufferManger.DestroyBuffer(Shadow_raygenShaderBindingTableBuffer);
-	bufferManger.DestroyBuffer(Shadow_missShaderBindingTableBuffer);
-	bufferManger.DestroyBuffer(Shadow_hitShaderBindingTableBuffer);
-
 
 	bufferManger.DestroyBuffer(Reflection_raygenShaderBindingTableBuffer);
 	bufferManger.DestroyBuffer(Reflection_missShaderBindingTableBuffer);
@@ -2120,6 +2063,11 @@ void App::DestroyShaderBindingTable() {
 	bufferManger.DestroyBuffer(ReSTIR_DI_raygenShaderBindingTableBuffer);
 	bufferManger.DestroyBuffer(ReSTIR_DI_missShaderBindingTableBuffer);
 	bufferManger.DestroyBuffer(ReSTIR_DI_hitShaderBindingTableBuffer);
+
+
+	bufferManger.DestroyBuffer(Lighting_raygenShaderBindingTableBuffer);
+	bufferManger.DestroyBuffer(Lighting_missShaderBindingTableBuffer);
+	bufferManger.DestroyBuffer(Lighting_hitShaderBindingTableBuffer);
 }
 
 
@@ -2329,7 +2277,6 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 
 	lighting_FullScreenQuad->UpdateUniformBuffer(currentImage, lights);
 	ssao_FullScreenQuad->UpdataeUniformBufferData();
-	Raytracing_Shadows->UpdateUniformBuffer(currentImage, lights);
     SSGI_FullScreenQuad->UpdateUniformBuffer(currentImage, lights,deltaTime);
 	RT_Reflection->UpdateUniformBuffer(currentImage, lights, Models);
 
@@ -2924,7 +2871,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, ReSTIR_Label);
 	{
-		if (DefferedDecider == 8) { /// if we are looking at ReSTIR stop tracing
+		if (DefferedDecider == 2) { /// if we are not looking at ReSTIR stop tracing
 
 			ImageTransitionData TransitiontoGeneraRT{};
 			TransitiontoGeneraRT.oldlayout = vk::ImageLayout::eUndefined;
@@ -2972,40 +2919,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 				currentFrame);
 		}
 	}
-	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
-
-
-	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, RTShadows_Label);
-
-	{
-		ImageTransitionData TransitiontoGeneralRT{};
-		TransitiontoGeneralRT.oldlayout = vk::ImageLayout::eUndefined;
-		TransitiontoGeneralRT.newlayout = vk::ImageLayout::eGeneral;
-		TransitiontoGeneralRT.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitiontoGeneralRT.SourceAccessflag = vk::AccessFlagBits::eNone;
-		TransitiontoGeneralRT.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
-		TransitiontoGeneralRT.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
-		TransitiontoGeneralRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
-
-		if (DefferedDecider != 8){ /// if we are looking at ReSTIR stop tracing
-
-			for (int i = 0; i < Raytracing_Shadows->ShadowPassImages.size(); i++)
-			{
-				bufferManger.TransitionImage(commandBuffer, &Raytracing_Shadows->ShadowPassImages[i], TransitiontoGeneralRT);
-
-			}
-			commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_ShadowsPassPipeline);
-
-			Raytracing_Shadows->Draw(
-				Shadow_raygenShaderBindingTableBuffer,
-				Shadow_hitShaderBindingTableBuffer,
-				Shadow_missShaderBindingTableBuffer,
-				commandBuffer,
-				RT_ShadowsPipelineLayout,
-				currentFrame);
-     	}
-	}
-
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, RTReflections_Label);
@@ -3118,37 +3031,27 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 	}
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
-
+	
 	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DirectLighting_Label);
     /////////////////// LIGHTING PASS ///////////////////////// 
 	{
-		vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
-		LightPassColorAttachmentInfo.imageView = LightingPassImageData.imageView;
-		LightPassColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		LightPassColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
-		LightPassColorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
-		LightPassColorAttachmentInfo.clearValue = clearColor;
+		if (DefferedDecider == 3 || DefferedDecider == 0) {
 
-		vk::RenderingInfo renderingInfo{};
-		renderingInfo.renderArea.offset = imageoffset;
-		renderingInfo.renderArea.extent.height = vulkanContext.swapchainExtent.height; 
-		renderingInfo.renderArea.extent.width =  vulkanContext.swapchainExtent.width;
-		renderingInfo.layerCount = 1;
-		renderingInfo.colorAttachmentCount = 1;
-		renderingInfo.pColorAttachments = &LightPassColorAttachmentInfo;
+			commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, DeferedLightingPassPipeline);
 
-		commandBuffer.setViewport(0, 1, &viewport);
-		commandBuffer.setScissor(0, 1, &scissor);
-		commandBuffer.beginRendering(renderingInfo);
-
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, DeferedLightingPassPipeline);
-		lighting_FullScreenQuad->Draw(commandBuffer, DeferedLightingPassPipelineLayout, currentFrame);
-
-		commandBuffer.endRendering();
+			lighting_FullScreenQuad->Draw(
+				Lighting_raygenShaderBindingTableBuffer,
+				Lighting_hitShaderBindingTableBuffer,
+				Lighting_missShaderBindingTableBuffer,
+				commandBuffer,
+				DeferedLightingPassPipelineLayout,
+				currentFrame);
+		}
 	}
-
 	 /////////////////// LIGHTING PASS END ///////////////////////// 
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
+
+
 
 	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, SSGI_Label);
 	{
@@ -3607,7 +3510,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
 		SkyBoxRenderAttachInfo.clearValue = clearColor;
 		SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		SkyBoxRenderAttachInfo.imageView = LightingPassImageData.imageView;
+		SkyBoxRenderAttachInfo.imageView = lighting_FullScreenQuad->ResultingStorageImage.imageView;
 		SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
 		SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
 		
@@ -3803,18 +3706,18 @@ void App::destroy_GbufferImages()
 	bufferManger.DestroyImage(gbuffer.Materials);
 	bufferManger.DestroyImage(gbuffer.Albedo);
 	bufferManger.DestroyImage(gbuffer.Emissive);
-	bufferManger.DestroyImage(LightingPassImageData);
 	bufferManger.DestroyImage(gbuffer.MotionVector);
 	bufferManger.DestroyImage(gbuffer.PrevNormal);
 
 	ssao_FullScreenQuad->DestroyImage();
-	Raytracing_Shadows->DestroyStorageImage();
 	fxaa_FullScreenQuad->DestroyImage();
 	SSGI_FullScreenQuad->DestroyImage();
 	Combined_FullScreenQuad->DestroyImage();
 	RT_Reflection->DestroyStorageImage();
 	dynamicDiffuse_RTGI->DestroySampledGIImage();
 	Restir_DI->DestroyImage();
+	lighting_FullScreenQuad->DestroyStorageImage();
+
 
 }
 
@@ -3909,7 +3812,6 @@ void App::DestroyBuffers()
 	lighting_FullScreenQuad.reset();
 	ssao_FullScreenQuad.reset();
 	fxaa_FullScreenQuad.reset();
-	Raytracing_Shadows.reset();
 	SSGI_FullScreenQuad.reset();
 	Combined_FullScreenQuad.reset();
 	Restir_DI.reset();
