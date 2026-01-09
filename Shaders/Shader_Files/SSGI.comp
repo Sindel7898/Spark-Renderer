@@ -134,18 +134,15 @@ void main() {
          if(hit.hit) {
             vec4 RayPositionPS = ubo.ProjectionMatrix * vec4(hit.position, 1.0);
             RayPositionPS.xyz /= RayPositionPS.w;
-            vec2 uv = RayPositionPS.xy * 0.5 + 0.5;
-            
-            vec3 hitAlbedo  = texture(AlbedoTexture       , uv).rgb;
-            vec3 hitDirect  = texture(DirectLigtingTexture, uv).rgb;
+            vec2 hitUV = RayPositionPS.xy * 0.5 + 0.5;
 
-            vec3 contribution = ((hitAlbedo * hitDirect ));
-            giContribution += contribution;
+            vec3 Direct = texture(DirectLigtingTexture, hitUV).rgb;
+            giContribution += Direct;
 
          }
      }
     }
 
-
-    imageStore(SSGITexture,ivec2(gl_GlobalInvocationID.xy), vec4(giContribution,1));
+    vec3 finalGI = (giContribution / float(max(1, NUM_RAYS)));
+    imageStore(SSGITexture,ivec2(gl_GlobalInvocationID.xy), vec4(finalGI,1));
 }

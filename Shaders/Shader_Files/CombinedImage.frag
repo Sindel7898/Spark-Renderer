@@ -71,13 +71,10 @@ void main() {
      ivec2 texelCoord = ivec2(inTexCoord * vec2(texelSize));
      vec3 DDGI = imageLoad(DDGITexture, texelCoord).rgb;
 
-
      float AO     = SSAO * MaterialAO;
 
      vec3 DDGIresult   = DDGI  * Albedo / PI;
      vec3 SSGIGIresult = SSGI  * Albedo / PI;
-
-     //DDGIresult *= GIboost;
 
      if(AO < 0.1){AO = 1;}
 
@@ -85,13 +82,6 @@ void main() {
 
 
      vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, Brightness, Saturation, Concentration);
-
-    //float luma = rgb2luma(CorrectedColor);
-    //float darkFactor   = smoothstep(0.0, 0.2, luma); // 0 when dark, 1 when bright
-    //float dynamicGamma = mix(MinGamma, MaxGamma, darkFactor);  // gamma = 0.7 in darks, 1.0 in brights
-    //
-    //vec3 gammaCorrected = pow(clamp(CorrectedColor, 0.0, 1.0), vec3(dynamicGamma));
-    //vec3 tonemapped = aces_approx(gammaCorrected);
 
      vec3 GIOnly =   (DDGI + SSGI) * AO;
      outFragColor = vec4(CorrectedColor,1.0);
