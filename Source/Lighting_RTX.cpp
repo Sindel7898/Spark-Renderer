@@ -24,7 +24,7 @@ void Lighting_RTX::CreateUniformBuffer()
 	UniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 	UniformBuffersMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
 
-	VkDeviceSize FragmentuniformBufferSize = sizeof(LightUniformData) * 100;
+	VkDeviceSize FragmentuniformBufferSize = sizeof(LightUniformData) * 1000;
 
 	for (size_t i = 0; i < UniformBuffers.size(); i++)
 	{
@@ -263,7 +263,7 @@ void Lighting_RTX::UpdateDescrptorSets()
 		vk::DescriptorBufferInfo LightUniformBufferInfo;
 		LightUniformBufferInfo.buffer = UniformBuffers[i].buffer;
 		LightUniformBufferInfo.offset = 0;
-		LightUniformBufferInfo.range = sizeof(LightUniformData) * 100;
+		LightUniformBufferInfo.range = sizeof(LightUniformData) * 1000;
 
 		vk::WriteDescriptorSet LightUniformBufferDescriptorWrite{};
 		LightUniformBufferDescriptorWrite.dstSet = DescriptorSets[i];

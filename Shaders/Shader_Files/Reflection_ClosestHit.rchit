@@ -35,10 +35,14 @@ layout(set = 0, binding = 8) buffer VertexIndexOffsetBufferSSBO {
 
 } OffsetBuffer;
 
-layout(set = 0, binding = 9) uniform Transformation {
+struct Transformations {
+    mat4 WorldMatrix;
+    mat4 Inverese_Transposed_WorldMatrix;
+};
 
-    mat4 WorldMatrix[10];
-} Transformations;
+layout(set = 0, binding = 9) uniform Transformation {
+    Transformations transformations[100];
+};
 
 struct LightData{
     vec4    positionAndLightType;
@@ -155,7 +159,7 @@ void main()
        v2.texCoord_Padding.xy * bary.z;
 
 
-    mat3 normalMatrix  = transpose(inverse(mat3(Transformations.WorldMatrix[objectID])));
+    mat3 normalMatrix  = mat3(transformations[objectID].Inverese_Transposed_WorldMatrix);
     vec3 WorldN        = normalize(normalMatrix * Normal);
     vec3 WorldT        = normalize(normalMatrix * Tangent);
     vec3 WorldB        = cross(WorldN,WorldT);
@@ -183,7 +187,8 @@ void main()
     vec3 radiance          = vec3(0.0);
     vec3 totalLighting     = vec3(0.0);
 
-    vec4  WorldPos  =  Transformations.WorldMatrix[objectID] * vec4(VertexPosition,1);
+    vec4 WorldPos = transformations[objectID].WorldMatrix * vec4(VertexPosition, 1.0);
+
     vec3 ViewDir    = -normalize(gl_WorldRayDirectionEXT);
 
     vec3 F0          = vec3(0.04); 

@@ -873,7 +873,7 @@ void BufferManager::CreateSharedBuffers(vk::CommandPool& commandPool)
 		AllScene_TransformationUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		AllScene_TransformationUniformMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
 
-		VkDeviceSize RayGenIndexStorageBufferSize = sizeof(glm::mat4) * 100;
+		VkDeviceSize RayGenIndexStorageBufferSize = sizeof(GlobalTransformationMatrices) * 100;
 
 		for (size_t i = 0; i < AllScene_TransformationUniformBuffers.size(); i++)
 		{

@@ -34,9 +34,14 @@ layout(set = 0, binding = 14) buffer VertexIndexOffsetBufferSSBO {
 
 } OffsetBuffer;
 
+struct Transformations {
+    mat4 WorldMatrix;
+    mat4 Inverese_Transposed_WorldMatrix;
+};
+
 layout(set = 0, binding = 15) uniform Transformation {
-    mat4 WorldMatrix[10];
-} Transformations;
+    Transformations transformations[100];
+};
 
 
 struct UnifiedPayload {
@@ -111,7 +116,7 @@ void main()
           v2.texCoord_Padding.xy * bary.z;
    
    
-       mat3 normalMatrix  = transpose(inverse(mat3(Transformations.WorldMatrix[objectID])));
+       mat3 normalMatrix  = mat3(transformations[objectID].Inverese_Transposed_WorldMatrix);
        vec3 WorldN        = normalize(normalMatrix * Normal);
        vec3 WorldT        = normalize(normalMatrix * Tangent);
        vec3 WorldB        = cross(WorldN,WorldT);
@@ -127,8 +132,7 @@ void main()
        vec3 tnorm = normalize(WorldSpaceTBN * NormalTexture);
        Normal = tnorm;
 
-       vec4  WorldPos  =  Transformations.WorldMatrix[objectID] * vec4(VertexPosition,1);
-
+       vec4 WorldPos = transformations[objectID].WorldMatrix * vec4(VertexPosition, 1.0);
 
 
        payload.data = vec3(0.0);

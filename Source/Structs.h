@@ -134,3 +134,9 @@ struct RTpcInfo
     glm::vec4 UseInfiniteBounce_infinite_bounces_multiplier_Padding;
 
 };
+
+
+struct GlobalTransformationMatrices {
+	glm::mat4 WorldMatrix;
+	glm::mat4 Transposed_Normalised_WorldMatrix;
+};

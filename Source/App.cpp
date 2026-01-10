@@ -251,7 +251,7 @@ void App::SwitchScene(int index)
 			UserInterfaceItems.push_back(model.get());
 		}
 
-		int LightCount = 90;
+		int LightCount = 50;
 
 		lights.reserve(LightCount);
 
@@ -3052,11 +3052,12 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 
+	if (DefferedDecider != 2) {
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, SSGIPipeline);
+		SSGI_FullScreenQuad->ComputeSSGI(commandBuffer, SSGIPipelineLayout, currentFrame);
 
 	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, SSGI_Label);
 	{
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, SSGIPipeline);
-		SSGI_FullScreenQuad->ComputeSSGI(commandBuffer, SSGIPipelineLayout, currentFrame);
 
 		vk::ImageMemoryBarrier barrier{};
 		barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
@@ -3503,7 +3504,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		SSGI_FullScreenQuad->DrawUPSampleFullResSecondPass(commandBuffer, BluredSSGIPipelineLayout, currentFrame);
 		commandBuffer.endRendering();
 	}
-
+}
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 	{

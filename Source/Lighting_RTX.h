@@ -24,28 +24,32 @@ public:
 
     void CleanUp();
     
-    BufferManager* bufferManager = nullptr;
-    VulkanContext* vulkanContext = nullptr;
-    Camera* camera = nullptr;
-
-
-    vk::CommandPool                commandPool;
-    std::vector<vk::DescriptorSet> DescriptorSets;
+  
 
     std::vector<BufferData> UniformBuffers;
     std::vector<void*>      UniformBuffersMappedMem;
 
-    GBuffer*   GbufferRef = nullptr;
-    SkyBox* SkyBoxRef = nullptr;
-    int LightCount = 0;
-	ImageData ResultingStorageImage;
-    vk::Extent3D swapchainextent;
+    ImageData ResultingStorageImage;
+
+    GBuffer* GbufferRef = nullptr;
+
     vk::DescriptorSetLayout  descriptorSetLayout;
-    vk::AccelerationStructureKHR* TLASr;
+
+    int LightCount = 0;
 
    private:
 
+   BufferManager* bufferManager = nullptr;
+   VulkanContext* vulkanContext = nullptr;
+   Camera* camera = nullptr;
 
+   vk::CommandPool                commandPool;
+   std::vector<vk::DescriptorSet> DescriptorSets;
+
+   vk::Extent3D swapchainextent;
+   vk::AccelerationStructureKHR* TLASr;
+
+   SkyBox* SkyBoxRef = nullptr;
 };
 
 static inline void Lighting_RTXDeleter(Lighting_RTX* ref) {
