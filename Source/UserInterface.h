@@ -61,14 +61,14 @@ private:
     ImGuizmo::OPERATION currentGizmoOperation;
     ImGuizmo::MODE currentGizmoMode;
 
-    std::vector<std::string> Passes{"SSGI Pass","DDGI Pass","ReSTIR DI","Lighting Pass" };
+    std::vector<std::string> Passes{"SSGI Pass","DDGI Pass","ReSTIR DI","Lighting Pass","Reflections"};
     std::string currentPass = "Combined Pass";
 
     std::vector<std::string> items{ "Directional", "Point" };
     std::string currentItem = "Point";
 
 
-    std::vector<std::string> SkyBoxs{ "Day Sky", "Church", "Night Sky" };
+    std::vector<std::string> SkyBoxs{ "Day Sky", "Church", "Night Sky","City","Black"};
     std::string currentSkyBox = "Day Sky";
 
     ImVec2 viewportSize;

@@ -133,6 +133,29 @@ void App::LoadAllObjects()
 	CornelSceneModels.push_back(std::move(Bunny2));
 	CornelSceneModels.push_back(std::move(Dragon2));
 	CornelSceneModels.push_back(std::move(CornelBox));
+
+	////////ALT CORNEL SETUP////////////////////////////////////////
+	auto Bunny3 = std::shared_ptr<Model>(new Model("../Textures/Bunny2/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto AltCornelBox = std::shared_ptr<Model>(new Model("../Textures/EmptyCornel/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+
+	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	Bunny3->Instances[0]->SetPostion(glm::vec3(-1.185, -3.895, -1.218));
+	Bunny3->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
+	Bunny3->Instances[0]->SetScale(glm::vec3(0.190, 0.190, 0.190));
+	Bunny3->Instances[0]->CubeMapReflectiveSwitch(false);
+	Bunny3->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+
+	AltCornelBox->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
+	AltCornelBox->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
+	AltCornelBox->Instances[0]->CubeMapReflectiveSwitch(false);
+	AltCornelBox->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+
+	Bunny3->createDescriptorSets(DescriptorPool);
+	AltCornelBox->createDescriptorSets(DescriptorPool);
+
+	AltCornelSceneModels.push_back(std::move(Bunny3));
+	AltCornelSceneModels.push_back(std::move(AltCornelBox));
+
 }
 
 void App::UpdateRayTracingDescriptors()
@@ -251,7 +274,7 @@ void App::SwitchScene(int index)
 			UserInterfaceItems.push_back(model.get());
 		}
 
-		int LightCount = 50;
+		int LightCount = 200;
 
 		lights.reserve(LightCount);
 
@@ -297,6 +320,59 @@ void App::SwitchScene(int index)
 		camera.SetPosition(glm::vec3{ 32.9095, 15.871, -0.912267 });
 		camera.SetRotation(-178.2, -13.4);
 		DefferedDecider = 2;
+	}
+	else if (index == 2)
+	{
+		for (auto& model : AltCornelSceneModels) {
+			Models.push_back(model.get());
+			UserInterfaceItems.push_back(model.get());
+		}
+
+		int LightCount = 8;
+
+		lights.reserve(LightCount);
+
+		std::random_device rd;
+
+		std::mt19937 gen(rd());
+
+		std::uniform_real_distribution<float> disXZ(-20, 20);
+		std::uniform_real_distribution<float> disY(0, 40);
+		std::uniform_real_distribution<float> disc(0, 1);
+
+		for (int i = 0; i < LightCount; i++) {
+			std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(&vulkanContext, commandPool, &camera, &bufferManger), LightDeleter);
+
+			float randX = disXZ(gen);
+			float randY = disY(gen);
+			float randZ = disXZ(gen);
+
+			light->SetPosition(glm::vec3(randX, randY, randZ));
+			light->CastShadow = true;
+			light->createDescriptorSets(DescriptorPool);
+
+			float R = disc(gen);
+			float G = disc(gen);
+			float B = disc(gen);
+
+			light->color = glm::vec3(R, G, B);
+
+			lights.push_back(std::move(light));
+		}
+
+		if (dynamicDiffuse_RTGI)
+		{
+			dynamicDiffuse_RTGI->NumOfProbesX = 9;
+			dynamicDiffuse_RTGI->NumOfProbesY = 9;
+			dynamicDiffuse_RTGI->NumOfProbesZ = 9;
+			dynamicDiffuse_RTGI->RaysPerProbe = 128;
+			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(7.52, 8.62, 11.13);
+			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-24.67, -12.66, -45.61);
+		}
+
+		camera.SetPosition(glm::vec3{ -0.896284, 12.566, -37.7205 });
+		camera.SetRotation(89.1, -2.5);
+		DefferedDecider = 3;
 	}
 
 	for (auto& l : lights) {
@@ -788,6 +864,10 @@ void App::createGBuffer()
 	                                           dynamicDiffuse_RTGI->Probe_Sampled_GI_Image.imageView,
 			                                   VK_IMAGE_LAYOUT_GENERAL);
 
+
+   ReflectionID = ImGui_ImplVulkan_AddTexture(RT_Reflection->ReflectionPassImage.imageSampler,
+	                                           RT_Reflection->ReflectionPassImage.imageView,
+	                                           VK_IMAGE_LAYOUT_GENERAL);
 
 	std::cout << "Swapchain size: "
 		<< vulkanContext.swapchainExtent.width << " x "
@@ -3803,6 +3883,12 @@ void App::DestroyBuffers()
 	{
 		model.reset();
 	}
+
+	for (auto& model : AltCornelSceneModels)
+	{
+		model.reset();
+	}
+
 	for (auto& light : lights)
 	{
 		light.reset();

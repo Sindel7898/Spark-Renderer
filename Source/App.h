@@ -104,7 +104,7 @@ public:
 	void SwitchScene(int Index);
 
 	int currentSceneIndex = 0;
-	std::vector<std::string> SceneNames = { "Cornell", "Sponza" };
+	std::vector<std::string> SceneNames = { "Cornell", "Sponza" ,"Alt Cornell" };
 
 	bool framebufferResized = false;
 	int DefferedDecider = 3;
@@ -143,10 +143,12 @@ public:
 	VkDescriptorSet DDGIIrradianceAtlasID;
 	VkDescriptorSet Sampled_GI_ID;
 	VkDescriptorSet DDGIIVisibilityAtlasID;
-	
+	VkDescriptorSet ReflectionID;
+
 
 	std::vector<std::shared_ptr<Model>> SponzaSceneModels;
 	std::vector<std::shared_ptr<Model>> CornelSceneModels;
+	std::vector<std::shared_ptr<Model>> AltCornelSceneModels;
 
 	std::vector<Model*> Models;
 	std::vector<std::shared_ptr<Light>> lights;

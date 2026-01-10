@@ -61,6 +61,38 @@ SkyBox::SkyBox(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera
 		SkyBoxImages.push_back(SkyBox3);
 	}
 
+	{
+		std::array<const char*, 6> filePaths{
+		"../Textures/Skybox/City/px.jpg",  // +X (Right)
+		"../Textures/Skybox/City/nx.jpg",  // -X (Left)
+		"../Textures/Skybox/City/py.jpg",  // +Y (Top)
+		"../Textures/Skybox/City/ny.jpg",  // -Y (Bottom)
+		"../Textures/Skybox/City/pz.jpg",  // +Z (Front)
+		"../Textures/Skybox/City/nz.jpg"   // -Z (Back)
+		};
+
+		ImageData SkyBox3;
+		SkyBox3.ImageID = "skybox 4 Cube Map Texture";
+		bufferManager->CreateCubeMap(&SkyBox3, filePaths, commandPool, vulkanContext->graphicsQueue);
+		SkyBoxImages.push_back(SkyBox3);
+	}
+
+	{
+		std::array<const char*, 6> filePaths{
+		"../Textures/Skybox/Black/nx.jpg",  // +X (Right)
+		"../Textures/Skybox/Black/nx.jpg",  // -X (Left)
+		"../Textures/Skybox/Black/nx.jpg",  // +Y (Top)
+		"../Textures/Skybox/Black/nx.jpg",  // -Y (Bottom)
+		"../Textures/Skybox/Black/nx.jpg",  // +Z (Front)
+		"../Textures/Skybox/Black/nx.jpg"   // -Z (Back)
+		};
+
+		ImageData SkyBox3;
+		SkyBox3.ImageID = "skybox 5 Cube Map Texture";
+		bufferManager->CreateCubeMap(&SkyBox3, filePaths, commandPool, vulkanContext->graphicsQueue);
+		SkyBoxImages.push_back(SkyBox3);
+	}
+
 	CreateUniformBuffer();
 	CreateVertexAndIndexBuffer();
 	createDescriptorSetLayout();
