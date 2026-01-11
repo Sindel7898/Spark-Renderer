@@ -156,7 +156,7 @@ void main() {
 
      float shadow = 1.0;
 
-     vec3 shadowOrigin = WorldPos + (Normal * 0.02); // Small bias
+     vec3 shadowOrigin = WorldPos + (Normal * 0.05); // Small bias
      //This is faster than the isual traceRayEXT
      rayQueryInitializeEXT(rayQuery, topLevelAS, gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT, 0xFF, shadowOrigin, 0.001, LightDir, tMax);
      

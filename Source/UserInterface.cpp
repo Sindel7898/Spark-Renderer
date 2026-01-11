@@ -502,9 +502,9 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 
 
                     ImGui::SeparatorText("Probe Grid");
-                    ImGui::SliderInt("X Count", &appref->dynamicDiffuse_RTGI->NumOfProbesX, 1, 20, "%d");
-                    ImGui::SliderInt("Y Count", &appref->dynamicDiffuse_RTGI->NumOfProbesY, 1, 20, "%d");
-                    ImGui::SliderInt("Z Count", &appref->dynamicDiffuse_RTGI->NumOfProbesZ, 1, 20, "%d");
+                    ImGui::SliderInt("X Count", &appref->dynamicDiffuse_RTGI->NumOfProbesX, 1, 22, "%d");
+                    ImGui::SliderInt("Y Count", &appref->dynamicDiffuse_RTGI->NumOfProbesY, 1, 22, "%d");
+                    ImGui::SliderInt("Z Count", &appref->dynamicDiffuse_RTGI->NumOfProbesZ, 1, 22, "%d");
                     ImGui::SliderFloat3("Grid Location", glm::value_ptr(appref->dynamicDiffuse_RTGI->GridLocation), -100, 100, "%.2f");
                     ImGui::SliderFloat3("Probe Offset", glm::value_ptr(appref->dynamicDiffuse_RTGI->ProbeOffset), -30, 30, "%.2f");
                 }

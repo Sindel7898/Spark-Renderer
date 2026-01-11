@@ -278,7 +278,7 @@ void main()
             float lightDist = 10000.0;
             
             if(light.positionAndLightType.w < 0.5) { // Directional
-                LightDir = normalize(light.positionAndLightType.xyz);
+                LightDir = normalize(-light.positionAndLightType.xyz);
                 radiance = light.colorAndAmbientStrength.rgb;
                 lightDist = 10000.0;
             } else { // Point
@@ -297,11 +297,11 @@ void main()
 
             if (NdotL > 0.0 && light.CameraPositionAndLightIntensity.a > 0.0) {
                 rayQueryEXT rayQuery;
-                vec3 shadowOrigin = HitPosition + (HitNormal * 0.02); // Small bias
-                float tMax = lightDist - 0.05; 
+                vec3 shadowOrigin = HitPosition + (WorldN * 0.05);
+                float tMax = lightDist; 
                 
                 //This is faster than the isual traceRayEXT
-                rayQueryInitializeEXT(rayQuery, topLevelAS, gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT, 0xFF, shadowOrigin, 0.001, LightDir, tMax);
+                rayQueryInitializeEXT(rayQuery, topLevelAS, gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT | gl_RayFlagsCullFrontFacingTrianglesEXT, 0xFF, shadowOrigin, 0.001, LightDir, tMax);
 
                 while(rayQueryProceedEXT(rayQuery)) {} // let the hardware do what it wants
 
