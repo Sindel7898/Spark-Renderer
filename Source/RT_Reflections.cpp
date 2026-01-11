@@ -662,6 +662,7 @@ void RT_Reflections::UpdateUniformBuffer(uint32_t currentImage, std::vector<std:
 	RayGent_UniformBufferData.ViewMatrix = glm::inverse(camera->GetViewMatrix());
 	RayGent_UniformBufferData.ProjectionMatrix = glm::inverse(camera->GetProjectionMatrix());
 	RayGent_UniformBufferData.ProjectionMatrix[1][1] *= -1;
+	RayGent_UniformBufferData.ProjectionMatrix[0][0] *= -1;
 
 	memcpy(RayGen_UniformBuffersMappedMem[currentImage], &RayGent_UniformBufferData, sizeof(RayGent_UniformBufferData));
 

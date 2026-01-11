@@ -103,7 +103,7 @@ public:
 	void UpdateRayTracingDescriptors();
 	void SwitchScene(int Index);
 
-	int currentSceneIndex = 0;
+	int currentSceneIndex = 2;
 	std::vector<std::string> SceneNames = { "Cornell", "Sponza" ,"Alt Cornell" };
 
 	bool framebufferResized = false;

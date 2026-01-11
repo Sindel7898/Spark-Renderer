@@ -125,10 +125,10 @@
       "uri": "textures/White.png"
     },
     {
-      "uri": "textures/DefaultMaterial_metallicRoughness.png"
+      "uri": "textures/DefaultMaterial.jpeg"
     },
     {
-      "uri": "textures/DefaultMaterial_emissive.jpeg"
+      "uri": "textures/DefaultMaterial.jpeg"
     },
     {
       "uri": "textures/DefaultMaterial_normal.png"

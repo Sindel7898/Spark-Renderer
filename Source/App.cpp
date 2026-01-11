@@ -865,10 +865,6 @@ void App::createGBuffer()
 			                                   VK_IMAGE_LAYOUT_GENERAL);
 
 
-   ReflectionID = ImGui_ImplVulkan_AddTexture(RT_Reflection->ReflectionPassImage.imageSampler,
-	                                           RT_Reflection->ReflectionPassImage.imageView,
-	                                           VK_IMAGE_LAYOUT_GENERAL);
-
 	std::cout << "Swapchain size: "
 		<< vulkanContext.swapchainExtent.width << " x "
 		<< vulkanContext.swapchainExtent.height

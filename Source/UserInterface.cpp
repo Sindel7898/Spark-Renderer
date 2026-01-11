@@ -544,8 +544,6 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
                 case 1: ImGui::Image((ImTextureID)appref->Sampled_GI_ID, viewportSize); break;
                 case 2: ImGui::Image((ImTextureID)appref->ReSTIR_DITextureId, viewportSize); break;
                 case 3: ImGui::Image((ImTextureID)appref->FinalRenderTextureId, viewportSize); break;
-                case 4: ImGui::Image((ImTextureID)appref->ReflectionID, viewportSize); break;
-
         }
 
         ImGuizmo::SetRect(imageTopLeft.x, imageTopLeft.y, viewportSize.x, viewportSize.y);
