@@ -55,7 +55,7 @@ struct LightData {
 };
 
 layout(set = 0, binding = 11) uniform LightUniformBuffer {
-    LightData lights[4];
+    LightData lights[1000];
 };
 
 layout(push_constant) uniform PushConstant {
@@ -69,7 +69,6 @@ layout(push_constant) uniform PushConstant {
     vec4 UseInfiniteBounce_infinite_bounces_multiplier_LightCount;
 } pc;
 
-// --- Helper Functions ---
 float sign_not_zero(in float k) {
     return (k >= 0.0) ? 1.0 : -1.0;
 }
@@ -183,8 +182,6 @@ vec3 SampleIrradiance(vec3 Position, vec3 Normal) {
     return Result;
 }
 
-// --- Main Shader ---
-
 struct Payload {
     vec3  Color;
     float Distance;
@@ -296,18 +293,19 @@ void main()
             
             float NdotL = max(dot(HitNormal, LightDir), 0.0);
 
-            // --- Shadow Calculation (Inline Ray Query) ---
-            // Faster and cleaner than traceRayEXT() inside a Closest Hit Shader
             float shadow = 1.0;
+
             if (NdotL > 0.0 && light.CameraPositionAndLightIntensity.a > 0.0) {
                 rayQueryEXT rayQuery;
                 vec3 shadowOrigin = HitPosition + (HitNormal * 0.02); // Small bias
                 float tMax = lightDist - 0.05; 
                 
+                //This is faster than the isual traceRayEXT
                 rayQueryInitializeEXT(rayQuery, topLevelAS, gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT, 0xFF, shadowOrigin, 0.001, LightDir, tMax);
 
-                while(rayQueryProceedEXT(rayQuery)) {}
+                while(rayQueryProceedEXT(rayQuery)) {} // let the hardware do what it wants
 
+                // ask if it hit anything
                 if(rayQueryGetIntersectionTypeEXT(rayQuery, true) != gl_RayQueryCommittedIntersectionNoneEXT) {
                     shadow = 0.0;
                 }
@@ -325,7 +323,7 @@ void main()
              vec3 GI = SampleIrradiance(HitPosition, HitNormal) * pc.UseInfiniteBounce_infinite_bounces_multiplier_LightCount.y;
              
              if (any(greaterThan(GI, vec3(0)))) {
-                 Radiance += GI * Albedo; // Multiply by Albedo!
+                 Radiance += GI * Albedo;
              }
         }
 

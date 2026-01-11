@@ -30,6 +30,21 @@ layout(push_constant) uniform PushConstants {
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
+
+vec3 spherical_fibonacci(float i, float n) {
+    const float PI   = 3.14159265359;
+
+    const float PHI = sqrt(5.0f) * 0.5 + 0.5;
+#define madfrac(A, B) ((A) * (B)-floor((A) * (B)))
+    float phi       = 2.0 * PI * madfrac(i, PHI - 1);
+    float cos_theta = 1.0 - (2.0 * i + 1.0) * (1.0 / n);
+    float sin_theta = sqrt(clamp(1.0 - cos_theta * cos_theta, 0.0f, 1.0f));
+
+    return vec3(cos(phi) * sin_theta, sin(phi) * sin_theta, cos_theta);
+
+#undef madfrac
+}
+
 void main() 
 {
     uint index = gl_GlobalInvocationID.x;
@@ -68,26 +83,14 @@ void main()
 
     }else{
          // ----------------------------------------------------------
-         //https://stackoverflow.com/questions/9600801/evenly-distributing-n-points-on-a-sphere
          // Fibonacci Sphere Sampling Directions
          // ----------------------------------------------------------
         
         const int SampleCount = int(pc.probeCount_RayCount.w);
        
-        if (index >= SampleCount) return;
-       
-        const float PI   = 3.14159265359;
-        const float phi  =  PI * (sqrt(5) - 1); // golden angle in radians
-       
-        float Fibo_Y = 1.0 - (float(index) / float(SampleCount - 1)) * 2.0;
-        float radius = sqrt(1.0 - Fibo_Y * Fibo_Y); // radius at y
-        float theta = phi * index;
-       
-        float Fibo_X = cos(theta) * radius;
-        float Fibo_Z = sin(theta) * radius;
-       
-        
-        vec4 Direction = normalize(pc.Matrix * vec4(Fibo_X, Fibo_Y, Fibo_Z, 0.0)); 
+        if (index >= SampleCount) return;  
+        vec3 fibDir = spherical_fibonacci(float(index), float(SampleCount));
+        vec4 Direction = normalize(pc.Matrix * vec4(fibDir, 0.0));
 
         SB02.FibonacciDirections[index] = vec4(Direction.xyz, 0.0);
    }
