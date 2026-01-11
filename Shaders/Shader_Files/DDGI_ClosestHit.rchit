@@ -278,7 +278,7 @@ void main()
             float lightDist = 10000.0;
             
             if(light.positionAndLightType.w < 0.5) { // Directional
-                LightDir = normalize(-light.positionAndLightType.xyz);
+                LightDir = normalize(light.positionAndLightType.xyz);
                 radiance = light.colorAndAmbientStrength.rgb;
                 lightDist = 10000.0;
             } else { // Point

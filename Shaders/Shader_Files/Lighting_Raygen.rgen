@@ -1,5 +1,7 @@
 #version 460
 #extension GL_EXT_ray_tracing : require
+#extension GL_EXT_ray_query : require 
+
 const float PI = 3.14159265359;
 
 
@@ -150,11 +152,23 @@ void main() {
      float NdotL = max(dot(Normal, LightDir), 0.0);        
              Lo += (diffuse + specular) * radiance * NdotL;
 
+     rayQueryEXT rayQuery;
 
-     shadowPayload.visibility = 0;
-     traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, WorldPos.xyz + (Normal * 0.05) , tMin, LightDir, tMax, 0);
+     float shadow = 1.0;
 
-     totalLighting +=  ((Lo) * light.CameraPositionAndLightIntensity.a) *  shadowPayload.visibility;
+     vec3 shadowOrigin = WorldPos + (Normal * 0.02); // Small bias
+     //This is faster than the isual traceRayEXT
+     rayQueryInitializeEXT(rayQuery, topLevelAS, gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT, 0xFF, shadowOrigin, 0.001, LightDir, tMax);
+     
+     while(rayQueryProceedEXT(rayQuery)) {} // let the hardware do what it wants
+     
+     // ask if it hit anything
+     if(rayQueryGetIntersectionTypeEXT(rayQuery, true) != gl_RayQueryCommittedIntersectionNoneEXT) {
+         shadow = 0.0;
+     }
+
+
+     totalLighting +=  ((Lo) * light.CameraPositionAndLightIntensity.a) *  shadow;
   }
 
      vec3 kS_env  = fresnelSchlick(max(dot(Normal, ViewDir), 0.0), F0);
