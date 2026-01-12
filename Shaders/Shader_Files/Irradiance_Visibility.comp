@@ -89,8 +89,55 @@ vec3 oct_decode(vec2 o) {                                                       
 }                                                                                                                                          //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+#define PROCESS_RAY(ray_data, weight) \
+    { \
+        float ray_dist = ray_data.a; \
+        RAW_RAYDISTANCE += ray_dist; \
+        bool skip_arithmetic = false; \
+        if (ray_dist < 0.0f && use_backfacing_blending) { \
+            backfaces++; \
+            if (backfaces >= max_backfaces) { \
+                imageStore(Visibility, fragCoord, vec4(0,0,0,1)); \
+                imageStore(Iradiance, fragCoord, vec4(0,0,0,1)); \
+                return; \
+            } \
+            skip_arithmetic = true; \
+        } \
+        if (!skip_arithmetic) { \
+            if (weight > 0.0001) { \
+                vec3 ray_radiance = ray_data.rgb * energy_conservation; \
+                irradiance += ray_radiance * weight; \
+                total_weight += weight; \
+                ray_dist = min(abs(ray_dist), 100.0f); \
+                visibility.x += ray_dist * weight; \
+                visibility.y += (ray_dist * ray_dist) * weight; \
+                visibility.z += weight; \
+            } \
+        } \
+    }
+
+
+
+
+// Shared variables for workgroup
+shared vec3 RayDirections[300];
+
 void main() 
 {
+    //Load up all the directions
+    uint flat_idx   = gl_LocalInvocationIndex; 
+    uint group_size = gl_WorkGroupSize.x * gl_WorkGroupSize.y; 
+    
+    // Parallel load
+    for (uint i = flat_idx; i < uint(pc.NumRays); i += group_size) {
+        RayDirections[i] = SB0.FibonacciDirections[i].xyz;
+    }
+  
+  barrier();
+
+
+
    ivec2 fragCoord = ivec2(gl_GlobalInvocationID.xy);
    const float energy_conservation = 0.95;
 
@@ -103,99 +150,82 @@ void main()
 
     //if(info.probeState == PROBE_STATE_ACTIVE ){
         /// do not do any calculations on gutter pixels
-    bool border_pixel   = ((gl_GlobalInvocationID.x % ProbeSideLength_With_Gutter) == 0) || ((gl_GlobalInvocationID.x % ProbeSideLength_With_Gutter ) == probe_last_pixel ); 
-    border_pixel        = border_pixel || ((gl_GlobalInvocationID.y % ProbeSideLength_With_Gutter) == 0) || ((gl_GlobalInvocationID.y % ProbeSideLength_With_Gutter ) == probe_last_pixel );
 
+    ivec2 localPos      = fragCoord % ProbeSideLength_With_Gutter;
 
-    vec3  irradiance = vec3(0.0);
-    vec4  visibility = vec4(0.0);
+    bool border_pixel   = (localPos.x == 0) || (localPos.x  == probe_last_pixel )||
+                          (localPos.y == 0) || (localPos.y  == probe_last_pixel );
+
+     if (border_pixel) {
+        imageStore(Iradiance, fragCoord, vec4(0.0, 0.0, 0.0, 1.0));
+        imageStore(Visibility, fragCoord, vec4(0.0, 0.0, 0.0, 1.0));
+        return;
+    }
+
+     vec3 irradiance = vec3(0.0);
+     vec4 visibility = vec4(0.0);
     float total_weight     = 0.0;
      vec4 final_color      = vec4(0.0, 0.0, 0.0, 1000.0);
-     uint backfaces        = 0;
      uint max_backfaces    = uint(pc.NumRays * 0.1f); // 10% of the total amount of rays being cast
-
+     uint backfaces = 0;
      const bool use_backfacing_blending = false;
-    // int pass = pc.PassSpecifiyer;
      float RAW_RAYDISTANCE = 0;
+     vec3 texel_direction = oct_decode(get_normalized_probe_texel_coord(fragCoord));
 
-    if(!border_pixel){
-        
-         vec3 texel_direction = oct_decode(get_normalized_probe_texel_coord(fragCoord));
+     int i = 0;
 
-        for (int ray_index = 0; ray_index < pc.NumRays; ray_index++) {
-          
-              ivec2 Sample_Position = ivec2(ray_index, ProbeIndex);
-              vec4  ray_data = imageLoad(Radiance_Visibility, Sample_Position);
-              float ray_distance = ray_data.a;
-                    RAW_RAYDISTANCE += ray_data.a;
+     for (; i <= pc.NumRays - 4; i += 4) {
+       
+           vec4 ray_data0 = imageLoad(Radiance_Visibility, ivec2(i + 0, ProbeIndex));
+           vec4 ray_data1 = imageLoad(Radiance_Visibility, ivec2(i + 1, ProbeIndex));
+           vec4 ray_data2 = imageLoad(Radiance_Visibility, ivec2(i + 2, ProbeIndex));
+           vec4 ray_data3 = imageLoad(Radiance_Visibility, ivec2(i + 3, ProbeIndex));
 
-              if ( ray_distance < 0.0f && use_backfacing_blending ) {
-                    ++backfaces;
+           vec3 ray_direction0   = RayDirections[i + 0].xyz;
+           vec3 ray_direction1   = RayDirections[i + 1].xyz;
+           vec3 ray_direction2   = RayDirections[i + 2].xyz;
+           vec3 ray_direction3   = RayDirections[i + 3].xyz;
 
-                  if (backfaces >= max_backfaces) {
-                  
-                       imageStore(Visibility , ivec2(gl_GlobalInvocationID.xy), vec4(0,0,0,1)); 
-                       imageStore(Iradiance ,  ivec2(gl_GlobalInvocationID.xy), vec4(0,0,0,1)); 
-                       return;
-                  }
+           float weight0 = max(dot(texel_direction, ray_direction0), 0.0); 
+           float weight1 = max(dot(texel_direction, ray_direction1), 0.0); 
+           float weight2 = max(dot(texel_direction, ray_direction2), 0.0); 
+           float weight3 = max(dot(texel_direction, ray_direction3), 0.0); 
 
-                continue; 
-            }
+           PROCESS_RAY(ray_data0, weight0);
+           PROCESS_RAY(ray_data1, weight1);
+           PROCESS_RAY(ray_data2, weight2);
+           PROCESS_RAY(ray_data3, weight3);
 
+
+       }
+         for (; i < pc.NumRays; i++) {
+             vec4 d = imageLoad(Radiance_Visibility, ivec2(i, ProbeIndex));
+             float weight = max(dot(texel_direction, RayDirections[i]), 0.0); 
+             PROCESS_RAY(d, weight);
+        }
+     
               
-              vec3 ray_direction   = SB0.FibonacciDirections[ray_index].xyz;
-
-              // Calculate the cosine weighting term
-              float weight  = max(dot(texel_direction, ray_direction),0.0);
-
-              if (weight  > 0.0001) {
-                    vec3  ray_radiance  = ray_data.rgb;
-                    ray_radiance *= energy_conservation;
-                    
-                    irradiance += ray_radiance * weight;                                    
-                    total_weight += weight;
-                
-
-                float probe_max_ray_distance = 100.0f;
-              
-                   ray_distance = min(abs(ray_distance), probe_max_ray_distance);
-                            
-                   visibility.x +=  ray_distance * weight;      
-                   visibility.y += (ray_distance * ray_distance) * weight;
-                   visibility.z +=  weight;
-              }
-             
-      }
-            
-
-          if (total_weight > 0.000) {
-               irradiance /=  total_weight;
-          
-               vec3 previous_value = imageLoad( Prev_Iradiance, ivec2(gl_GlobalInvocationID.xy)).rgb;
-               vec3 result         = mix(irradiance, previous_value,  0.95f);
-               imageStore(Iradiance , ivec2(gl_GlobalInvocationID.xy), vec4(result,1));
-          }
+    
+         if (total_weight > 0.000) {
+             irradiance /=  total_weight;
+         
+             vec3 previous_value = imageLoad( Prev_Iradiance, fragCoord).rgb;
+             vec3 result         = mix(irradiance, previous_value,  0.95f);
+             imageStore(Iradiance , fragCoord, vec4(result,1));
+         }
           
           if (total_weight > 0.000) {
           
                 // Get weighted average
-                 float mean     = visibility.x / visibility.z; 
-                 float mean_sq  = visibility.y / visibility.z;
+               float mean     = visibility.x / visibility.z; 
+               float mean_sq  = visibility.y / visibility.z;
                 
-                 vec2 Vsibility = vec2(mean,mean_sq);
+               vec2 Vsibility = vec2(mean,mean_sq);
           
-                 vec2 previous_value = imageLoad(Prev_Visibility, ivec2(gl_GlobalInvocationID.xy)).rg;
-                 vec2 result         = mix( Vsibility, previous_value, 0.95f);
+               vec2 previous_value = imageLoad(Prev_Visibility, fragCoord).rg;
+               vec2 result         = mix( Vsibility, previous_value, 0.95f);
           
-                imageStore(Visibility, ivec2(gl_GlobalInvocationID.xy), vec4(result,RAW_RAYDISTANCE, 1.0));
+                imageStore(Visibility, fragCoord, vec4(result,RAW_RAYDISTANCE, 1.0));
             }
-    }
-    
-    
-    else{
-      
-        imageStore(Iradiance,  ivec2(gl_GlobalInvocationID.xy), vec4(0.0, 0.0, 0.0, 1.0));
-        imageStore(Visibility, ivec2(gl_GlobalInvocationID.xy), vec4(0.0, 0.0, 0.0, 1.0));
-    }
-  //}
+
 }
