@@ -1444,7 +1444,7 @@ void DynamicDiffuse_RTGI::DrawNode(vk::CommandBuffer commandBuffer, vk::Pipeline
 				cameraConstantBuffer.ProjectionMatrix = camera->GetProjectionMatrix();
 				cameraConstantBuffer.ProjectionMatrix[1][1] *= -1;
 				cameraConstantBuffer.ModelMatrix = glm::mat4(1);
-				cameraConstantBuffer.ModelMatrix = glm::scale(glm::vec3(0.5, 0.5, 0.5));
+				cameraConstantBuffer.ModelMatrix = glm::scale(glm::vec3(0.2, 0.2, 0.2));
 				cameraConstantBuffer.generalAtlasInfo.AtlasWidthSize = IradianceImageExtent.width;
 				cameraConstantBuffer.generalAtlasInfo.ProbeSideLength = ProbeSideLength;
 				cameraConstantBuffer.generalAtlasInfo.GutterSize = GutterSize;

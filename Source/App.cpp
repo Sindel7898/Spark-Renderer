@@ -274,7 +274,7 @@ void App::SwitchScene(int index)
 			UserInterfaceItems.push_back(model.get());
 		}
 
-		int LightCount = 3;
+		int LightCount = 1;
 
 		lights.reserve(LightCount);
 
@@ -312,8 +312,8 @@ void App::SwitchScene(int index)
 			dynamicDiffuse_RTGI->NumOfProbesY = 22;
 			dynamicDiffuse_RTGI->NumOfProbesZ = 22;
 			dynamicDiffuse_RTGI->RaysPerProbe = 288;
-			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-100, -43.33, -48.60);
-			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(10.52, 7.40, 4.27);
+			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-307.80, -43.33, -126.52);
+			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(26.11, 15.19, 12.06);
 
 		}
 
