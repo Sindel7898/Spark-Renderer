@@ -74,8 +74,8 @@ public:
 	PFN_vkSetDebugUtilsObjectNameEXT                   vkSetDebugUtilsObjectNameEXT = nullptr;
 	PFN_vkCmdBeginDebugUtilsLabelEXT                   vkCmdBeginDebugUtilsLabelEXT = nullptr;
 	PFN_vkCmdEndDebugUtilsLabelEXT                     vkCmdEndDebugUtilsLabelEXT = nullptr;
-
-
+	PFN_vkQueuePresentKHR                              slQueuePresent = nullptr;
+	PFN_vkAcquireNextImageKHR                          slAcquireNextImage = nullptr;
 	NvdiaDLSS_Intergration* DLSS_IntergrationRef = nullptr;
 };
 

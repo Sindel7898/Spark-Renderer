@@ -25,7 +25,8 @@ class UserInterface
 public:
     UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef, BufferManager* Buffermanager);
 
-    void RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex);
+    void RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex, ImageData& DrawingImage);
+
     void DrawUi(App* appref, SkyBox* skyBox);
     float CalculateDistanceInScreenSpace(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position);
 
@@ -46,6 +47,7 @@ public:
 private:
     void InitImgui();
     void SetupDockingEnvironment();
+
 
     Window* window = nullptr;
     vk::Extent3D RenderTextureExtent = (0, 0, 0);

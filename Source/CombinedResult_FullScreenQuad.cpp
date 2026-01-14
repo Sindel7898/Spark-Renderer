@@ -20,24 +20,39 @@ CombinedResult_FullScreenQuad::CombinedResult_FullScreenQuad(BufferManager* buff
 
 void CombinedResult_FullScreenQuad::CreateImage(vk::Extent3D imageExtent)
 {
-	FinalResultImage.ImageID = "FinalResult  Image  Texture";
-	bufferManager->CreateImage(&FinalResultImage, imageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	Combined_Lighting_Image.ImageID = "Combined Lighting  Image  Texture";
+	bufferManager->CreateImage(&Combined_Lighting_Image, imageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
 
-	FinalResultImage.imageView = bufferManager->CreateImageView(&FinalResultImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	FinalResultImage.imageSampler = bufferManager->CreateImageSampler();
+	Combined_Lighting_Image.imageView = bufferManager->CreateImageView(&Combined_Lighting_Image, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	Combined_Lighting_Image.imageSampler = bufferManager->CreateImageSampler();
+
+	IMGUI_PRESENT_IMAGE.ImageID = "IMGUI PRESENT  Image  Texture";
+	bufferManager->CreateImage(&IMGUI_PRESENT_IMAGE, imageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+
+	IMGUI_PRESENT_IMAGE.imageView = bufferManager->CreateImageView(&IMGUI_PRESENT_IMAGE, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	IMGUI_PRESENT_IMAGE.imageSampler = bufferManager->CreateImageSampler();
+
+	IMGUI_PRESENT_IMAGE_GAMMA_CORRECTED.ImageID = "IMGUI_PRESENT IMAGE GAMMA CORRECTED  Image  Texture";
+	bufferManager->CreateImage(&IMGUI_PRESENT_IMAGE_GAMMA_CORRECTED, imageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+
+	IMGUI_PRESENT_IMAGE_GAMMA_CORRECTED.imageView = bufferManager->CreateImageView(&IMGUI_PRESENT_IMAGE_GAMMA_CORRECTED, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	IMGUI_PRESENT_IMAGE_GAMMA_CORRECTED.imageSampler = bufferManager->CreateImageSampler();
+
 }
 
 void CombinedResult_FullScreenQuad::DestroyImage()
 {
 
-	bufferManager->DestroyImage(FinalResultImage);
+	bufferManager->DestroyImage(Combined_Lighting_Image);
+	bufferManager->DestroyImage(IMGUI_PRESENT_IMAGE);
+	bufferManager->DestroyImage(IMGUI_PRESENT_IMAGE_GAMMA_CORRECTED);
+
 }
 
 
 void CombinedResult_FullScreenQuad::createDescriptorSetLayout()
 {
 	{
-		//////// Create set for SSAO Pass ////////////
 		vk::DescriptorSetLayoutBinding LightingResultDescriptorBinding{};
 		LightingResultDescriptorBinding.binding = 0;
 		LightingResultDescriptorBinding.descriptorCount = 1;
@@ -88,6 +103,23 @@ void CombinedResult_FullScreenQuad::createDescriptorSetLayout()
 			throw std::runtime_error("Failed to create descriptorset layout!");
 		}
 	}
+
+	{
+		vk::DescriptorSetLayoutBinding CombinedResulttDescriptorBinding{};
+		CombinedResulttDescriptorBinding.binding = 0;
+		CombinedResulttDescriptorBinding.descriptorCount = 1;
+		CombinedResulttDescriptorBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		CombinedResulttDescriptorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+		std::array<vk::DescriptorSetLayoutBinding, 1> GammaBindings = { CombinedResulttDescriptorBinding };
+
+		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.bindingCount = static_cast<uint32_t>(GammaBindings.size());
+		layoutInfo.pBindings = GammaBindings.data();
+
+		vulkanContext->LogicalDevice.createDescriptorSetLayout(&layoutInfo, nullptr, &Gamma_Correction_descriptorSetLayout);
+	}
+
 }
 
 
@@ -204,6 +236,41 @@ void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::Descr
 
 		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	}
+
+
+	{
+		std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, Gamma_Correction_descriptorSetLayout);
+
+		vk::DescriptorSetAllocateInfo allocinfo;
+		allocinfo.descriptorPool = descriptorpool;
+		allocinfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		allocinfo.pSetLayouts = layouts.data();
+
+		Gamma_Correction_DescriptorSets.resize(MAX_FRAMES_IN_FLIGHT);
+		vulkanContext->LogicalDevice.allocateDescriptorSets(&allocinfo, Gamma_Correction_DescriptorSets.data());
+
+
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+
+			/////////////////////////////////////////////////////////////////////////////////////
+			vk::DescriptorImageInfo LightingResultimageInfo{};
+			LightingResultimageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			LightingResultimageInfo.imageView = IMGUI_PRESENT_IMAGE.imageView;
+			LightingResultimageInfo.sampler = IMGUI_PRESENT_IMAGE.imageSampler;
+
+			vk::WriteDescriptorSet LightingResultSamplerdescriptorWrite{};
+			LightingResultSamplerdescriptorWrite.dstSet = Gamma_Correction_DescriptorSets[i];
+			LightingResultSamplerdescriptorWrite.dstBinding = 0;
+			LightingResultSamplerdescriptorWrite.descriptorCount = 1;
+			LightingResultSamplerdescriptorWrite.dstArrayElement = 0;
+			LightingResultSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			LightingResultSamplerdescriptorWrite.pImageInfo = &LightingResultimageInfo;
+
+			std::array<vk::WriteDescriptorSet, 1> descriptorWrites = { LightingResultSamplerdescriptorWrite };
+
+			vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+		}
+	}
 }
 
 
@@ -221,6 +288,19 @@ void CombinedResult_FullScreenQuad::Draw(vk::CommandBuffer commandbuffer, vk::Pi
 	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
 	commandbuffer.bindIndexBuffer(bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
 	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
+	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
+}
+
+void CombinedResult_FullScreenQuad::DrawGammaCorrection(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex)
+{
+	vk::DeviceSize offsets[] = { 0 };
+	vk::Buffer VertexBuffers[] = { bufferManager->FullScreenQuadVertexBufferData.buffer };
+	vulkanContext->vkCmdSetPolygonModeEXT(commandbuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
+	commandbuffer.bindVertexBuffers(0, 1, VertexBuffers, offsets);
+	commandbuffer.bindIndexBuffer(bufferManager->FullScreenQuadIndexBufferData.buffer, 0, vk::IndexType::eUint16);
+
+	commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelinelayout, 0, 1, &Gamma_Correction_DescriptorSets[imageIndex], 0, nullptr);
+
 	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
 }
 

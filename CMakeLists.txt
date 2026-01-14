@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(Spark)
 
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Debug)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -14,7 +13,6 @@ endif()
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/External/imgui)
 set(ImGuizmo_DIR ${CMAKE_SOURCE_DIR}/External/ImGuizmo)
 
-# ImGui and other external source files
 set(IMGUI_SRC
     ${IMGUI_DIR}/imgui.cpp
     ${IMGUI_DIR}/imgui_draw.cpp
@@ -34,7 +32,7 @@ set(IMGUI_BACKEND_SRC
 )
 set(TRACY_SOURCES ${CMAKE_SOURCE_DIR}/External/tracy/public/TracyClient.cpp)
 
-# Add dependencies from subdirectories
+# Subdirectories
 add_subdirectory(External/glfw)
 add_subdirectory(External/glm)
 add_subdirectory(External/vk-bootstrap)
@@ -47,19 +45,10 @@ set(STREAMLINE_FEATURE_DLSS_SR ON CACHE BOOL "" FORCE)
 set(STREAMLINE_FEATURE_DLSS_RR ON CACHE BOOL "" FORCE)
 add_subdirectory(External/Streamline-SDK)
 
-# Find packages
 find_package(Vulkan REQUIRED)
 
-file(GLOB_RECURSE SOURCES
-    CONFIGURE_DEPENDS
-    "Source/*.cpp"
-    "Source/*.c"
-)
-file(GLOB_RECURSE HEADERS
-    CONFIGURE_DEPENDS
-    "Source/*.hpp"
-    "Source/*.h"
-)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "Source/*.cpp" "Source/*.c")
+file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS "Source/*.hpp" "Source/*.h")
 
 add_executable(Spark
     ${SOURCES}
@@ -87,7 +76,11 @@ target_include_directories(Spark PRIVATE
     ${CMAKE_SOURCE_DIR}/External/Streamline-SDK/include
 )
 
-target_compile_definitions(Spark PRIVATE TRACY_ENABLE)
+target_compile_definitions(Spark PRIVATE 
+    TRACY_ENABLE
+    VK_USE_PLATFORM_WIN32_KHR 
+    NOMINMAX
+)
 
 target_link_libraries(Spark PRIVATE 
     glfw 

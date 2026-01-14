@@ -15,18 +15,21 @@ public:
 
     // Update camera matrices (to be called every frame)
     void Update(float deltaTime);
-
+    void UpdateJitter(float jitterX, float jitterY);
     // Getters for the view and projection matrices
     const glm::mat4& GetViewMatrix() const;
     const glm::mat4& GetPrevViewMatrix() const;
     const glm::mat4& GetProjectionMatrix() const;
     const glm::mat4& GetPrevProjectionMatrix() const;
-
+    const glm::mat4& GetJitteredProjectionMatrix() const { return jitteredProjectionMatrix; }
     // Get camera properties
     const glm::vec3& GetPosition() const;
     const glm::vec3& GetForward() const;
     const glm::vec3& GetRight() const;
     const glm::vec3& GetUp() const;
+    float GetFOV() const;
+    float GetNearClip() const;
+    float GetFarClip() const;
 
     // Camera control settings
     void SetMovementSpeed(float speed);
@@ -66,6 +69,8 @@ private:
 
     glm::mat4 Prev_viewMatrix;
     glm::mat4 Prev_projectionMatrix;
+
+    glm::mat4 jitteredProjectionMatrix;
     /// WindowRef
     GLFWwindow* window;
 

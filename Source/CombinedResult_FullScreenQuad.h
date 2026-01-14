@@ -18,12 +18,15 @@ public:
     void UpdataeUniformBufferData();
     void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData SSGIImage, ImageData SSAOIImage, ImageData MaterialImage, ImageData AlbedoImage, ImageData DDGIImaGE);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
+    void DrawGammaCorrection(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
     void CreateImage(vk::Extent3D imageExtent);
     void DestroyImage();
 
     void CleanUp();
 
-    ImageData FinalResultImage;
+    ImageData IMGUI_PRESENT_IMAGE_GAMMA_CORRECTED;
+    ImageData IMGUI_PRESENT_IMAGE;
+    ImageData Combined_Lighting_Image;
 
     float Brightness = 1.0;
     float Saturation = 1.0;
@@ -31,6 +34,12 @@ public:
     float MaxGamma = 0.98;
     float MinGamma = 0.92;
     float GIBoost = 1;
+
+
+    vk::DescriptorSetLayout  Gamma_Correction_descriptorSetLayout;
+    std::vector<vk::DescriptorSet>  Gamma_Correction_DescriptorSets;
+
+
 private:
 };
 

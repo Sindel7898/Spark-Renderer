@@ -22,12 +22,14 @@ struct BufferData {
 };
 
 struct ImageData {
-    std::string ImageID;
-    vk::Image image{};
+    std::string   ImageID;
+    vk::Image     image{};
     vk::ImageView imageView{};
-    vk::Sampler imageSampler{};
+    vk::Sampler   imageSampler{};
+	vk::Format    format{};
+	vk::Extent3D  extent{};
     VmaAllocation allocation{};
-    uint32_t  miplevels = 1;
+    uint32_t      miplevels = 1;
 };
 
 

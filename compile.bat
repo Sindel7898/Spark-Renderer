@@ -28,6 +28,8 @@ glslangValidator.exe -V Shaders\Shader_Files\FXAA.frag -o Shaders\Compiled_Shade
 
 glslangValidator.exe -V Shaders\Shader_Files\CombinedImage.frag -o Shaders\Compiled_Shader_Files\CombinedImage.frag.spv --target-env vulkan1.4 -gVS
 
+glslangValidator.exe -V Shaders\Shader_Files\GammaCorrection.frag -o Shaders\Compiled_Shader_Files\GammaCorrection.frag.spv --target-env vulkan1.4 -gVS
+
 glslangValidator.exe -V Shaders\Shader_Files\TemporalAccumulation.frag -o Shaders\Compiled_Shader_Files\TemporalAccumulation.frag.spv --target-env vulkan1.4 -gVS
 
 glslangValidator.exe -V Shaders\Shader_Files\SSGI_Blur_Shader.frag -o Shaders\Compiled_Shader_Files\SSGI_Blur_Shader.frag.spv --target-env vulkan1.4 -gVS

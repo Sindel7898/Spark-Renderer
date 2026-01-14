@@ -1,12 +1,15 @@
-#include "VulkanContext.h"
+#define VK_USE_PLATFORM_WIN32_KHR
+#include <vulkan/vulkan.h>
+
+#ifndef VK_VERSION_1_0
+#define VK_VERSION_1_0 1
+#endif
 
 #ifdef constant
 #undef constant
 #endif
 
-#include <sl.h>
-#include <sl_dlss.h>
-#include <sl_dlss_d.h>
+#include "VulkanContext.h"
 
 VulkanContext::VulkanContext(Window& Window, NvdiaDLSS_Intergration& _NvdiaDLSS_Intergration) : window(Window){
 	DLSS_IntergrationRef = &_NvdiaDLSS_Intergration;
@@ -158,6 +161,16 @@ void VulkanContext::SelectGPU_CreateDevice()
 	presentQueue = VKB_Device.get_queue(vkb::QueueType::present).value();
 	graphicsQueueFamilyIndex = VKB_Device.get_queue_index(vkb::QueueType::graphics).value();
 
+	if (DLSS_IntergrationRef) {
+		DLSS_IntergrationRef->RegisterVulkanDevice(
+			VulkanInstance,
+			PhysicalDevice,
+			LogicalDevice,
+			graphicsQueueFamilyIndex,
+			graphicsQueueFamilyIndex
+		);
+	}
+
 
 	vkCmdSetPolygonModeEXT                      = (PFN_vkCmdSetPolygonModeEXT) vkGetDeviceProcAddr(LogicalDevice, "vkCmdSetPolygonModeEXT");
 	vkCreateAccelerationStructureKHR            = (PFN_vkCreateAccelerationStructureKHR)vkGetDeviceProcAddr(LogicalDevice, "vkCreateAccelerationStructureKHR");
@@ -171,6 +184,33 @@ void VulkanContext::SelectGPU_CreateDevice()
 	vkSetDebugUtilsObjectNameEXT                = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetDeviceProcAddr(LogicalDevice, "vkSetDebugUtilsObjectNameEXT");
 	vkCmdBeginDebugUtilsLabelEXT                = (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetDeviceProcAddr(LogicalDevice, "vkCmdBeginDebugUtilsLabelEXT");
 	vkCmdEndDebugUtilsLabelEXT                  = (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetDeviceProcAddr(LogicalDevice, "vkCmdEndDebugUtilsLabelEXT");
+
+
+	HMODULE slModule = GetModuleHandleA("sl.interposer.dll");
+
+	if (slModule)
+	{
+		// 1. Get the Interposer's GetDeviceProcAddr
+		PFN_vkGetDeviceProcAddr slGetDeviceProcAddr =
+			(PFN_vkGetDeviceProcAddr)GetProcAddress(slModule, "vkGetDeviceProcAddr");
+
+		if (slGetDeviceProcAddr)
+		{
+			// 2. Use it to fetch the Hooked Present/Acquire functions
+			slQueuePresent = (PFN_vkQueuePresentKHR)slGetDeviceProcAddr(LogicalDevice, "vkQueuePresentKHR");
+			slAcquireNextImage = (PFN_vkAcquireNextImageKHR)slGetDeviceProcAddr(LogicalDevice, "vkAcquireNextImageKHR");
+
+			std::cout << "Streamline Hooks Loaded Successfully." << std::endl;
+		}
+		else
+		{
+			std::cerr << "[Error] Could not find vkGetDeviceProcAddr in sl.interposer.dll" << std::endl;
+		}
+	}
+	else
+	{
+		std::cerr << "[Error] sl.interposer.dll is not loaded!" << std::endl;
+	}
 
 }
 
@@ -190,7 +230,7 @@ void VulkanContext::create_swapchain()
 	vkb::SwapchainBuilder swapChainBuilder(PhysicalDevice, LogicalDevice, surface);
 
 
-	swapchainformat = vk::Format::eB8G8R8A8Srgb;
+	swapchainformat = vk::Format::eB8G8R8A8Unorm;
 	                    
 
 	vk::SurfaceFormatKHR format;
@@ -207,7 +247,12 @@ void VulkanContext::create_swapchain()
 		.set_desired_format(format)
 		.set_desired_present_mode(VK_PRESENT_MODE_IMMEDIATE_KHR)
 		.set_desired_extent(Width, Height)
-		.add_image_usage_flags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+		.add_image_usage_flags(
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+			VK_IMAGE_USAGE_STORAGE_BIT |
+			VK_IMAGE_USAGE_SAMPLED_BIT
+		)
 		.build()
 		.value();
 
@@ -285,7 +330,11 @@ void VulkanContext::CleanUp()
 		LogicalDevice.destroyImageView(imagedata.imageView);
 					 
 	}				
-					 
+
+	if (DLSS_IntergrationRef) {
+		DLSS_IntergrationRef->CleanUp();
+	}
+
 	if (swapChain) {
 		LogicalDevice.destroySwapchainKHR(swapChain);
 		swapChain = nullptr;

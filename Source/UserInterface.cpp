@@ -138,8 +138,9 @@ void UserInterface::InitImgui()
 	// Initialize ImGui for Vulkan
 	vk::PipelineRenderingCreateInfoKHR pipeline_rendering_create_info;
 	pipeline_rendering_create_info.colorAttachmentCount = 1;
-	pipeline_rendering_create_info.pColorAttachmentFormats = &vulkancontext->swapchainformat;
-	pipeline_rendering_create_info.depthAttachmentFormat = vk::Format::eUndefined;
+    static const vk::Format uiFormat = vk::Format::eR16G16B16A16Sfloat;
+    pipeline_rendering_create_info.pColorAttachmentFormats = &uiFormat;
+    pipeline_rendering_create_info.depthAttachmentFormat = vk::Format::eUndefined;
 	pipeline_rendering_create_info.stencilAttachmentFormat = vk::Format::eUndefined;
 
 	ImGui_ImplGlfw_InitForVulkan(window->GetWindow(), true);
@@ -230,7 +231,7 @@ void UserInterface::SetupDockingEnvironment()
 	ImGui::End();
 }
 
-void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex)
+void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex,ImageData& DrawingImage)
 {
 
 	ImageTransitionData TransitionSwapchainToWriteData;
@@ -242,7 +243,7 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex)
 	TransitionSwapchainToWriteData.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 	TransitionSwapchainToWriteData.AspectFlag = vk::ImageAspectFlagBits::eColor;
 
-	buffermanager->TransitionImage(CommandBuffer, &vulkancontext->swapchainImageData[imageIndex], TransitionSwapchainToWriteData);
+	buffermanager->TransitionImage(CommandBuffer, &DrawingImage, TransitionSwapchainToWriteData);
 
 	ImGui::Render();
 
@@ -253,7 +254,7 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex)
 	}
 	//// Begin rendering for ImGui
 	vk::RenderingAttachmentInfo imguiColorAttachment{};
-	imguiColorAttachment.imageView = vulkancontext->swapchainImageData[imageIndex].imageView;
+	imguiColorAttachment.imageView = DrawingImage.imageView;
 	imguiColorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 	imguiColorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
 	imguiColorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
@@ -299,9 +300,7 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex)
 	TransitionSwapchainToPresentData.DestinationOnThePipeline = vk::PipelineStageFlagBits::eBottomOfPipe;
 	TransitionSwapchainToPresentData.AspectFlag = vk::ImageAspectFlagBits::eColor;
 
-	buffermanager->TransitionImage(CommandBuffer, &vulkancontext->swapchainImageData[imageIndex], TransitionSwapchainToPresentData);
-
-	CommandBuffer.end();
+	buffermanager->TransitionImage(CommandBuffer, &DrawingImage, TransitionSwapchainToPresentData);
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 

@@ -23,12 +23,13 @@
 #include <pix.h>
 #include "Tracy.hpp"
 #include <random>
+#include "NvdiaDLSS_Intergration.h"
 
 #define DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
 
 
 App::App() : window(1920, 1080, "Spark Renderer"),
-vulkanContext(window),
+vulkanContext(window, DLSS_Intergration),
 bufferManger(&vulkanContext),
 camera(vulkanContext.swapchainExtent.width, vulkanContext.swapchainExtent.height, window.GetWindow()),
 userinterface(&vulkanContext, &window, &bufferManger), pipelineManager(&vulkanContext)
@@ -784,8 +785,8 @@ void App::createGBuffer()
 
 	lighting_RTX->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&TLAS);
 	ssao_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
-	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, lighting_RTX->ResultingStorageImage, SSGI_FullScreenQuad->BlurPong_UPSampleFullRes, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo, dynamicDiffuse_RTGI->Probe_Sampled_GI_Image);
-	fxaa_FullScreenQuad->createDescriptorSets(DescriptorPool, Combined_FullScreenQuad->FinalResultImage);
+	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, lighting_RTX->ResultingStorageImage, SSGI_FullScreenQuad->SSGI_Denoised_AccumilationImage, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo, dynamicDiffuse_RTGI->Probe_Sampled_GI_Image);
+	fxaa_FullScreenQuad->createDescriptorSets(DescriptorPool, Combined_FullScreenQuad->Combined_Lighting_Image);
 	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, lighting_RTX->ResultingStorageImage,DepthTextureData);
 	RT_Reflection->createRaytracedDescriptorSets(DescriptorPool, TLAS, gbuffer, lighting_RTX->UniformBuffers);
 	dynamicDiffuse_RTGI->createDescriptorSets(DescriptorPool, gbuffer);
@@ -812,10 +813,11 @@ void App::createGBuffer()
 	bufferManger.TransitionImage(cmd, &gbuffer.Emissive, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &gbuffer.Materials, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &gbuffer.MotionVector, TransitionToGeneral);
-	bufferManger.TransitionImage(cmd, &Combined_FullScreenQuad->FinalResultImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &Combined_FullScreenQuad->Combined_Lighting_Image, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->SSGIPassImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->SSGIAccumilationImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->SSGI_Denoised_AccumilationImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->BlurPing_DownSampleHalfRes, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->BlurPong_DownSampleHalfRes, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->BlurPing_DownSampleQuaterRes, TransitionToGeneral);
@@ -839,15 +841,15 @@ void App::createGBuffer()
 	
 	FinalRenderTextureId = ImGui_ImplVulkan_AddTexture(fxaa_FullScreenQuad->FxaaImage.imageSampler,
 		                                               fxaa_FullScreenQuad->FxaaImage.imageView,
-		VK_IMAGE_LAYOUT_GENERAL);
+		                                               VK_IMAGE_LAYOUT_GENERAL);
 
 	LightingAndReflectionsRenderTextureId = ImGui_ImplVulkan_AddTexture(lighting_RTX->ResultingStorageImage.imageSampler,
 		                                                                lighting_RTX->ResultingStorageImage.imageView,
 		VK_IMAGE_LAYOUT_GENERAL);
 
 
-	SSGITextureId    = ImGui_ImplVulkan_AddTexture(SSGI_FullScreenQuad->SSGIAccumilationImage.imageSampler,
-		                                                   SSGI_FullScreenQuad->SSGIAccumilationImage.imageView,
+	SSGITextureId    = ImGui_ImplVulkan_AddTexture(SSGI_FullScreenQuad->SSGI_Denoised_AccumilationImage.imageSampler,
+		                                                   SSGI_FullScreenQuad->SSGI_Denoised_AccumilationImage.imageView,
 		                                                   VK_IMAGE_LAYOUT_GENERAL);
 	
 
@@ -1060,6 +1062,27 @@ void App::CreateGraphicsPipeline()
 		CombinedImagePipelineLayout = Temp.FQ_PipelineLayout;
 		CombinedImagePassPipeline = Temp.FQ_Pipeline;
 	}
+
+
+	{
+		std::array<vk::Format, 1> colorFormats = { vk::Format::eB8G8R8A8Unorm };
+
+		vk::PipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo{};
+		pipelineRenderingCreateInfo.colorAttachmentCount = 1;
+		pipelineRenderingCreateInfo.pColorAttachmentFormats = colorFormats.data();
+
+		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.setSetLayouts(Combined_FullScreenQuad->Gamma_Correction_descriptorSetLayout);
+		pipelineLayoutInfo.pushConstantRangeCount = 0;
+
+
+		FullScreen_Quad_Pipeline_Data  Temp = pipelineManager.create_FQ_Pipeline("../Shaders/Compiled_Shader_Files/GammaCorrection.frag.spv", pipelineRenderingCreateInfo, pipelineLayoutInfo);
+
+		Gamma_Corrected_IMGUI_PipelineLayout = Temp.FQ_PipelineLayout;
+		Gamma_Corrected_IMGUI_PassPipeline  = Temp.FQ_Pipeline;
+	}
+
 
 
 	{
@@ -2244,93 +2267,89 @@ void App::CalculateFps(FramesPerSecondCounter& fpsCounter)
 void App::Draw()
 {
 
-	// ZoneScopedN("render"); // Tracy profiling marker (commented out)
-
-	// --- CPU-GPU Synchronization ---
-	// Wait for the fence associated with the current frame to ensure the command buffer 
-	// from this frame index is no longer in use before we reuse it.
-	// This prevents the CPU from getting too far ahead of the GPU (frames in flight control)
 	vulkanContext.LogicalDevice.waitForFences(1, &waitFences[currentFrame], vk::True, UINT64_MAX);
-	vulkanContext.LogicalDevice.resetFences(1, &waitFences[currentFrame]);
 
-	// --- Swapchain Acquisition ---
 	uint32_t imageIndex;
 	try {
-		// Request the next available swapchain image.
-		// presentCompleteSemaphores[currentFrame] will be signaled when the image is ready.
-		vulkanContext.LogicalDevice.acquireNextImageKHR(
-			vulkanContext.swapChain,
+		VkResult result = vulkanContext.slAcquireNextImage(
+			(VkDevice)vulkanContext.LogicalDevice,
+			(VkSwapchainKHR)vulkanContext.swapChain,
 			UINT64_MAX,
-			presentCompleteSemaphores[currentFrame],
-			nullptr,
+			(VkSemaphore)presentCompleteSemaphores[currentFrame],
+			VK_NULL_HANDLE,
 			&imageIndex
 		);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+			ImGui::EndFrame();
+			recreateSwapChain();
+			return;
+		}
+		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+			throw std::runtime_error("Failed to acquire swapchain image");
+		}
 	}
 	catch (const std::exception& e) {
 		std::cerr << "Exception: " << e.what() << std::endl;
-		std::cerr << "Attempting to recreate swap chain..." << std::endl;
 		recreateSwapChain();
 		framebufferResized = false;
-		return; 
+		return;
 	}
 
-	// --- Frame Preparation ---
-	updateUniformBuffer(currentFrame);  // Update uniform data for this frame
-	recordCommandBuffer(commandBuffers[currentFrame], imageIndex);  // Record commands using the acquired image
+	vulkanContext.LogicalDevice.resetFences(1, &waitFences[currentFrame]);
 
-	// --- GPU-GPU Synchronization ---
-	// The graphics queue will wait at the color attachment stage until the image is available
+	vulkanContext.DLSS_IntergrationRef->PrepareDLSS(
+		commandBuffers[currentFrame],
+		currentFrame, 
+		camera,
+		vk::Extent3D{ vulkanContext.swapchainExtent.width, vulkanContext.swapchainExtent.height, 1 }
+	);
+
+	updateUniformBuffer(currentFrame);
+
+	recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
+
 	vk::Semaphore waitSemaphores[] = { presentCompleteSemaphores[currentFrame] };
-
-	vk::PipelineStageFlags waitStages[] = {
-		    vk::PipelineStageFlagBits::eAllCommands
-	};
-
-	// This semaphore will be signaled when rendering completes.
-	// CRITICAL: Uses imageIndex because presentation engine needs per-image synchronization.
-	// By the time we reuse this imageIndex, we know presentation is done with its semaphore.
+	vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput }; 
 	vk::Semaphore submitSemaphores[] = { renderCompleteSemaphores[imageIndex] };
 
 	vk::SubmitInfo submitInfo{};
-	submitInfo.sType                = vk::StructureType::eSubmitInfo;
-	submitInfo.waitSemaphoreCount   = 1;
-	submitInfo.pWaitSemaphores      = waitSemaphores;  // Wait for image acquisition
-	submitInfo.pWaitDstStageMask    = waitStages;     // Wait at color attachment stage
-	submitInfo.commandBufferCount   = 1;
-	submitInfo.pCommandBuffers      = &commandBuffers[currentFrame];  // Frame-specific CB
+	submitInfo.sType = vk::StructureType::eSubmitInfo;
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = waitSemaphores;
+	submitInfo.pWaitDstStageMask = waitStages;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores    = submitSemaphores;  // Signal when rendering done
+	submitInfo.pSignalSemaphores = submitSemaphores;
 
-	// Submit to the graphics queue with the current frame's fence
 	if (vulkanContext.graphicsQueue.submit(1, &submitInfo, waitFences[currentFrame]) != vk::Result::eSuccess)
 	{
 		throw std::runtime_error("failed to submit draw commands");
 	}
 
-	// --- Presentation ---
-	vk::SwapchainKHR swapchains[] = { vulkanContext.swapChain };
+	VkSwapchainKHR swapchains[] = { (VkSwapchainKHR)vulkanContext.swapChain };
+	VkSemaphore waitSems[] = { (VkSemaphore)submitSemaphores[0] };
 
-	vk::PresentInfoKHR presentInfo{};
+	VkPresentInfoKHR presentInfo{};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores    =  submitSemaphores;  // Wait for rendering completion
-	presentInfo.swapchainCount     = 1;
-	presentInfo.pSwapchains        = swapchains;
-	presentInfo.pImageIndices      = &imageIndex;
+	presentInfo.pWaitSemaphores = waitSems;
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = swapchains;
+	presentInfo.pImageIndices = &imageIndex;
 
-	try {
-		// Present the image - will wait on renderCompleteSemaphores[imageIndex]
-		vk::Result result = vulkanContext.presentQueue.presentKHR(presentInfo);
+	// Call the hooked function pointer
+	VkResult result = vulkanContext.slQueuePresent((VkQueue)vulkanContext.presentQueue, &presentInfo);
 
-	}
-	catch (const vk::OutOfDateKHRError& e) {
-		// Handle swapchain out-of-date or other errors
-		std::cerr << "Exception: " << e.what() << std::endl;
-		std::cerr << "Attempting to recreate swap chain..." << std::endl;
-		recreateSwapChain();
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
 		framebufferResized = false;
+		recreateSwapChain();
+	}
+	else if (result != VK_SUCCESS) {
+		throw std::runtime_error("failed to present swap chain image!");
 	}
 
-	// Advance to the next frame index (wraps based on MAX_FRAMES_IN_FLIGHT)
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
@@ -2385,6 +2404,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	begininfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 	commandBuffer.begin(begininfo);
 
+	
 	vk::ClearValue clearColor{};
 	clearColor.color = { 0.0f, 0.0f, 0.0f, 0.0f };
 
@@ -3209,11 +3229,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			                                  SSGI_FullScreenQuad->SSGIPassLastFrameImage, vk::ImageLayout::eTransferDstOptimal, DstSubresourceLayers,
 			                                  swapchainExtenthalf, vulkanContext.graphicsQueue);
 
-
-
-
-
-
 		ImageTransitionData TransitionSrcBack{};
 		TransitionSrcBack.oldlayout = vk::ImageLayout::eTransferSrcOptimal;
 		TransitionSrcBack.newlayout = vk::ImageLayout::eGeneral;
@@ -3236,6 +3251,28 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		TransitionDstToSample.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
 
 		bufferManger.TransitionImage(commandBuffer, &SSGI_FullScreenQuad->SSGIPassLastFrameImage, TransitionDstToSample);
+
+
+		DLSS_Intergration.TagAndEvaluate(
+			commandBuffer,
+			currentFrame,
+			DepthTextureData,                      
+			gbuffer.MotionVector,                  
+			SSGI_FullScreenQuad->SSGIPassImage,    
+			SSGI_FullScreenQuad->SSGIPassImage,    
+			SSGI_FullScreenQuad->SSGI_Denoised_AccumilationImage,
+			SSGI_FullScreenQuad->SSGI_ImageFullResolution, 
+			SSGI_FullScreenQuad->SSGI_DenoisedResolution 
+		);
+
+
+
+
+
+
+
+
+
 
 	}
 
@@ -3620,7 +3657,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		vk::RenderingAttachmentInfo CombinedImageAttachInfo;
 		CombinedImageAttachInfo.clearValue = clearColor;
 		CombinedImageAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		CombinedImageAttachInfo.imageView = Combined_FullScreenQuad->FinalResultImage.imageView;
+		CombinedImageAttachInfo.imageView = Combined_FullScreenQuad->Combined_Lighting_Image.imageView;
 		CombinedImageAttachInfo.loadOp = vk::AttachmentLoadOp::eClear;
 		CombinedImageAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
 
@@ -3643,7 +3680,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	{
 
 		vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
-		LightPassColorAttachmentInfo.imageView = Combined_FullScreenQuad->FinalResultImage.imageView;;
+		LightPassColorAttachmentInfo.imageView = Combined_FullScreenQuad->Combined_Lighting_Image.imageView;;
 		LightPassColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		LightPassColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eLoad;
 		LightPassColorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
@@ -3692,7 +3729,7 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	{
 
 		vk::RenderingAttachmentInfo ProbeDrawColorAttachmentInfo{};
-		ProbeDrawColorAttachmentInfo.imageView = Combined_FullScreenQuad->FinalResultImage.imageView;;
+		ProbeDrawColorAttachmentInfo.imageView = Combined_FullScreenQuad->Combined_Lighting_Image.imageView;;
 		ProbeDrawColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		ProbeDrawColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eLoad;
 		ProbeDrawColorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
@@ -3765,7 +3802,33 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 
-	userinterface.RenderUi(commandBuffer, imageIndex);
+	userinterface.RenderUi(commandBuffer, imageIndex, Combined_FullScreenQuad->IMGUI_PRESENT_IMAGE);
+
+
+	{
+		vk::RenderingAttachmentInfo SwapchainImageAttachInfo;
+		SwapchainImageAttachInfo.clearValue = clearColor;
+		SwapchainImageAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		SwapchainImageAttachInfo.imageView = vulkanContext.swapchainImageData[imageIndex].imageView;
+		SwapchainImageAttachInfo.loadOp = vk::AttachmentLoadOp::eClear;
+		SwapchainImageAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+
+		vk::RenderingInfo GammaCorrectedImageInfo{};
+		GammaCorrectedImageInfo.layerCount = 1;
+		GammaCorrectedImageInfo.colorAttachmentCount = 1;
+		GammaCorrectedImageInfo.pColorAttachments = &SwapchainImageAttachInfo;
+		GammaCorrectedImageInfo.renderArea.extent.width = vulkanContext.swapchainExtent.width;
+		GammaCorrectedImageInfo.renderArea.extent.height = vulkanContext.swapchainExtent.height;
+
+		commandBuffer.setViewport(0, 1, &viewport);
+		commandBuffer.setScissor(0, 1, &scissor);
+		commandBuffer.beginRendering(GammaCorrectedImageInfo);
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, Gamma_Corrected_IMGUI_PassPipeline);
+		Combined_FullScreenQuad->DrawGammaCorrection(commandBuffer, Gamma_Corrected_IMGUI_PipelineLayout, currentFrame);
+		commandBuffer.endRendering();
+	}
+
+	commandBuffer.end();
 
 }
 
@@ -3922,6 +3985,7 @@ void App::destroyPipeline()
 	vulkanContext.LogicalDevice.destroyPipeline(BluredSSGIPipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(TA_SSGIPipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(CombinedImagePassPipeline);
+	vulkanContext.LogicalDevice.destroyPipeline(Gamma_Corrected_IMGUI_PassPipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(BluredRTreflectionPipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(DDGIProbePipeline);
 	vulkanContext.LogicalDevice.destroyPipeline(GridComputePassPipeline);
@@ -3954,6 +4018,7 @@ void App::destroyPipeline()
 	vulkanContext.LogicalDevice.destroyPipelineLayout(SampleDDGIComputePipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(ProbeStatusPipelineLayout);
 	vulkanContext.LogicalDevice.destroyPipelineLayout(ReSTIR_RT_PipelineLayout);
+	vulkanContext.LogicalDevice.destroyPipelineLayout(Gamma_Corrected_IMGUI_PipelineLayout);
 
 }
 

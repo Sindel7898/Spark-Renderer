@@ -67,6 +67,9 @@ public:
     ImageData SSGIPassLastFrameImage;
     ImageData SSGIAccumilationImage;
 
+    ImageData SSGI_Denoised_AccumilationImage;
+
+
     ImageData BlurPing_DownSampleHalfRes;
     ImageData BlurPong_DownSampleHalfRes;
 
@@ -82,6 +85,7 @@ public:
     vk::Extent3D SSGI_ImageFullResolution;
     vk::Extent3D SSGI_ImageHalfResolution;
     vk::Extent3D SSGI_ImageQuaterResolution;
+    vk::Extent3D SSGI_DenoisedResolution;
 
     int NoiseIndex;
 

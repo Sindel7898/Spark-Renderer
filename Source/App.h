@@ -1,5 +1,4 @@
 #pragma once
-#define VK_USE_PLATFORM_WIN32_KHR
 #define GLM_FORCE_RADIANS
 
 #include "ShaderHelper.h"
@@ -31,6 +30,8 @@ class FramesPerSecondCounter;
 class Light;
 class SkyBox;
 class Model;
+class NvdiaDLSS_Intergration;
+
 //class TracyVkCtx;
 
 struct GBuffer;
@@ -189,6 +190,7 @@ private:
 	vk::PipelineLayout         BluredSSGIPipelineLayout = nullptr;
 	vk::PipelineLayout         BluredRTreflectionsPipelineLayout = nullptr;
 	vk::PipelineLayout         CombinedImagePipelineLayout = nullptr;
+	vk::PipelineLayout         Gamma_Corrected_IMGUI_PipelineLayout = nullptr;
 	vk::PipelineLayout         DDGIProbepipelineLayout = nullptr;
 	vk::PipelineLayout         GridComputePipelineLayout = nullptr;
 	vk::PipelineLayout         RT_DDGIPipelineLayout = nullptr;
@@ -216,6 +218,7 @@ private:
 	vk::Pipeline               BluredSSGIPipeline = nullptr;
 	vk::Pipeline               BluredRTreflectionPipeline = nullptr;
 	vk::Pipeline               CombinedImagePassPipeline = nullptr;
+	vk::Pipeline               Gamma_Corrected_IMGUI_PassPipeline = nullptr;
 	vk::Pipeline               GridComputePassPipeline = nullptr;
 	vk::Pipeline               RT_DDGIPassPipeline = nullptr;
 	vk::Pipeline               IrradianceComputePassPipeline = nullptr;
@@ -287,7 +290,7 @@ private:
 	vk::DebugUtilsLabelEXT DDGI_Sample_From_PorbeLabel;
 	vk::DebugUtilsLabelEXT ReSTIR_Label;
 
-
+	NvdiaDLSS_Intergration DLSS_Intergration;
 	///Tracy
 	//TracyVkCtx tracyVkContext;
 };

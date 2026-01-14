@@ -737,6 +737,8 @@ void BufferManager::CreateImage(ImageData* imageData,vk::Extent3D imageExtent, v
 
 	imageData->image = vk::Image(cTextureImage);
 	imageData->allocation = ImageAllocation;
+	imageData->format = imageFormat;
+	imageData->extent = imageExtent;
 
 	VkDebugUtilsObjectNameInfoEXT ImagenameInfo{};
 	ImagenameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
@@ -746,6 +748,7 @@ void BufferManager::CreateImage(ImageData* imageData,vk::Extent3D imageExtent, v
 	ImagenameInfo.pObjectName = imageData->ImageID.c_str();
 
 	vulkanContext->vkSetDebugUtilsObjectNameEXT(logicalDevice, &ImagenameInfo);
+
 
 	AddImageLog(imageData);
 }

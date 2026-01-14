@@ -117,6 +117,14 @@ void Camera::UpdateCameraVectors() {
     up = glm::normalize(glm::cross(right, forward));
 }
 
+void Camera::UpdateJitter(float jitterX, float jitterY) {
+    jitteredProjectionMatrix = projectionMatrix;
+
+    jitteredProjectionMatrix[2][0] += (2.0f * jitterX) / (float)swapchainWidth;
+    jitteredProjectionMatrix[2][1] += (2.0f * jitterY) / (float)swapchainHeight;
+}
+
+
 void Camera::UpdateViewMatrix() {
     viewMatrix = glm::lookAt(position, position + forward, up);
 }
@@ -158,6 +166,17 @@ const glm::vec3& Camera::GetUp() const {
     return up;
 }
 
+float Camera::GetFOV() const {
+    return fov;
+}
+
+float Camera::GetNearClip() const {
+    return nearClip;
+}
+
+float Camera::GetFarClip() const {
+    return farClip;
+}
 void Camera::SetMovementSpeed(float speed) {
     movementSpeed = speed;
 }

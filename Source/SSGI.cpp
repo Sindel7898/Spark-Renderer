@@ -58,8 +58,15 @@ void SSGI::CreateGIImage() {
 	SSGI_ImageFullResolution   = vk::Extent3D(vulkanContext->swapchainExtent.width/2, vulkanContext->swapchainExtent.height/2, 1);
 	SSGI_ImageHalfResolution   = vk::Extent3D(SSGI_ImageFullResolution.width /2, SSGI_ImageFullResolution.height/ 2, 1);
 	SSGI_ImageQuaterResolution = vk::Extent3D(SSGI_ImageHalfResolution.width / 2, SSGI_ImageHalfResolution.height / 2, 1);
+	SSGI_DenoisedResolution    = vk::Extent3D(vulkanContext->swapchainExtent.width , vulkanContext->swapchainExtent.height, 1);
 
 	vk::Extent3D Swapchainextent_Full_Res = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
+
+
+	SSGI_Denoised_AccumilationImage.ImageID = "SSGI Denoised Image";
+	bufferManager->CreateImage(&SSGI_Denoised_AccumilationImage, SSGI_DenoisedResolution, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eStorage, false);
+	SSGI_Denoised_AccumilationImage.imageView = bufferManager->CreateImageView(&SSGI_Denoised_AccumilationImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	SSGI_Denoised_AccumilationImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
 	SSGIPassImage.ImageID = "SSGI Pass Image";
 	bufferManager->CreateImage(&SSGIPassImage, SSGI_ImageFullResolution, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eStorage,false);
@@ -179,6 +186,8 @@ void SSGI::DestroyImage() {
 	bufferManager->DestroyImage(BlurPong_UPSampleHalfRes);
 	bufferManager->DestroyImage(BlurPing_UPSampleFullRes);
 	bufferManager->DestroyImage(BlurPong_UPSampleFullRes);
+	bufferManager->DestroyImage(SSGI_Denoised_AccumilationImage);
+
 }
 
 
