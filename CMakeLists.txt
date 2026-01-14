@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.16)
 project(Spark)
 
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Debug)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -8,7 +11,6 @@ if(MSVC)
     add_compile_options(/MP)
 endif()
 
-# Set paths for external libraries
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/External/imgui)
 set(ImGuizmo_DIR ${CMAKE_SOURCE_DIR}/External/ImGuizmo)
 
@@ -41,10 +43,13 @@ add_subdirectory(External/tracy)
 add_subdirectory(External/fastgltf)
 add_subdirectory(External/meshoptimizer)
 
+set(STREAMLINE_FEATURE_DLSS_SR ON CACHE BOOL "" FORCE)
+set(STREAMLINE_FEATURE_DLSS_RR ON CACHE BOOL "" FORCE)
+add_subdirectory(External/Streamline-SDK)
+
 # Find packages
 find_package(Vulkan REQUIRED)
 
-# --- This is the correct way to discover your project files ---
 file(GLOB_RECURSE SOURCES
     CONFIGURE_DEPENDS
     "Source/*.cpp"
@@ -56,8 +61,6 @@ file(GLOB_RECURSE HEADERS
     "Source/*.h"
 )
 
-# --- This is the single, correct place to define the executable ---
-# It combines your project's sources with all the external library sources.
 add_executable(Spark
     ${SOURCES}
     ${HEADERS}
@@ -67,11 +70,9 @@ add_executable(Spark
     ${ImGuizmo_SRC}
 )
 
-# Create the filters for Visual Studio
 source_group("Source Files" FILES ${SOURCES})
 source_group("Header Files" FILES ${HEADERS})
 
-# Add include directories to the target
 target_include_directories(Spark PRIVATE 
     ${CMAKE_SOURCE_DIR}/src
     External/src/VulkanMemoryAllocator
@@ -83,12 +84,11 @@ target_include_directories(Spark PRIVATE
     ${Vulkan_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/External/glfw/include
     ${CMAKE_SOURCE_DIR}/External/tracy/public/tracy
+    ${CMAKE_SOURCE_DIR}/External/Streamline-SDK/include
 )
 
-# Add compile definitions to the target
 target_compile_definitions(Spark PRIVATE TRACY_ENABLE)
 
-# Link libraries to the target
 target_link_libraries(Spark PRIVATE 
     glfw 
     glm 
@@ -97,4 +97,5 @@ target_link_libraries(Spark PRIVATE
     fastgltf
     meshoptimizer
     Vulkan::Vulkan
+    streamline
 )

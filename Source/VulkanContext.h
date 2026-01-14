@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 #include "../Source/Window.h"
 #include "BufferManager.h"
+#include "NvdiaDLSS_Intergration.h"
 
 class BufferManager;
 const int MAX_FRAMES_IN_FLIGHT = 2;
@@ -13,8 +14,7 @@ class VulkanContext
 {
 public:
 
-	VulkanContext(Window& Window);
-
+	VulkanContext(Window& Window, NvdiaDLSS_Intergration& _NvdiaDLSS_Intergration);
 	void InitVulkan();
 	void SelectGPU_CreateDevice();
 	void createSurface();
@@ -76,6 +76,7 @@ public:
 	PFN_vkCmdEndDebugUtilsLabelEXT                     vkCmdEndDebugUtilsLabelEXT = nullptr;
 
 
+	NvdiaDLSS_Intergration* DLSS_IntergrationRef = nullptr;
 };
 
 static inline void VulkanContextDeleter(VulkanContext* vulkanContext)

@@ -1,6 +1,17 @@
 #include "VulkanContext.h"
 
-VulkanContext::VulkanContext(Window& Window) : window(Window){
+#ifdef constant
+#undef constant
+#endif
+
+#include <sl.h>
+#include <sl_dlss.h>
+#include <sl_dlss_d.h>
+
+VulkanContext::VulkanContext(Window& Window, NvdiaDLSS_Intergration& _NvdiaDLSS_Intergration) : window(Window){
+	DLSS_IntergrationRef = &_NvdiaDLSS_Intergration;
+	DLSS_IntergrationRef->InitDLSS();
+
 	InitVulkan();
 	createSurface();
 	SelectGPU_CreateDevice();
@@ -9,10 +20,17 @@ VulkanContext::VulkanContext(Window& Window) : window(Window){
 
 void VulkanContext::InitVulkan()
 {
-	vkb::InstanceBuilder builder;
+	std::unique_ptr<vkb::InstanceBuilder> builderPtr;
 
-	// Create a Vulkan instance with basic debug features
-	auto inst_ret = builder.set_app_name(" Vulkan Application")
+	if (DLSS_IntergrationRef->sl_vkGetInstanceProcAddr != nullptr) {
+		builderPtr = std::make_unique<vkb::InstanceBuilder>(DLSS_IntergrationRef->sl_vkGetInstanceProcAddr);
+	}
+	else {
+		builderPtr = std::make_unique<vkb::InstanceBuilder>();
+	}
+
+
+	auto inst_ret = builderPtr->set_app_name(" Vulkan Application")
 		.request_validation_layers(enableValidationLayers)
 		.use_default_debug_messenger()
 		.require_api_version(1, 3, 0)
@@ -24,12 +42,8 @@ void VulkanContext::InitVulkan()
 	}
 
 	VKB_Instance = inst_ret.value();
-
-	// Store the Vulkan instance and debug messenger
 	VulkanInstance = VKB_Instance.instance;
 	Debug_Messenger = VKB_Instance.debug_messenger;
-
-
 }
 
 void VulkanContext::SelectGPU_CreateDevice()
