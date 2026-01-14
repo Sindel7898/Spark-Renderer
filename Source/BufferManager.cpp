@@ -1,5 +1,7 @@
 #include "BufferManager.h"
 #include "VulkanContext.h"
+#include "Model.h"
+
 #define VMA_IMPLEMENTATION
 #define VMA_DEBUG_LOG(format, ...) printf(format, __VA_ARGS__)
 #define VMA_DEBUG_MARGIN 16
@@ -891,6 +893,29 @@ void BufferManager::CreateSharedBuffers(vk::CommandPool& commandPool)
 	}
 
 }
+
+void BufferManager::Update_Raytracing_Data(uint32_t currentImage, std::vector<Model*>& Modelref)
+{
+	std::vector<GlobalTransformationMatrices> ModelTransfomations;
+
+	for (int i = 0; i < Modelref.size(); i++)
+	{
+
+		if (Modelref[i])
+		{
+			glm::mat4 projmodelInstanceTransformection = Modelref[i]->Instances[0]->GetTransformationMatrix();
+
+			GlobalTransformationMatrices model;
+			model.WorldMatrix = projmodelInstanceTransformection;
+			model.Transposed_Normalised_WorldMatrix = glm::transpose(glm::inverse(projmodelInstanceTransformection));
+			ModelTransfomations.push_back(model);
+
+		}
+	}
+
+	memcpy(AllScene_TransformationUniformMappedMem[currentImage], ModelTransfomations.data(), ModelTransfomations.size() * sizeof(GlobalTransformationMatrices));
+}
+
 
 void BufferManager::DestroySharedBuffers() {
 

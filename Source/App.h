@@ -127,9 +127,6 @@ public:
 	std::unique_ptr<CombinedResult_FullScreenQuad, decltype(&CombinedResult_FullScreenQuadDeleter)>
 		Combined_FullScreenQuad{ nullptr, &CombinedResult_FullScreenQuadDeleter };
 
-	std::unique_ptr<RT_Reflections, decltype(&RT_ReflectionsDeleter)>
-		RT_Reflection{ nullptr, &RT_ReflectionsDeleter };
-
 	std::unique_ptr<DynamicDiffuse_RTGI, decltype(&DynamicDiffuse_RTGIDeleter)>
 		dynamicDiffuse_RTGI { nullptr, &DynamicDiffuse_RTGIDeleter };
 
@@ -186,8 +183,6 @@ private:
 	vk::PipelineLayout         RT_ShadowsPipelineLayout = nullptr;
 	vk::PipelineLayout         RT_ReflectionPipelineLayout = nullptr;
 	vk::PipelineLayout         SSGIPipelineLayout = nullptr;
-	vk::PipelineLayout         TA_SSGIPipelineLayout = nullptr;
-	vk::PipelineLayout         BluredSSGIPipelineLayout = nullptr;
 	vk::PipelineLayout         BluredRTreflectionsPipelineLayout = nullptr;
 	vk::PipelineLayout         CombinedImagePipelineLayout = nullptr;
 	vk::PipelineLayout         Gamma_Corrected_IMGUI_PipelineLayout = nullptr;
@@ -214,8 +209,6 @@ private:
 	vk::Pipeline               RT_ShadowsPassPipeline = nullptr;
 	vk::Pipeline               RT_ReflectionPassPipeline = nullptr;
 	vk::Pipeline               SSGIPipeline = nullptr;
-	vk::Pipeline               TA_SSGIPipeline = nullptr;
-	vk::Pipeline               BluredSSGIPipeline = nullptr;
 	vk::Pipeline               BluredRTreflectionPipeline = nullptr;
 	vk::Pipeline               CombinedImagePassPipeline = nullptr;
 	vk::Pipeline               Gamma_Corrected_IMGUI_PassPipeline = nullptr;

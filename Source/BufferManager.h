@@ -12,6 +12,7 @@
 
 
 class VulkanContext;
+class Model;
 
 
 class BufferManager
@@ -31,6 +32,8 @@ public:
     void RemoveImageLog(ImageData imageData);
 
     void CreateSharedBuffers(vk::CommandPool& commandPool);
+
+    void Update_Raytracing_Data(uint32_t currentImage, std::vector<Model*>& Modelref);
 
     void DestroySharedBuffers();
 

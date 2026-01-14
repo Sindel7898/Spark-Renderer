@@ -665,27 +665,6 @@ void RT_Reflections::UpdateUniformBuffer(uint32_t currentImage, std::vector<std:
 	RayGent_UniformBufferData.ProjectionMatrix[0][0] *= -1;
 
 	memcpy(RayGen_UniformBuffersMappedMem[currentImage], &RayGent_UniformBufferData, sizeof(RayGent_UniformBufferData));
-
-
-	std::vector<GlobalTransformationMatrices> ModelTransfomations;
-
-	for (int i = 0; i < Modelref.size(); i++)
-	{
-
-		if (Modelref[i])
-		{
-			glm::mat4 projmodelInstanceTransformection = Modelref[i]->Instances[0]->GetTransformationMatrix();
-
-			GlobalTransformationMatrices model;
-			model.WorldMatrix = projmodelInstanceTransformection;
-			model.Transposed_Normalised_WorldMatrix = glm::transpose(glm::inverse(projmodelInstanceTransformection));
-			ModelTransfomations.push_back(model);
-
-		}
-	}
-
-	memcpy(bufferManager->AllScene_TransformationUniformMappedMem[currentImage], ModelTransfomations.data(), ModelTransfomations.size() * sizeof(GlobalTransformationMatrices));
-
 }
 
 

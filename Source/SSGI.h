@@ -3,7 +3,6 @@
 #include <memory>
 #include <string>
 #include "structs.h"
-#include "Drawable.h"
 
 class  Camera;
 class  VulkanContext;
@@ -16,83 +15,42 @@ struct SSGI_UniformBufferData {
 };
 
 
-class SSGI : public Drawable
+class SSGI
 {
 public:
 
     SSGI(BufferManager* buffermanager, VulkanContext* vulkancontext, Camera* cameraref, vk::CommandPool commandpool);
-    void CreateVertexAndIndexBuffer() override;
+    void CreateNoiseTextures();
     void CreateGIImage();
     void DestroyImage();
-    void GenerateMipMaps(vk::CommandBuffer commandbuffer);
-    void createDescriptorSetLayout() override;
+    void createDescriptorSetLayout();
     void createDescriptorSets(vk::DescriptorPool descriptorpool, GBuffer gbuffer, ImageData LightingPass, ImageData DepthImage);
-    void UpdateUniformBuffer(uint32_t currentImage, std::vector<std::shared_ptr<Light>>& lightref,float DeltaTime);
+    void UpdateUniformBuffer(uint32_t currentImage, float DeltaTime);
     void ComputeSSGI(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
-    void CreateUniformBuffer();
-    void DrawTA(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
-    void Draw(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t currentFrame) override;
-    void DrawDownSampleHalfResFirstPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
-    void DrawDownSampleHalfResSecondPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
-    void DrawDownSampleQuaterfResFirstPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
-    void DrawDownSampleQuaterfResSecondPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
-    void DrawUPSampleHalfResFirstPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
-    void DrawUPSampleHalfResSecondPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
-    void DrawUPSampleFullResFirstPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
-    void DrawUPSampleFullResSecondPass(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
-
- 
-    void CleanUp() ;
-
-    vk::DescriptorSetLayout TemporalAccumilationDescriptorSetLayout;
-    std::vector<vk::DescriptorSet> TemporalAccumilationFullDescriptorSets;
-
-    vk::DescriptorSetLayout Blured_TemporalAccumilationDescriptorSetLayout;
-
-    std::vector<vk::DescriptorSet> DownSampleHalfRes_PING_SampleDescriptorSets;
-    std::vector<vk::DescriptorSet> DownSampleHalfRes_PONG_SampleDescriptorSets;
-
-    std::vector<vk::DescriptorSet> DownSampleQuaterRes_PING_SampleDescriptorSets;
-    std::vector<vk::DescriptorSet> DownSampleQuaterRes_PONG_SampleDescriptorSets;
-
-    std::vector<vk::DescriptorSet> UPSampleHalfRes_PING_SampleDescriptorSets;
-    std::vector<vk::DescriptorSet> UPSampleHalfRes_PONG_SampleDescriptorSets;
-
-    std::vector<vk::DescriptorSet> UPSampleFullRes_PING_SampleDescriptorSets;
-    std::vector<vk::DescriptorSet> UPSampleFullRes_PONG_SampleDescriptorSets;
+    void CreateUniformBuffer();    
+    void CleanUp();
 
     std::vector<ImageData> BlueNoiseTextures;
 
     ImageData SSGIPassImage;
-    ImageData SSGIPassLastFrameImage;
-    ImageData SSGIAccumilationImage;
-
-    ImageData SSGI_Denoised_AccumilationImage;
-
-
-    ImageData BlurPing_DownSampleHalfRes;
-    ImageData BlurPong_DownSampleHalfRes;
-
-    ImageData BlurPing_DownSampleQuaterRes;
-    ImageData BlurPong_DownSampleQuaterRes;
-
-    ImageData BlurPing_UPSampleHalfRes;
-    ImageData BlurPong_UPSampleHalfRes;
-
-    ImageData BlurPing_UPSampleFullRes;
-    ImageData BlurPong_UPSampleFullRes;
-
     vk::Extent3D SSGI_ImageFullResolution;
-    vk::Extent3D SSGI_ImageHalfResolution;
-    vk::Extent3D SSGI_ImageQuaterResolution;
-    vk::Extent3D SSGI_DenoisedResolution;
 
     int NoiseIndex;
-
-    glm::mat4 LastCameraMatrix;
+    vk::DescriptorSetLayout  descriptorSetLayout;
 
 private:
- 
+   
+    glm::mat4 LastCameraMatrix;
+
+    std::vector<BufferData> ComputeUniformBuffers;
+    std::vector<void*>      ComputeUniformBuffersMappedMem;
+    std::vector<vk::DescriptorSet> DescriptorSets;
+
+
+    BufferManager* bufferManager = nullptr;
+    VulkanContext* vulkanContext = nullptr;
+    Camera* camera = nullptr;
+    vk::CommandPool commandPool;
 };
 
 

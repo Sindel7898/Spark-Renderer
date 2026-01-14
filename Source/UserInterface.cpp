@@ -514,10 +514,10 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
                     ImGui::Checkbox("Enable ReSTIR DDGI"          , (bool*)&appref->Restir_DI->bDDGI);
                 }
 
-                if (ImGui::CollapsingHeader("RT Reflections", ImGuiTreeNodeFlags_DefaultOpen)) {
-                    ImGui::Checkbox("Enable Raytraced Reflections", (bool*)&appref->RT_Reflection->bReflections);
-
-                }
+                //if (ImGui::CollapsingHeader("RT Reflections", ImGuiTreeNodeFlags_DefaultOpen)) {
+                //    ImGui::Checkbox("Enable Raytraced Reflections", (bool*)&appref->RT_Reflection->bReflections);
+                //
+                //}
 
                 ImGui::EndTabItem();
             }
