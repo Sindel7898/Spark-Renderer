@@ -15,9 +15,9 @@ layout (binding = 6) uniform SSGIUniformBuffer {
 
 
 const int MIN_ITERATION = 0;
-const int MAX_ITERATION = 60;
+const int MAX_ITERATION = 40;
 const int MAX_RAYS = 5;
-const int MIN_RAYS = 5;
+const int MIN_RAYS = 1;
 
 const float MAX_THICKNESS = 0.1; 
 
@@ -100,7 +100,7 @@ void main() {
    int   Height           = int(ubo.BlueNoiseImageIndex_DeltaTime_Width_Height.w);
 
     ivec2 TextlCord   = ivec2(gl_GlobalInvocationID.xy);
-    vec2 UV = (vec2(TextlCord) + 0.5) / vec2(Width,Height); // + 0.5 gives us the middle of the TEXEL not the edge
+    vec2 UV = (vec2(TextlCord * 2) + 0.5) / vec2(Width,Height); // + 0.5 gives us the middle of the TEXEL not the edge
 
     vec3 Color      = texture(DirectLigtingTexture, UV).rgb;
     vec3 Albedo     = texture(AlbedoTexture, UV).rgb;

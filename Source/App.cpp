@@ -270,7 +270,7 @@ void App::SwitchScene(int index)
 			UserInterfaceItems.push_back(model.get());
 		}
 
-		int LightCount = 1;
+		int LightCount = 90;
 
 		lights.reserve(LightCount);
 
@@ -2785,6 +2785,37 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 				commandBuffer,
 				ReSTIR_RT_PipelineLayout,
 				currentFrame);
+
+			////////////////////////////////////////////////////////////////////
+			vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
+			SkyBoxRenderAttachInfo.clearValue = clearColor;
+			SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			SkyBoxRenderAttachInfo.imageView = Restir_DI->ReSTIRDI_Results.imageView;
+			SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+			SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+
+			vk::RenderingAttachmentInfo DepthAttachInfo;
+			DepthAttachInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+			DepthAttachInfo.imageView = DepthTextureData.imageView;
+			DepthAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+			DepthAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+			DepthAttachInfo.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+
+			vk::RenderingInfo SkyBoxRenderInfo{};
+			SkyBoxRenderInfo.layerCount = 1;
+			SkyBoxRenderInfo.colorAttachmentCount = 1;
+			SkyBoxRenderInfo.pColorAttachments = &SkyBoxRenderAttachInfo;
+			SkyBoxRenderInfo.pDepthAttachment = &DepthAttachInfo;
+			SkyBoxRenderInfo.renderArea.extent.width = vulkanContext.swapchainExtent.width;
+			SkyBoxRenderInfo.renderArea.extent.height = vulkanContext.swapchainExtent.height;
+
+
+			commandBuffer.setViewport(0, 1, &viewport);
+			commandBuffer.setScissor(0, 1, &scissor);
+			commandBuffer.beginRendering(SkyBoxRenderInfo);
+			commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
+			skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
+			commandBuffer.endRendering();
 		}
 	}
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
@@ -2902,22 +2933,22 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			commandBuffer.endRendering();
 		}
 
-		{
-
-			vk::Extent3D Screensize = {
-				vulkanContext.swapchainExtent.width,
-				vulkanContext.swapchainExtent.height,
-				1
-			};
-
-			vulkanContext.DLSS_IntergrationRef->TagAndEvaluate(commandBuffer,
-				DepthTextureData,
-				gbuffer.MotionVector,
-				Combined_FullScreenQuad->Combined_Lighting_Image,
-				Combined_FullScreenQuad->Combined_Lighting_Image,
-				Combined_FullScreenQuad->Final_Denoised_Image,
-				Screensize, Screensize);
-		}
+		//{
+		//
+		//	vk::Extent3D Screensize = {
+		//		vulkanContext.swapchainExtent.width,
+		//		vulkanContext.swapchainExtent.height,
+		//		1
+		//	};
+		//
+		//	vulkanContext.DLSS_IntergrationRef->TagAndEvaluate(commandBuffer,
+		//		DepthTextureData,
+		//		gbuffer.MotionVector,
+		//		Combined_FullScreenQuad->Combined_Lighting_Image,
+		//		Combined_FullScreenQuad->Combined_Lighting_Image,
+		//		Combined_FullScreenQuad->Final_Denoised_Image,
+		//		Screensize, Screensize);
+		//}
 
 		{
 

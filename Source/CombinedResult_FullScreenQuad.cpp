@@ -310,6 +310,11 @@ void CombinedResult_FullScreenQuad::DrawGammaCorrection(vk::CommandBuffer comman
 void CombinedResult_FullScreenQuad::CleanUp()
 {
 
+	if (Gamma_Correction_descriptorSetLayout) {
+		vulkanContext->LogicalDevice.destroyDescriptorSetLayout(Gamma_Correction_descriptorSetLayout);
+	}
+
 	Drawable::Destructor();
+
 }
 
