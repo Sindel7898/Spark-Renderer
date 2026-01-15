@@ -55,11 +55,8 @@ void SSGI::CreateUniformBuffer() {
 
 void SSGI::CreateGIImage() {
 
-	SSGI_ImageFullResolution   = vk::Extent3D(vulkanContext->swapchainExtent.width/2, vulkanContext->swapchainExtent.height/2, 1);
+	SSGI_ImageFullResolution   = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 	
-	vk::Extent3D Swapchainextent_Full_Res = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
-
-
 	SSGIPassImage.ImageID = "SSGI Pass Image";
 	bufferManager->CreateImage(&SSGIPassImage, SSGI_ImageFullResolution, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eStorage,false);
 	SSGIPassImage.imageView = bufferManager->CreateImageView(&SSGIPassImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
@@ -368,16 +365,28 @@ void SSGI::CleanUp()
 {
 	if (bufferManager)
 	{
-
 		for (ImageData noise : BlueNoiseTextures)
 		{
 			bufferManager->DestroyImage(noise);
 		}
-		
 		BlueNoiseTextures.clear();
 
+		for (size_t i = 0; i < ComputeUniformBuffers.size(); i++)
+		{
+			if (ComputeUniformBuffers[i].buffer) {
+				bufferManager->UnmapMemory(ComputeUniformBuffers[i]);
+				bufferManager->DestroyBuffer(ComputeUniformBuffers[i]);
+			}
+		}
+
+		ComputeUniformBuffers.clear();
+		ComputeUniformBuffersMappedMem.clear();
+
+		if (descriptorSetLayout) {
+			vulkanContext->LogicalDevice.destroyDescriptorSetLayout(descriptorSetLayout);
+			descriptorSetLayout = nullptr;
+		}
 	}
 }
-
 
 

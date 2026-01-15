@@ -63,8 +63,8 @@ private:
     ImGuizmo::OPERATION currentGizmoOperation;
     ImGuizmo::MODE currentGizmoMode;
 
-    std::vector<std::string> Passes{"SSGI Pass","DDGI Pass","ReSTIR DI","Lighting Pass","Reflections"};
-    std::string currentPass = "Combined Pass";
+    std::vector<std::string> Passes{"SSGI Pass","DDGI Pass","ReSTIR DI","Lighting Pass"};
+    std::string currentPass = "Lighting Pass";
 
     std::vector<std::string> items{ "Directional", "Point" };
     std::string currentItem = "Point";

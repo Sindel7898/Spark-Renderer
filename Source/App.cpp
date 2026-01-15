@@ -807,6 +807,7 @@ void App::createGBuffer()
 	bufferManger.TransitionImage(cmd, &gbuffer.Materials, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &gbuffer.MotionVector, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &Combined_FullScreenQuad->Combined_Lighting_Image, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &Combined_FullScreenQuad->Final_Denoised_Image, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->SSGIPassImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &ssao_FullScreenQuad->SSAOImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &ssao_FullScreenQuad->BluredSSAOImage, TransitionToGeneral);
@@ -819,27 +820,23 @@ void App::createGBuffer()
 	bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd,vulkanContext.graphicsQueue);
 
 	
-	FinalRenderTextureId = ImGui_ImplVulkan_AddTexture(fxaa_FullScreenQuad->FxaaImage.imageSampler,
-		                                               fxaa_FullScreenQuad->FxaaImage.imageView,
+	FinalRenderTextureId = ImGui_ImplVulkan_AddTexture(Combined_FullScreenQuad->Combined_Lighting_Image.imageSampler,
+		                                               Combined_FullScreenQuad->Combined_Lighting_Image.imageView,
 		                                               VK_IMAGE_LAYOUT_GENERAL);
-
-	LightingAndReflectionsRenderTextureId = ImGui_ImplVulkan_AddTexture(lighting_RTX->ResultingStorageImage.imageSampler,
-		                                                                lighting_RTX->ResultingStorageImage.imageView,
-		VK_IMAGE_LAYOUT_GENERAL);
 
 
 	SSGITextureId    = ImGui_ImplVulkan_AddTexture(SSGI_FullScreenQuad->SSGIPassImage.imageSampler,
-		                                                   SSGI_FullScreenQuad->SSGIPassImage.imageView,
-		                                                   VK_IMAGE_LAYOUT_GENERAL);
+		                                           SSGI_FullScreenQuad->SSGIPassImage.imageView,
+		                                           VK_IMAGE_LAYOUT_GENERAL);
 	
 
 	ReSTIR_DITextureId = ImGui_ImplVulkan_AddTexture(Restir_DI->ReSTIRDI_Results.imageSampler,
-		                                                       Restir_DI->ReSTIRDI_Results.imageView,
-		                                                       VK_IMAGE_LAYOUT_GENERAL);
+		                                             Restir_DI->ReSTIRDI_Results.imageView,
+		                                             VK_IMAGE_LAYOUT_GENERAL);
 
 	DDGI_Radiance = ImGui_ImplVulkan_AddTexture(dynamicDiffuse_RTGI->RadianceImageAtlasImage.imageSampler,
-		                                       dynamicDiffuse_RTGI->RadianceImageAtlasImage.imageView,
-		                                    VK_IMAGE_LAYOUT_GENERAL);
+		                                        dynamicDiffuse_RTGI->RadianceImageAtlasImage.imageView,
+		                                        VK_IMAGE_LAYOUT_GENERAL);
 
 
    Sampled_GI_ID = ImGui_ImplVulkan_AddTexture(dynamicDiffuse_RTGI->Probe_Sampled_GI_Image.imageSampler,
@@ -1940,11 +1937,6 @@ void App::createShaderBindingTable() {
 
 void App::DestroyShaderBindingTable() {
 
-	bufferManger.DestroyBuffer(Reflection_raygenShaderBindingTableBuffer);
-	bufferManger.DestroyBuffer(Reflection_missShaderBindingTableBuffer);
-	bufferManger.DestroyBuffer(Reflection_hitShaderBindingTableBuffer);
-
-
 	bufferManger.DestroyBuffer(DDGI_raygenShaderBindingTableBuffer);
 	bufferManger.DestroyBuffer(DDGI_missShaderBindingTableBuffer);
 	bufferManger.DestroyBuffer(DDGI_hitShaderBindingTableBuffer);
@@ -2187,26 +2179,44 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 	}
 }
 
-void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) {
-
+void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) {
 
 	vk::CommandBufferBeginInfo begininfo{};
 	begininfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 	commandBuffer.begin(begininfo);
 
+	{
+		ImageTransitionData ResetDepth{};
+		ResetDepth.oldlayout = vk::ImageLayout::eUndefined;
+		ResetDepth.newlayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+		ResetDepth.AspectFlag = vk::ImageAspectFlagBits::eDepth;
+		ResetDepth.SourceAccessflag = vk::AccessFlagBits::eNone;
+		ResetDepth.DestinationAccessflag = vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+		ResetDepth.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
+		ResetDepth.DestinationOnThePipeline = vk::PipelineStageFlagBits::eEarlyFragmentTests;
+		bufferManger.TransitionImage(commandBuffer, &DepthTextureData, ResetDepth);
+
+		ImageTransitionData ResetDenoised{};
+		ResetDenoised.oldlayout = vk::ImageLayout::eUndefined;
+		ResetDenoised.newlayout = vk::ImageLayout::eGeneral;
+		ResetDenoised.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		ResetDenoised.SourceAccessflag = vk::AccessFlagBits::eNone;
+		ResetDenoised.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
+		ResetDenoised.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
+		ResetDenoised.DestinationOnThePipeline = vk::PipelineStageFlagBits::eComputeShader | vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+		bufferManger.TransitionImage(commandBuffer, &Combined_FullScreenQuad->Final_Denoised_Image, ResetDenoised);
+	}
 
 	vk::ClearValue clearColor{};
 	clearColor.color = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 	VkOffset2D imageoffset = { 0, 0 };
 
-	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext.swapchainExtent.width, vulkanContext.swapchainExtent.height, 1);
-
 	vk::Viewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = vulkanContext.swapchainExtent.width;
-	viewport.height = vulkanContext.swapchainExtent.height;
+	viewport.width = (float)vulkanContext.swapchainExtent.width;
+	viewport.height = (float)vulkanContext.swapchainExtent.height;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 
@@ -2216,15 +2226,10 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 	scissor.extent.height = vulkanContext.swapchainExtent.height;
 
 
-	vk::DeviceSize offsets[] = { 0 };
-
-
 	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, Gbuffer_Label);
 
 	/////////////////// GBUFFER PASS ///////////////////////// 
 	{
-
-
 		ImageTransitionData TransitiontoGeneraRT{};
 		TransitiontoGeneraRT.oldlayout = vk::ImageLayout::eUndefined;
 		TransitiontoGeneraRT.newlayout = vk::ImageLayout::eGeneral;
@@ -2242,12 +2247,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		SrcSubresourceLayers.baseArrayLayer = 0;
 		SrcSubresourceLayers.layerCount = 1;
 		SrcSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
-
-		vk::ImageSubresourceLayers DstSubresourceLayers;
-		DstSubresourceLayers.mipLevel = 0;
-		DstSubresourceLayers.baseArrayLayer = 0;
-		DstSubresourceLayers.layerCount = 1;
-		DstSubresourceLayers.aspectMask = vk::ImageAspectFlagBits::eColor;
 
 		vk::Extent3D ImageSize = {
 			vulkanContext.swapchainExtent.width ,
@@ -2589,9 +2588,8 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 				1, &rtToComputeBarrier
 			);
 		}
+
 		vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
-
-
 
 		{
 
@@ -2702,7 +2700,6 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 
 		}
-
 
 		vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DDGI_Sample_From_PorbeLabel);
 
@@ -2845,8 +2842,9 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 
 		}
 
-
-		vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
+	}	
+	
+	     vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 		{
 			vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
@@ -2904,6 +2902,22 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			commandBuffer.endRendering();
 		}
 
+		{
+
+			vk::Extent3D Screensize = {
+				vulkanContext.swapchainExtent.width,
+				vulkanContext.swapchainExtent.height,
+				1
+			};
+
+			vulkanContext.DLSS_IntergrationRef->TagAndEvaluate(commandBuffer,
+				DepthTextureData,
+				gbuffer.MotionVector,
+				Combined_FullScreenQuad->Combined_Lighting_Image,
+				Combined_FullScreenQuad->Combined_Lighting_Image,
+				Combined_FullScreenQuad->Final_Denoised_Image,
+				Screensize, Screensize);
+		}
 
 		{
 
@@ -3001,37 +3015,33 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 		/////////////////// FORWARD PASS END ///////////////////////// 
 		vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
 
-		vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, FXAA_Label);
-		{
-			vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
-			LightPassColorAttachmentInfo.imageView = fxaa_FullScreenQuad->FxaaImage.imageView;
-			LightPassColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-			LightPassColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
-			LightPassColorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
-			LightPassColorAttachmentInfo.clearValue = clearColor;
-
-			vk::RenderingInfo renderingInfo{};
-			renderingInfo.renderArea.offset = imageoffset;
-			renderingInfo.renderArea.extent.height = vulkanContext.swapchainExtent.height;
-			renderingInfo.renderArea.extent.width = vulkanContext.swapchainExtent.width;
-			renderingInfo.layerCount = 1;
-			renderingInfo.colorAttachmentCount = 1;
-			renderingInfo.pColorAttachments = &LightPassColorAttachmentInfo;
-
-			commandBuffer.setViewport(0, 1, &viewport);
-			commandBuffer.setScissor(0, 1, &scissor);
-
-			commandBuffer.beginRendering(renderingInfo);
-
-			commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, FXAAPassPipeline);
-			fxaa_FullScreenQuad->Draw(commandBuffer, FXAAPassPipelineLayout, currentFrame);
-			commandBuffer.endRendering();
-		}
-		vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
-
 
 		userinterface.RenderUi(commandBuffer, imageIndex, Combined_FullScreenQuad->IMGUI_PRESENT_IMAGE);
 
+		{
+			vk::ImageMemoryBarrier barrier{};
+			barrier.oldLayout = vk::ImageLayout::eUndefined;
+			barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.image = vulkanContext.swapchainImageData[imageIndex].image;
+			barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+			barrier.subresourceRange.baseMipLevel = 0;
+			barrier.subresourceRange.levelCount = 1;
+			barrier.subresourceRange.baseArrayLayer = 0;
+			barrier.subresourceRange.layerCount = 1;
+			barrier.srcAccessMask = vk::AccessFlagBits::eNone;
+			barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+
+			commandBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eTopOfPipe,
+				vk::PipelineStageFlagBits::eColorAttachmentOutput,
+				{},
+				0, nullptr,
+				0, nullptr,
+				1, &barrier
+			);
+		}
 
 		{
 			vk::RenderingAttachmentInfo SwapchainImageAttachInfo;
@@ -3056,10 +3066,35 @@ void  App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIn
 			commandBuffer.endRendering();
 		}
 
-		commandBuffer.end();
+		{
+			vk::ImageMemoryBarrier barrier{};
+			barrier.oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			barrier.newLayout = vk::ImageLayout::ePresentSrcKHR;
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.image = vulkanContext.swapchainImageData[imageIndex].image;
+			barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+			barrier.subresourceRange.baseMipLevel = 0;
+			barrier.subresourceRange.levelCount = 1;
+			barrier.subresourceRange.baseArrayLayer = 0;
+			barrier.subresourceRange.layerCount = 1;
+			barrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+			barrier.dstAccessMask = vk::AccessFlagBits::eNone;
 
-	}
+			commandBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eColorAttachmentOutput,
+				vk::PipelineStageFlagBits::eBottomOfPipe,
+				{},
+				0, nullptr,
+				0, nullptr,
+				1, &barrier
+			);
+		}
+
+		commandBuffer.end();
 }
+
+
 void App::destroy_DepthImage()
 {
 	bufferManger.DestroyImage(DepthTextureData);

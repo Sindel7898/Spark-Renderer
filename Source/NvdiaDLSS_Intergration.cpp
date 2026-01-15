@@ -170,7 +170,7 @@ sl::Resource CreateSLResource(const ImageData& Image, vk::ImageLayout layout)
     return res;
 }
 
-void NvdiaDLSS_Intergration::TagAndEvaluate(vk::CommandBuffer cmd, uint32_t frameIndex, const ImageData& depth, const ImageData& mvec, const ImageData& diffuseNoisy, const ImageData& specularNoisy, const ImageData& outputColor, vk::Extent3D renderSize, vk::Extent3D displaySize)
+void NvdiaDLSS_Intergration::TagAndEvaluate(vk::CommandBuffer cmd, const ImageData& depth, const ImageData& mvec, const ImageData& diffuseNoisy, const ImageData& specularNoisy, const ImageData& outputColor, vk::Extent3D renderSize, vk::Extent3D displaySize)
 {
     if (!m_currentFrameToken) return;
     sl::FrameToken* frameToken = (sl::FrameToken*)m_currentFrameToken;
@@ -179,10 +179,10 @@ void NvdiaDLSS_Intergration::TagAndEvaluate(vk::CommandBuffer cmd, uint32_t fram
     sl::Extent renderExt = { 0, 0, renderSize.width, renderSize.height };
     sl::Extent displayExt = { 0, 0, displaySize.width, displaySize.height };
 
-    auto depthRes = CreateSLResource(depth, vk::ImageLayout::eShaderReadOnlyOptimal);
-    auto mvecRes = CreateSLResource(mvec, vk::ImageLayout::eShaderReadOnlyOptimal);
-    auto diffRes = CreateSLResource(diffuseNoisy, vk::ImageLayout::eShaderReadOnlyOptimal);
-    auto specRes = CreateSLResource(specularNoisy, vk::ImageLayout::eShaderReadOnlyOptimal);
+    auto depthRes = CreateSLResource(depth, vk::ImageLayout::eDepthAttachmentOptimal);
+    auto mvecRes = CreateSLResource(mvec, vk::ImageLayout::eGeneral);
+    auto diffRes = CreateSLResource(diffuseNoisy, vk::ImageLayout::eGeneral);
+    auto specRes = CreateSLResource(specularNoisy, vk::ImageLayout::eGeneral);
     auto outRes = CreateSLResource(outputColor, vk::ImageLayout::eGeneral);
 
     std::vector<sl::ResourceTag> tags;
@@ -190,7 +190,7 @@ void NvdiaDLSS_Intergration::TagAndEvaluate(vk::CommandBuffer cmd, uint32_t fram
     tags.push_back({ &mvecRes, sl::kBufferTypeMotionVectors, sl::ResourceLifecycle::eValidUntilPresent, &renderExt });
     tags.push_back({ &diffRes, sl::kBufferTypeScalingInputColor, sl::ResourceLifecycle::eValidUntilPresent, &renderExt });
     tags.push_back({ &specRes, sl::kBufferTypeSpecularHitNoisy, sl::ResourceLifecycle::eValidUntilPresent, &renderExt });
-    tags.push_back({ &outRes, sl::kBufferTypeScalingOutputColor, sl::ResourceLifecycle::eValidUntilPresent, &displayExt });
+    tags.push_back({ &outRes , sl::kBufferTypeScalingOutputColor, sl::ResourceLifecycle::eValidUntilPresent, &displayExt });
 
     if (slSetTagForFrame(*frameToken, viewport, tags.data(), (uint32_t)tags.size(), (void*)(VkCommandBuffer)cmd) != sl::Result::eOk) {
         std::cerr << "SL Tagging failed\n";

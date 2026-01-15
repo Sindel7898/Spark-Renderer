@@ -27,6 +27,7 @@ public:
     ImageData IMGUI_PRESENT_IMAGE_GAMMA_CORRECTED;
     ImageData IMGUI_PRESENT_IMAGE;
     ImageData Combined_Lighting_Image;
+    ImageData Final_Denoised_Image;
 
     float Brightness = 1.0;
     float Saturation = 1.0;

@@ -236,7 +236,7 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex,Im
 
 	ImageTransitionData TransitionSwapchainToWriteData;
 	TransitionSwapchainToWriteData.oldlayout = vk::ImageLayout::eUndefined;
-	TransitionSwapchainToWriteData.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
+	TransitionSwapchainToWriteData.newlayout = vk::ImageLayout::eGeneral;
 	TransitionSwapchainToWriteData.SourceAccessflag = vk::AccessFlagBits::eNone;
 	TransitionSwapchainToWriteData.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
 	TransitionSwapchainToWriteData.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
@@ -291,16 +291,6 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex,Im
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), CommandBuffer);
 	CommandBuffer.endRendering();
 
-	ImageTransitionData TransitionSwapchainToPresentData;
-	TransitionSwapchainToPresentData.oldlayout = vk::ImageLayout::eColorAttachmentOptimal;
-	TransitionSwapchainToPresentData.newlayout = vk::ImageLayout::ePresentSrcKHR;
-	TransitionSwapchainToPresentData.SourceAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
-	TransitionSwapchainToPresentData.DestinationAccessflag = vk::AccessFlagBits::eMemoryRead;
-	TransitionSwapchainToPresentData.SourceOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-	TransitionSwapchainToPresentData.DestinationOnThePipeline = vk::PipelineStageFlagBits::eBottomOfPipe;
-	TransitionSwapchainToPresentData.AspectFlag = vk::ImageAspectFlagBits::eColor;
-
-	buffermanager->TransitionImage(CommandBuffer, &DrawingImage, TransitionSwapchainToPresentData);
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 

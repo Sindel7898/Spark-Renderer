@@ -22,21 +22,23 @@ void CombinedResult_FullScreenQuad::CreateImage(vk::Extent3D imageExtent)
 {
 	Combined_Lighting_Image.ImageID = "Combined Lighting  Image  Texture";
 	bufferManager->CreateImage(&Combined_Lighting_Image, imageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-
 	Combined_Lighting_Image.imageView = bufferManager->CreateImageView(&Combined_Lighting_Image, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	Combined_Lighting_Image.imageSampler = bufferManager->CreateImageSampler();
 
 	IMGUI_PRESENT_IMAGE.ImageID = "IMGUI PRESENT  Image  Texture";
 	bufferManager->CreateImage(&IMGUI_PRESENT_IMAGE, imageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-
 	IMGUI_PRESENT_IMAGE.imageView = bufferManager->CreateImageView(&IMGUI_PRESENT_IMAGE, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	IMGUI_PRESENT_IMAGE.imageSampler = bufferManager->CreateImageSampler();
 
 	IMGUI_PRESENT_IMAGE_GAMMA_CORRECTED.ImageID = "IMGUI_PRESENT IMAGE GAMMA CORRECTED  Image  Texture";
 	bufferManager->CreateImage(&IMGUI_PRESENT_IMAGE_GAMMA_CORRECTED, imageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-
 	IMGUI_PRESENT_IMAGE_GAMMA_CORRECTED.imageView = bufferManager->CreateImageView(&IMGUI_PRESENT_IMAGE_GAMMA_CORRECTED, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	IMGUI_PRESENT_IMAGE_GAMMA_CORRECTED.imageSampler = bufferManager->CreateImageSampler();
+
+	Final_Denoised_Image.ImageID = "Denoised Image Texture";
+	bufferManager->CreateImage(&Final_Denoised_Image, imageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	Final_Denoised_Image.imageView = bufferManager->CreateImageView(&Final_Denoised_Image, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	Final_Denoised_Image.imageSampler = bufferManager->CreateImageSampler();
 
 }
 
@@ -46,6 +48,7 @@ void CombinedResult_FullScreenQuad::DestroyImage()
 	bufferManager->DestroyImage(Combined_Lighting_Image);
 	bufferManager->DestroyImage(IMGUI_PRESENT_IMAGE);
 	bufferManager->DestroyImage(IMGUI_PRESENT_IMAGE_GAMMA_CORRECTED);
+	bufferManager->DestroyImage(Final_Denoised_Image);
 
 }
 

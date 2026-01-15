@@ -134,14 +134,12 @@ public:
 		Restir_DI{ nullptr, &ReSTIR_DI_Deleter };
 
 	VkDescriptorSet FinalRenderTextureId;
-	VkDescriptorSet LightingAndReflectionsRenderTextureId;
 	VkDescriptorSet SSGITextureId;
 	VkDescriptorSet ReSTIR_DITextureId;
 	VkDescriptorSet DDGI_Radiance;
 	VkDescriptorSet DDGIIrradianceAtlasID;
 	VkDescriptorSet Sampled_GI_ID;
 	VkDescriptorSet DDGIIVisibilityAtlasID;
-	VkDescriptorSet ReflectionID;
 
 
 	std::vector<std::shared_ptr<Model>> SponzaSceneModels;
