@@ -135,8 +135,9 @@ void main() {
 
          F0          = mix(F0, Albedo, Metallic);
     vec3 halfwayDir  = normalize(LightDir + ViewDir);
-    
-    vec3 F    = fresnelSchlick(max(dot(Normal, ViewDir), 0.0), F0);//Calculates how much light is reflected vs. refracted on a surface based on the view angle.
+        float HdotV  = max(dot(halfwayDir, ViewDir), 0.0);
+
+    vec3 F    = fresnelSchlick(HdotV, F0);//Calculates how much light is reflected vs. refracted on a surface based on the view angle.
     float NDF = DistributionGGX(Normal, halfwayDir, Roughness); //describes how microfacet normal are distributed on a rough surface       
     float G   = GeometrySmith(Normal, ViewDir, LightDir, Roughness);// models shadowing and masking
 
@@ -146,7 +147,8 @@ void main() {
     
     vec3 kS = F;
     vec3 kD = vec3(1.0) - kS;
-    kD *= 1.0 - Metallic;	
+    kD *= 1.0 - Metallic;
+    
     vec3 diffuse = kD * (Albedo / PI);
 
      float NdotL = max(dot(Normal, LightDir), 0.0);        

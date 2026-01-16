@@ -216,7 +216,7 @@ void App::SwitchScene(int index)
 			UserInterfaceItems.push_back(model.get());
 		}
 
-		int LightCount = 8;
+		int LightCount = 3;
 
 		lights.reserve(LightCount);
 
@@ -1250,7 +1250,7 @@ void App::CreateGraphicsPipeline()
 		rasterizerinfo.rasterizerDiscardEnable = vk::False;
 		rasterizerinfo.polygonMode = vk::PolygonMode::eFill;
 		rasterizerinfo.lineWidth = 1.0f;
-		rasterizerinfo.cullMode = vk::CullModeFlagBits::eNone;
+		rasterizerinfo.cullMode = vk::CullModeFlagBits::eBack;
 		rasterizerinfo.frontFace = vk::FrontFace::eCounterClockwise;
 		rasterizerinfo.depthBiasEnable = vk::False;
 		rasterizerinfo.depthBiasConstantFactor = 0.0f;

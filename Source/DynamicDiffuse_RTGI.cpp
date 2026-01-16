@@ -74,7 +74,7 @@ void DynamicDiffuse_RTGI::CreateAtlasImages() {
 	RadianceImageAtlasImage.ImageID = " DDGI Radiance Atlas Image"; 
 	bufferManager->CreateImage(&RadianceImageAtlasImage, RadianceImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
 	RadianceImageAtlasImage.imageView = bufferManager->CreateImageView(&RadianceImageAtlasImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	RadianceImageAtlasImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
+	RadianceImageAtlasImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
 
 	////////////////////////////////////////////////////////////
 	int IrradianceSize = (ProbeSideLength + GutterSize);

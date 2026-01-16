@@ -4,7 +4,7 @@ layout(binding = 0) readonly buffer StorageBuffer2 {
    vec4 FibonacciDirections[];
 } SB0;
 
-layout(binding = 1, rgba16f)  uniform image2D Radiance_Visibility;
+layout(binding = 1, rgba16f)  uniform image2D  Radiance_Visibility;
 layout(binding = 2, rgba16f)  uniform image2D  Iradiance;
 layout(binding = 3, rgba16f)  uniform image2D  Visibility;
 layout(binding = 4, rgba16f)  uniform image2D  Prev_Iradiance;
@@ -206,12 +206,33 @@ void main()
      
               
     
+          int valid_start = 1;
+          int valid_end   = pc.ProbeSideLength;
+         
+          bool isLeftEdge   = (localPos.x == valid_start);
+          bool isRightEdge  = (localPos.x == valid_end);
+          bool isTopEdge    = (localPos.y == valid_start);
+          bool isBottomEdge = (localPos.y == valid_end);
+
+
+
+
          if (total_weight > 0.000) {
              irradiance /=  total_weight;
          
              vec3 previous_value = imageLoad( Prev_Iradiance, fragCoord).rgb;
              vec3 result         = mix(irradiance, previous_value,  0.95f);
              imageStore(Iradiance , fragCoord, vec4(result,1));
+
+             if (isLeftEdge)   imageStore(Iradiance, fragCoord + ivec2(-1,  0), vec4(result, 1));
+             if (isRightEdge)  imageStore(Iradiance, fragCoord + ivec2( 1,  0), vec4(result, 1));
+             if (isTopEdge)    imageStore(Iradiance, fragCoord + ivec2( 0, -1), vec4(result, 1));
+             if (isBottomEdge) imageStore(Iradiance, fragCoord + ivec2( 0,  1), vec4(result, 1));
+             
+             if (isLeftEdge && isTopEdge)      imageStore(Iradiance, fragCoord + ivec2(-1, -1), vec4(result, 1));
+             if (isRightEdge && isTopEdge)     imageStore(Iradiance, fragCoord + ivec2( 1, -1), vec4(result, 1));
+             if (isLeftEdge && isBottomEdge)   imageStore(Iradiance, fragCoord + ivec2(-1,  1), vec4(result, 1));
+             if (isRightEdge && isBottomEdge)  imageStore(Iradiance, fragCoord + ivec2( 1,  1), vec4(result, 1));
          }
           
           if (total_weight > 0.000) {
@@ -226,6 +247,16 @@ void main()
                vec2 result         = mix( Vsibility, previous_value, 0.95f);
           
                 imageStore(Visibility, fragCoord, vec4(result,RAW_RAYDISTANCE, 1.0));
+
+                if (isLeftEdge)   imageStore(Visibility, fragCoord + ivec2(-1,  0), vec4(result, RAW_RAYDISTANCE, 1.0));
+                if (isRightEdge)  imageStore(Visibility, fragCoord + ivec2( 1,  0), vec4(result, RAW_RAYDISTANCE, 1.0));
+                if (isTopEdge)    imageStore(Visibility, fragCoord + ivec2( 0, -1), vec4(result, RAW_RAYDISTANCE, 1.0));
+                if (isBottomEdge) imageStore(Visibility, fragCoord + ivec2( 0,  1), vec4(result, RAW_RAYDISTANCE, 1.0));
+                
+                if (isLeftEdge && isTopEdge)      imageStore(Visibility, fragCoord + ivec2(-1, -1), vec4(result, RAW_RAYDISTANCE, 1.0));
+                if (isRightEdge && isTopEdge)     imageStore(Visibility, fragCoord + ivec2( 1, -1), vec4(result, RAW_RAYDISTANCE, 1.0));
+                if (isLeftEdge && isBottomEdge)   imageStore(Visibility, fragCoord + ivec2(-1,  1), vec4(result, RAW_RAYDISTANCE, 1.0));
+                if (isRightEdge && isBottomEdge)  imageStore(Visibility, fragCoord + ivec2( 1,  1), vec4(result, RAW_RAYDISTANCE, 1.0));
             }
 
 }

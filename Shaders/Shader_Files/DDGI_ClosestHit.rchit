@@ -194,6 +194,11 @@ layout(location = 0) rayPayloadInEXT Payload payload;
 
 hitAttributeEXT vec2 attribs;
 
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}  
+
 void main()
 {
     vec3 Radiance    = vec3(0.0);
@@ -291,6 +296,21 @@ void main()
                 radiance = light.colorAndAmbientStrength.rgb * Attenuation;
             }  
             
+             vec3  ViewDir    = normalize(light.CameraPositionAndLightIntensity.xyz -  WorldPos.xyz);
+
+             vec3 F0          = vec3(0.04); 
+                  F0          = mix(F0, Albedo, Metallic);
+             vec3 halfwayDir  = normalize(LightDir + ViewDir);
+                 float HdotV  = max(dot(halfwayDir, ViewDir), 0.0);
+            
+             vec3 F    = fresnelSchlick(HdotV, F0);
+
+             vec3 kS = F;
+             vec3 kD = vec3(1.0) - kS;
+             kD *= 1.0 - Metallic;
+            
+            vec3 diffuse = kD * (Albedo / PI);
+
             float NdotL = max(dot(HitNormal, LightDir), 0.0);
 
             float shadow = 1.0;
@@ -311,11 +331,11 @@ void main()
                 }
             }
        
-            Lo += Albedo * radiance * NdotL * shadow;
-            Radiance += (Lo * light.CameraPositionAndLightIntensity.a);
+            Lo += diffuse * radiance * NdotL * shadow;
+            Radiance += (Lo);
         }
         
-        Radiance += Emissive * 3;
+        Radiance ;
 
         int UseInfiniteBounce = int(pc.UseInfiniteBounce_infinite_bounces_multiplier_LightCount.x);
         

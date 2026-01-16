@@ -112,7 +112,7 @@ public:
     float RotationSpeed = 1;
 
 
-    int ProbeSideLength = (4 * 4);
+    int ProbeSideLength = (6 * 6);
     int GutterSize = 2;
 
     int Last_NumOfProbesX;

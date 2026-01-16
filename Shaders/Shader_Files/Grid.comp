@@ -90,7 +90,7 @@ void main()
        
         if (index >= SampleCount) return;  
         vec3 fibDir = spherical_fibonacci(float(index), float(SampleCount));
-        vec4 Direction = normalize(pc.Matrix * vec4(fibDir, 0.0));
+        vec4 Direction = normalize(vec4(fibDir, 0.0));
 
         SB02.FibonacciDirections[index] = vec4(Direction.xyz, 0.0);
    }

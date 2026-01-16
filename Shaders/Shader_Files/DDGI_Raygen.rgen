@@ -108,7 +108,7 @@ void main() {
           vec3  HitPosition   = payload.HitPosition;
 
           if(payload.Hit == 0){
-              Radiance = CubeMapIrradiance;
+              //Radiance = CubeMapIrradiance;
               Distance = 1000;
              }
           imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(Radiance,Distance));
