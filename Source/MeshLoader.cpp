@@ -357,8 +357,16 @@ Primitive MeshLoader::ProcessPrimitive(const tinygltf::Primitive& glTFPrimitive,
                      vertex.text = { texcoords[i * 2 + 0], texcoords[i * 2 + 1] };
                  }
 
-                if (tangents) {
-                     vertex.tangent = { tangents[i * 3 + 0], tangents[i * 3 + 1],tangents[i * 3 + 2] };
+                 if (tangents) {
+                     float x = tangents[i * 4 + 0];
+                     float y = tangents[i * 4 + 1];
+                     float z = tangents[i * 4 + 2];
+                     float w = tangents[i * 4 + 3]; 
+
+                     vertex.tangent = glm::vec4(x, y, z, w);
+                 }
+                 else {
+                     vertex.tangent = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
                  }
 
                 outVertices.push_back(vertex);

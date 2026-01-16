@@ -141,7 +141,7 @@ void Model::CreateVertexAndIndexBuffer()
 		paddedModelVertex.vert_Padding    = glm::vec4(storedModelData->VertexData[i].vert, 0);
 		paddedModelVertex.text_Padding    = glm::vec4(storedModelData->VertexData[i].text, 0,0);
 		paddedModelVertex.normal_Padding  = glm::vec4(storedModelData->VertexData[i].normal, 0);
-		paddedModelVertex.tangent_Padding = glm::vec4(storedModelData->VertexData[i].tangent, 0);
+		paddedModelVertex.tangent_Padding = glm::vec4(storedModelData->VertexData[i].tangent);
  
 		bufferManager->AllScene_VertexGeometryData.push_back(paddedModelVertex);
 	}

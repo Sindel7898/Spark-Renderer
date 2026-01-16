@@ -8,7 +8,7 @@ struct alignas(16)  ModelVertex {
     glm::vec3 vert;
     glm::vec2 text;
     glm::vec3 normal;
-    glm::vec3 tangent;
+    glm::vec4 tangent;
 
 	static vk::VertexInputBindingDescription GetBindingDescription() {
 		vk::VertexInputBindingDescription  bindingdescription{};
@@ -41,7 +41,7 @@ struct alignas(16)  ModelVertex {
 
 		attributeDescriptions[3].binding = 0;
 		attributeDescriptions[3].location = 3;
-		attributeDescriptions[3].format = vk::Format::eR32G32B32Sfloat;
+		attributeDescriptions[3].format = vk::Format::eR32G32B32A32Sfloat;
 		attributeDescriptions[3].offset = offsetof(ModelVertex, tangent);
 
 		return attributeDescriptions;

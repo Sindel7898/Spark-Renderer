@@ -246,6 +246,10 @@ void main()
             v2.tangent_Padding.xyz * bary.z
         );
     
+    float tangentSign = v0.tangent_Padding.w * bary.x +
+                    v1.tangent_Padding.w * bary.y +
+                    v2.tangent_Padding.w * bary.z;
+
         vec2 TexCoord = 
             v0.texCoord_Padding.xy * bary.x +
             v1.texCoord_Padding.xy * bary.y +
@@ -255,7 +259,7 @@ void main()
 
         vec3 WorldN        = normalize(normalMatrix * Normal);
         vec3 WorldT        = normalize(normalMatrix * Tangent);
-        vec3 WorldB        = cross(WorldN, WorldT);
+        vec3 WorldB = cross(WorldN, WorldT) * (tangentSign < 0.0 ? -1.0 : 1.0);
         mat3 WorldSpaceTBN = mat3(WorldT, WorldB, WorldN);
     
         vec3  Albedo     = texture(Albedo_AssetImages          [nonuniformEXT(primitiveID)], TexCoord).rgb;
@@ -265,7 +269,7 @@ void main()
 
         vec3 NormalTexture = texture(Normal_AssetImages[nonuniformEXT(primitiveID)], TexCoord).rgb * 2.0 - vec3(1.0);
         HitNormal = normalize(WorldSpaceTBN * NormalTexture);
-        
+        HitNormal = Normal;
         vec4 WorldPos = transformations[objectID].WorldMatrix * vec4(VertexPosition, 1.0);
 
         HitPosition = WorldPos.xyz;
@@ -331,7 +335,7 @@ void main()
                 }
             }
        
-              Lo += (diffuse * radiance * light.CameraPositionAndLightIntensity.a) * shadow;
+              Lo += (diffuse * radiance * light.CameraPositionAndLightIntensity.a)* shadow;
               Radiance += Lo;
             //Radiance += (Lo * light.CameraPositionAndLightIntensity.a);
         }
