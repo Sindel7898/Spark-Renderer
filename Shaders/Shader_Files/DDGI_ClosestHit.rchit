@@ -313,29 +313,30 @@ void main()
 
             float NdotL = max(dot(HitNormal, LightDir), 0.0);
 
-           //float shadow = 1.0;
-           //
-           //if (NdotL > 0.0 && light.CameraPositionAndLightIntensity.a > 0.0) {
-           //    rayQueryEXT rayQuery;
-           //    vec3 shadowOrigin = HitPosition + (WorldN * 0.05);
-           //    float tMax = lightDist; 
-           //    
-           //    //This is faster than the isual traceRayEXT
-           //    rayQueryInitializeEXT(rayQuery, topLevelAS, gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT | gl_RayFlagsCullFrontFacingTrianglesEXT, 0xFF, shadowOrigin, 0.001, LightDir, tMax);
-           //
-           //    while(rayQueryProceedEXT(rayQuery)) {} // let the hardware do what it wants
-           //
-           //    // ask if it hit anything
-           //    if(rayQueryGetIntersectionTypeEXT(rayQuery, true) != gl_RayQueryCommittedIntersectionNoneEXT) {
-           //        shadow = 0.0;
-           //    }
-           //}
+            float shadow = 1.0;
+
+            if (NdotL > 0.0 && light.CameraPositionAndLightIntensity.a > 0.0) {
+                rayQueryEXT rayQuery;
+                vec3 shadowOrigin = HitPosition + (WorldN * 0.05);
+                float tMax = lightDist; 
+                
+                //This is faster than the isual traceRayEXT
+                rayQueryInitializeEXT(rayQuery, topLevelAS, gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT | gl_RayFlagsCullFrontFacingTrianglesEXT, 0xFF, shadowOrigin, 0.001, LightDir, tMax);
+
+                while(rayQueryProceedEXT(rayQuery)) {} // let the hardware do what it wants
+
+                // ask if it hit anything
+                if(rayQueryGetIntersectionTypeEXT(rayQuery, true) != gl_RayQueryCommittedIntersectionNoneEXT) {
+                    shadow = 0.0;
+                }
+            }
        
-            Lo += diffuse * radiance * NdotL;
-            Radiance += (Lo);
+              Lo += (diffuse * radiance * light.CameraPositionAndLightIntensity.a) * shadow;
+              Radiance += Lo;
+            //Radiance += (Lo * light.CameraPositionAndLightIntensity.a);
         }
         
-        Radiance ;
+        //Radiance += Emissive * 3;
 
         int UseInfiniteBounce = int(pc.UseInfiniteBounce_infinite_bounces_multiplier_LightCount.x);
         
