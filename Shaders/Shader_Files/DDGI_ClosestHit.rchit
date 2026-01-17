@@ -1,4 +1,7 @@
 #version 460
+#extension GL_GOOGLE_include_directive : require
+#include "DDGI_Include.glsl"
+
 #extension GL_EXT_ray_tracing : require
 #extension GL_EXT_nonuniform_qualifier : require
 #extension GL_EXT_ray_query : require 
@@ -12,8 +15,8 @@ layout(set = 0, binding = 2)  uniform sampler2D         Normal_AssetImages[];
 layout(set = 0, binding = 3)  uniform sampler2D         MetalicRoughness_AssetImages[];
 layout(set = 0, binding = 15) uniform sampler2D         Emmisive_AssetImages[];
 
-layout(set = 0, binding = 13, rgba16f) uniform readonly image2D  IrradianceStorageImage;
-layout(set = 0, binding = 14, rgba16f) uniform readonly image2D  VisibilityStorageImage;
+layout(set = 0, binding = 13) uniform sampler2D  IrradianceStorageImage;
+layout(set = 0, binding = 14) uniform sampler2D  VisibilityStorageImage;
 
 struct Vertex {
     vec4 position_Padding;
@@ -68,119 +71,6 @@ layout(push_constant) uniform PushConstant {
     int   NumRays;
     vec4 UseInfiniteBounce_infinite_bounces_multiplier_LightCount;
 } pc;
-
-float sign_not_zero(in float k) {
-    return (k >= 0.0) ? 1.0 : -1.0;
-}
-
-vec2 sign_not_zero2(in vec2 v) {
-    return vec2(sign_not_zero(v.x), sign_not_zero(v.y));
-}
-
-vec2 oct_encode(in vec3 v) {
-    float l1norm = abs(v.x) + abs(v.y) + abs(v.z);
-    vec2 result = v.xy * (1.0 / l1norm);
-    if (v.z < 0.0) {
-        result = (1.0 - abs(result.yx)) * sign_not_zero2(result.xy);
-    }
-    return result;
-}
-
-ivec2 GetProbeTexel(vec2 uv, ivec3 probeIndex) {
-    int probe_full_size = pc.ProbeSideLength + pc.GutterSize;
-    int probes_per_row  = pc.AtlasWidthSize / probe_full_size;
-
-    int linear_index = probeIndex.x + probeIndex.y * int(pc.ProbeCount.x) + probeIndex.z * int(pc.ProbeCount.x * pc.ProbeCount.y);
-
-    ivec2 probe_origin = ivec2((linear_index % probes_per_row) * probe_full_size,
-                               (linear_index / probes_per_row) * probe_full_size);
-
-    ivec2 border_offset = ivec2(pc.GutterSize / 2);
-    vec2 pixel_pos      = uv * float(pc.ProbeSideLength);
-    ivec2 pixel_offset  = clamp(ivec2(pixel_pos), ivec2(0), ivec2(pc.ProbeSideLength - 1));
-
-    return probe_origin + (border_offset + pixel_offset);
-}
-
-vec3 SampleIrradiance(vec3 Position, vec3 Normal) {
-    vec3  GridBaseLocation = pc.GridBaseLocation_ScreenSizeWidth.xyz;
-    vec3  ProbeSpacing     = pc.ProbeSpacing_ScreenSizeHeight.xyz;
-    ivec3 ProbeCount       = ivec3(pc.ProbeCount.xyz);
-
-    float push_bias = 0.05; 
-    vec3 SamplePosition = Position + Normal * push_bias;
-
-    vec3 GridIndexF = (SamplePosition - GridBaseLocation) / ProbeSpacing;
-    vec3 Alpha = fract(GridIndexF);
-    ivec3 GridIndex = ivec3(GridIndexF);
-
-    ivec3 Offsets[8] = {
-        ivec3(0,0,0), ivec3(1,0,0),
-        ivec3(0,1,0), ivec3(1,1,0),
-        ivec3(0,0,1), ivec3(1,0,1),
-        ivec3(0,1,1), ivec3(1,1,1)
-    };
-
-    vec4 Irradiance       = vec4(0);
-    vec4 IrradianceNoCheb = vec4(0);
-
-    vec2 Normaluv = (oct_encode(normalize(Normal)) * 0.5) + 0.5;
-
-    for(int i = 0; i < 8; i++) {
-        ivec3 Offset = ivec3(i, i >> 1, i >> 2) & ivec3(1);
-        ivec3 ProbeIndex       = clamp((GridIndex + Offsets[i]), ivec3(0), ProbeCount - 1);
-        vec3  ProbeWorldPosition = GridBaseLocation + (vec3(ProbeIndex) * ProbeSpacing);
-
-        ivec2 irradiance_texel = GetProbeTexel(Normaluv, ProbeIndex);
-
-        vec3 dir = SamplePosition - ProbeWorldPosition;
-        float r = length(dir);
-        dir *= -1.0 / r;
-
-        float weight = (dot(dir, Normal) + 1) * 0.5;
-        weight = (weight * weight);
-
-        float weightNoCheb = (dot(dir, Normal) + 1) * 0.5;
-        weightNoCheb = (weightNoCheb * weightNoCheb) + 0.2;
-
-        vec3 CornerWeight = mix(vec3(1.0) - Alpha, Alpha, vec3(Offset));
-        float TrilinearWeight = CornerWeight.x * CornerWeight.y * CornerWeight.z;
-        if (TrilinearWeight <= 0.0001) continue;
-
-        weight       *= (TrilinearWeight + 0.001f);
-        weightNoCheb *= (TrilinearWeight + 0.001f);
-
-        vec2  Diruv = (oct_encode(normalize(dir)) * 0.5) + 0.5;
-        ivec2 visibility_texel = GetProbeTexel(Diruv, ProbeIndex);
-        vec2 DepthInfo = imageLoad(VisibilityStorageImage, visibility_texel).rg;
-
-        float Mean  = DepthInfo.x; 
-        float Mean2 = DepthInfo.y; 
-        
-        float chebyshev_weight = 1.0;
-        float r_biased = r - 0.05;  
-
-        if(r_biased > Mean) {
-            float variance = abs((Mean * Mean) - Mean2);
-            const float distanceDiff = r - Mean;
-            chebyshev_weight = variance / (variance + (distanceDiff * distanceDiff));
-            weight *= chebyshev_weight;
-        }
-
-        vec3 probeIrradiance = sqrt(imageLoad(IrradianceStorageImage, irradiance_texel).rgb);
-        IrradianceNoCheb += vec4(probeIrradiance * weightNoCheb, weightNoCheb);
-        Irradiance       += vec4(probeIrradiance * weight, weight);
-    }
-    
-    vec3 ComputedIrradiance       = (Irradiance.rgb       * (1.0 / max(Irradiance.a, 0.0001)));
-    vec3 ComputedIrradianceNoCheb = (IrradianceNoCheb.rgb * (1.0 / max(IrradianceNoCheb.a, 0.0001)));
-
-    ComputedIrradiance       = ComputedIrradiance * ComputedIrradiance;
-    ComputedIrradianceNoCheb = ComputedIrradianceNoCheb * ComputedIrradianceNoCheb;
-    
-    vec3 Result = mix(ComputedIrradianceNoCheb, ComputedIrradiance, clamp(IrradianceNoCheb.a, 0, 1));
-    return Result;
-}
 
 struct Payload {
     vec3  Color;
@@ -342,11 +232,27 @@ void main()
         
         //Radiance += Emissive * 3;
 
-        int UseInfiniteBounce = int(pc.UseInfiniteBounce_infinite_bounces_multiplier_LightCount.x);
+            int UseInfiniteBounce = int(pc.UseInfiniteBounce_infinite_bounces_multiplier_LightCount.x);
         
-        if(UseInfiniteBounce > 0.5) {
-             vec3 GI = SampleIrradiance(HitPosition, HitNormal) * pc.UseInfiniteBounce_infinite_bounces_multiplier_LightCount.y;
-             
+              if(UseInfiniteBounce > 0.5) {
+              
+                    vec3 GI  = SampleIrradiance(
+                                          IrradianceStorageImage,
+                                          VisibilityStorageImage,
+                                          HitPosition,
+                                          HitNormal,
+                                          pc.GridBaseLocation_ScreenSizeWidth.xyz,
+                                          pc.ProbeSpacing_ScreenSizeHeight.xyz,
+                                          ivec3(pc.ProbeCount.xyz),
+                                          // Irradiance Params
+                                          pc.ProbeSideLength,
+                                          pc.GutterSize,
+                                          pc.AtlasWidthSize,
+                                          // Visibility Params
+                                          pc.ProbeSideLength,   //Same values are being passed cus as of now they are both the same size. but this can be changed
+                                          pc.GutterSize,
+                                          pc.AtlasWidthSize) * pc.UseInfiniteBounce_infinite_bounces_multiplier_LightCount.y;
+
              if (any(greaterThan(GI, vec3(0)))) {
                  Radiance += GI * Albedo;
              }

@@ -1,4 +1,6 @@
 #version 450
+#extension GL_GOOGLE_include_directive : require
+#include "DDGI_Include.glsl"
 
 layout(push_constant) uniform ImageSize{
     vec4 GridBaseLocation_ScreenSizeWidth;
@@ -21,146 +23,6 @@ layout(binding = 4)   uniform sampler2D  VisibilityStorageImage;
 
 layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
-float sign_not_zero(in float k) {
-    return (k >= 0.0) ? 1.0 : -1.0;
-}
-
-vec2 sign_not_zero2(in vec2 v) {
-    return vec2(sign_not_zero(v.x), sign_not_zero(v.y));
-}
-
-vec2 oct_encode(in vec3 v) {
-    float l1norm = abs(v.x) + abs(v.y) + abs(v.z);
-    vec2 result = v.xy * (1.0 / l1norm);
-    if (v.z < 0.0) {
-        result = (1.0 - abs(result.yx)) * sign_not_zero2(result.xy);
-    }
-    return result;
-}
-
-ivec2 GetProbeTexel(vec2 uv, ivec3 probeIndex)
-{
-
-    int probe_full_size = pc.ProbeSideLength + pc.GutterSize;
-    int probes_per_row  = pc.AtlasWidthSize / probe_full_size;
-
-    // Flatten 3D probe index to 1D
-    int linear_index = probeIndex.x + probeIndex.y * int(pc.ProbeCount.x) + probeIndex.z * int(pc.ProbeCount.x * pc.ProbeCount.y);
-
-    // Top-left corner of this probe in the atlas
-    ivec2 probe_origin = ivec2((linear_index % probes_per_row) * probe_full_size,
-                               (linear_index / probes_per_row) * probe_full_size);
-
-    // Compute texel offset inside the probe region 
-    ivec2 border_offset = ivec2(pc.GutterSize / 2);
-
-    vec2 pixel_pos      = uv * float(pc.ProbeSideLength);
-    
-    ivec2 pixel_offset = clamp(ivec2(pixel_pos), ivec2(0), ivec2(pc.ProbeSideLength - 1));
-
-    return probe_origin + (border_offset + pixel_offset);
-}
-
-
-vec3 SampleIrradiance( vec3 Position, vec3 Normal)
-{
-
-    vec3  GridBaseLocation = pc.GridBaseLocation_ScreenSizeWidth.xyz;
-    vec3  ProbeSpacing     = pc.ProbeSpacing_ScreenSizeHeight.xyz;
-    ivec3 ProbeCount       = ivec3(pc.ProbeCount.xyz);
-
- 
- 
-    float push_bias = 0.1; 
-    vec3 SamplePosition = Position + Normal * push_bias;
-
-    vec3 GridIndexF = ((SamplePosition ) - GridBaseLocation) / ProbeSpacing;
-    vec3 Alpha = fract(GridIndexF);
-
-    ivec3 GridIndex = ivec3(floor(GridIndexF));
-
-     ivec3 Offsets[8] = {
-         ivec3(0,0,0), ivec3(1,0,0),
-         ivec3(0,1,0), ivec3(1,1,0),
-         ivec3(0,0,1), ivec3(1,0,1),
-         ivec3(0,1,1), ivec3(1,1,1)
-     };
-
-
-
-     vec4 Irradiance       = vec4(0);
-     vec4 IrradianceNoCheb = vec4(0);
-
-         // Encode direction into [0,1] texture space
-    vec2 Normaluv = (oct_encode(normalize(Normal)) * 0.5) + 0.5;
-
-     for(int i = 0; i < 8; i++){
-
-         ivec3 Offset = ivec3(i, i >> 1, i >> 2) & ivec3(1);
-         ivec3 ProbeIndex         = clamp((GridIndex + Offsets[i]),ivec3(0),ProbeCount - 1);
-         vec3  ProbeWorldPosition = GridBaseLocation + (vec3(ProbeIndex) * ProbeSpacing);
-
-         ivec2 irradiance_texel = GetProbeTexel(Normaluv,ProbeIndex);
-
-         vec3 dir = SamplePosition  -  ProbeWorldPosition ;
-         float r = length(dir);
-         dir *= -1.0 / r;
-
-         ////////////////////////////////////////////////////////
-         float weight = (dot(dir, Normal) + 1) * 0.5;
-               weight = (weight * weight);
-
-         float weightNoCheb = (dot(dir, Normal) + 1) * 0.5;
-               weightNoCheb = (weightNoCheb * weightNoCheb) + 0.2;
-         ////////////////////////////////////////////////////////
-
-
-        vec3 CornerWeight = mix(vec3(1.0) - Alpha, Alpha, vec3(Offset));
-        float TrilinearWeight = CornerWeight.x * CornerWeight.y * CornerWeight.z;
-                if (TrilinearWeight <= 0.0001) continue;
-
-          ///////////////////////////////////////////
-          weight       *= (TrilinearWeight + 0.001f);
-          weightNoCheb *= (TrilinearWeight + 0.001f);
-
-          //////////////////////////////////////////////////////////////
-          vec2  Diruv = (oct_encode(normalize(dir)) * 0.5) + 0.5;
-          ivec2 visibility_texel = GetProbeTexel(Diruv, ProbeIndex);
-          vec2 DepthInfo =  texture(VisibilityStorageImage, visibility_texel).rg;
-
-          float Mean  = DepthInfo.x; 
-          float Mean2 = DepthInfo.y; 
-         
-         ///////Same as how shadow maps are calculated
-         float chebyshev_weight = 1.0;
-
-         float bias = 0.1; // 
-         float r_biased = r - 0.05 ;  
-
-         if(r_biased >  Mean) {
-         
-             float variance = abs((Mean * Mean) - Mean2);
-             const float distanceDiff = r - Mean;
-             chebyshev_weight = variance / (variance + (distanceDiff * distanceDiff));
-             weight *= chebyshev_weight;
-          }
-
-
-         vec3 probeIrradiance = sqrt(texture(IrradianceStorageImage, irradiance_texel).rgb);
-         IrradianceNoCheb += vec4(probeIrradiance * weightNoCheb, weightNoCheb);
-         Irradiance       += vec4(probeIrradiance * weight, weight);
-     }
-     
-       vec3 ComputedIrradiance       = (Irradiance.rgb       * (1.0 / Irradiance.a));
-       vec3 ComputedIrradianceNoCheb = (IrradianceNoCheb.rgb * (1.0 / IrradianceNoCheb.a));
-
-       ComputedIrradiance       = ComputedIrradiance * ComputedIrradiance;
-       ComputedIrradianceNoCheb = ComputedIrradianceNoCheb * ComputedIrradianceNoCheb;
-       
-       vec3   Result =  mix(ComputedIrradianceNoCheb,ComputedIrradiance,clamp(IrradianceNoCheb.a,0,1));
-       return Result;
-}
-
 
 void main() 
 {
@@ -178,9 +40,25 @@ void main()
   
    vec3 Irradiance = vec3(0);
 
-  if(dot(Normal, Normal) > 0.001){
-      Irradiance  = SampleIrradiance(Position,Normal);
-  };
+ if(dot(Normal, Normal) > 0.001){
+        Irradiance = SampleIrradiance(
+            IrradianceStorageImage,
+            VisibilityStorageImage,
+            Position,
+            Normal,
+            pc.GridBaseLocation_ScreenSizeWidth.xyz,
+            pc.ProbeSpacing_ScreenSizeHeight.xyz,
+            ivec3(pc.ProbeCount.xyz),
+            // Irradiance Params
+            pc.ProbeSideLength,
+            pc.GutterSize,
+            pc.AtlasWidthSize,
+            // Visibility Params
+            pc.ProbeSideLength,   //Same values are being passed cus as of now they are both the same size. but this can be changed
+            pc.GutterSize,
+            pc.AtlasWidthSize
+        );
+    };
 
    imageStore(SampledGIImage, ivec2(gl_GlobalInvocationID.xy), vec4(Irradiance,1));
 }

@@ -1,4 +1,7 @@
 #version 450
+#extension GL_GOOGLE_include_directive : require
+#include "DDGI_Include.glsl"
+
 
 layout(binding = 0) readonly buffer StorageBuffer2 {
    vec4 FibonacciDirections[];
@@ -17,10 +20,6 @@ layout(push_constant) uniform PushConstants {
     int   NumRays;
 }pc;
 
-const int PROBE_STATE_ACTIVE   = 0; //  this is for when a probe is activly collecting new scene data
-const int PROBE_STATE_SLEEP    = 1; //  this is for when a probe is always hitting the skybox
-const int PROBE_STATE_DISABLED = 2; //  this is for when a probe is inside an object and is not contributing meaningfully.
-//A probe that is disabled can be moved so it is active
 
 struct ProbeInformation {
     vec4 probeLocations;
@@ -33,62 +32,8 @@ layout(set = 0,binding = 6) buffer StorageBufferObject {
 }SBO;
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
-
-//https://stackoverflow.com/questions/1730961/convert-a-2d-array-index-into-a-1d-index
-//convert the current pixel into an index for the probes
-int get_probe_index_from_pixels(ivec2 pixel_coords, int atlas_width, int probe_full_size) {
-    
-    int   probes_per_row      = atlas_width  / probe_full_size; // How many probes can  be fit in one row of the atlas
-    ivec2 probe_grid_coords   = pixel_coords / probe_full_size; // What probe in the atlas am i in ?
-
-    return probe_grid_coords.y * probes_per_row + probe_grid_coords.x; // scale it 
-}
-
-
-// Code adapted from:
-// "Mastering Graphics Programming with Vulkan" by Packt Publishing
-// GitHub repository: https://github.com/PacktPublishing/Mastering-Graphics-Programming-with-Vulkan
-// Source file: source/chapter14/shaders/ddgi.glsl and source/chapter14/shaders/ddgi.h
-// License: MIT License (see repository for details)
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Computes normalized texel coordinates within a single probe’s quad in the atlas.
-// This just tells us where inside the probe we are, in the range [-1, +1]^2. for guttar//
-vec2 get_normalized_probe_texel_coord(ivec2 fragCoord) {                                                                                               //
+                                                                                                                                       //
                                                                                                                                            //
-    int probe_with_border_side  = pc.ProbeSideLength + pc.GutterSize; // How Long is a total probe?                                                      //
-                                                              
-       ///Where are we exactly?
-    float texel_coordinatesX =   (fragCoord.x - 1) % probe_with_border_side;   
-    float texel_coordinatesY =   (fragCoord.y - 1) % probe_with_border_side;  
-    
-    vec2 Texel = vec2(texel_coordinatesX,texel_coordinatesY);
-    
-    Texel += vec2(0.5f); // Adjustment so we are sampling in the middle of the pixel                                                                                            //
-    Texel = (Texel / float(pc.ProbeSideLength)) * 2.0 - 1.0; // map out of texture space to normalized direction-space
-                                                                                       //                                                                                                                                       //
-    return Texel;                                                                                                   //                                                                                                                                         //
-}                                                                                                                                          //
-                                                                                                                                           //
-// Returns a unit vector. Argument o is an octahedral vector packed via oct_encode,                                                        //
-// on the [-1, +1] square                                                                                                                  //
-float sign_not_zero(in float k) {                                                                                                          //
-    return (k >= 0.0) ? 1.0 : -1.0;                                                                                                        //
-}                                                                                                                                          //
-                                                                                                                                           //
-vec2 sign_not_zero2(in vec2 v) {                                                                                                           //
-    return vec2(sign_not_zero(v.x), sign_not_zero(v.y));                                                                                   //
-}                                                                                                                                          //
-                                                                                                                                           //
-vec3 oct_decode(vec2 o) {                                                                                                                  //
-    vec3 v = vec3(o.x, o.y, 1.0 - abs(o.x) - abs(o.y));                                                                                    //
-    if (v.z < 0.0) {                                                                                                                       //
-        v.xy = (1.0 - abs(v.yx)) * sign_not_zero2(v.xy);                                                                                   //
-    }                                                                                                                                      //
-    return normalize(v);                                                                                                                   //
-}                                                                                                                                          //
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 #define PROCESS_RAY(ray_data, weight) \
     { \
@@ -170,7 +115,7 @@ void main()
      uint backfaces = 0;
      const bool use_backfacing_blending = false;
      float RAW_RAYDISTANCE = 0;
-     vec3 texel_direction = oct_decode(get_normalized_probe_texel_coord(fragCoord));
+     vec3 texel_direction = oct_decode(get_normalized_probe_texel_coord(fragCoord,pc.ProbeSideLength,pc.GutterSize));
 
      int i = 0;
 

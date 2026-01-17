@@ -1,0 +1,172 @@
+
+const int PROBE_STATE_ACTIVE   = 0; //  this is for when a probe is activly collecting new scene data
+const int PROBE_STATE_SLEEP    = 1; //  this is for when a probe is always hitting the skybox
+const int PROBE_STATE_DISABLED = 2; //  this is for when a probe is inside an object and is not contributing meaningfully.
+//A probe that is disabled can be moved so it is active
+
+
+//https://stackoverflow.com/questions/1730961/convert-a-2d-array-index-into-a-1d-index
+//convert the current pixel into an index for the probes
+int get_probe_index_from_pixels(ivec2 pixel_coords, int atlas_width, int probe_full_size) {
+    
+    int   probes_per_row      = atlas_width  / probe_full_size; // How many probes can  be fit in one row of the atlas
+    ivec2 probe_grid_coords   = pixel_coords / probe_full_size; // What probe in the atlas am i in ?
+
+    return probe_grid_coords.y * probes_per_row + probe_grid_coords.x; // scale it 
+}
+
+// Returns a unit vector. Argument o is an octahedral vector packed via oct_encode,     
+// on the [-1, +1] square                                                               
+float sign_not_zero(in float k) {                                                       
+    return (k >= 0.0) ? 1.0 : -1.0;                                                     
+}                                                                                       
+                                                                                        
+vec2 sign_not_zero2(in vec2 v) {                                                        
+    return vec2(sign_not_zero(v.x), sign_not_zero(v.y));                                
+}                                                                                       
+                                                                                        
+vec3 oct_decode(vec2 o) {                                                               
+    vec3 v = vec3(o.x, o.y, 1.0 - abs(o.x) - abs(o.y));                                 
+    if (v.z < 0.0) {                                                                    
+        v.xy = (1.0 - abs(v.yx)) * sign_not_zero2(v.xy);                                
+    }                                                                                   
+    return normalize(v);                                                                
+}                                                                                       
+
+vec2 oct_encode(in vec3 v) {
+    float l1norm = abs(v.x) + abs(v.y) + abs(v.z);
+    vec2 result = v.xy * (1.0 / l1norm);
+    if (v.z < 0.0) {
+        result = (1.0 - abs(result.yx)) * sign_not_zero2(result.xy);
+    }
+    return result;
+}
+
+// Code adapted from:
+// "Mastering Graphics Programming with Vulkan" by Packt Publishing
+// GitHub repository: https://github.com/PacktPublishing/Mastering-Graphics-Programming-with-Vulkan
+// Source file: source/chapter14/shaders/ddgi.glsl and source/chapter14/shaders/ddgi.h
+// License: MIT License (see repository for details)
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Computes normalized texel coordinates within a single probe’s quad in the atlas.
+// This just tells us where inside the probe we are, in the range [-1, +1]^2. for guttar//
+vec2 get_normalized_probe_texel_coord(ivec2 fragCoord,int ProbeSideLength, int GutterSize) {                                                                                           
+                                                                                                                                           
+    int probe_with_border_side  = ProbeSideLength + GutterSize; // How Long is a total probe?                          
+                                                              
+       ///Where are we exactly?
+    float texel_coordinatesX =   (fragCoord.x - 1) % probe_with_border_side;
+    float texel_coordinatesY =   (fragCoord.y - 1) % probe_with_border_side;
+    
+    vec2 Texel = vec2(texel_coordinatesX,texel_coordinatesY);
+    
+    Texel += vec2(0.5f); // Adjustment so we are sampling in the middle of the pixel 
+    Texel = (Texel / float(ProbeSideLength)) * 2.0 - 1.0; // map out of texture space to normalized direction-space
+                                                                                      
+    return Texel;                                                                                  
+}   
+
+ivec2 GetProbeTexel(vec2 uv, ivec3 probeIndex, int ProbeSideLength, int GutterSize, int AtlasWidthSize, ivec3 ProbeCount) {
+    int probe_full_size = ProbeSideLength + GutterSize;
+    int probes_per_row  = AtlasWidthSize / probe_full_size;
+
+    int linear_index = probeIndex.x + probeIndex.y * ProbeCount.x + probeIndex.z * (ProbeCount.x * ProbeCount.y);
+
+    ivec2 probe_origin = ivec2((linear_index % probes_per_row) * probe_full_size,
+                               (linear_index / probes_per_row) * probe_full_size);
+
+    ivec2 border_offset = ivec2(GutterSize / 2);
+    vec2 pixel_pos      = uv * float(ProbeSideLength);
+    ivec2 pixel_offset  = clamp(ivec2(pixel_pos), ivec2(0), ivec2(ProbeSideLength - 1));
+
+    return probe_origin + (border_offset + pixel_offset);
+}
+
+vec3 SampleIrradiance(sampler2D IrradianceTexture,
+                      sampler2D VisibilityTexture, 
+                      vec3 Position, vec3 Normal, 
+                      vec3 GridBaseLocation, 
+                      vec3 ProbeSpacing,
+                      ivec3 ProbeCount,
+                      int IrrSideLength,
+                      int IrrGutterSize,
+                      int IrrAtlasWidth,
+                      int VisSideLength,
+                      int VisGutterSize,
+                      int VisAtlasWidth)
+{
+    float push_bias = 0.1; 
+    vec3 SamplePosition = Position + Normal * push_bias;
+    vec3 GridIndexF = (SamplePosition - GridBaseLocation) / ProbeSpacing;
+    vec3 Alpha = fract(GridIndexF);
+    ivec3 GridIndex = ivec3(floor(GridIndexF));
+
+    ivec3 Offsets[8] = ivec3[](
+        ivec3(0,0,0), ivec3(1,0,0), ivec3(0,1,0), ivec3(1,1,0),
+        ivec3(0,0,1), ivec3(1,0,1), ivec3(0,1,1), ivec3(1,1,1)
+    );
+
+    vec4 Irradiance = vec4(0);
+    vec4 IrradianceNoCheb = vec4(0);
+    vec2 Normaluv = (oct_encode(normalize(Normal)) * 0.5) + 0.5;
+
+    for(int i = 0; i < 8; i++){
+        ivec3 Offset = Offsets[i];
+        ivec3 ProbeIndex = clamp((GridIndex + Offset), ivec3(0), ProbeCount - 1);
+        vec3 ProbeWorldPosition = GridBaseLocation + (vec3(ProbeIndex) * ProbeSpacing);
+
+        // Calculate Irradiance Texel
+        ivec2 irradiance_texel = GetProbeTexel(Normaluv, ProbeIndex, IrrSideLength, IrrGutterSize, IrrAtlasWidth, ProbeCount);
+
+        vec3 dir = SamplePosition - ProbeWorldPosition;
+        float r = length(dir);
+        dir *= -1.0 / r;
+
+        float weight = (dot(dir, Normal) + 1.0) * 0.5;
+        weight = (weight * weight);
+
+        float weightNoCheb = (dot(dir, Normal) + 1.0) * 0.5;
+        weightNoCheb = (weightNoCheb * weightNoCheb) + 0.2;
+
+        vec3 CornerWeight = mix(vec3(1.0) - Alpha, Alpha, vec3(Offset));
+        float TrilinearWeight = CornerWeight.x * CornerWeight.y * CornerWeight.z;
+
+        if (TrilinearWeight <= 0.0001) continue;
+
+        weight       *= (TrilinearWeight + 0.001);
+        weightNoCheb *= (TrilinearWeight + 0.001);
+
+        vec2 Diruv = (oct_encode(normalize(dir)) * 0.5) + 0.5;
+
+        //Calc VisibilityTexture Texel
+        ivec2 visibility_texel = GetProbeTexel(Diruv, ProbeIndex, VisSideLength, VisGutterSize, VisAtlasWidth, ProbeCount);
+        
+        vec2 DepthInfo = texelFetch(VisibilityTexture, visibility_texel, 0).rg;
+
+        float Mean  = DepthInfo.x; 
+        float Mean2 = DepthInfo.y; 
+        float chebyshev_weight = 1.0;
+        float r_biased = r - 0.05;  
+
+        if(r_biased > Mean) {
+            float variance = abs((Mean * Mean) - Mean2);
+            const float distanceDiff = r - Mean;
+            chebyshev_weight = variance / (variance + (distanceDiff * distanceDiff));
+            weight *= chebyshev_weight;
+        }
+
+        vec3 probeIrradiance = sqrt(texelFetch(IrradianceTexture, irradiance_texel, 0).rgb);
+        
+        IrradianceNoCheb += vec4(probeIrradiance * weightNoCheb, weightNoCheb);
+        Irradiance       += vec4(probeIrradiance * weight, weight);
+    }
+     
+    vec3 ComputedIrradiance       = (Irradiance.rgb       * (1.0 / max(Irradiance.a, 0.0001)));
+    vec3 ComputedIrradianceNoCheb = (IrradianceNoCheb.rgb * (1.0 / max(IrradianceNoCheb.a, 0.0001)));
+
+    ComputedIrradiance       = ComputedIrradiance * ComputedIrradiance;
+    ComputedIrradianceNoCheb = ComputedIrradianceNoCheb * ComputedIrradianceNoCheb;
+    
+    return mix(ComputedIrradianceNoCheb, ComputedIrradiance, clamp(IrradianceNoCheb.a, 0.0, 1.0));
+}

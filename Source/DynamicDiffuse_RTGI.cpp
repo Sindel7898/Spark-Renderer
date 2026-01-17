@@ -1597,7 +1597,6 @@ void DynamicDiffuse_RTGI::CleanUp()
 	{
 		if (buffer.buffer)
 		{
-			//bufferManager->UnmapMemory(buffer);
 			bufferManager->DestroyBuffer(buffer);
 		}
 	}
@@ -1606,7 +1605,6 @@ void DynamicDiffuse_RTGI::CleanUp()
 	{
 		if (buffer.buffer)
 		{
-			//bufferManager->UnmapMemory(buffer);
 			bufferManager->DestroyBuffer(buffer);
 		}
 	}

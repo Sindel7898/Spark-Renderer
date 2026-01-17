@@ -68,8 +68,6 @@ glslangValidator.exe -V Shaders\Shader_Files\Sample_GI_Probes.comp -o Shaders/Co
 
 glslangValidator.exe -V Shaders\Shader_Files\ProbeStatus.comp -o Shaders/Compiled_Shader_Files\ProbeStatus.comp.spv --target-env vulkan1.4 -gVS
 
-glslangValidator.exe -V Shaders\Shader_Files\Reservoir_ReSTIR_DI.comp -o Shaders/Compiled_Shader_Files\Reservoir_ReSTIR_DI.comp.spv --target-env vulkan1.4 -gVS
-
 glslangValidator.exe -V Shaders\Shader_Files\ReSTIR_DI_Raygen.rgen -o Shaders/Compiled_Shader_Files\ReSTIR_DI_Raygen.rgen.spv --target-env vulkan1.4 -gVS
 
 glslangValidator.exe -V Shaders\Shader_Files\ReSTIRDI_Miss.rmiss -o Shaders/Compiled_Shader_Files\ReSTIRDI_Miss.rmiss.spv --target-env vulkan1.4 -gVS

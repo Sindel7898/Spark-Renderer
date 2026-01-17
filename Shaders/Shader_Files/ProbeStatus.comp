@@ -1,4 +1,6 @@
 #version 450
+#extension GL_GOOGLE_include_directive : require
+#include "DDGI_Include.glsl"
 
 layout(binding = 1, rgba16f)  uniform image2D  Iradiance;
 layout(binding = 2, rgba16f)  uniform image2D  Visibility;
@@ -11,9 +13,7 @@ layout(push_constant) uniform PushConstants {
     int   NumRays;
 }pc;
 
-const int PROBE_STATE_ACTIVE   = 0; //  this is for when a probe is activly collecting new scene data
-const int PROBE_STATE_SLEEP    = 1; //  this is for when a probe is always hitting the skybox
-const int PROBE_STATE_DISABLED = 2; //  this is for when a probe is inside an object and is not contributing meaningfully.
+
 //A probe that is disabled can be moved so it is active
 
 struct ProbeInformation {
@@ -27,32 +27,6 @@ layout(set = 0,binding = 0) buffer StorageBufferObject {
 }SBO;
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
-                                                                                                                                     //               
-float hash11(float p) {
-    p = fract(p * 0.1031);
-    p *= p + 33.33;
-    p *= p + p;
-    return fract(p);
-}
-
-vec3 randomOffset(uint probeIndex, float scale) {
-    // use probe index as seed
-    float seed = float(probeIndex);
-    float rx = hash11(seed + 0.1) * 2.0 - 1.0;
-    float ry = hash11(seed + 0.2) * 2.0 - 1.0;
-    float rz = hash11(seed + 0.3) * 2.0 - 1.0;
-    return vec3(rx, ry, rz) * scale;
-}
-
-int get_probe_index_from_pixels(uvec2 pixel_coords, int atlas_width, int probe_full_size) {
-    
-    int   probes_per_row      = atlas_width  / probe_full_size; // How many probes can  be fit in one row of the atlas
-    uvec2 probe_grid_coords   = pixel_coords / probe_full_size; // What probe in the atlas am i in ?
-
-  return int(probe_grid_coords.y * probes_per_row + probe_grid_coords.x);
-}
-
-shared float visibilityAccum[64];
 
 void main() 
 {
