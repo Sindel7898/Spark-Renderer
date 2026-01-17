@@ -465,13 +465,13 @@ void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
 	vk::DescriptorSetLayoutBinding IrradianceImageStorageLayout{};
 	IrradianceImageStorageLayout.binding = 13;
 	IrradianceImageStorageLayout.descriptorCount = 1;
-	IrradianceImageStorageLayout.descriptorType = vk::DescriptorType::eStorageImage;
+	IrradianceImageStorageLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	IrradianceImageStorageLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
 
 	vk::DescriptorSetLayoutBinding VisibilityImageStorageLayout{};
 	VisibilityImageStorageLayout.binding = 14;
 	VisibilityImageStorageLayout.descriptorCount = 1;
-	VisibilityImageStorageLayout.descriptorType = vk::DescriptorType::eStorageImage;
+	VisibilityImageStorageLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	VisibilityImageStorageLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
 
 	vk::DescriptorSetLayoutBinding EmmisiveAssetTexturesSamplerLayout{};
@@ -527,7 +527,7 @@ void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
 	  vk::DescriptorSetLayoutBinding IrradianceStorageImage{};
 	  IrradianceStorageImage.binding = 2;
 	  IrradianceStorageImage.descriptorCount = 1;
-	  IrradianceStorageImage.descriptorType = vk::DescriptorType::eStorageImage;
+	  IrradianceStorageImage.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	  IrradianceStorageImage.stageFlags = vk::ShaderStageFlagBits::eCompute;
 
 	  vk::DescriptorSetLayoutBinding SampledGIStorageImage{};
@@ -539,7 +539,7 @@ void DynamicDiffuse_RTGI::createRayTracingDescriptorSetLayout(){
 	  vk::DescriptorSetLayoutBinding VisibilityStorageImage{};
 	  VisibilityStorageImage.binding = 4;
 	  VisibilityStorageImage.descriptorCount = 1;
-	  VisibilityStorageImage.descriptorType = vk::DescriptorType::eStorageImage;
+	  VisibilityStorageImage.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	  VisibilityStorageImage.stageFlags = vk::ShaderStageFlagBits::eCompute;
 
 	  std::array<vk::DescriptorSetLayoutBinding, 5> bindings = { PositionImage,NormalImage,
@@ -625,7 +625,7 @@ void DynamicDiffuse_RTGI::createDescriptorSets(vk::DescriptorPool descriptorpool
 			IradianceImageAtlasSamplerdescriptorWrite.dstSet = DDGISamplingDescriptorSets[i];
 			IradianceImageAtlasSamplerdescriptorWrite.dstBinding = 2;
 			IradianceImageAtlasSamplerdescriptorWrite.dstArrayElement = 0;
-			IradianceImageAtlasSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
+			IradianceImageAtlasSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 			IradianceImageAtlasSamplerdescriptorWrite.descriptorCount = 1;
 			IradianceImageAtlasSamplerdescriptorWrite.pImageInfo = &IradianceImageAtlasImageInfo;
 
@@ -651,7 +651,7 @@ void DynamicDiffuse_RTGI::createDescriptorSets(vk::DescriptorPool descriptorpool
 			VisibilityAtlasSamplerdescriptorWrite.dstSet = DDGISamplingDescriptorSets[i];
 			VisibilityAtlasSamplerdescriptorWrite.dstBinding = 4;
 			VisibilityAtlasSamplerdescriptorWrite.dstArrayElement = 0;
-			VisibilityAtlasSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
+			VisibilityAtlasSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 			VisibilityAtlasSamplerdescriptorWrite.descriptorCount = 1;
 			VisibilityAtlasSamplerdescriptorWrite.pImageInfo = &VisibilityImageAtlasImageInfo;
 
@@ -1251,26 +1251,26 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			vk::DescriptorImageInfo IradianceImageInfo{};
 			IradianceImageInfo.imageLayout = vk::ImageLayout::eGeneral;
 			IradianceImageInfo.imageView   = IradianceImageAtlasImage.imageView;
-			IradianceImageInfo.sampler     = nullptr;
+			IradianceImageInfo.sampler     = IradianceImageAtlasImage.imageSampler;
 										   
 			vk::WriteDescriptorSet IrradianceImagStoragedescriptorWrite{};
 			IrradianceImagStoragedescriptorWrite.dstSet = RaytracingDescriptorSets[i];
 			IrradianceImagStoragedescriptorWrite.dstBinding = 13;
 			IrradianceImagStoragedescriptorWrite.dstArrayElement = 0;
-			IrradianceImagStoragedescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
+			IrradianceImagStoragedescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 			IrradianceImagStoragedescriptorWrite.descriptorCount = 1;
 			IrradianceImagStoragedescriptorWrite.pImageInfo = &IradianceImageInfo;
 			
 			vk::DescriptorImageInfo VisibilityImageInfo{};
 			VisibilityImageInfo.imageLayout = vk::ImageLayout::eGeneral;
 			VisibilityImageInfo.imageView = VisibilityImageAtlasImage.imageView;
-			VisibilityImageInfo.sampler = nullptr;
+			VisibilityImageInfo.sampler = VisibilityImageAtlasImage.imageSampler;
 
 			vk::WriteDescriptorSet VisibilityImagStoragedescriptorWrite{};
 			VisibilityImagStoragedescriptorWrite.dstSet = RaytracingDescriptorSets[i];
 			VisibilityImagStoragedescriptorWrite.dstBinding = 14;
 			VisibilityImagStoragedescriptorWrite.dstArrayElement = 0;
-			VisibilityImagStoragedescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
+			VisibilityImagStoragedescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 			VisibilityImagStoragedescriptorWrite.descriptorCount = 1;
 			VisibilityImagStoragedescriptorWrite.pImageInfo = &VisibilityImageInfo;
 
@@ -1444,7 +1444,7 @@ void DynamicDiffuse_RTGI::DrawNode(vk::CommandBuffer commandBuffer, vk::Pipeline
 				cameraConstantBuffer.ProjectionMatrix = camera->GetProjectionMatrix();
 				cameraConstantBuffer.ProjectionMatrix[1][1] *= -1;
 				cameraConstantBuffer.ModelMatrix = glm::mat4(1);
-				cameraConstantBuffer.ModelMatrix = glm::scale(glm::vec3(0.2, 0.2, 0.2));
+				cameraConstantBuffer.ModelMatrix = glm::scale(glm::vec3(0.5, 0.5, 0.5));
 				cameraConstantBuffer.generalAtlasInfo.AtlasWidthSize = IradianceImageExtent.width;
 				cameraConstantBuffer.generalAtlasInfo.ProbeSideLength = ProbeSideLength;
 				cameraConstantBuffer.generalAtlasInfo.GutterSize = GutterSize;

@@ -238,13 +238,13 @@ void ReSTIR_DI::createDescriptorSetLayout()
 		vk::DescriptorSetLayoutBinding IrradianceAtlasImageLayout{};
 		IrradianceAtlasImageLayout.binding = 0;
 		IrradianceAtlasImageLayout.descriptorCount = 1;
-		IrradianceAtlasImageLayout.descriptorType = vk::DescriptorType::eStorageImage;
+		IrradianceAtlasImageLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		IrradianceAtlasImageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
 		vk::DescriptorSetLayoutBinding VisibilityAtlasImageLayout{};
 		VisibilityAtlasImageLayout.binding = 1;
 		VisibilityAtlasImageLayout.descriptorCount = 1;
-		VisibilityAtlasImageLayout.descriptorType = vk::DescriptorType::eStorageImage;
+		VisibilityAtlasImageLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		VisibilityAtlasImageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
 		std::array<vk::DescriptorSetLayoutBinding, 2> bindings = { IrradianceAtlasImageLayout ,VisibilityAtlasImageLayout };
@@ -279,26 +279,26 @@ void ReSTIR_DI::createDescriptorDDGIATLAS(vk::DescriptorPool descriptorpool)
 		vk::DescriptorImageInfo IradianceImageInfo{};
 		IradianceImageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		IradianceImageInfo.imageView = DDGIRef->IradianceImageAtlasImage.imageView;
-		IradianceImageInfo.sampler = nullptr;
+		IradianceImageInfo.sampler = DDGIRef->IradianceImageAtlasImage.imageSampler;
 
 		vk::WriteDescriptorSet IrradianceImagStoragedescriptorWrite{};
 		IrradianceImagStoragedescriptorWrite.dstSet = RaytracingDDGIDescriptorSets[i];
 		IrradianceImagStoragedescriptorWrite.dstBinding = 0;
 		IrradianceImagStoragedescriptorWrite.dstArrayElement = 0;
-		IrradianceImagStoragedescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
+		IrradianceImagStoragedescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		IrradianceImagStoragedescriptorWrite.descriptorCount = 1;
 		IrradianceImagStoragedescriptorWrite.pImageInfo = &IradianceImageInfo;
 
 		vk::DescriptorImageInfo VisibilityImageInfo{};
 		VisibilityImageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		VisibilityImageInfo.imageView = DDGIRef->VisibilityImageAtlasImage.imageView;
-		VisibilityImageInfo.sampler = nullptr;
+		VisibilityImageInfo.sampler = DDGIRef->VisibilityImageAtlasImage.imageSampler;
 
 		vk::WriteDescriptorSet VisibilityImagStoragedescriptorWrite{};
 		VisibilityImagStoragedescriptorWrite.dstSet = RaytracingDDGIDescriptorSets[i];
 		VisibilityImagStoragedescriptorWrite.dstBinding = 1;
 		VisibilityImagStoragedescriptorWrite.dstArrayElement = 0;
-		VisibilityImagStoragedescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
+		VisibilityImagStoragedescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		VisibilityImagStoragedescriptorWrite.descriptorCount = 1;
 		VisibilityImagStoragedescriptorWrite.pImageInfo = &VisibilityImageInfo;
 

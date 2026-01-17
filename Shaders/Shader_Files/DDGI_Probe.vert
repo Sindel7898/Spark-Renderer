@@ -37,16 +37,15 @@ layout(location = 1) out vec2 TexCoord;
 layout(location = 2) out  flat int ProbeStatus;
 
 void main() {
-    
      ProbeInformation probe = SBO.ProbeData[gl_InstanceIndex];
 
-     vec4 instancePos = pc.model * probe.probeLocations;
-     vec4 worldPos    = vec4(inPosition, 1.0) + instancePos;
+     vec4 vertexInWorldSpace = pc.model * vec4(inPosition, 1.0);
 
-     ProbeIndex = gl_InstanceIndex;
-     TexCoord = inTexCoord;
+     vertexInWorldSpace.xyz += probe.probeLocations.xyz;
+
+     ProbeIndex  = gl_InstanceIndex;
+     TexCoord    = inTexCoord;
      ProbeStatus = probe.probeState;
 
-    gl_Position = pc.proj * pc.view * worldPos;
+     gl_Position = pc.proj * pc.view * vertexInWorldSpace;
 }
-
