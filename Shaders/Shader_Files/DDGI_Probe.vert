@@ -23,9 +23,8 @@ const int PROBE_STATE_DISABLED = 2; //  this is for when a probe is inside an ob
 //A probe that is disabled can be moved so it is active
 
 struct ProbeInformation {
-    vec4 probeLocations;
-    int  probeState;
-    vec3 Padding;
+    vec4 probeLocationsXYZ_ProbeState;
+
 };
 
 layout(set = 0,binding = 1) readonly  buffer StorageBufferObject {
@@ -41,11 +40,11 @@ void main() {
 
      vec4 vertexInWorldSpace = pc.model * vec4(inPosition, 1.0);
 
-     vertexInWorldSpace.xyz += probe.probeLocations.xyz;
+     vertexInWorldSpace.xyz += probe.probeLocationsXYZ_ProbeState.xyz;
 
      ProbeIndex  = gl_InstanceIndex;
      TexCoord    = inTexCoord;
-     ProbeStatus = probe.probeState;
+     ProbeStatus = int(probe.probeLocationsXYZ_ProbeState.w);
 
      gl_Position = pc.proj * pc.view * vertexInWorldSpace;
 }

@@ -11,10 +11,7 @@ const int PROBE_STATE_DISABLED = 2; //  this is for when a probe is inside an ob
 //A probe that is disabled can be moved so it is active
 
 struct ProbeInformation {
-    vec4 probeLocations;
-    int  probeState;
-    vec3 Padding;
-
+    vec4 probeLocationsXYZ_ProbeState;
 };
 
 
@@ -80,9 +77,10 @@ void main() {
  
     ProbeInformation probe  = SB0.ProbeData[gl_LaunchIDEXT.y];
 
-    vec3 probeOrigin  = probe.probeLocations.xyz;
+    vec3 probeOrigin  = probe.probeLocationsXYZ_ProbeState.xyz;
     vec3 rayDirection = SB02.FibonacciDirections[gl_LaunchIDEXT.x].xyz;
-  
+    int probeState    = int(probe.probeLocationsXYZ_ProbeState.w);
+
 
    // Trace the ray
     const uint rayFlags = gl_RayFlagsOpaqueEXT;
@@ -92,7 +90,7 @@ void main() {
 
    vec3 CubeMapIrradiance = texture(samplerCubeMap[SkyBoxIndex], rayDirection).rgb;
 
-       if(probe.probeState ==  PROBE_STATE_ACTIVE){
+       if(probeState ==  PROBE_STATE_ACTIVE){
           
            payload.Hit = 0;
            payload.Color = vec3(0.0);
@@ -114,10 +112,10 @@ void main() {
           imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(Radiance,Distance));
 
        }
-         else if (probe.probeState ==  PROBE_STATE_SLEEP){
+         else if (probeState ==  PROBE_STATE_SLEEP){
           imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(0,0,0, 100.0));
           return;
-       }else if (probe.probeState == PROBE_STATE_DISABLED) {
+       }else if (probeState == PROBE_STATE_DISABLED) {
            imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(0.0, 0.0, 0.0, 0.0));
            return;
         }

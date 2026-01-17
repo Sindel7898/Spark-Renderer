@@ -22,9 +22,7 @@ layout(push_constant) uniform PushConstants {
 
 
 struct ProbeInformation {
-    vec4 probeLocations;
-    int  probeState;
-    vec3 Padding;
+    vec4 probeLocationsXYZ_ProbeState;
 };
 
 layout(set = 0,binding = 6) buffer StorageBufferObject {
@@ -92,9 +90,6 @@ void main()
     int ProbeIndex =  get_probe_index_from_pixels(fragCoord,pc.AtlasWidthSize,ProbeSideLength_With_Gutter);
 
     ProbeInformation info = SBO.ProbeData[ProbeIndex];
-
-    //if(info.probeState == PROBE_STATE_ACTIVE ){
-        /// do not do any calculations on gutter pixels
 
     ivec2 localPos      = fragCoord % ProbeSideLength_With_Gutter;
 

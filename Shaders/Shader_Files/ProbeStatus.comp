@@ -17,9 +17,7 @@ layout(push_constant) uniform PushConstants {
 //A probe that is disabled can be moved so it is active
 
 struct ProbeInformation {
-    vec4 probeLocations;
-    int  probeState;
-    vec3 Padding;
+      vec4 probeLocationsXYZ_ProbeState;
 };
 
 layout(set = 0,binding = 0) buffer StorageBufferObject {
@@ -77,17 +75,19 @@ void main()
 
         ProbeInformation probe = SBO.ProbeData[probeIndex];
 
-        int currentState = probe.probeState;
+        int ProbeState =  int(probe.probeLocationsXYZ_ProbeState.w);
+
+        int currentState = ProbeState;
 
         if (currentState == PROBE_STATE_ACTIVE) {
 
             if (SkyPercent > SLEEP_THRESHOLD) {
 
-                probe.probeState = PROBE_STATE_SLEEP;
+                ProbeState = PROBE_STATE_SLEEP;
 
             } else if (InsidePercent > DISABLE_THRESHOLD) {
 
-                probe.probeState = PROBE_STATE_DISABLED;
+                ProbeState = PROBE_STATE_DISABLED;
 
             }
 
@@ -96,7 +96,7 @@ void main()
 
             if (SkyPercent < WAKE_THRESHOLD) { 
 
-                probe.probeState = PROBE_STATE_ACTIVE;
+                ProbeState = PROBE_STATE_ACTIVE;
 
             }
         } 
@@ -104,7 +104,7 @@ void main()
 
             if (InsidePercent < ENABLE_THRESHOLD) {
 
-                probe.probeState = PROBE_STATE_ACTIVE;
+                  ProbeState = PROBE_STATE_ACTIVE;
 
             }
         }

@@ -6,9 +6,7 @@ const int PROBE_STATE_DISABLED = 2; //  this is for when a probe is inside an ob
 //A probe that is disabled can be moved so it is active
 
 struct ProbeInformation {
-    vec4 probeLocations;
-    int  probeState;
-    vec3 Padding;
+    vec4 probeLocationsXYZ_ProbeState;
 };
 
 layout(binding = 0) writeonly buffer StorageBuffer {
@@ -75,10 +73,8 @@ void main()
                                    + pc.probeBaseLocation_Flag.xyz;
              
              
-              SB0.ProbeData[index].probeLocations  = vec4(position, 0.0);
+              SB0.ProbeData[index].probeLocationsXYZ_ProbeState  = vec4(position, PROBE_STATE_ACTIVE);
          
-
-              SB0.ProbeData[index].probeState      = PROBE_STATE_ACTIVE;
         }
 
     }else{
