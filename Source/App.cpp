@@ -254,8 +254,8 @@ void App::SwitchScene(int index)
 			dynamicDiffuse_RTGI->NumOfProbesY = 9;
 			dynamicDiffuse_RTGI->NumOfProbesZ = 9;
 			dynamicDiffuse_RTGI->RaysPerProbe = 128;
-			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(7.52, 8.62, 11.13);
-			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-24.67, -12.66, -45.61);
+			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(-18.570, -10.660, -15.610);
+			dynamicDiffuse_RTGI->GridLocation = glm::vec3(5.000, 5.000, 6.000);
 		}
 
 		camera.SetPosition(glm::vec3{ -0.896284, 12.566, -37.7205 });
@@ -308,8 +308,8 @@ void App::SwitchScene(int index)
 			dynamicDiffuse_RTGI->NumOfProbesY = 22;
 			dynamicDiffuse_RTGI->NumOfProbesZ = 22;
 			dynamicDiffuse_RTGI->RaysPerProbe = 288;
-			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-307.80, -43.33, -126.52);
-			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(26.11, 15.19, 12.06);
+			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-55.011, -1.356, -28.000);
+			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(5.001, 2.896, 2.400);
 
 		}
 
@@ -1250,7 +1250,7 @@ void App::CreateGraphicsPipeline()
 		rasterizerinfo.rasterizerDiscardEnable = vk::False;
 		rasterizerinfo.polygonMode = vk::PolygonMode::eFill;
 		rasterizerinfo.lineWidth = 1.0f;
-		rasterizerinfo.cullMode = vk::CullModeFlagBits::eBack;
+		rasterizerinfo.cullMode = vk::CullModeFlagBits::eNone;
 		rasterizerinfo.frontFace = vk::FrontFace::eCounterClockwise;
 		rasterizerinfo.depthBiasEnable = vk::False;
 		rasterizerinfo.depthBiasConstantFactor = 0.0f;

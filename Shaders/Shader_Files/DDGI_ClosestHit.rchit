@@ -73,14 +73,17 @@ layout(push_constant) uniform PushConstant {
 } pc;
 
 struct Payload {
-    vec3  Color;
+   vec3   Color;
     float Distance;
-    vec3  Normal;
     int   Hit;
-    vec3  HitPosition;
+};
+
+struct Shadow_Payload {
+      int Shadow;
 };
 
 layout(location = 0) rayPayloadInEXT Payload payload;
+layout(location = 1) rayPayloadEXT Shadow_Payload shadow_Payload;
 
 hitAttributeEXT vec2 attribs;
 
@@ -207,27 +210,17 @@ void main()
 
             float NdotL = max(dot(HitNormal, LightDir), 0.0);
 
-            float shadow = 1.0;
+            vec3 shadowOrigin   = HitPosition + (WorldN * 0.05);
+            const uint rayFlags = gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
+            const uint cullMask = 0xFF;
+            const float tMin    = 0.001;
+            const float tMax    = 1000.0;
 
-            if (NdotL > 0.0 && light.CameraPositionAndLightIntensity.a > 0.0) {
-                rayQueryEXT rayQuery;
-                vec3 shadowOrigin = HitPosition + (WorldN * 0.05);
-                float tMax = lightDist; 
-                
-                //This is faster than the isual traceRayEXT
-                rayQueryInitializeEXT(rayQuery, topLevelAS, gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT | gl_RayFlagsCullFrontFacingTrianglesEXT, 0xFF, shadowOrigin, 0.001, LightDir, tMax);
-
-                while(rayQueryProceedEXT(rayQuery)) {} // let the hardware do what it wants
-
-                // ask if it hit anything
-                if(rayQueryGetIntersectionTypeEXT(rayQuery, true) != gl_RayQueryCommittedIntersectionNoneEXT) {
-                    shadow = 0.0;
-                }
-            }
-       
-              Lo += (diffuse * radiance * light.CameraPositionAndLightIntensity.a)* shadow;
+            shadow_Payload.Shadow = 0;
+            traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 1, shadowOrigin, tMin, LightDir, tMax, 1);
+         
+              Lo += ((diffuse * radiance * light.CameraPositionAndLightIntensity.a)) * shadow_Payload.Shadow;
               Radiance += Lo;
-            //Radiance += (Lo * light.CameraPositionAndLightIntensity.a);
         }
         
         //Radiance += Emissive * 3;
@@ -264,6 +257,4 @@ void main()
     payload.Color       = Radiance;
     payload.Distance    = Distance;
     payload.Hit         = 1;
-    payload.Normal      = HitNormal; 
-    payload.HitPosition = HitPosition;
 }
