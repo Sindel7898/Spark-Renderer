@@ -1402,9 +1402,9 @@ void App::CreateGraphicsPipeline()
 	///////////////////////////////////////////RAY TRACING PIPELINES////////////////////////////////////////////////////////////////
 	{
 	
-		auto RayGen_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/ReSTIR_DI_Raygen.rgen.spv");
+		auto RayGen_ShaderCode        = readFile("../Shaders/Compiled_Shader_Files/ReSTIR_DI_Raygen.rgen.spv");
 		auto RayClosestHit_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/ReSTIR_DI_ClosestHit.rchit.spv");
-		auto RayGenMiss_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/ReSTIRDI_Miss.rmiss.spv");
+		auto RayGenMiss_ShaderCode    = readFile("../Shaders/Compiled_Shader_Files/ReSTIRDI_Miss.rmiss.spv");
 
 		VkShaderModule RayGen_ShaderModule = pipelineManager.createShaderModule(RayGen_ShaderCode);
 		VkShaderModule RayClosestHit_ShaderModule = pipelineManager.createShaderModule(RayClosestHit_ShaderCode);
@@ -2815,6 +2815,53 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			commandBuffer.beginRendering(SkyBoxRenderInfo);
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
 			skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
+			commandBuffer.endRendering();
+
+
+
+			vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
+			LightPassColorAttachmentInfo.imageView = Restir_DI->ReSTIRDI_Results.imageView;;
+			LightPassColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			LightPassColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+			LightPassColorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+			LightPassColorAttachmentInfo.clearValue = clearColor;
+
+			vk::RenderingAttachmentInfo depthStencilAttachment;
+			depthStencilAttachment.imageView = DepthTextureData.imageView;
+			depthStencilAttachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+			depthStencilAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
+			depthStencilAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+			depthStencilAttachment.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+
+			vk::RenderingInfo renderingInfo{};
+			renderingInfo.renderArea.offset = imageoffset;
+			renderingInfo.renderArea.extent.height = vulkanContext.swapchainExtent.height;
+			renderingInfo.renderArea.extent.width = vulkanContext.swapchainExtent.width;
+			renderingInfo.layerCount = 1;
+			renderingInfo.colorAttachmentCount = 1;
+			renderingInfo.pColorAttachments = &LightPassColorAttachmentInfo;
+			renderingInfo.pDepthAttachment = &depthStencilAttachment;
+
+			if (bWireFrame)
+			{
+				vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_LINE);
+			}
+			else
+			{
+				vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
+			}
+
+			commandBuffer.setViewport(0, 1, &viewport);
+			commandBuffer.setScissor(0, 1, &scissor);
+			commandBuffer.beginRendering(renderingInfo);
+
+			commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, LightgraphicsPipeline);
+
+			for (auto& light : lights)
+			{
+				light->Draw(commandBuffer, LightpipelineLayout, currentFrame);
+			}
+
 			commandBuffer.endRendering();
 		}
 	}
