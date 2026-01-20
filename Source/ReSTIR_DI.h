@@ -14,7 +14,8 @@ struct PushConstant {
     glm::vec4 CameraPosition;
     glm::vec4 ScreenSize;
     SampleGridInfo sampleGridInfo;
-	glm::vec4 Temporal_SpatialReuseFlags;
+	glm::vec4 Temporal_Spatial_Reuse_EnableDDGI_DDGI_Vertex_Flags;
+    glm::mat4  ProjectionViewMatrix;
 };
 
 class ReSTIR_DI
@@ -44,6 +45,7 @@ public:
     bool bTemporalReuse = true;
 	bool bSpatialReuse = true;
     bool bDDGI = true;
+	int  DDGIVertex = 0;
 
 private:
 

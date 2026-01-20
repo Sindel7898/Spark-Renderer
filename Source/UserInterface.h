@@ -73,6 +73,10 @@ private:
     std::vector<std::string> SkyBoxs{ "Day Sky", "Church", "Night Sky","City","Black"};
     std::string currentSkyBox = "Day Sky";
 
+
+    std::vector<std::string> DDGI_Vertex_Options{ "First Vertex", "Second Vertex" };
+    std::string currentDDGIVertex = "First Vertex";
+
     ImVec2 viewportSize;
 
     glm::mat4 LastModelMatrix;

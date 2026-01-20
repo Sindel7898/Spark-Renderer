@@ -1,5 +1,6 @@
 #version 460
 #extension GL_EXT_ray_tracing : require
+#extension GL_EXT_ray_query : require
 #extension GL_GOOGLE_include_directive : require
 #include "DDGI_Include.glsl"
 #include "PBR_Include.glsl"
@@ -47,7 +48,8 @@ layout(push_constant) uniform PushConstant{
     int   ProbeSideLength; 
     int   GutterSize;      
     int   NumRays;
-    vec4 TemporalReuse_SpatialReuse_ReSTIRwithDDGI_Padding_Flag;
+    vec4 Temporal_Spatial_Reuse_EnableDDGI_DDGI_Vertex_Flags;
+    mat4  ProjectionViewMatrix;
 
 }pc;
 
@@ -235,6 +237,13 @@ float gold_noise(vec2 xy, float seed){
 
 
 void main() {
+     
+    bool bTemporalReuse = (pc.Temporal_Spatial_Reuse_EnableDDGI_DDGI_Vertex_Flags).x > 0.5;
+    bool bSpatialReuse  = (pc.Temporal_Spatial_Reuse_EnableDDGI_DDGI_Vertex_Flags).y > 0.5;
+    bool bDDGI          = (pc.Temporal_Spatial_Reuse_EnableDDGI_DDGI_Vertex_Flags).z > 0.5;
+    int  DDGISamplingVertex = int(pc.Temporal_Spatial_Reuse_EnableDDGI_DDGI_Vertex_Flags.w);
+
+
 
     ivec2 TextCoord = ivec2(gl_LaunchIDEXT.xy + 0.5);
     
@@ -301,11 +310,10 @@ void main() {
 
 vec3 IndirectRadiance = vec3(0.0);
 
-    if (pc.TemporalReuse_SpatialReuse_ReSTIRwithDDGI_Padding_Flag.z > 0.5) {
+    if (bDDGI) {
        
-        int DDGI_Sample_Vertex = 0;
 
-        if (DDGI_Sample_Vertex == 0){ // primary vertex
+        if (DDGISamplingVertex == 0){ // primary vertex
           
           vec3 HitIrradiance       =  SampleIrradiance(
                                           IrradianceStorageImage,
@@ -329,39 +337,56 @@ vec3 IndirectRadiance = vec3(0.0);
         
         }
 
-        if (DDGI_Sample_Vertex == 1){ //seconday vertex
+  if (DDGISamplingVertex == 1) { // Secondary vertex
+      payload.rayType = 1; 
+      payload.data = vec3(0.0);
+      payload.Emissive = vec3(0.0);
+      
+      traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsCullBackFacingTrianglesEXT, 
+                  0xFF, 0, 0, 0, rayOrigin, 0.1, DiffuseDirection, 1000.0, 0);
+      
+      vec3 HitIrradiance = SampleIrradiance(
+          IrradianceStorageImage, VisibilityStorageImage,
+          payload.Position, payload.Normal,
+          pc.GridBaseLocation_ScreenSizeWidth.xyz, pc.ProbeSpacing_ScreenSizeHeight.xyz,
+          ivec3(pc.ProbeCount.xyz), pc.ProbeSideLength, pc.GutterSize, pc.AtlasWidthSize,
+          pc.ProbeSideLength, pc.GutterSize, pc.AtlasWidthSize
+      );
+      
+     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    vec4 prevClip = pc.ProjectionViewMatrix * vec4(payload.Position, 1.0);
+    vec3 prevNDC = prevClip.xyz / prevClip.w;
+    vec2 prevUV = prevNDC.xy * 0.5 + 0.5;
 
-                payload.rayType = 1;
-                payload.data = vec3(0.0);
-                payload.Emissive = vec3(0.0);
+    vec2 screenSize = pc.ScreenSize_Padding_FrameIndex_LightCount.xy;
+    ivec2 prevPixel = ivec2(prevUV * screenSize);
+
+   bool validHistory = all(greaterThanEqual(prevPixel, vec2(0.0))) && all(lessThan(prevPixel, pc.ScreenSize_Padding_FrameIndex_LightCount.xy));
+
+      vec4 Resevoir_info = imageLoad(PrevResevoirImage, ivec2(prevPixel.xy)).rgba;
+         vec3 prevNormal = texelFetch(PrevNormalImage, prevPixel, 0).rgb;
+
+     //if (dot(prevNormal, payload.Normal) >= 0.9 && validHistory) {
+
+       uint lightIndex = uint(Resevoir_info.x);
+     
+      vec3 SecondaryViewDir = normalize(CameraPos - payload.Position);
+
+           SurfaceData hitSurfaceData;
+           hitSurfaceData.worldPos  = payload.Position;
+           hitSurfaceData.normal    = payload.Normal;
+           hitSurfaceData.albedo    = payload.Albedo;
+           hitSurfaceData.metallic  = 0.0;
+           hitSurfaceData.roughness = 1.0;
+
+      vec3 DirectLightAtSecondary =  GetLightRadiance(lights[1], CameraPos, hitSurfaceData, SecondaryViewDir, F, vec3(payload.Albedo / PI));
+    
+      vec3 TotalIncomingIrradiance = ((DirectLightAtSecondary) + HitIrradiance * (payload.Albedo / PI))  * surfaceData.albedo;
+     
+           IndirectRadiance = TotalIncomingIrradiance;
+
+}
         
-
-               traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsCullBackFacingTrianglesEXT, 0xFF, 0, 0, 0, rayOrigin, 0.1, DiffuseDirection, 1000.0, 0);
-              
-              vec3 HitIrradiance       =  SampleIrradiance(
-                                                IrradianceStorageImage,
-                                                VisibilityStorageImage,
-                                                payload.Position,
-                                                payload.Normal,
-                                                pc.GridBaseLocation_ScreenSizeWidth.xyz,
-                                                pc.ProbeSpacing_ScreenSizeHeight.xyz,
-                                                ivec3(pc.ProbeCount.xyz),
-                                                // Irradiance Params
-                                                pc.ProbeSideLength,
-                                                pc.GutterSize,
-                                                pc.AtlasWidthSize,
-                                                // Visibility Params
-                                                pc.ProbeSideLength,   //Same values are being passed cus as of now they are both the same size. but this can be changed
-                                                pc.GutterSize,
-                                                pc.AtlasWidthSize);
-              
-              
-              vec3 TotalIncomingLightonOnSecondVertex = payload.Emissive + HitIrradiance * (payload.Albedo / PI);;
-                     
-              IndirectRadiance  = TotalIncomingLightonOnSecondVertex * surfaceData.albedo;
-        }
-        
-
         float GI_p_hat = length(IndirectRadiance);
         float WeightOfGI = GI_p_hat  * float(TotalNumOfLights);
 
@@ -395,7 +420,7 @@ vec3 IndirectRadiance = vec3(0.0);
     bool validHistory = all(greaterThanEqual(screenPosPrevious, vec2(0.0))) && all(lessThan(screenPosPrevious, pc.ScreenSize_Padding_FrameIndex_LightCount.xy));
 
 
-    if (pc.TemporalReuse_SpatialReuse_ReSTIRwithDDGI_Padding_Flag.x > 0.5 && validHistory) {
+    if (bTemporalReuse && validHistory) {
         ivec2 prevCoord = ivec2(screenPosPrevious);      
         vec3 prevNormal = texelFetch(PrevNormalImage, prevCoord, 0).rgb;
         
@@ -431,7 +456,7 @@ vec3 IndirectRadiance = vec3(0.0);
     
     UpdateReservoir(spatialReservoir, temporalReservoir.Light_Index, p_hat_temporal * temporalReservoir.Light_Weight * temporalReservoir.Num_OF_Lights_In_Resevoir, temporalReservoir.Num_OF_Lights_In_Resevoir, rngState);
 
-    if (pc.TemporalReuse_SpatialReuse_ReSTIRwithDDGI_Padding_Flag.y > 0.5) {
+    if (bSpatialReuse) {
         int radius = 15; 
         for(int i = 0; i < 5; i++){
 

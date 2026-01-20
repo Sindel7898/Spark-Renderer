@@ -59,8 +59,8 @@ void main()
     // =======================
     // Motion vectors
     // =======================
-    vec3 NDCPos = (inCurrClipPos.xyz / inCurrClipPos.w).xyz;
-    vec3 PrevNDCPos  = (inPrevClipPos.xyz / inPrevClipPos.w).xyz;
+    vec3 UV      = (inCurrClipPos.xyz / inCurrClipPos.w).xyz * 0.5 + 0.5;
+    vec3 PrevUV  = (inPrevClipPos.xyz / inPrevClipPos.w).xyz * 0.5 + 0.5;
 
-    outVelocity = vec4((NDCPos - PrevNDCPos).xyz, 1.0);
+    outVelocity = vec4((UV - PrevUV).xyz, 1.0);
 }

@@ -99,10 +99,12 @@ void main()
     vec3 HitPosition = vec3(0.0);
     float Distance   = 0;
 
-    if(gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT) { 
-        Distance = gl_RayTminEXT + gl_HitTEXT; 
-        Distance *= -0.2; 
-    } else {
+    //if(gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT) { 
+    //    Distance = gl_RayTminEXT + gl_HitTEXT; 
+    //    Distance *= -0.2; 
+    //} 
+    
+    {
         uint packed      = gl_InstanceCustomIndexEXT;
         uint objectID    = packed >> 12;
         uint primitiveID = packed & 0xFFF;
@@ -151,6 +153,11 @@ void main()
         mat3 normalMatrix  = mat3(transformations[objectID].Inverese_Transposed_WorldMatrix);
 
         vec3 WorldN        = normalize(normalMatrix * Normal);
+
+        if (gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT) {
+        WorldN = -WorldN;
+    }
+
         vec3 WorldT        = normalize(normalMatrix * Tangent);
         vec3 WorldB = cross(WorldN, WorldT) * (tangentSign < 0.0 ? -1.0 : 1.0);
         mat3 WorldSpaceTBN = mat3(WorldT, WorldB, WorldN);
@@ -160,9 +167,16 @@ void main()
         float Roughness  = texture(MetalicRoughness_AssetImages[nonuniformEXT(primitiveID)], TexCoord).r;
         vec3  Emissive   = texture(Emmisive_AssetImages        [nonuniformEXT(primitiveID)], TexCoord).rgb;
 
-        vec3 NormalTexture = texture(Normal_AssetImages[nonuniformEXT(primitiveID)], TexCoord).rgb * 2.0 - vec3(1.0);
-        HitNormal = normalize(WorldSpaceTBN * NormalTexture);
-        HitNormal = Normal;
+   vec3 textureMap = texture(Normal_AssetImages[nonuniformEXT(primitiveID)], TexCoord).rgb;
+    
+      if (length(textureMap) > 0.1) {
+
+          vec3 NormalTexture = textureMap * 2.0 - vec3(1.0);
+          HitNormal = normalize(WorldSpaceTBN * NormalTexture);
+      } else {
+          HitNormal = WorldN;
+      }
+     
         vec4 WorldPos = transformations[objectID].WorldMatrix * vec4(VertexPosition, 1.0);
 
         HitPosition = WorldPos.xyz;
@@ -177,7 +191,7 @@ void main()
             LightData light = lights[i];
             vec3 Lo = vec3(0.0);
             vec3 radiance = vec3(0.0);
-            float lightDist = 10000.0;
+            float lightDist = 0.0;
             
             if(light.positionAndLightType.w < 0.5) { // Directional
                 LightDir = normalize(-light.positionAndLightType.xyz);
@@ -210,16 +224,15 @@ void main()
 
             float NdotL = max(dot(HitNormal, LightDir), 0.0);
 
-            vec3 shadowOrigin   = HitPosition + (WorldN * 0.05);
+            vec3 shadowOrigin   = HitPosition + (WorldN * 0.001);
             const uint rayFlags = gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
             const uint cullMask = 0xFF;
             const float tMin    = 0.001;
-            const float tMax    = 1000.0;
 
             shadow_Payload.Shadow = 0;
-            traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 1, shadowOrigin, tMin, LightDir, tMax, 1);
+            traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 1, shadowOrigin, tMin, LightDir, lightDist, 1);
          
-              Lo += ((diffuse * radiance * light.CameraPositionAndLightIntensity.a)) * shadow_Payload.Shadow;
+              Lo += ((diffuse * radiance * light.CameraPositionAndLightIntensity.a) * NdotL) *  shadow_Payload.Shadow;
               Radiance += Lo;
         }
         

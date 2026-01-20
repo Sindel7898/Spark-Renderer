@@ -507,6 +507,23 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
                     ImGui::Checkbox("Enable ReSTIR DDGI"          , (bool*)&appref->Restir_DI->bDDGI);
                 }
 
+                if (ImGui::BeginCombo("DDGI Sampling Vertex", currentDDGIVertex.c_str())) {
+
+                    for (int i = 0; i < DDGI_Vertex_Options.size(); i++) {
+
+                        bool is_selected = (currentDDGIVertex == DDGI_Vertex_Options[i]);
+
+                        if (ImGui::Selectable(DDGI_Vertex_Options[i].c_str(), is_selected)) {
+
+                            currentDDGIVertex = DDGI_Vertex_Options[i];
+                            appref->Restir_DI->DDGIVertex = i;
+
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+
+
                 //if (ImGui::CollapsingHeader("RT Reflections", ImGuiTreeNodeFlags_DefaultOpen)) {
                 //    ImGui::Checkbox("Enable Raytraced Reflections", (bool*)&appref->RT_Reflection->bReflections);
                 //

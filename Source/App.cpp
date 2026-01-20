@@ -304,12 +304,12 @@ void App::SwitchScene(int index)
 
 		if (dynamicDiffuse_RTGI)
 		{
-			dynamicDiffuse_RTGI->NumOfProbesX = 22;
-			dynamicDiffuse_RTGI->NumOfProbesY = 22;
-			dynamicDiffuse_RTGI->NumOfProbesZ = 22;
-			dynamicDiffuse_RTGI->RaysPerProbe = 288;
-			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-55.011, -1.356, -28.000);
-			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(5.001, 2.896, 2.400);
+			dynamicDiffuse_RTGI->NumOfProbesX = 13;
+			dynamicDiffuse_RTGI->NumOfProbesY = 13;
+			dynamicDiffuse_RTGI->NumOfProbesZ = 13;
+			dynamicDiffuse_RTGI->RaysPerProbe = 188;
+			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-55.011, -1.357, -23.000);
+			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(8.500, 2.896, 4.000);
 
 		}
 
@@ -1870,9 +1870,9 @@ void App::createShaderBindingTable() {
 		const size_t handleSizeAligned = alignedSize(handleSize, vulkanContext.RayTracingPipelineProperties.shaderGroupHandleAlignment);
 
 		const uint32_t groupcount = 4;
-		const uint32_t sbtSize = groupcount * handleSizeAligned;
 
-		std::vector<uint8_t> shaderHandleStorage(sbtSize);
+		// 1. Fetch handles into a tightly packed vector (Size = count * handleSize)
+		std::vector<uint8_t> shaderHandleStorage(groupcount * handleSize);
 
 		vulkanContext.vkGetRayTracingShaderGroupHandlesKHR(
 			static_cast<VkDevice>(vulkanContext.LogicalDevice),
@@ -1882,24 +1882,38 @@ void App::createShaderBindingTable() {
 			shaderHandleStorage.size(),
 			shaderHandleStorage.data());
 
+		// 2. Initialize Buffer Info
 		DDGI_raygenShaderBindingTableBuffer.BufferID = "DDGI raygen Shader Binding Table Buffer";
 		DDGI_missShaderBindingTableBuffer.BufferID = "DDGI miss Shader Binding Table Buffer";
 		DDGI_hitShaderBindingTableBuffer.BufferID = "DDGI hit Shader Binding Table Buffer";
 
+		// 3. Create Buffers (Sizes must be aligned)
 		bufferManger.CreateBuffer(&DDGI_raygenShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
 
 		bufferManger.CreateBuffer(&DDGI_hitShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
 
 		bufferManger.CreateBuffer(&DDGI_missShaderBindingTableBuffer, handleSizeAligned * 2, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
 
-		bufferManger.CopyDataToBuffer(shaderHandleStorage.data(), DDGI_raygenShaderBindingTableBuffer);
+		// 4. RayGen (Index 0) - Copy to aligned temp buffer
+		std::vector<uint8_t> rayGenData(handleSizeAligned, 0);
+		memcpy(rayGenData.data(), shaderHandleStorage.data(), handleSize);
+		bufferManger.CopyDataToBuffer(rayGenData.data(), DDGI_raygenShaderBindingTableBuffer);
 
-		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned, DDGI_hitShaderBindingTableBuffer);
+		// 5. Hit (Index 1) - Copy to aligned temp buffer
+		std::vector<uint8_t> hitData(handleSizeAligned, 0);
+		memcpy(hitData.data(), shaderHandleStorage.data() + handleSize, handleSize);
+		bufferManger.CopyDataToBuffer(hitData.data(), DDGI_hitShaderBindingTableBuffer);
 
-		std::vector<uint8_t> missHandlesCombined(handleSizeAligned * 2);
-		memcpy(missHandlesCombined.data(), shaderHandleStorage.data() + (handleSizeAligned * 2), handleSizeAligned * 2);
+		// 6. Miss (Indices 2 & 3) - Combine into one aligned buffer
+		std::vector<uint8_t> missData(handleSizeAligned * 2, 0);
 
-		bufferManger.CopyDataToBuffer(missHandlesCombined.data(), DDGI_missShaderBindingTableBuffer);
+		// Copy Miss 1 (Index 2) to offset 0
+		memcpy(missData.data(), shaderHandleStorage.data() + (2 * handleSize), handleSize);
+
+		// Copy Miss 2 (Index 3) to offset handleSizeAligned
+		memcpy(missData.data() + handleSizeAligned, shaderHandleStorage.data() + (3 * handleSize), handleSize);
+
+		bufferManger.CopyDataToBuffer(missData.data(), DDGI_missShaderBindingTableBuffer);
 	}
 
 
