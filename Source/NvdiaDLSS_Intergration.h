@@ -1,33 +1,72 @@
 #pragma once
 #include <vulkan/vulkan.hpp>
+#include <glm/glm.hpp>
 
-class Camera;
+#include <nvsdk_ngx.h>
+#include <nvsdk_ngx_defs.h>
+#include <nvsdk_ngx_params.h>
+#include <nvsdk_ngx_vk.h>
+
+#include <nvsdk_ngx_defs_dlssd.h>
+#include <nvsdk_ngx_params_dlssd.h>
+
+#include <nvsdk_ngx_helpers.h>
+#include <nvsdk_ngx_helpers_vk.h>
+#include <nvsdk_ngx_helpers_dlssd.h>
+#include <nvsdk_ngx_helpers_dlssd_vk.h>
+
+class  Camera;
+class  BufferManager;
 struct ImageData;
+class  VulkanContext;
 
-struct DLSSRequirements {
-    std::vector<const char*> instanceExtensions;
-    std::vector<const char*> deviceExtensions;
-    uint32_t extraGraphicsQueues = 0;
-    uint32_t extraComputeQueues = 0;
-
-};
 class NvdiaDLSS_Intergration
 {
 public:
-    void InitDLSS();
-    void PrepareDLSS(vk::CommandBuffer cmd, uint32_t frameIndex, Camera& cam, vk::Extent3D swapchainExtent);
+    // Initialize the generic NGX Context
+    void InitNGX(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device);
+
+    // Initialize the specific Ray Reconstruction feature
+    // IMPORTANT: This requires a command buffer to perform initial setup
+    void InitDLSS_RR(vk::CommandBuffer cmd, vk::Extent2D inputSize, vk::Extent2D outputSize);
+
+
+    void init(int currentWidth, int currentHeight, float upScaleFactor);
+
+    void render(VkCommandBuffer commandBuffer, VulkanCore::Texture& inColorTexture, VulkanCore::Texture& inDepthTexture, VulkanCore::Texture& inMotionVectorTexture, VulkanCore::Texture& outColorTexture, glm::vec2 cameraJitter);
+
+    void requiredExtensions(std::vector<std::string>& instanceExtensions, std::vector<std::string>& deviceExtensions);
+
     void CleanUp();
 
-    void RegisterVulkanDevice(vk::Instance instance, vk::PhysicalDevice physicalDevice, vk::Device device, uint32_t graphicsQueueIndex, uint32_t computeQueueIndex);
+    // The main denoising function matching DlssRR::denoise logic
+    void Denoise(vk::CommandBuffer cmd,
+        uint32_t frameIndex,
+        Camera& cam,
+        const ImageData& colorIn,
+        const ImageData& colorOut,
+        const ImageData& depth,
+        const ImageData& mvec,
+        const ImageData& normalRoughness,
+        const ImageData& diffuseAlbedo,
+        const ImageData& specularAlbedo,
+        const ImageData& specularHitDist);
 
-    void* m_currentFrameToken = nullptr;
-    PFN_vkGetInstanceProcAddr sl_vkGetInstanceProcAddr = nullptr;
+    float UpScaleFactor;
+private:
+	BufferManager* m_bufferManager = nullptr;
+	VulkanContext* m_vulkanContext = nullptr;
 
-    void TagAndEvaluate(vk::CommandBuffer cmd, const ImageData& depth, const ImageData& mvec, const ImageData& diffuseNoisy, const ImageData& specularNoisy, const ImageData& outputColor, vk::Extent3D renderSize, vk::Extent3D displaySize);
+	vk::CommandPool m_commandPool = nullptr;
+    vk::Device m_device = nullptr;
+    vk::PhysicalDevice m_physicalDevice = nullptr;
+    vk::Instance m_instance = nullptr;
 
-    DLSSRequirements GetDLSSVulkanRequirements();
-    PFN_vkQueuePresentKHR GetPresentProxy(vk::Device device);
-    vk::Extent3D m_lastSwapchainExtent = { 0, 0, 0 };
+    NVSDK_NGX_Handle* dlssFeatureHandle_ = nullptr;
+    NVSDK_NGX_Parameter* paramsDLSS_ = nullptr;
+
+    // Helper to wrap Vulkan images for NGX
+    NVSDK_NGX_Resource_VK CreateNGXResource(const ImageData& data, bool isOutput = false);
 };
 
 static inline void NvdiaDLSS_Deleter(NvdiaDLSS_Intergration* integration)

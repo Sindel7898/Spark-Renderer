@@ -30,8 +30,6 @@ uint32_t FindQueueFamily(const std::vector<VkQueueFamilyProperties>& families, V
 
 VulkanContext::VulkanContext(Window& Window, NvdiaDLSS_Intergration& _NvdiaDLSS_Intergration) : window(Window) {
     DLSS_IntergrationRef = &_NvdiaDLSS_Intergration;
-    DLSS_IntergrationRef->InitDLSS();
-
     InitVulkan();
     createSurface();
     SelectGPU_CreateDevice();
@@ -76,31 +74,7 @@ void VulkanContext::SelectGPU_CreateDevice()
         VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME
     };
 
-    deviceExtensions.push_back("VK_NVX_binary_import");
-    deviceExtensions.push_back("VK_NVX_image_view_handle");
-    // Also needed for some Streamline paths
-    deviceExtensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
-    deviceExtensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME);
-    deviceExtensions.push_back(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
-    deviceExtensions.push_back(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME);
-
-
-    if (DLSS_IntergrationRef) {
-        DLSSRequirements slReqs = DLSS_IntergrationRef->GetDLSSVulkanRequirements();
-
-        for (const char* ext : slReqs.deviceExtensions) {
-
-            bool found = false;
-            for (const char* existing : deviceExtensions) {
-
-                if (strcmp(ext, existing) == 0) { found = true; break; }
-
-            }
-
-            if (!found) deviceExtensions.push_back(ext);
-        }
-    }
-
+ 
     vkb::PhysicalDeviceSelector selector{ VKB_Instance };
 
     auto physicalDeviceResult = selector
@@ -202,16 +176,6 @@ void VulkanContext::SelectGPU_CreateDevice()
         throw std::runtime_error("Failed to create logical device!");
     }
 
-    if (DLSS_IntergrationRef) {
-        DLSS_IntergrationRef->RegisterVulkanDevice(
-            VulkanInstance,
-            PhysicalDevice,
-            LogicalDevice,
-            graphicsQueueFamilyIndex,
-            computeQueueFamilyIndex
-        );
-    }
-
     vkGetDeviceQueue(LogicalDevice, graphicsQueueFamilyIndex, 0, (VkQueue*)&graphicsQueue);
     vkGetDeviceQueue(LogicalDevice, computeQueueFamilyIndex, 0, (VkQueue*)&presentQueue);
 
@@ -227,26 +191,6 @@ void VulkanContext::SelectGPU_CreateDevice()
     vkSetDebugUtilsObjectNameEXT = (PFN_vkSetDebugUtilsObjectNameEXT)vkGetDeviceProcAddr(LogicalDevice, "vkSetDebugUtilsObjectNameEXT");
     vkCmdBeginDebugUtilsLabelEXT = (PFN_vkCmdBeginDebugUtilsLabelEXT)vkGetDeviceProcAddr(LogicalDevice, "vkCmdBeginDebugUtilsLabelEXT");
     vkCmdEndDebugUtilsLabelEXT = (PFN_vkCmdEndDebugUtilsLabelEXT)vkGetDeviceProcAddr(LogicalDevice, "vkCmdEndDebugUtilsLabelEXT");
-
-    HMODULE slModule = GetModuleHandleA("sl.interposer.dll");
-    if (slModule)
-    {
-        PFN_vkGetDeviceProcAddr slGetDeviceProcAddr = (PFN_vkGetDeviceProcAddr)GetProcAddress(slModule, "vkGetDeviceProcAddr");
-        if (slGetDeviceProcAddr)
-        {
-            slQueuePresent = (PFN_vkQueuePresentKHR)slGetDeviceProcAddr(LogicalDevice, "vkQueuePresentKHR");
-            slAcquireNextImage = (PFN_vkAcquireNextImageKHR)slGetDeviceProcAddr(LogicalDevice, "vkAcquireNextImageKHR");
-            std::cout << "Streamline Hooks Loaded Successfully." << std::endl;
-        }
-        else
-        {
-            std::cerr << "[Error] Could not find vkGetDeviceProcAddr in sl.interposer.dll" << std::endl;
-        }
-    }
-    else
-    {
-        std::cerr << "[Error] sl.interposer.dll is not loaded!" << std::endl;
-    }
 
 
     vk::PhysicalDeviceAccelerationStructurePropertiesKHR AccelerationStructureProperties{};

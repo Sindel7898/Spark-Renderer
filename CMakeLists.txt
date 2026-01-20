@@ -10,6 +10,9 @@ if(MSVC)
     add_compile_options(/MP)
 endif()
 
+# --- 1. Define DLSS Path ---
+set(DLSS_DIR ${CMAKE_SOURCE_DIR}/External/DLSS)
+
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/External/imgui)
 set(ImGuizmo_DIR ${CMAKE_SOURCE_DIR}/External/ImGuizmo)
 
@@ -41,9 +44,10 @@ add_subdirectory(External/tracy)
 add_subdirectory(External/fastgltf)
 add_subdirectory(External/meshoptimizer)
 
-set(STREAMLINE_FEATURE_DLSS_SR ON CACHE BOOL "" FORCE)
-set(STREAMLINE_FEATURE_DLSS_RR ON CACHE BOOL "" FORCE)
-add_subdirectory(External/Streamline-SDK)
+# --- REMOVE OR COMMENT OUT STREAMLINE ---
+# set(STREAMLINE_FEATURE_DLSS_SR ON CACHE BOOL "" FORCE)
+# set(STREAMLINE_FEATURE_DLSS_RR ON CACHE BOOL "" FORCE)
+# add_subdirectory(External/Streamline-SDK)
 
 find_package(Vulkan REQUIRED)
 
@@ -73,14 +77,22 @@ target_include_directories(Spark PRIVATE
     ${Vulkan_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/External/glfw/include
     ${CMAKE_SOURCE_DIR}/External/tracy/public/tracy
-    ${CMAKE_SOURCE_DIR}/External/Streamline-SDK/include
+    # --- 2. Add DLSS Include Directory ---
+    ${DLSS_DIR}/include
 )
 
 target_compile_definitions(Spark PRIVATE 
     TRACY_ENABLE
     VK_USE_PLATFORM_WIN32_KHR 
     NOMINMAX
+    # Optional: Add NGX definition if your code uses it to wrap headers
+    # NGX_ENABLE
 )
+
+# --- 3. Locate DLSS Static Library ---
+# Note: Standard NGX SDK path is usually lib/Windows_x86_64/x64/nvsdk_ngx_s.lib
+# If you moved the lib file directly to 'External/DLSS/lib', remove the middle folders below.
+set(DLSS_LIB ${DLSS_DIR}/lib/Windows_x86_64/x64/nvsdk_ngx_s.lib)
 
 target_link_libraries(Spark PRIVATE 
     glfw 
@@ -90,5 +102,19 @@ target_link_libraries(Spark PRIVATE
     fastgltf
     meshoptimizer
     Vulkan::Vulkan
-    streamline
+    # --- 4. Link DLSS ---
+    ${DLSS_LIB}
+)
+
+# --- 5. Copy DLSS DLLs to Output Directory ---
+# We copy from the 'dev' folder so you get the Debug Overlay and logging.
+# Switch 'dev' to 'rel' (release) when shipping the game.
+add_custom_command(TARGET Spark POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${DLSS_DIR}/lib/Windows_x86_64/dev/nvngx_dlss.dll"
+    $<TARGET_FILE_DIR:Spark>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${DLSS_DIR}/lib/Windows_x86_64/dev/nvngx_dlssd.dll"
+    $<TARGET_FILE_DIR:Spark>
+    COMMENT "Copying DLSS (SR & RR) DLLs to output directory"
 )
