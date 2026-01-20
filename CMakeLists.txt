@@ -44,11 +44,6 @@ add_subdirectory(External/tracy)
 add_subdirectory(External/fastgltf)
 add_subdirectory(External/meshoptimizer)
 
-# --- REMOVE OR COMMENT OUT STREAMLINE ---
-# set(STREAMLINE_FEATURE_DLSS_SR ON CACHE BOOL "" FORCE)
-# set(STREAMLINE_FEATURE_DLSS_RR ON CACHE BOOL "" FORCE)
-# add_subdirectory(External/Streamline-SDK)
-
 find_package(Vulkan REQUIRED)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "Source/*.cpp" "Source/*.c")
@@ -77,22 +72,16 @@ target_include_directories(Spark PRIVATE
     ${Vulkan_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/External/glfw/include
     ${CMAKE_SOURCE_DIR}/External/tracy/public/tracy
-    # --- 2. Add DLSS Include Directory ---
     ${DLSS_DIR}/include
 )
 
 target_compile_definitions(Spark PRIVATE 
     TRACY_ENABLE
-    VK_USE_PLATFORM_WIN32_KHR 
     NOMINMAX
-    # Optional: Add NGX definition if your code uses it to wrap headers
-    # NGX_ENABLE
 )
 
-# --- 3. Locate DLSS Static Library ---
-# Note: Standard NGX SDK path is usually lib/Windows_x86_64/x64/nvsdk_ngx_s.lib
-# If you moved the lib file directly to 'External/DLSS/lib', remove the middle folders below.
-set(DLSS_LIB ${DLSS_DIR}/lib/Windows_x86_64/x64/nvsdk_ngx_s.lib)
+
+set(DLSS_LIB_DIR ${DLSS_DIR}/lib/Windows_x86_64/x64)
 
 target_link_libraries(Spark PRIVATE 
     glfw 
@@ -102,13 +91,11 @@ target_link_libraries(Spark PRIVATE
     fastgltf
     meshoptimizer
     Vulkan::Vulkan
-    # --- 4. Link DLSS ---
-    ${DLSS_LIB}
+    debug     "${DLSS_LIB_DIR}/nvsdk_ngx_d_dbg.lib"
+    optimized "${DLSS_LIB_DIR}/nvsdk_ngx_d.lib"
 )
 
-# --- 5. Copy DLSS DLLs to Output Directory ---
-# We copy from the 'dev' folder so you get the Debug Overlay and logging.
-# Switch 'dev' to 'rel' (release) when shipping the game.
+
 add_custom_command(TARGET Spark POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     "${DLSS_DIR}/lib/Windows_x86_64/dev/nvngx_dlss.dll"

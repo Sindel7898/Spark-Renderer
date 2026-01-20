@@ -74,7 +74,10 @@ void VulkanContext::SelectGPU_CreateDevice()
         VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME
     };
 
- 
+    std::vector<const char*> dInstanceExtensions;
+
+	DLSS_IntergrationRef->requiredExtensions(dInstanceExtensions, deviceExtensions);
+
     vkb::PhysicalDeviceSelector selector{ VKB_Instance };
 
     auto physicalDeviceResult = selector

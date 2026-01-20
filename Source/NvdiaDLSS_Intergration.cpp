@@ -4,66 +4,89 @@
 #include "structs.h"
 #include"BufferManager.h"
 #include"VulkanContext.h"
+#include <iostream> 
 
-void NvdiaDLSS_Intergration::init(int currentWidth, int currentHeight, float upScaleFactor) {
+static void NVSDK_CONV LogCallback(const char* message, NVSDK_NGX_Logging_Level loggingLevel, NVSDK_NGX_Feature sourceComponent)
+{
+    // You can filter by level here if needed (e.g., only show errors)
+    std::cout << "[DLSS Output] " << message << std::endl;
+}
 
-    UpScaleFactor = upScaleFactor;
-    NVSDK_NGX_PerfQuality_Value dlssQuality = NVSDK_NGX_PerfQuality_Value_MaxQuality;
+void NvdiaDLSS_Intergration::initializePointers(BufferManager* bufferManager, VulkanContext* vulkanContext, Camera* camera)
+{
+    m_bufferManager = bufferManager;
+    m_vulkanContext = vulkanContext;
+    m_camera = camera;
 
-    uint32_t optimalRenderWidth, optimalRenderHeight;
-    float recommendedSharpness;
+    m_instance = m_vulkanContext->VulkanInstance;
+    m_physicalDevice = m_vulkanContext->PhysicalDevice;
+    m_device = m_vulkanContext->LogicalDevice;
 
-    uint32_t minRenderWidth, minRenderHeight;
-    uint32_t maxRenderWidth, maxRenderHeight;
+    NVSDK_NGX_Application_Identifier appId{};
+    appId.IdentifierType = NVSDK_NGX_Application_Identifier_Type_Application_Id;
+    appId.v.ProjectDesc.EngineType = NVSDK_NGX_ENGINE_TYPE_CUSTOM;
+    appId.v.ProjectDesc.ProjectId = "DLSSIntegration";
+    appId.v.ProjectDesc.EngineVersion = "1.0.0";
 
-    NVSDK_NGX_Result result = NGX_DLSS_GET_OPTIMAL_SETTINGS(
-        paramsDLSS_, currentWidth, currentHeight, dlssQuality, &optimalRenderWidth,
-        &optimalRenderHeight, &minRenderWidth, &minRenderHeight, &maxRenderWidth,
-        &maxRenderHeight, &recommendedSharpness);
+    NVSDK_NGX_FeatureCommonInfo commonInfo = {};
+    commonInfo.LoggingInfo.LoggingCallback = LogCallback;
+    commonInfo.LoggingInfo.MinimumLoggingLevel = NVSDK_NGX_LOGGING_LEVEL_VERBOSE;
+    commonInfo.LoggingInfo.DisableOtherLoggingSinks = false;
+
+    NVSDK_NGX_Result initResult = NVSDK_NGX_VULKAN_Init(
+        appId.v.ApplicationId,
+        L".",
+        m_instance,
+        m_physicalDevice,
+        m_device,
+        nullptr,
+        nullptr,
+        &commonInfo
+    );
+
+    if (NVSDK_NGX_FAILED(initResult)) {
+        throw std::runtime_error("Failed to initialize NVSDK NGX");
+    }
+
+    NVSDK_NGX_Result capResult = NVSDK_NGX_VULKAN_GetCapabilityParameters(&paramsDLSS_);
+    if (NVSDK_NGX_FAILED(capResult)) {
+        throw std::runtime_error("Failed to get NGX capability parameters");
+    }
+}
+
+void NvdiaDLSS_Intergration::init(vk::CommandPool commandPool) {
+
+    uint32_t displayWidth = m_vulkanContext->swapchainExtent.width;
+    uint32_t displayHeight = m_vulkanContext->swapchainExtent.height;
+
+    uint32_t renderWidth = displayWidth;
+    uint32_t renderHeight = displayHeight;
+
+    NVSDK_NGX_PerfQuality_Value dlssQuality = NVSDK_NGX_PerfQuality_Value_DLAA;
+
+    int dlssAvailable = 0;
+    paramsDLSS_->Get(NVSDK_NGX_Parameter_SuperSampling_Available, &dlssAvailable);
+    if (!dlssAvailable) {
+        throw std::runtime_error("DLSS not available on this hardware/driver.");
+    }
 
     int dlssCreateFeatureFlags = NVSDK_NGX_DLSS_Feature_Flags_None;
-
-    // Motion vectors are typically calculated at the same resolution as the input color
-    // frame (i.e. at the render resolution). If the rendering engine supports calculating
-    // motion vectors at the display / output resolution and dilating the motion vectors,
-    // DLSS can accept those by setting the flag to "0". This is preferred, though uncommon,
-    // and can result in higher quality antialiasing of moving objects and less blurring of
-    // small objects and thin details. For clarity, if standard input resolution motion
-    // vectors are sent they do not need to be dilated, DLSS dilates them internally. If
-    // display resolution motion vectors are sent, they must be dilated.
     dlssCreateFeatureFlags |= NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
-
-    // Set this flag to "1" when the motion vectors do include sub-pixel jitter. DLSS then
-    // internally subtracts jitter from the motion vectors using the jitter offset values
-    // that are provided during the Evaluate call. When set to "0", DLSS uses the motion
-    // vectors directly without any adjustment.
-    // dlssCreateFeatureFlags |=
-    //    motionVectorsAreJittered ? NVSDK_NGX_DLSS_Feature_Flags_MVJittered : 0;
-
-    /*dlssCreateFeatureFlags |= isHDR ? NVSDK_NGX_DLSS_Feature_Flags_IsHDR : 0;*/
-
-    // require in case of inverse z
-    // dlssCreateFeatureFlags |= inverseZ ? NVSDK_NGX_DLSS_Feature_Flags_DepthInverted : 0;
-
     dlssCreateFeatureFlags |= NVSDK_NGX_DLSS_Feature_Flags_DoSharpening;
-
-    // We don't use auto-exposure, for now.
-    // dlssCreateFeatureFlags |= enableAutoExposure ?
-    // NVSDK_NGX_DLSS_Feature_Flags_AutoExposure : 0;
+    dlssCreateFeatureFlags |= NVSDK_NGX_DLSS_Feature_Flags_IsHDR;
 
     NVSDK_NGX_DLSS_Create_Params dlssCreateParams{
-        .Feature =
-            {
-                .InWidth = (unsigned int)(currentWidth),
-                .InHeight = (unsigned int)(currentHeight),
-                .InTargetWidth = (unsigned int)(currentWidth * upScaleFactor),
-                .InTargetHeight = (unsigned int)(currentHeight * upScaleFactor),
-                .InPerfQualityValue = NVSDK_NGX_PerfQuality_Value_MaxQuality,
-            },
+        .Feature = {
+            .InWidth = renderWidth,
+            .InHeight = renderHeight,
+            .InTargetWidth = displayWidth,  
+            .InTargetHeight = displayHeight,
+            .InPerfQualityValue = dlssQuality,
+        },
         .InFeatureCreateFlags = dlssCreateFeatureFlags,
     };
 
-    auto commmandBuffer = m_bufferManager->CreateSingleUseCommandBuffer(m_commandPool);
+    auto commmandBuffer = m_bufferManager->CreateSingleUseCommandBuffer(commandPool);
 
     constexpr unsigned int creationNodeMask = 1;
     constexpr unsigned int visibilityNodeMask = 1;
@@ -77,37 +100,35 @@ void NvdiaDLSS_Intergration::init(int currentWidth, int currentHeight, float upS
         throw std::runtime_error("Failed to create NVSDK NGX DLSS feature");
     }
 
-    m_bufferManager->SubmitAndDestoyCommandBuffer(m_commandPool, commmandBuffer, m_vulkanContext->graphicsQueue);
+    m_bufferManager->SubmitAndDestoyCommandBuffer(commandPool, commmandBuffer, m_vulkanContext->graphicsQueue);
 }
 
-void NvdiaDLSS_Intergration::render(VkCommandBuffer commandBuffer, VulkanCore::Texture& inColorTexture,
-
-    VulkanCore::Texture& inDepthTexture,
-    VulkanCore::Texture& inMotionVectorTexture,
-    VulkanCore::Texture& outColorTexture, glm::vec2 cameraJitter) 
+void NvdiaDLSS_Intergration::render(VkCommandBuffer commandBuffer, ImageData InImage,
+                                                                   GBuffer   inColorTexture,
+                                                                   ImageData inDepthTexture,
+                                                                   ImageData OutImage) 
 {
+
     NVSDK_NGX_Resource_VK inColorResource = NVSDK_NGX_Create_ImageView_Resource_VK(
-        inColorTexture.vkImageView(), inColorTexture.vkImage(),
+        InImage.imageView, InImage.image,
         { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_FORMAT_UNDEFINED,
-        inColorTexture.vkExtents().width, inColorTexture.vkExtents().height, true);
+        m_vulkanContext->swapchainExtent.width, m_vulkanContext->swapchainExtent.height, true);
 
     NVSDK_NGX_Resource_VK outColorResource = NVSDK_NGX_Create_ImageView_Resource_VK(
-        outColorTexture.vkImageView(), outColorTexture.vkImage(),
+        OutImage.imageView, OutImage.image,
         { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_FORMAT_UNDEFINED,
-        outColorTexture.vkExtents().width, outColorTexture.vkExtents().height, true);
+        m_vulkanContext->swapchainExtent.width, m_vulkanContext->swapchainExtent.height, true);
 
     NVSDK_NGX_Resource_VK depthResource = NVSDK_NGX_Create_ImageView_Resource_VK(
-        inDepthTexture.vkImageView(), inDepthTexture.vkImage(),
+        inDepthTexture.imageView, inDepthTexture.image,
         { VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1 }, VK_FORMAT_UNDEFINED,
-        inDepthTexture.vkExtents().width, inDepthTexture.vkExtents().height, true);
+        m_vulkanContext->swapchainExtent.width, m_vulkanContext->swapchainExtent.height, true);
+
 
     NVSDK_NGX_Resource_VK motionVectorResource = NVSDK_NGX_Create_ImageView_Resource_VK(
-        inMotionVectorTexture.vkImageView(), inMotionVectorTexture.vkImage(),
+        inColorTexture.MotionVector.imageView, inColorTexture.MotionVector.image,
         { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_FORMAT_UNDEFINED,
-        inMotionVectorTexture.vkExtents().width, inMotionVectorTexture.vkExtents().height,
-        true);
-
-    outColorTexture.transitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_GENERAL);
+        m_vulkanContext->swapchainExtent.width, m_vulkanContext->swapchainExtent.height, true);
 
     NVSDK_NGX_VK_DLSS_Eval_Params evalParams = {
         .Feature =
@@ -118,12 +139,12 @@ void NvdiaDLSS_Intergration::render(VkCommandBuffer commandBuffer, VulkanCore::T
             },
         .pInDepth = &depthResource,
         .pInMotionVectors = &motionVectorResource,
-        .InJitterOffsetX = cameraJitter.x,
-        .InJitterOffsetY = cameraJitter.y,
+        .InJitterOffsetX = m_camera->GetjitterInPixelSpace().x,
+        .InJitterOffsetY = m_camera->GetjitterInPixelSpace().y,
         .InRenderSubrectDimensions =
             {
-                .Width = static_cast<unsigned int>(inColorTexture.vkExtents().width),
-                .Height = static_cast<unsigned int>(inColorTexture.vkExtents().height),
+                .Width  = static_cast<unsigned int>(m_vulkanContext->swapchainExtent.width),
+                .Height = static_cast<unsigned int>(m_vulkanContext->swapchainExtent.height),
             },
         .InReset = 0,
         .InMVScaleX = -1.0f * inColorResource.Resource.ImageViewInfo.Width,
@@ -134,51 +155,58 @@ void NvdiaDLSS_Intergration::render(VkCommandBuffer commandBuffer, VulkanCore::T
     NVSDK_NGX_Result result = NGX_VULKAN_EVALUATE_DLSS_EXT(
         commandBuffer, dlssFeatureHandle_, paramsDLSS_, &evalParams);
 
-    ASSERT(result == NVSDK_NGX_Result_Success, "Failed to evaluate DLSS feature");
 
-    if (result != NVSDK_NGX_Result_Success) {
-        auto store = GetNGXResultAsString(result);
-    }
-
-    outColorTexture.transitionImageLayout(commandBuffer,
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+   if (result != NVSDK_NGX_Result_Success) {
+       auto store = GetNGXResultAsString(result);
+       throw std::runtime_error("DLSS Evaluation Failed");
+   }
 }
 
 
 
-void NvdiaDLSS_Intergration::requiredExtensions(std::vector<std::string>& instanceExtensions,std::vector<std::string>& deviceExtensions) 
+void NvdiaDLSS_Intergration::requiredExtensions(std::vector<const char*>& instanceExtensions, std::vector<const char*>& deviceExtensions)
 {
-     unsigned int instanceExtCount;
-     const char** instanceExt;
+    unsigned int instanceExtCount;
+    const char** instanceExt;
+    unsigned int deviceExtCount;
+    const char** deviceExt;
 
-     unsigned int deviceExtCount;
-     const char** deviceExt;
+    NVSDK_NGX_Result result = NVSDK_NGX_VULKAN_RequiredExtensions(
+        &instanceExtCount, &instanceExt, &deviceExtCount, &deviceExt);
 
-     auto result = NVSDK_NGX_VULKAN_RequiredExtensions(&instanceExtCount, &instanceExt,
-                                                       &deviceExtCount  , &deviceExt);
-
-    if (result != NVSDK_NGX_Result_Success) {
-        throw std::runtime_error("Failed to Find Requiered Extensions for DLSS");
-
-        return;
+    if (NVSDK_NGX_FAILED(result)) {
+        throw std::runtime_error("Failed to Find Required Extensions for DLSS");
     }
 
-    for (int i = 0; i < instanceExtCount; ++i) {
+    // Add Instance Extensions
+    for (unsigned int i = 0; i < instanceExtCount; ++i) {
+        // Check for duplicates before adding
+        bool found = false;
+        for (const auto& existing : instanceExtensions) {
+            if (strcmp(existing, instanceExt[i]) == 0) found = true;
+        }
+        if (!found) instanceExtensions.push_back(instanceExt[i]);
+    }
 
-        if (std::find(instanceExtensions.begin(), instanceExtensions.end(), instanceExt[i]) == instanceExtensions.end()) {
-            instanceExtensions.push_back(instanceExt[i]);
+    // Add Device Extensions
+    for (unsigned int i = 0; i < deviceExtCount; ++i) {
+        std::string extName = deviceExt[i];
+
+        // Vulkan 1.2+ promotes BufferDeviceAddress to core. 
+        // Requesting the EXT extension on a 1.3 instance can cause failure if the driver 
+        // doesn't explicitly list the EXT string (even if the feature works).
+        if (extName == "VK_EXT_buffer_device_address") {
+            continue;
         }
 
-    }
-    for (int i = 0; i < deviceExtCount; ++i) {
+        // Check for duplicates
+        bool found = false;
+        for (const auto& existing : deviceExtensions) {
+            if (strcmp(existing, deviceExt[i]) == 0) found = true;
+        }
 
-        if (std::find(deviceExtensions.begin(), deviceExtensions.end(), deviceExt[i]) == deviceExtensions.end()) {
-            
+        if (!found) {
             deviceExtensions.push_back(deviceExt[i]);
-            
-            if (deviceExtensions.back() == "VK_EXT_buffer_device_address") {  // we are using 1.3, this extension has been
-                deviceExtensions.pop_back();
-            }
         }
     }
 }
@@ -186,5 +214,6 @@ void NvdiaDLSS_Intergration::requiredExtensions(std::vector<std::string>& instan
 
 void NvdiaDLSS_Intergration::CleanUp()
 {
-
+    NVSDK_NGX_VULKAN_DestroyParameters(paramsDLSS_);
+    NVSDK_NGX_VULKAN_Shutdown1(nullptr);
 }

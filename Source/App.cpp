@@ -28,12 +28,16 @@
 #define DBG_NEW new (_NORMAL_BLOCK, __FILE__, __LINE__)
 
 
-App::App() : window(1920, 1080, "Spark Renderer"),
-vulkanContext(window, DLSS_Intergration),
-bufferManger(&vulkanContext),
-camera(vulkanContext.swapchainExtent.width, vulkanContext.swapchainExtent.height, window.GetWindow()),
-userinterface(&vulkanContext, &window, &bufferManger), pipelineManager(&vulkanContext)
+App::App() : window(1920, 1080, "Spark Renderer")          
+, DLSS_Intergration()                            
+, vulkanContext(window, DLSS_Intergration)       
+, bufferManger(&vulkanContext)                   
+, camera(vulkanContext.swapchainExtent.width, vulkanContext.swapchainExtent.height, window.GetWindow())
+, userinterface(&vulkanContext, &window, &bufferManger)
+, pipelineManager(&vulkanContext)
 {
+	DLSS_Intergration.initializePointers(&bufferManger, &vulkanContext, &camera);
+
 	glfwSetWindowUserPointer(window.GetWindow(), this);
 
 	createSyncObjects();
@@ -66,6 +70,7 @@ userinterface(&vulkanContext, &window, &bufferManger), pipelineManager(&vulkanCo
 
 	recreateSwapChain();
 	CreateDebugUtils();
+
 }
 
 void App::LoadAllObjects()
@@ -2063,45 +2068,30 @@ void App::Draw()
 {
 
 	vulkanContext.LogicalDevice.waitForFences(1, &waitFences[currentFrame], vk::True, UINT64_MAX);
+	vulkanContext.LogicalDevice.resetFences(1, &waitFences[currentFrame]);
 
+	// --- Swapchain Acquisition ---
 	uint32_t imageIndex;
 	try {
-		VkResult result = vulkanContext.slAcquireNextImage(
-			(VkDevice)vulkanContext.LogicalDevice,
-			(VkSwapchainKHR)vulkanContext.swapChain,
+		// Request the next available swapchain image.
+		// presentCompleteSemaphores[currentFrame] will be signaled when the image is ready.
+		vulkanContext.LogicalDevice.acquireNextImageKHR(
+			vulkanContext.swapChain,
 			UINT64_MAX,
-			(VkSemaphore)presentCompleteSemaphores[currentFrame],
-			VK_NULL_HANDLE,
+			presentCompleteSemaphores[currentFrame],
+			nullptr,
 			&imageIndex
 		);
-
-		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-			ImGui::EndFrame();
-			recreateSwapChain();
-			return;
-		}
-		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-			throw std::runtime_error("Failed to acquire swapchain image");
-		}
 	}
 	catch (const std::exception& e) {
 		std::cerr << "Exception: " << e.what() << std::endl;
+		std::cerr << "Attempting to recreate swap chain..." << std::endl;
 		recreateSwapChain();
 		framebufferResized = false;
 		return;
 	}
 
-	vulkanContext.LogicalDevice.resetFences(1, &waitFences[currentFrame]);
-
-	vulkanContext.DLSS_IntergrationRef->PrepareDLSS(
-		commandBuffers[currentFrame],
-		currentFrame, 
-		camera,
-		vk::Extent3D{ vulkanContext.swapchainExtent.width, vulkanContext.swapchainExtent.height, 1 }
-	);
-
 	updateUniformBuffer(currentFrame);
-
 	recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
 	vk::Semaphore waitSemaphores[] = { presentCompleteSemaphores[currentFrame] };
@@ -2134,18 +2124,20 @@ void App::Draw()
 	presentInfo.pSwapchains = swapchains;
 	presentInfo.pImageIndices = &imageIndex;
 
-	// Call the hooked function pointer
-	VkResult result = vulkanContext.slQueuePresent((VkQueue)vulkanContext.presentQueue, &presentInfo);
+	try {
+		vk::Result result = vulkanContext.presentQueue.presentKHR(presentInfo);
 
-	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
-		framebufferResized = false;
-		recreateSwapChain();
 	}
-	else if (result != VK_SUCCESS) {
-		throw std::runtime_error("failed to present swap chain image!");
+	catch (const vk::OutOfDateKHRError& e) {
+		std::cerr << "Exception: " << e.what() << std::endl;
+		std::cerr << "Attempting to recreate swap chain..." << std::endl;
+		recreateSwapChain();
+		framebufferResized = false;
 	}
 
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+	ImGui::EndFrame();
+
 }
 
 void App::updateUniformBuffer(uint32_t currentImage) {
@@ -2993,22 +2985,6 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			commandBuffer.endRendering();
 		}
 
-		{
-		
-			vk::Extent3D Screensize = {
-				vulkanContext.swapchainExtent.width,
-				vulkanContext.swapchainExtent.height,
-				1
-			};
-		
-			vulkanContext.DLSS_IntergrationRef->TagAndEvaluate(commandBuffer,
-				DepthTextureData,
-				gbuffer.MotionVector,
-				Combined_FullScreenQuad->Combined_Lighting_Image,
-				Combined_FullScreenQuad->Combined_Lighting_Image,
-				Combined_FullScreenQuad->Final_Denoised_Image,
-				Screensize, Screensize);
-		}
 
 		{
 
@@ -3101,6 +3077,35 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 
 			dynamicDiffuse_RTGI->Draw(commandBuffer, DDGIProbepipelineLayout, currentFrame);
 			commandBuffer.endRendering();
+		}
+
+		{
+			
+			vulkanContext.DLSS_IntergrationRef->render(commandBuffer,
+				Combined_FullScreenQuad->Combined_Lighting_Image,
+				gbuffer,
+				DepthTextureData,
+				Combined_FullScreenQuad->Final_Denoised_Image);
+			
+			vk::ImageMemoryBarrier dlssBarrier{};
+			dlssBarrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite; 
+			dlssBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;  
+			dlssBarrier.oldLayout = vk::ImageLayout::eGeneral;            
+			dlssBarrier.newLayout = vk::ImageLayout::eGeneral;
+			dlssBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			dlssBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			dlssBarrier.image = Combined_FullScreenQuad->Final_Denoised_Image.image;
+			dlssBarrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
+
+			commandBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eComputeShader | vk::PipelineStageFlagBits::eRayTracingShaderKHR,
+				vk::PipelineStageFlagBits::eAllCommands | vk::PipelineStageFlagBits::eAllGraphics,
+				{},
+				0, nullptr,
+				0, nullptr,
+				1, & dlssBarrier
+			);
+
 		}
 
 		/////////////////// FORWARD PASS END ///////////////////////// 
@@ -3239,7 +3244,7 @@ void App::recreateSwapChain() {
 	camera.SetSwapchainWidth(vulkanContext.swapchainExtent.width);
 	createDepthTextureImage();
 	createGBuffer();
-
+	vulkanContext.DLSS_IntergrationRef->init(commandPool);
 }
 
 void App::recreatePipeline()

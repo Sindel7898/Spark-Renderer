@@ -151,7 +151,7 @@ public:
 	std::vector<Drawable*> UserInterfaceItems;
 
 private:
-
+	NvdiaDLSS_Intergration DLSS_Intergration;
 	Window          window;
 	VulkanContext   vulkanContext;
 	BufferManager   bufferManger;
@@ -280,8 +280,6 @@ private:
 	vk::DebugUtilsLabelEXT DDGI_Update_Probe_Status_Label;
 	vk::DebugUtilsLabelEXT DDGI_Sample_From_PorbeLabel;
 	vk::DebugUtilsLabelEXT ReSTIR_Label;
-
-	NvdiaDLSS_Intergration DLSS_Intergration;
 	///Tracy
 	//TracyVkCtx tracyVkContext;
 };

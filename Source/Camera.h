@@ -16,12 +16,19 @@ public:
     // Update camera matrices (to be called every frame)
     void Update(float deltaTime);
     void UpdateJitter(float jitterX, float jitterY);
+    void updateJitterMat(uint32_t frameIndex, int numSamples, int width, int height);
+
     // Getters for the view and projection matrices
     const glm::mat4& GetViewMatrix() const;
     const glm::mat4& GetPrevViewMatrix() const;
     const glm::mat4& GetProjectionMatrix() const;
     const glm::mat4& GetPrevProjectionMatrix() const;
     const glm::mat4& GetJitteredProjectionMatrix() const { return jitteredProjectionMatrix; }
+    const glm::mat4 GetjitterMat() const { return jitterMat_; }
+    const glm::vec2 GetjitterInPixelSpace() const { return jitterVal_; }
+    const glm::vec2 GetjitterInNDCSpace() const {return glm::vec2(jitterMat_[2][0], jitterMat_[2][1]);}
+
+
     // Get camera properties
     const glm::vec3& GetPosition() const;
     const glm::vec3& GetForward() const;
@@ -40,6 +47,7 @@ public:
     void SetPosition(const glm::vec3& newPosition);
     void SetRotation(float newYaw, float newPitch);
     void OnFrameStart();
+
     glm::vec3 position;
     float pitch;
     float yaw;
@@ -86,4 +94,10 @@ private:
     double lastMouseX;
     double lastMouseY;
     bool firstMouse;
+
+
+    glm::mat4 jitterMat_{ 1.0f };
+    glm::vec2 jitterVal_;
+
+	int frameIndex = 0;
 };

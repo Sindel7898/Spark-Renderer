@@ -102,6 +102,7 @@ void Camera::Update(float deltaTime) {
         UpdateViewMatrix();
     }
 
+	updateJitterMat(frameIndex, 8, swapchainWidth, swapchainHeight);
 }
 
 void Camera::UpdateCameraVectors() {
@@ -222,4 +223,32 @@ void Camera::SetRotation(float newYaw, float newPitch) {
 void Camera::OnFrameStart() {
     Prev_viewMatrix = viewMatrix;
     Prev_projectionMatrix = projectionMatrix;
+}
+
+
+static float VanDerCorputGenerator(size_t base, size_t index) {
+    float ret = 0.0f;
+    float denominator = float(base);
+    while (index > 0) {
+        size_t multiplier = index % base;
+        ret += float(multiplier) / denominator;
+        index = index / base;
+        denominator *= base;
+    }
+    return ret;
+}
+
+void Camera::updateJitterMat(uint32_t frameIndex, int numSamples, int width, int height) {
+    uint32_t index = (frameIndex % numSamples) + 1;
+    auto x = VanDerCorputGenerator(2, index) - 0.5f;
+    auto y = VanDerCorputGenerator(3, index) - 0.5f;
+
+    float uvOffsetX = float(x) / width;
+    float uvOffsetY = float(y) / height;
+    float ndcOffsetX = uvOffsetX * 2.0f;
+    float ndcOffsetY = uvOffsetY * 2.0f;
+
+    jitterMat_[2][0] = ndcOffsetX;
+    jitterMat_[2][1] = ndcOffsetY;
+    jitterVal_ = glm::vec2(x, y);
 }
