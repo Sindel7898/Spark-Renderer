@@ -44,6 +44,7 @@ public:
 	vk::Queue                  graphicsQueue;
 	vk::Queue                  presentQueue;
 	uint32_t                   graphicsQueueFamilyIndex;
+	uint32_t                   computeQueueFamilyIndex;
 
 	vk::Format                 swapchainformat;
 	vk::Extent2D               swapchainExtent = { 0, 0 };

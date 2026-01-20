@@ -23,6 +23,9 @@
 #include <sl_dlss.h>
 #include <sl_dlss_d.h>
 #include <sl_helpers_vk.h> // REQUIRED for sl::VulkanInfo
+#include "nvsdk_ngx_vk.h"
+#include "nvsdk_ngx_helpers_vk.h"
+#include "nvsdk_ngx_helpers_dlssd.h"
 
 #include "NvdiaDLSS_Intergration.h"
 #include "Camera.h" 
@@ -48,7 +51,7 @@ void NvdiaDLSS_Intergration::InitDLSS()
         return;
     }
 
-    sl_vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)GetProcAddress(mod, "vkGetInstanceProcAddr");
+   // sl_vkGetInstanceProcAddr = (PFN_vkGetInstanceProcAddr)GetProcAddress(mod, "vkGetInstanceProcAddr");
 
     sl::Preferences pref{};
     pref.flags |= sl::PreferenceFlags::eUseManualHooking;
@@ -57,9 +60,9 @@ void NvdiaDLSS_Intergration::InitDLSS()
     pref.engine = sl::EngineType::eCustom;
     pref.engineVersion = "1.0.0";
 	pref.showConsole = true;
-	pref.logLevel = sl::LogLevel::eOff;
+	pref.logLevel = sl::LogLevel::eDefault;
     pref.logMessageCallback = LogCallback;
-    sl::Feature features[] = { sl::kFeatureDLSS, sl::kFeatureDLSS_RR };
+    sl::Feature features[] = { sl::kFeatureDLSS };
     pref.featuresToLoad = features;
     pref.numFeaturesToLoad = std::size(features);
     pref.renderAPI = sl::RenderAPI::eVulkan;
@@ -115,9 +118,7 @@ void NvdiaDLSS_Intergration::PrepareDLSS(vk::CommandBuffer cmd, uint32_t frameIn
     consts.cameraFOV = glm::radians(cam.GetFOV()); // FOV in radians
     consts.cameraAspectRatio = (float)swapchainExtent.width / (float)swapchainExtent.height;
 
-    // Extract vectors from View Matrix if Camera doesn't have getters
-    // View Matrix: Row 0=Right, Row 1=Up, Row 2=Forward (depending on implementation)
-    // Safer to take Inverse View (Camera World) column vectors
+
     glm::mat4 invView = glm::inverse(view);
     glm::vec3 forward = -glm::vec3(invView[2]); // -Z is forward in OpenGL/Vulkan
     glm::vec3 up = glm::vec3(invView[1]);
@@ -132,7 +133,18 @@ void NvdiaDLSS_Intergration::PrepareDLSS(vk::CommandBuffer cmd, uint32_t frameIn
     consts.depthInverted = sl::Boolean::eTrue;
     consts.cameraMotionIncluded = sl::Boolean::eTrue;
     consts.motionVectors3D = sl::Boolean::eFalse;
-    consts.reset = sl::Boolean::eFalse;
+
+    if (m_lastSwapchainExtent.width != swapchainExtent.width ||
+        m_lastSwapchainExtent.height != swapchainExtent.height)
+    {
+        consts.reset = sl::Boolean::eTrue; 
+        m_lastSwapchainExtent = swapchainExtent; 
+    }
+    else
+    {
+        consts.reset = sl::Boolean::eFalse; 
+    }
+
 
     sl::ViewportHandle viewport = { 0 };
     slSetConstants(consts, *frameToken, viewport);
@@ -181,16 +193,22 @@ void NvdiaDLSS_Intergration::TagAndEvaluate(vk::CommandBuffer cmd, const ImageDa
 
     auto depthRes = CreateSLResource(depth, vk::ImageLayout::eDepthAttachmentOptimal);
     auto mvecRes = CreateSLResource(mvec, vk::ImageLayout::eGeneral);
-    auto diffRes = CreateSLResource(diffuseNoisy, vk::ImageLayout::eGeneral);
-    auto specRes = CreateSLResource(specularNoisy, vk::ImageLayout::eGeneral);
+    // Use the diffuse input as the main "Input Color" for standard DLSS
+    auto colorInRes = CreateSLResource(diffuseNoisy, vk::ImageLayout::eGeneral);
     auto outRes = CreateSLResource(outputColor, vk::ImageLayout::eGeneral);
 
     std::vector<sl::ResourceTag> tags;
+
+    // Standard DLSS Tags
     tags.push_back({ &depthRes, sl::kBufferTypeDepth, sl::ResourceLifecycle::eValidUntilPresent, &renderExt });
     tags.push_back({ &mvecRes, sl::kBufferTypeMotionVectors, sl::ResourceLifecycle::eValidUntilPresent, &renderExt });
-    tags.push_back({ &diffRes, sl::kBufferTypeScalingInputColor, sl::ResourceLifecycle::eValidUntilPresent, &renderExt });
-    tags.push_back({ &specRes, sl::kBufferTypeSpecularHitNoisy, sl::ResourceLifecycle::eValidUntilPresent, &renderExt });
+    tags.push_back({ &colorInRes, sl::kBufferTypeScalingInputColor, sl::ResourceLifecycle::eValidUntilPresent, &renderExt });
     tags.push_back({ &outRes , sl::kBufferTypeScalingOutputColor, sl::ResourceLifecycle::eValidUntilPresent, &displayExt });
+
+   //auto specRes = CreateSLResource(specularNoisy, vk::ImageLayout::eGeneral);
+   //tags.push_back({ &colorInRes, sl::kBufferTypeDiffuseHitNoisy, sl::ResourceLifecycle::eValidUntilPresent, &renderExt });
+   //tags.push_back({ &specRes, sl::kBufferTypeSpecularHitNoisy, sl::ResourceLifecycle::eValidUntilPresent, &renderExt });
+    
 
     if (slSetTagForFrame(*frameToken, viewport, tags.data(), (uint32_t)tags.size(), (void*)(VkCommandBuffer)cmd) != sl::Result::eOk) {
         std::cerr << "SL Tagging failed\n";

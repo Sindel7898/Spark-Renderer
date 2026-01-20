@@ -27,6 +27,7 @@ public:
 
     DLSSRequirements GetDLSSVulkanRequirements();
     PFN_vkQueuePresentKHR GetPresentProxy(vk::Device device);
+    vk::Extent3D m_lastSwapchainExtent = { 0, 0, 0 };
 };
 
 static inline void NvdiaDLSS_Deleter(NvdiaDLSS_Intergration* integration)

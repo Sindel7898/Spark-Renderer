@@ -379,7 +379,7 @@ vec3 IndirectRadiance = vec3(0.0);
            hitSurfaceData.metallic  = 0.0;
            hitSurfaceData.roughness = 1.0;
 
-      vec3 DirectLightAtSecondary =  GetLightRadiance(lights[1], CameraPos, hitSurfaceData, SecondaryViewDir, F, vec3(payload.Albedo / PI));
+      vec3 DirectLightAtSecondary =  GetLightRadiance(lights[lightIndex], CameraPos, hitSurfaceData, SecondaryViewDir, F, vec3(payload.Albedo / PI));
     
       vec3 TotalIncomingIrradiance = ((DirectLightAtSecondary) + HitIrradiance * (payload.Albedo / PI))  * surfaceData.albedo;
      

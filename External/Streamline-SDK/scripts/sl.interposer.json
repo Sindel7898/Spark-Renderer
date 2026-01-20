@@ -1,18 +1,19 @@
 {
+  "file": [
+    "sl.common.dll",
+    "sl.dlss.dll",
+    "sl.pcl.dll"
+  ],
   "enableInterposer": true,
   "useDXGIProxy": false,
   "loadAllFeatures": false,
-  // "loadSpecificFeatures": [0,1],
   "showConsole": true,
-  // Log levels are off, on, verbose
   "logLevel": 2,
   "logMessageDelayMs": 5000,
-  "waitForDebugger" : false,
+  "waitForDebugger": false,
   "vkValidation": false,
   "forceProxies": false,
   "forceNonNVDA": false,
-  "trackEngineAllocations" : false,
-  // To use, uncomment the following and set the appropriate paths
+  "trackEngineAllocations": false,
   "logPath": "C:/NGXLogs"
-  // "pathToPlugins": "N:/My/Plugin/Path"
 }

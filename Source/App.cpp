@@ -819,9 +819,8 @@ void App::createGBuffer()
 
 	bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd,vulkanContext.graphicsQueue);
 
-	
-	FinalRenderTextureId = ImGui_ImplVulkan_AddTexture(Combined_FullScreenQuad->Combined_Lighting_Image.imageSampler,
-		                                               Combined_FullScreenQuad->Combined_Lighting_Image.imageView,
+	FinalRenderTextureId = ImGui_ImplVulkan_AddTexture(Combined_FullScreenQuad->Final_Denoised_Image.imageSampler,
+		                                               Combined_FullScreenQuad->Final_Denoised_Image.imageView,
 		                                               VK_IMAGE_LAYOUT_GENERAL);
 
 
@@ -2994,22 +2993,22 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			commandBuffer.endRendering();
 		}
 
-		//{
-		//
-		//	vk::Extent3D Screensize = {
-		//		vulkanContext.swapchainExtent.width,
-		//		vulkanContext.swapchainExtent.height,
-		//		1
-		//	};
-		//
-		//	vulkanContext.DLSS_IntergrationRef->TagAndEvaluate(commandBuffer,
-		//		DepthTextureData,
-		//		gbuffer.MotionVector,
-		//		Combined_FullScreenQuad->Combined_Lighting_Image,
-		//		Combined_FullScreenQuad->Combined_Lighting_Image,
-		//		Combined_FullScreenQuad->Final_Denoised_Image,
-		//		Screensize, Screensize);
-		//}
+		{
+		
+			vk::Extent3D Screensize = {
+				vulkanContext.swapchainExtent.width,
+				vulkanContext.swapchainExtent.height,
+				1
+			};
+		
+			vulkanContext.DLSS_IntergrationRef->TagAndEvaluate(commandBuffer,
+				DepthTextureData,
+				gbuffer.MotionVector,
+				Combined_FullScreenQuad->Combined_Lighting_Image,
+				Combined_FullScreenQuad->Combined_Lighting_Image,
+				Combined_FullScreenQuad->Final_Denoised_Image,
+				Screensize, Screensize);
+		}
 
 		{
 
