@@ -30,7 +30,7 @@ void NvdiaDLSS_Intergration::initializePointers(BufferManager* bufferManager, Vu
 
     NVSDK_NGX_FeatureCommonInfo commonInfo = {};
     commonInfo.LoggingInfo.LoggingCallback = LogCallback;
-    commonInfo.LoggingInfo.MinimumLoggingLevel = NVSDK_NGX_LOGGING_LEVEL_VERBOSE;
+    commonInfo.LoggingInfo.MinimumLoggingLevel = NVSDK_NGX_LOGGING_LEVEL_OFF;
     commonInfo.LoggingInfo.DisableOtherLoggingSinks = false;
 
     NVSDK_NGX_Result initResult = NVSDK_NGX_VULKAN_Init(

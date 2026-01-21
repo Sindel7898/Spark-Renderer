@@ -824,8 +824,8 @@ void App::createGBuffer()
 
 	bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd,vulkanContext.graphicsQueue);
 
-	FinalRenderTextureId = ImGui_ImplVulkan_AddTexture(Combined_FullScreenQuad->Final_Denoised_Image.imageSampler,
-		                                               Combined_FullScreenQuad->Final_Denoised_Image.imageView,
+	FinalRenderTextureId = ImGui_ImplVulkan_AddTexture(Combined_FullScreenQuad->Combined_Lighting_Image.imageSampler,
+		                                               Combined_FullScreenQuad->Combined_Lighting_Image.imageView,
 		                                               VK_IMAGE_LAYOUT_GENERAL);
 
 
@@ -1492,13 +1492,15 @@ void App::CreateGraphicsPipeline()
 	}
 
 	{
-		auto RayGen_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/Lighting_Raygen.rgen.spv");
+		auto RayGen_ShaderCode        = readFile("../Shaders/Compiled_Shader_Files/Lighting_Raygen.rgen.spv");
 		auto RayClosestHit_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/Lighting_ClosestHit.rchit.spv");
-		auto RayGenMiss_ShaderCode = readFile("../Shaders/Compiled_Shader_Files/Lighting_Miss.rmiss.spv");
+		auto RayGenMiss_ShaderCode    = readFile("../Shaders/Compiled_Shader_Files/Lighting_Miss.rmiss.spv");
+		auto RayGenMiss2_ShaderCode    = readFile("../Shaders/Compiled_Shader_Files/Lighting_RTGI_Miss.rmiss.spv");
 
-		VkShaderModule RayGen_ShaderModule = pipelineManager.createShaderModule(RayGen_ShaderCode);
-		VkShaderModule RayClosestHit_ShaderModule = pipelineManager.createShaderModule(RayClosestHit_ShaderCode);
-		VkShaderModule RayMiss_ShaderModule = pipelineManager.createShaderModule(RayGenMiss_ShaderCode);
+		VkShaderModule RayGen_ShaderModule         = pipelineManager.createShaderModule(RayGen_ShaderCode);
+		VkShaderModule RayClosestHit_ShaderModule  = pipelineManager.createShaderModule(RayClosestHit_ShaderCode);
+		VkShaderModule RayMiss_ShaderModule        = pipelineManager.createShaderModule(RayGenMiss_ShaderCode);
+		VkShaderModule RayMiss2_ShaderModule       = pipelineManager.createShaderModule(RayGenMiss2_ShaderCode);
 
 
 		vk::PipelineShaderStageCreateInfo RayGen_ShaderStageInfo{};
@@ -1519,9 +1521,16 @@ void App::CreateGraphicsPipeline()
 		RayMiss_ShaderStageInfo.module = RayMiss_ShaderModule;
 		RayMiss_ShaderStageInfo.pName = "main";
 
+		vk::PipelineShaderStageCreateInfo RayMiss2_ShaderStageInfo{};
+		RayMiss2_ShaderStageInfo.sType = vk::StructureType::ePipelineShaderStageCreateInfo;
+		RayMiss2_ShaderStageInfo.stage = vk::ShaderStageFlagBits::eMissKHR;
+		RayMiss2_ShaderStageInfo.module = RayMiss_ShaderModule;
+		RayMiss2_ShaderStageInfo.pName = "main";
+
 		std::vector<vk::PipelineShaderStageCreateInfo> ShaderStages = { RayGen_ShaderStageInfo ,
 																		RayClosestHit_ShaderStageInfo,
-																		RayMiss_ShaderStageInfo };
+																		RayMiss_ShaderStageInfo,
+			                                                            RayMiss2_ShaderStageInfo };
 
 		vk::RayTracingShaderGroupCreateInfoKHR RayGen_GroupInfo{};
 		RayGen_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
@@ -1547,18 +1556,26 @@ void App::CreateGraphicsPipeline()
 		Miss_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
 		Miss_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
 
+		vk::RayTracingShaderGroupCreateInfoKHR Miss2_GroupInfo{};
+		Miss2_GroupInfo.sType = vk::StructureType::eRayTracingShaderGroupCreateInfoKHR;
+		Miss2_GroupInfo.type = vk::RayTracingShaderGroupTypeKHR::eGeneral;
+		Miss2_GroupInfo.generalShader = 3;
+		Miss2_GroupInfo.closestHitShader = VK_SHADER_UNUSED_KHR;
+		Miss2_GroupInfo.anyHitShader = VK_SHADER_UNUSED_KHR;
+		Miss2_GroupInfo.intersectionShader = VK_SHADER_UNUSED_KHR;
+
 
 		std::vector<vk::RayTracingShaderGroupCreateInfoKHR> ShaderGroups = {
 			RayGen_GroupInfo,
 			RayClosestHit_GroupInfo,
 			Miss_GroupInfo,
-			Miss_GroupInfo,
+			Miss2_GroupInfo,
 		};
 
 		vk::PushConstantRange range{};
 		range.setOffset(0);
-		range.setSize(sizeof(int));
-		range.setStageFlags(vk::ShaderStageFlagBits::eRaygenKHR);
+		range.setSize(sizeof(Lightin_RTX_PC));
+		range.setStageFlags(vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR);
 
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.setLayoutCount = 1;
@@ -1840,7 +1857,7 @@ void App::createShaderBindingTable() {
 	{
 		const size_t   handleSize = vulkanContext.RayTracingPipelineProperties.shaderGroupHandleSize;
 		const size_t   handleSizeAligned = alignedSize(handleSize, vulkanContext.RayTracingPipelineProperties.shaderGroupHandleAlignment);
-		const uint32_t groupcount = 3;
+		const uint32_t groupcount = 4;
 		const uint32_t sbtSize = groupcount * handleSizeAligned;
 
 		// Get shader group handles
@@ -1864,7 +1881,15 @@ void App::createShaderBindingTable() {
 
 		bufferManger.CopyDataToBuffer(shaderHandleStorage.data(), Lighting_raygenShaderBindingTableBuffer);
 		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned, Lighting_hitShaderBindingTableBuffer);
-		bufferManger.CopyDataToBuffer(shaderHandleStorage.data() + handleSizeAligned * 2, Lighting_missShaderBindingTableBuffer);
+
+
+		std::vector<uint8_t> missData(handleSizeAligned * 2, 0);
+		memcpy(missData.data(), shaderHandleStorage.data() + (handleSize * 2), handleSize);
+
+		memcpy(missData.data() + handleSizeAligned, shaderHandleStorage.data() + (handleSize * 3), handleSize);
+
+		bufferManger.CopyDataToBuffer(missData.data(), Lighting_missShaderBindingTableBuffer);
+
 	}
 
 
@@ -1875,7 +1900,6 @@ void App::createShaderBindingTable() {
 
 		const uint32_t groupcount = 4;
 
-		// 1. Fetch handles into a tightly packed vector (Size = count * handleSize)
 		std::vector<uint8_t> shaderHandleStorage(groupcount * handleSize);
 
 		vulkanContext.vkGetRayTracingShaderGroupHandlesKHR(
@@ -1886,35 +1910,28 @@ void App::createShaderBindingTable() {
 			shaderHandleStorage.size(),
 			shaderHandleStorage.data());
 
-		// 2. Initialize Buffer Info
 		DDGI_raygenShaderBindingTableBuffer.BufferID = "DDGI raygen Shader Binding Table Buffer";
 		DDGI_missShaderBindingTableBuffer.BufferID = "DDGI miss Shader Binding Table Buffer";
 		DDGI_hitShaderBindingTableBuffer.BufferID = "DDGI hit Shader Binding Table Buffer";
 
-		// 3. Create Buffers (Sizes must be aligned)
 		bufferManger.CreateBuffer(&DDGI_raygenShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
 
 		bufferManger.CreateBuffer(&DDGI_hitShaderBindingTableBuffer, handleSizeAligned, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
 
 		bufferManger.CreateBuffer(&DDGI_missShaderBindingTableBuffer, handleSizeAligned * 2, vk::BufferUsageFlagBits::eShaderBindingTableKHR | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR, commandPool, vulkanContext.graphicsQueue);
 
-		// 4. RayGen (Index 0) - Copy to aligned temp buffer
 		std::vector<uint8_t> rayGenData(handleSizeAligned, 0);
 		memcpy(rayGenData.data(), shaderHandleStorage.data(), handleSize);
 		bufferManger.CopyDataToBuffer(rayGenData.data(), DDGI_raygenShaderBindingTableBuffer);
 
-		// 5. Hit (Index 1) - Copy to aligned temp buffer
 		std::vector<uint8_t> hitData(handleSizeAligned, 0);
 		memcpy(hitData.data(), shaderHandleStorage.data() + handleSize, handleSize);
 		bufferManger.CopyDataToBuffer(hitData.data(), DDGI_hitShaderBindingTableBuffer);
 
-		// 6. Miss (Indices 2 & 3) - Combine into one aligned buffer
-		std::vector<uint8_t> missData(handleSizeAligned * 2, 0);
 
-		// Copy Miss 1 (Index 2) to offset 0
+		std::vector<uint8_t> missData(handleSizeAligned * 2, 0);
 		memcpy(missData.data(), shaderHandleStorage.data() + (2 * handleSize), handleSize);
 
-		// Copy Miss 2 (Index 3) to offset handleSizeAligned
 		memcpy(missData.data() + handleSizeAligned, shaderHandleStorage.data() + (3 * handleSize), handleSize);
 
 		bufferManger.CopyDataToBuffer(missData.data(), DDGI_missShaderBindingTableBuffer);

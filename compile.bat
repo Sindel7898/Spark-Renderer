@@ -74,4 +74,6 @@ glslangValidator.exe -V Shaders\Shader_Files\ReSTIRDI_Miss.rmiss -o Shaders/Comp
 
 glslangValidator.exe -V Shaders\Shader_Files\ReSTIR_DI_ClosestHit.rchit -o Shaders/Compiled_Shader_Files\ReSTIR_DI_ClosestHit.rchit.spv --target-env vulkan1.4 -gVS
 
+glslangValidator.exe -V Shaders\Shader_Files\Lighting_RTGI_Miss.rmiss -o Shaders/Compiled_Shader_Files\Lighting_RTGI_Miss.rmiss.spv --target-env vulkan1.4 -gVS
+
 pause

@@ -28,6 +28,8 @@ struct Vertex {
 struct VertexAndIndexOffsets {
     uint VertexOffset;
     uint IndexOffset;
+    uint MaterialIndex;
+    uint padding;
 };
 
 layout(set = 0, binding = 4) buffer IndexBufferSSBO {
@@ -94,92 +96,75 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
 
 void main()
 {
-    vec3 Radiance    = vec3(0.0);
-    vec3 HitNormal   = vec3(0.0);
-    vec3 HitPosition = vec3(0.0);
-    float Distance   = 0;
 
-    //if(gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT) { 
-    //    Distance = gl_RayTminEXT + gl_HitTEXT; 
-    //    Distance *= -0.2; 
-    //} 
-    
-    {
-        uint packed      = gl_InstanceCustomIndexEXT;
-        uint objectID    = packed >> 12;
-        uint primitiveID = packed & 0xFFF;
-    
-        VertexAndIndexOffsets offsets = OffsetBuffer.Offsets[primitiveID];
-        uint baseIndex = 3 * gl_PrimitiveID + offsets.IndexOffset;
-    
-        ivec3 index = ivec3(
-            indexBuffer.Indices[baseIndex + 0],
-            indexBuffer.Indices[baseIndex + 1],
-            indexBuffer.Indices[baseIndex + 2]
-        );
-    
-        Vertex v0 = vertexBuffer.vertices[index.x];
-        Vertex v1 = vertexBuffer.vertices[index.y];
-        Vertex v2 = vertexBuffer.vertices[index.z];
-    
-        vec3 bary = vec3(1.0 - attribs.x - attribs.y, attribs.x, attribs.y);
-    
-        vec3 VertexPosition = 
-            v0.position_Padding.xyz * bary.x +
-            v1.position_Padding.xyz * bary.y +
-            v2.position_Padding.xyz * bary.z;
-    
-        vec3 Normal = normalize(
-            v0.normal_Padding.xyz * bary.x +
-            v1.normal_Padding.xyz * bary.y +
-            v2.normal_Padding.xyz * bary.z
-        );
-    
-        vec3 Tangent = normalize(
-            v0.tangent_Padding.xyz * bary.x +
-            v1.tangent_Padding.xyz * bary.y +
-            v2.tangent_Padding.xyz * bary.z
-        );
-    
-    float tangentSign = v0.tangent_Padding.w * bary.x +
-                    v1.tangent_Padding.w * bary.y +
-                    v2.tangent_Padding.w * bary.z;
+    vec3  Radiance    = vec3(0.0);
+    vec3  HitNormal   = vec3(0.0);
+    vec3  HitPosition = vec3(0.0);
+    float Distance    = 0;
 
-        vec2 TexCoord = 
-            v0.texCoord_Padding.xy * bary.x +
-            v1.texCoord_Padding.xy * bary.y +
-            v2.texCoord_Padding.xy * bary.z;
+    uint packed = gl_InstanceCustomIndexEXT;
+    uint meshBufferID = packed & 0xFFF;
+    uint objectID   = packed >> 12;
+
+    VertexAndIndexOffsets offsets = OffsetBuffer.Offsets[meshBufferID];
+    uint baseIndex = offsets.IndexOffset + (3 * gl_PrimitiveID);
     
-        mat3 normalMatrix  = mat3(transformations[objectID].Inverese_Transposed_WorldMatrix);
-
-        vec3 WorldN        = normalize(normalMatrix * Normal);
-
-        if (gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT) {
-        WorldN = -WorldN;
-    }
-
-        vec3 WorldT        = normalize(normalMatrix * Tangent);
-        vec3 WorldB = cross(WorldN, WorldT) * (tangentSign < 0.0 ? -1.0 : 1.0);
-        mat3 WorldSpaceTBN = mat3(WorldT, WorldB, WorldN);
+    uint i0 = indexBuffer.Indices[baseIndex + 0];
+    uint i1 = indexBuffer.Indices[baseIndex + 1];
+    uint i2 = indexBuffer.Indices[baseIndex + 2];
     
-        vec3  Albedo     = texture(Albedo_AssetImages          [nonuniformEXT(primitiveID)], TexCoord).rgb;
-        float Metallic   = texture(MetalicRoughness_AssetImages[nonuniformEXT(primitiveID)], TexCoord).r;
-        float Roughness  = texture(MetalicRoughness_AssetImages[nonuniformEXT(primitiveID)], TexCoord).r;
-        vec3  Emissive   = texture(Emmisive_AssetImages        [nonuniformEXT(primitiveID)], TexCoord).rgb;
+    // Use the indices to get actual vertex data
+    Vertex v0 = vertexBuffer.vertices[i0];
+    Vertex v1 = vertexBuffer.vertices[i1];
+    Vertex v2 = vertexBuffer.vertices[i2];
 
-   vec3 textureMap = texture(Normal_AssetImages[nonuniformEXT(primitiveID)], TexCoord).rgb;
+
+    vec3 bary = vec3(1.0 - attribs.x - attribs.y, attribs.x, attribs.y);
     
-      if (length(textureMap) > 0.1) {
+    vec3 VertexPosition = 
+        v0.position_Padding.xyz * bary.x +
+        v1.position_Padding.xyz * bary.y +
+        v2.position_Padding.xyz * bary.z;
+    
+    vec3 Normal = normalize(
+        v0.normal_Padding.xyz * bary.x +
+        v1.normal_Padding.xyz * bary.y +
+        v2.normal_Padding.xyz * bary.z
+    );
+    
+    vec3 Tangent = normalize(
+        v0.tangent_Padding.xyz * bary.x +
+        v1.tangent_Padding.xyz * bary.y +
+        v2.tangent_Padding.xyz * bary.z
+    );
+    
 
-          vec3 NormalTexture = textureMap * 2.0 - vec3(1.0);
-          HitNormal = normalize(WorldSpaceTBN * NormalTexture);
-      } else {
-          HitNormal = WorldN;
-      }
-     
-        vec4 WorldPos = transformations[objectID].WorldMatrix * vec4(VertexPosition, 1.0);
+  vec2 TexCoord = 
+    v0.texCoord_Padding.xy * bary.x +
+    v1.texCoord_Padding.xy * bary.y +
+    v2.texCoord_Padding.xy * bary.z;
+    
+     mat3 normalMatrix  = mat3(transformations[objectID].Inverese_Transposed_WorldMatrix);
 
-        HitPosition = WorldPos.xyz;
+     vec3 WorldN        = normalize(normalMatrix * Normal);
+     vec3 WorldT        = normalize(normalMatrix * Tangent);
+     vec3 WorldB        = cross(WorldN, WorldT);
+     mat3 WorldSpaceTBN = mat3(WorldT, WorldB, WorldN);
+    
+      uint matID = offsets.MaterialIndex;
+     vec3  Albedo     = texture(Albedo_AssetImages          [nonuniformEXT(matID)], TexCoord).rgb;
+     float Metallic   = texture(MetalicRoughness_AssetImages[nonuniformEXT(matID)], TexCoord).r;
+     float Roughness  = texture(MetalicRoughness_AssetImages[nonuniformEXT(matID)], TexCoord).r;
+     vec3  Emissive   = texture(Emmisive_AssetImages        [nonuniformEXT(matID)], TexCoord).rgb;
+
+     vec3 textureMap = texture(Normal_AssetImages[nonuniformEXT(matID)], TexCoord).rgb;
+    
+     vec3 NormalTexture = textureMap * 2.0 - vec3(1.0);
+     HitNormal = normalize(WorldSpaceTBN * NormalTexture);
+ 
+     vec4 WorldPos =  transformations[objectID].WorldMatrix * vec4(VertexPosition,1.0);
+     HitPosition   =  WorldPos.xyz;
+
 
         // --- Lighting ---
         vec3 LightDir = vec3(1,1,1);
@@ -232,7 +217,7 @@ void main()
             shadow_Payload.Shadow = 0;
             traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 1, shadowOrigin, tMin, LightDir, lightDist, 1);
          
-              Lo += ((diffuse * radiance * light.CameraPositionAndLightIntensity.a) * NdotL) *  shadow_Payload.Shadow;
+              Lo += ((diffuse * radiance * light.CameraPositionAndLightIntensity.a) * NdotL) * shadow_Payload.Shadow ;
               Radiance += Lo;
         }
         
@@ -265,7 +250,6 @@ void main()
         }
 
         Distance = gl_RayTminEXT + gl_HitTEXT;
-    }
 
     payload.Color       = Radiance;
     payload.Distance    = Distance;
