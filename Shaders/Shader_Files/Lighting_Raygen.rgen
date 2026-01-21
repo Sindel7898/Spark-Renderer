@@ -94,10 +94,10 @@ RTGIPayload RTGI(vec3 Position,vec3 Normal)
 vec3 PathTraceGI(vec3 origin, vec3 normal) {
 
     vec3 accumulatedRadiance = vec3(0.0);
-    vec3 currentOrigin = origin + normal * 0.001;
+    vec3 currentOrigin = origin + normal * 0.01;
     vec3 currentNormal = normal;
 
-    for (int bounce = 0; bounce < 1; bounce++) {
+    for (int bounce = 0; bounce < 10; bounce++) {
         float rx = rand_pcg(seed);
         float ry = rand_pcg(seed);
         vec3 direction = GetHemisphereSample(vec2(rx, ry), currentNormal);
@@ -111,7 +111,7 @@ vec3 PathTraceGI(vec3 origin, vec3 normal) {
 
     }
 
-    return accumulatedRadiance;
+    return accumulatedRadiance / 10;
 }
 
 
@@ -216,8 +216,8 @@ void main() {
        vec3 GI = PathTraceGI(WorldPos,Normal);
 
 
-      //TotalLighting = directLighting + GI * Albedo / PI;
-      TotalLighting = directLighting;
+      TotalLighting =  GI ;
+     // TotalLighting = directLighting + ;
 
 
    vec3 gammaCorrected = pow(clamp(TotalLighting, 0.0, 1.0), vec3(1.0 / 2.2));
