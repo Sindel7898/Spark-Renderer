@@ -75,43 +75,34 @@ vec3 GetHemisphereSample(vec2 randVal, vec3 HitNormal) {
     return tangent * (r * cos(phi)) + bitangent * (r * sin(phi)) + HitNormal.xyz * sqrt(max(0.0, 1.0 - randVal.x));
 }
 
-RTGIPayload RTGI(vec3 Position,vec3 Normal)
-{
-   RTGIpayload.radiance	= vec3(0.0);
-   RTGIpayload.normal	= vec3(0.0);
-
-   float Randx = rand_pcg(seed);
-   float Randy = rand_pcg(seed);
-
-   vec3 Direction = GetHemisphereSample(vec2(Randx,Randy),Normal);
-
-
-   traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, Position + (Normal * 0.001), 0.001,Direction,1000.0,1);
-
-   return RTGIpayload;
-}
 
 vec3 PathTraceGI(vec3 origin, vec3 normal) {
 
-    vec3 accumulatedRadiance = vec3(0.0);
-    vec3 currentOrigin = origin + normal * 0.01;
+    vec3 accumulatedIndirect = vec3(0.0);
+    vec3 throughput = vec3(1.0); 
+    
+    vec3 currentOrigin = origin + normal * 0.001; 
     vec3 currentNormal = normal;
 
-    for (int bounce = 0; bounce < 10; bounce++) {
+    for (int bounce = 0; bounce < 10; bounce++) { 
         float rx = rand_pcg(seed);
         float ry = rand_pcg(seed);
+        
         vec3 direction = GetHemisphereSample(vec2(rx, ry), currentNormal);
 
         traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, currentOrigin, 0.001, direction, 1000.0, 1);
 
-        accumulatedRadiance += RTGIpayload.radiance * RTGIpayload.albedo /PI;
+        accumulatedIndirect += RTGIpayload.radiance * throughput ;
+
+        throughput *= RTGIpayload.albedo / PI;
 
         currentOrigin = RTGIpayload.position + RTGIpayload.normal * 0.001;
         currentNormal = RTGIpayload.normal;
-
+        
+        if (length(RTGIpayload.normal) == 0.0) break; 
     }
 
-    return accumulatedRadiance / 10;
+    return accumulatedIndirect;
 }
 
 
@@ -213,14 +204,13 @@ void main() {
 
  vec3 TotalLighting = vec3(0.0);
        
-       vec3 GI = PathTraceGI(WorldPos,Normal);
+      // vec3 GI = PathTraceGI(WorldPos,Normal);
 
 
-      TotalLighting =  GI ;
-     // TotalLighting = directLighting + ;
+      //TotalLighting =  directLighting + GI * Albedo /PI ;
+      TotalLighting = directLighting ;
 
 
-   vec3 gammaCorrected = pow(clamp(TotalLighting, 0.0, 1.0), vec3(1.0 / 2.2));
 
-   imageStore(OutputImage, fullCoord, vec4(gammaCorrected, 1.0));
+   imageStore(OutputImage, fullCoord, vec4(TotalLighting, 1.0));
 }
