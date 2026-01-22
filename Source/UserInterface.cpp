@@ -467,6 +467,14 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 
             if (ImGui::BeginTabItem("Lighting"))
             {
+                if (ImGui::InputInt("Lights in Scene", &NumberOfLights, 1, 10))
+                {
+                    if (NumberOfLights < 0) NumberOfLights = 0;
+                    if (NumberOfLights > 100) NumberOfLights = 100;
+
+                    appref->SpawnLights(NumberOfLights);
+                }
+
                 if (ImGui::CollapsingHeader("Ambient Occlusion (SSAO)", ImGuiTreeNodeFlags_DefaultOpen))
                 {
                     ImGui::Checkbox("Enable SSAO", (bool*)&appref->ssao_FullScreenQuad->bShouldSSAO);

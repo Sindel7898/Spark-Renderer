@@ -102,6 +102,7 @@ public:
 
 	void LoadAllObjects();
 	void UpdateRayTracingDescriptors();
+	void SpawnLights(int NumOfLights);
 	void SwitchScene(int Index);
 
 	int currentSceneIndex = 2;

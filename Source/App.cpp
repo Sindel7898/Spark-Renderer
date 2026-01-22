@@ -204,6 +204,59 @@ void App::UpdateRayTracingDescriptors()
 	}
 }
 
+void App::SpawnLights(int NumOfLights)
+{
+	vulkanContext.LogicalDevice.waitIdle();
+	UserInterfaceItems.clear();
+
+	if (currentSceneIndex == 0) {
+		for (auto& model : CornelSceneModels) UserInterfaceItems.push_back(model.get());
+	}
+	else if (currentSceneIndex == 1) {
+		for (auto& model : SponzaSceneModels) UserInterfaceItems.push_back(model.get());
+	}
+	else if (currentSceneIndex == 2) {
+		for (auto& model : AltCornelSceneModels) UserInterfaceItems.push_back(model.get());
+	}
+
+	lights.clear();
+	lights.reserve(NumOfLights);
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<float> disXZ(-20, 20);
+	std::uniform_real_distribution<float> disY(0, 40);
+	std::uniform_real_distribution<float> disc(0, 1);
+
+	for (int i = 0; i < NumOfLights; i++) {
+		std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(&vulkanContext, commandPool, &camera, &bufferManger), LightDeleter);
+
+		float randX = disXZ(gen);
+		float randY = disY(gen);
+		float randZ = disXZ(gen);
+		float R = disc(gen);
+		float G = disc(gen);
+		float B = disc(gen);
+
+		light->SetPosition(glm::vec3(randX, randY, randZ));
+		light->color = glm::vec3(R, G, B);
+		light->CastShadow = true;
+		light->createDescriptorSets(DescriptorPool);
+
+		lights.push_back(std::move(light));
+	}
+
+	for (auto& l : lights) {
+		UserInterfaceItems.push_back(l.get());
+	}
+
+	UpdateRayTracingDescriptors();
+	userinterface.SetLightCount(static_cast<int>(lights.size()));
+	vulkanContext.ResetTemporalAccumilation();
+}
+
+
+
 void App::SwitchScene(int index)
 {
 	vulkanContext.LogicalDevice.waitIdle();
@@ -367,8 +420,8 @@ void App::SwitchScene(int index)
 			dynamicDiffuse_RTGI->NumOfProbesY = 9;
 			dynamicDiffuse_RTGI->NumOfProbesZ = 9;
 			dynamicDiffuse_RTGI->RaysPerProbe = 128;
-			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(7.52, 8.62, 11.13);
-			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-24.67, -12.66, -45.61);
+			dynamicDiffuse_RTGI->ProbeOffset  = glm::vec3(3.000, 3.000, 3.000);
+			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-12.000, -2.000, -14.000);
 		}
 
 		camera.SetPosition(glm::vec3{ -0.896284, 12.566, -37.7205 });
@@ -3096,34 +3149,34 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			commandBuffer.endRendering();
 		}
 
-		{
-			
-			vulkanContext.DLSS_IntergrationRef->render(commandBuffer,
-				Combined_FullScreenQuad->Combined_Lighting_Image,
-				gbuffer,
-				DepthTextureData,
-				Combined_FullScreenQuad->Final_Denoised_Image);
-			
-			vk::ImageMemoryBarrier dlssBarrier{};
-			dlssBarrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite; 
-			dlssBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;  
-			dlssBarrier.oldLayout = vk::ImageLayout::eGeneral;            
-			dlssBarrier.newLayout = vk::ImageLayout::eGeneral;
-			dlssBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			dlssBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			dlssBarrier.image = Combined_FullScreenQuad->Final_Denoised_Image.image;
-			dlssBarrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
-
-			commandBuffer.pipelineBarrier(
-				vk::PipelineStageFlagBits::eComputeShader | vk::PipelineStageFlagBits::eRayTracingShaderKHR,
-				vk::PipelineStageFlagBits::eAllCommands | vk::PipelineStageFlagBits::eAllGraphics,
-				{},
-				0, nullptr,
-				0, nullptr,
-				1, & dlssBarrier
-			);
-
-		}
+		//{
+		//	
+		//	vulkanContext.DLSS_IntergrationRef->render(commandBuffer,
+		//		Combined_FullScreenQuad->Combined_Lighting_Image,
+		//		gbuffer,
+		//		DepthTextureData,
+		//		Combined_FullScreenQuad->Final_Denoised_Image);
+		//	
+		//	vk::ImageMemoryBarrier dlssBarrier{};
+		//	dlssBarrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite; 
+		//	dlssBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;  
+		//	dlssBarrier.oldLayout = vk::ImageLayout::eGeneral;            
+		//	dlssBarrier.newLayout = vk::ImageLayout::eGeneral;
+		//	dlssBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		//	dlssBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		//	dlssBarrier.image = Combined_FullScreenQuad->Final_Denoised_Image.image;
+		//	dlssBarrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
+		//
+		//	commandBuffer.pipelineBarrier(
+		//		vk::PipelineStageFlagBits::eComputeShader | vk::PipelineStageFlagBits::eRayTracingShaderKHR,
+		//		vk::PipelineStageFlagBits::eAllCommands | vk::PipelineStageFlagBits::eAllGraphics,
+		//		{},
+		//		0, nullptr,
+		//		0, nullptr,
+		//		1, & dlssBarrier
+		//	);
+		//
+		//}
 
 		/////////////////// FORWARD PASS END ///////////////////////// 
 		vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
@@ -3261,7 +3314,7 @@ void App::recreateSwapChain() {
 	camera.SetSwapchainWidth(vulkanContext.swapchainExtent.width);
 	createDepthTextureImage();
 	createGBuffer();
-	vulkanContext.DLSS_IntergrationRef->init(commandPool);
+	//vulkanContext.DLSS_IntergrationRef->init(commandPool);
 }
 
 void App::recreatePipeline()

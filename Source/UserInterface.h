@@ -29,7 +29,7 @@ public:
 
     void DrawUi(App* appref, SkyBox* skyBox);
     float CalculateDistanceInScreenSpace(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position);
-
+    void SetLightCount(int count) { NumberOfLights = count; }
 
 
     vk::Extent3D GetRenderTextureExtent();
@@ -82,6 +82,7 @@ private:
 
     glm::mat4 LastModelMatrix;
 
+	int NumberOfLights = 0;
 };
 
 static inline void UserInterfaceDeleter(UserInterface* userInterface) {
