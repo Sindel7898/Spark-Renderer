@@ -12,7 +12,8 @@ layout(push_constant) uniform ImageSize{
     int   AtlasWidthSize;  
     int   ProbeSideLength; 
     int   GutterSize;      
-    int   NumRays;   
+    int   NumRays;
+    vec4   GI_Solution_Padding;
 }pc;
 
 layout(binding = 0)   uniform sampler2D  PositionImage;
@@ -40,25 +41,27 @@ void main()
   
    vec3 Irradiance = vec3(0);
 
- if(dot(Normal, Normal) > 0.001){
-        Irradiance = SampleIrradiance(
-            IrradianceStorageImage,
-            VisibilityStorageImage,
-            Position,
-            Normal,
-            pc.GridBaseLocation_ScreenSizeWidth.xyz,
-            pc.ProbeSpacing_ScreenSizeHeight.xyz,
-            ivec3(pc.ProbeCount.xyz),
-            // Irradiance Params
-            pc.ProbeSideLength,
-            pc.GutterSize,
-            pc.AtlasWidthSize,
-            // Visibility Params
-            pc.ProbeSideLength,   //Same values are being passed cus as of now they are both the same size. but this can be changed
-            pc.GutterSize,
-            pc.AtlasWidthSize
-        );
-    };
-
+   if(pc.GI_Solution_Padding.x == 0 || pc.GI_Solution_Padding.x == 2 ){
+   
+         if(dot(Normal, Normal) > 0.001){
+          Irradiance = SampleIrradiance(
+              IrradianceStorageImage,
+              VisibilityStorageImage,
+              Position,
+              Normal,
+              pc.GridBaseLocation_ScreenSizeWidth.xyz,
+              pc.ProbeSpacing_ScreenSizeHeight.xyz,
+              ivec3(pc.ProbeCount.xyz),
+              // Irradiance Params
+              pc.ProbeSideLength,
+              pc.GutterSize,
+              pc.AtlasWidthSize,
+              // Visibility Params
+              pc.ProbeSideLength,   //Same values are being passed cus as of now they are both the same size. but this can be changed
+              pc.GutterSize,
+              pc.AtlasWidthSize
+          );
+      };
+   }
    imageStore(SampledGIImage, ivec2(gl_GlobalInvocationID.xy), vec4(Irradiance,1));
 }

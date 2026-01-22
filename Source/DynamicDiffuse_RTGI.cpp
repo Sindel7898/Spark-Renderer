@@ -5,10 +5,12 @@
 #include "SkyBox.h"
 #include <stdexcept>
 #include "AssetManager.h"
+#include "Lighting_RTX.h"
+
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
 
-DynamicDiffuse_RTGI::DynamicDiffuse_RTGI(const std::string filepath, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, SkyBox* skybox)
+DynamicDiffuse_RTGI::DynamicDiffuse_RTGI(const std::string filepath, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, SkyBox* skybox, Lighting_RTX* LRTX)
 {
 	bufferManager = buffermanger;
 	vulkanContext = vulkancontext;
@@ -16,7 +18,7 @@ DynamicDiffuse_RTGI::DynamicDiffuse_RTGI(const std::string filepath, VulkanConte
 	commandPool   = commandpool;
 	FilePath = filepath;
 	skyboxRef = skybox;
-
+	lighting_RTX = LRTX;
 	CreateVertexAndIndexBuffer();
 	CreateStorageBuffer();
 	createRayTracingDescriptorSetLayout();
@@ -1552,16 +1554,17 @@ void DynamicDiffuse_RTGI::DispatchProbeStatus(vk::CommandBuffer commandBuffer, v
 void DynamicDiffuse_RTGI::DispatchSampleGIFromProbeDataCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex)
 {
 
-	SampleGridInfo sampleGridInfo;
-	sampleGridInfo.GridBaseLocation_ScreenSizeWidth = glm::vec4(GridLocation.x, GridLocation.y, GridLocation.z, vulkanContext->swapchainExtent.width);
-	sampleGridInfo.ProbeSpacing_ScreenSizeHeight    = glm::vec4( ProbeOffset.x, ProbeOffset.y , ProbeOffset.z , vulkanContext->swapchainExtent.height);
-	sampleGridInfo.ProbeCount                       = glm::vec4( NumOfProbesX , NumOfProbesY  , NumOfProbesZ  , 0);
-	sampleGridInfo.generalAtlasInfo.AtlasWidthSize  = IradianceImageExtent.width;
-	sampleGridInfo.generalAtlasInfo.ProbeSideLength = ProbeSideLength;
-	sampleGridInfo.generalAtlasInfo.GutterSize      = GutterSize;
-	sampleGridInfo.generalAtlasInfo.RaysPerProbe    = RaysPerProbe;
+	RTpcInfo sampleGridInfo;
+	sampleGridInfo.sampleGridInfo.GridBaseLocation_ScreenSizeWidth = glm::vec4(GridLocation.x, GridLocation.y, GridLocation.z, vulkanContext->swapchainExtent.width);
+	sampleGridInfo.sampleGridInfo.ProbeSpacing_ScreenSizeHeight    = glm::vec4( ProbeOffset.x, ProbeOffset.y , ProbeOffset.z , vulkanContext->swapchainExtent.height);
+	sampleGridInfo.sampleGridInfo.ProbeCount                       = glm::vec4( NumOfProbesX , NumOfProbesY  , NumOfProbesZ  , 0);
+	sampleGridInfo.sampleGridInfo.generalAtlasInfo.AtlasWidthSize  = IradianceImageExtent.width;
+	sampleGridInfo.sampleGridInfo.generalAtlasInfo.ProbeSideLength = ProbeSideLength;
+	sampleGridInfo.sampleGridInfo.generalAtlasInfo.GutterSize      = GutterSize;
+	sampleGridInfo.sampleGridInfo.generalAtlasInfo.RaysPerProbe    = RaysPerProbe;
+	sampleGridInfo.UseInfiniteBounce_infinite_bounces_multiplier_Padding = glm::vec4(lighting_RTX->GISolutionIndex,0,0,0);
 
-	commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(SampleGridInfo), &sampleGridInfo);
+	commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(RTpcInfo), &sampleGridInfo);
 
 	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, 0, 1, &DDGISamplingDescriptorSets[imageIndex], 0, nullptr);
 

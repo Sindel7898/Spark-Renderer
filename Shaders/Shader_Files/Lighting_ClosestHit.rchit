@@ -65,8 +65,7 @@ layout(push_constant) uniform PushConstant{
     vec2   ScreenSize;
 	int    LightCount;
 	int    FrameIndex;
-    mat4   inverseViewMatrix;
-    mat4   inverseProjectionMatrix;
+    vec4   GI_Solution_Padding;
 }PC;
 
 struct RTGIPayload {

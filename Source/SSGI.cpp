@@ -3,15 +3,17 @@
 #include "BufferManager.h"
 #include "Camera.h"
 #include "Light.h"
+#include "Lighting_RTX.h"
 
 #include <stdexcept>
 
-SSGI::SSGI(BufferManager* buffermanager, VulkanContext* vulkancontext, Camera* cameraref, vk::CommandPool commandpool)
+SSGI::SSGI(BufferManager* buffermanager, VulkanContext* vulkancontext, Camera* cameraref, vk::CommandPool commandpool, Lighting_RTX* lighting)
 {
 	bufferManager = buffermanager;
 	vulkanContext = vulkancontext;
 	camera        = cameraref;
 	commandPool   = commandpool;
+	lightingref   = lighting;
 	CreateNoiseTextures();
 	CreateUniformBuffer();
 	createDescriptorSetLayout();
@@ -55,7 +57,7 @@ void SSGI::CreateUniformBuffer() {
 
 void SSGI::CreateGIImage() {
 
-	SSGI_ImageFullResolution   = vk::Extent3D(vulkanContext->swapchainExtent.width/2, vulkanContext->swapchainExtent.height/2, 1);
+	SSGI_ImageFullResolution   = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 	
 	SSGIPassImage.ImageID = "SSGI Pass Image";
 	bufferManager->CreateImage(&SSGIPassImage, SSGI_ImageFullResolution, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eStorage,false);
@@ -338,6 +340,7 @@ void SSGI::UpdateUniformBuffer(uint32_t currentImage, float DeltaTime)
  	SSGI_UniformBufferData.ProjectionMatrix = camera->GetProjectionMatrix();
 	SSGI_UniformBufferData.ProjectionMatrix[1][1] *= -1;
 	SSGI_UniformBufferData.BlueNoiseImageIndex_WithPadding = glm::vec4(NoiseIndex, DeltaTime, vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height);
+	SSGI_UniformBufferData.GI_Solution_Padding = glm::vec4(lightingref->GISolutionIndex,0,0,0);
 
 	memcpy(ComputeUniformBuffersMappedMem[currentImage], &SSGI_UniformBufferData, sizeof(SSGI_UniformBufferData));
 

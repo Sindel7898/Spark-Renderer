@@ -57,9 +57,9 @@ App::App() : window(1920, 1080, "Spark Renderer")
 	lighting_RTX = std::unique_ptr<Lighting_RTX, decltype(&Lighting_RTXDeleter)>(new Lighting_RTX(&bufferManger, &vulkanContext, &camera, commandPool, skyBox.get()), Lighting_RTXDeleter);
 	ssao_FullScreenQuad = std::unique_ptr<SSA0_FullScreenQuad, decltype(&SSA0_FullScreenQuadDeleter)>(new SSA0_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), SSA0_FullScreenQuadDeleter);
 	fxaa_FullScreenQuad = std::unique_ptr<FXAA_FullScreenQuad, decltype(&FXAA_FullScreenQuadDeleter)>(new FXAA_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), FXAA_FullScreenQuadDeleter);
-	Combined_FullScreenQuad = std::unique_ptr<CombinedResult_FullScreenQuad, decltype(&CombinedResult_FullScreenQuadDeleter)>(new CombinedResult_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), CombinedResult_FullScreenQuadDeleter);
-	SSGI_FullScreenQuad = std::unique_ptr<SSGI, decltype(&SSGIDeleter)>(new SSGI(&bufferManger, &vulkanContext, &camera, commandPool), SSGIDeleter);
-	dynamicDiffuse_RTGI = std::unique_ptr<DynamicDiffuse_RTGI, decltype(&DynamicDiffuse_RTGIDeleter)>(new DynamicDiffuse_RTGI("../Textures/Sphere/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger, skyBox.get()), DynamicDiffuse_RTGIDeleter);
+	Combined_FullScreenQuad = std::unique_ptr<CombinedResult_FullScreenQuad, decltype(&CombinedResult_FullScreenQuadDeleter)>(new CombinedResult_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool, lighting_RTX.get()), CombinedResult_FullScreenQuadDeleter);
+	SSGI_FullScreenQuad = std::unique_ptr<SSGI, decltype(&SSGIDeleter)>(new SSGI(&bufferManger, &vulkanContext, &camera, commandPool, lighting_RTX.get()), SSGIDeleter);
+	dynamicDiffuse_RTGI = std::unique_ptr<DynamicDiffuse_RTGI, decltype(&DynamicDiffuse_RTGIDeleter)>(new DynamicDiffuse_RTGI("../Textures/Sphere/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger, skyBox.get(), lighting_RTX.get()), DynamicDiffuse_RTGIDeleter);
 	Restir_DI = std::unique_ptr<ReSTIR_DI, decltype(&ReSTIR_DI_Deleter)>(new ReSTIR_DI(&vulkanContext, commandPool, &camera, &bufferManger, lighting_RTX.get(), SSGI_FullScreenQuad.get(), dynamicDiffuse_RTGI.get()), ReSTIR_DI_Deleter);
 
 	createCommandBuffer();
@@ -259,8 +259,8 @@ void App::SwitchScene(int index)
 			dynamicDiffuse_RTGI->NumOfProbesY = 9;
 			dynamicDiffuse_RTGI->NumOfProbesZ = 9;
 			dynamicDiffuse_RTGI->RaysPerProbe = 128;
-			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(-18.570, -10.660, -15.610);
-			dynamicDiffuse_RTGI->GridLocation = glm::vec3(5.000, 5.000, 6.000);
+			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(3.000, 3.000, 3.000);
+			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-12.000, -2.000, -14.000);
 		}
 
 		camera.SetPosition(glm::vec3{ -0.896284, 12.566, -37.7205 });
@@ -1802,7 +1802,7 @@ void App::CreateGraphicsPipeline()
 
 		vk::PushConstantRange range{};
 		range.setOffset(0);
-		range.setSize(sizeof(SampleGridInfo));
+		range.setSize(sizeof(RTpcInfo));
 		range.setStageFlags(vk::ShaderStageFlagBits::eCompute);
 
 		vk::PipelineLayoutCreateInfo pipelineLayoutInfo{};

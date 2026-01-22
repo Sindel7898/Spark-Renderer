@@ -7,10 +7,12 @@
 class  Camera;
 class  VulkanContext;
 class  BufferManager;
+class  Lighting_RTX;
 
 struct SSGI_UniformBufferData {
     glm::mat4 ProjectionMatrix;
     glm::vec4 BlueNoiseImageIndex_WithPadding;
+    glm::vec4 GI_Solution_Padding;
 
 };
 
@@ -19,7 +21,7 @@ class SSGI
 {
 public:
 
-    SSGI(BufferManager* buffermanager, VulkanContext* vulkancontext, Camera* cameraref, vk::CommandPool commandpool);
+    SSGI(BufferManager* buffermanager, VulkanContext* vulkancontext, Camera* cameraref, vk::CommandPool commandpool, Lighting_RTX* lighting);
     void CreateNoiseTextures();
     void CreateGIImage();
     void DestroyImage();
@@ -51,6 +53,8 @@ private:
     VulkanContext* vulkanContext = nullptr;
     Camera* camera = nullptr;
     vk::CommandPool commandPool;
+    Lighting_RTX* lightingref;
+
 };
 
 

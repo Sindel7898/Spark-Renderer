@@ -13,7 +13,7 @@ layout (location = 0) out vec4 outFragColor;
 
 layout(push_constant) uniform PushConstants {
     vec4 Brightness_Saturation_Concentration_GIBoost;
-    vec4 MaxGamma_MinGamma_Padding;
+    vec4 MaxGamma_MinGamma_GISolution_Padding;
 } pc;
 
 
@@ -59,8 +59,8 @@ void main() {
      float Saturation    = pc.Brightness_Saturation_Concentration_GIBoost.y;
      float Concentration = pc.Brightness_Saturation_Concentration_GIBoost.z;
      float GIboost       = pc.Brightness_Saturation_Concentration_GIBoost.w;
-     float MaxGamma      = pc.MaxGamma_MinGamma_Padding.x;
-     float MinGamma      = pc.MaxGamma_MinGamma_Padding.y;
+     float MaxGamma      = pc.MaxGamma_MinGamma_GISolution_Padding.x;
+     float MinGamma      = pc.MaxGamma_MinGamma_GISolution_Padding.y;
 
      vec3 DirectLighting   = texture(LightingReflectionTexture, inTexCoord).rgb;
      vec3 SSGI               = texture(GITexture, inTexCoord).rgb;
@@ -78,8 +78,22 @@ void main() {
 
      if(AO < 0.1){AO = 1;}
 
-    vec3 FinalColor = DirectLighting + (( DDGIresult ) * AO) * GIboost;
+     vec3 GI = vec3(0.0);   
 
+     if(pc.MaxGamma_MinGamma_GISolution_Padding.z == 0) {
+        GI = DDGIresult;
+     }
+
+     if(pc.MaxGamma_MinGamma_GISolution_Padding.z == 1) {
+        GI = SSGI;
+     }
+
+     if(pc.MaxGamma_MinGamma_GISolution_Padding.z == 2) {
+        GI = DDGIresult + SSGI;
+     }
+
+
+    vec3 FinalColor = (DirectLighting + GI * AO);
 
      vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, Brightness, Saturation, Concentration);
 

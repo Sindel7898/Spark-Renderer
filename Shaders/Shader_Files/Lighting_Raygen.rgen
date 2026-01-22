@@ -8,8 +8,7 @@ layout(push_constant) uniform PushConstant{
     vec2   ScreenSize;
 	int    LightCount;
 	int    FrameIndex;
-    mat4   inverseViewMatrix;
-    mat4   inverseProjectionMatrix;
+    vec4   GI_Solution_Padding;
 }PC;
 
 struct LightData{
@@ -84,7 +83,7 @@ vec3 PathTraceGI(vec3 origin, vec3 normal) {
     vec3 currentOrigin = origin + normal * 0.001; 
     vec3 currentNormal = normal;
 
-    for (int bounce = 0; bounce < 10; bounce++) { 
+    for (int bounce = 0; bounce < 2; bounce++) { 
         float rx = rand_pcg(seed);
         float ry = rand_pcg(seed);
         
@@ -204,11 +203,13 @@ void main() {
 
  vec3 TotalLighting = vec3(0.0);
        
-      // vec3 GI = PathTraceGI(WorldPos,Normal);
+       vec3 GI = vec3(0.0);
 
+       if(PC.GI_Solution_Padding.x == 3){
+         GI = PathTraceGI(WorldPos,Normal) * (Albedo / PI);
+       }
 
-      //TotalLighting =  directLighting + GI * Albedo /PI ;
-      TotalLighting = directLighting ;
+      TotalLighting = directLighting + GI;
 
 
 

@@ -5,6 +5,8 @@
 #include "VulkanContext.h"
 #include "Drawable.h"
 
+class Lighting_RTX;
+
 struct PostProcessSettings {
     glm::vec4 Brightness_Saturation_Concentration_GIboost;
     glm::vec4 MaxGamma_MinGamma_Padding;
@@ -13,7 +15,7 @@ class CombinedResult_FullScreenQuad : public Drawable
 {
 public:
 
-    CombinedResult_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext, Camera* cameraref, vk::CommandPool commandpool);
+    CombinedResult_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext, Camera* cameraref, vk::CommandPool commandpool, Lighting_RTX* lighting);
     void createDescriptorSetLayout() override;
     void UpdataeUniformBufferData();
     void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData SSGIImage, ImageData SSAOIImage, ImageData MaterialImage, ImageData AlbedoImage, ImageData DDGIImaGE);
@@ -40,6 +42,7 @@ public:
     vk::DescriptorSetLayout  Gamma_Correction_descriptorSetLayout;
     std::vector<vk::DescriptorSet>  Gamma_Correction_DescriptorSets;
 
+    Lighting_RTX* lightingref;
 
 private:
 };

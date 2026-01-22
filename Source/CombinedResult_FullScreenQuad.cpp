@@ -5,14 +5,17 @@
 #include <glm/gtx/matrix_decompose.hpp>
 #include "Light.h"
 #include "Camera.h"
+#include "Lighting_RTX.h"
+
 #include <random>
 
-CombinedResult_FullScreenQuad::CombinedResult_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext,Camera* cameraref, vk::CommandPool commandpool): Drawable()
+CombinedResult_FullScreenQuad::CombinedResult_FullScreenQuad(BufferManager* buffermanager, VulkanContext* vulkancontext,Camera* cameraref, vk::CommandPool commandpool, Lighting_RTX* lighting): Drawable()
 {
 	camera = cameraref;
 	bufferManager = buffermanager;
 	vulkanContext = vulkancontext;
 	commandPool   = commandpool;
+	lightingref = lighting;
 	CreateUniformBuffer();
 	createDescriptorSetLayout();
 
@@ -284,7 +287,7 @@ void CombinedResult_FullScreenQuad::Draw(vk::CommandBuffer commandbuffer, vk::Pi
 
 	PostProcessSettings PPS;
 	PPS.Brightness_Saturation_Concentration_GIboost = glm::vec4(Brightness, Saturation, Concentration, GIBoost);
-	PPS.MaxGamma_MinGamma_Padding = glm::vec4(MaxGamma, MinGamma, 0, 0);
+	PPS.MaxGamma_MinGamma_Padding = glm::vec4(MaxGamma, MinGamma, lightingref->GISolutionIndex, 0);
 
 	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(PostProcessSettings), &PPS);
 

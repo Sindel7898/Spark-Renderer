@@ -11,11 +11,12 @@ layout (binding = 7, rgba16f) uniform image2D SSGITexture;
 layout (binding = 6) uniform SSGIUniformBuffer {
     mat4 ProjectionMatrix;
     vec4 BlueNoiseImageIndex_DeltaTime_Width_Height;
+    vec4 GI_Solution_Padding;
 } ubo;
 
 
 const int MIN_ITERATION = 0;
-const int MAX_ITERATION = 40;
+const int MAX_ITERATION = 35;
 const int MAX_RAYS = 5;
 const int MIN_RAYS = 1;
 
@@ -100,13 +101,14 @@ void main() {
    int   Height           = int(ubo.BlueNoiseImageIndex_DeltaTime_Width_Height.w);
 
     ivec2 TextlCord   = ivec2(gl_GlobalInvocationID.xy);
-    vec2 UV = (vec2(TextlCord * 2) + 0.5) / vec2(Width,Height); // + 0.5 gives us the middle of the TEXEL not the edge
+    vec2 UV = (vec2(TextlCord) + 0.5) / vec2(Width,Height); // + 0.5 gives us the middle of the TEXEL not the edge
 
     vec3 Color      = texture(DirectLigtingTexture, UV).rgb;
     vec3 Albedo     = texture(AlbedoTexture, UV).rgb;
     vec3 VSposition = texture(ViewSpacePosition, UV).rgb;
     vec3 Normal     = normalize(texture(NormalTexture, UV).xyz);
     
+   
 
     vec2 tiledUV = (vec2(TextlCord * 2) + 0.5) /  vec2(128,128);
 
@@ -116,32 +118,34 @@ void main() {
     
     int NUM_RAYS = int(mix(MAX_RAYS, MIN_RAYS, brightness));
 
-    for(int i = 0; i < NUM_RAYS; i++) {
-    
-         //vec2 noise = rand2(tiledUV + inTexCoord * 17.0, seed, float(i));
-         int index = int(ubo.BlueNoiseImageIndex_DeltaTime_Width_Height.x);
-         vec2 noise = texture(BlueNoise[index], tiledUV).rg;
-    
-         vec3 stochasticNormal = GetHemisphereSample(noise, Normal);
-    
-         if(dot(stochasticNormal, stochasticNormal) > 0.001){
-         
-           RayHit hit  = FindIntersectionPoint(
-                         offsetPositionAlongNormal(VSposition, Normal), 
-                         stochasticNormal, 
-                         200.0);
-
-         if(hit.hit) {
-            vec4 RayPositionPS = ubo.ProjectionMatrix * vec4(hit.position, 1.0);
-            RayPositionPS.xyz /= RayPositionPS.w;
-            vec2 hitUV = RayPositionPS.xy * 0.5 + 0.5;
-
-            vec3 Direct = texture(DirectLigtingTexture, hitUV).rgb;
-            giContribution += Direct;
-
-         }
+   //if(ubo.GI_Solution_Padding.x == 1 || ubo.GI_Solution_Padding.x == 2)
+   
+       for(int i = 0; i < NUM_RAYS; i++) {
+       
+            //vec2 noise = rand2(tiledUV + inTexCoord * 17.0, seed, float(i));
+            int index = int(ubo.BlueNoiseImageIndex_DeltaTime_Width_Height.x);
+            vec2 noise = texture(BlueNoise[index], tiledUV).rg;
+       
+            vec3 stochasticNormal = GetHemisphereSample(noise, Normal);
+       
+            if(dot(stochasticNormal, stochasticNormal) > 0.001){
+            
+              RayHit hit  = FindIntersectionPoint(
+                            offsetPositionAlongNormal(VSposition, Normal), 
+                            stochasticNormal, 
+                            200.0);
+   
+            if(hit.hit) {
+               vec4 RayPositionPS = ubo.ProjectionMatrix * vec4(hit.position, 1.0);
+               RayPositionPS.xyz /= RayPositionPS.w;
+               vec2 hitUV = RayPositionPS.xy * 0.5 + 0.5;
+   
+               vec3 Direct = texture(DirectLigtingTexture, hitUV).rgb;
+               giContribution += Direct;
+   
+            }
+          }
      }
-    }
 
     vec3 finalGI = (giContribution / float(max(1, NUM_RAYS)));
     imageStore(SSGITexture,ivec2(gl_GlobalInvocationID.xy), vec4(finalGI,1));

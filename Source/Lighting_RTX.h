@@ -10,9 +10,7 @@ struct Lightin_RTX_PC {
 	glm::vec2 ScreenSize;
 	int       LightCount;
 	int       FrameIndex;
-    glm::mat4 inverseView;
-    glm::mat4 inverseProjection;
-
+    glm::vec4 GI_Solution_Index_Padding;
 };
 
 class Lighting_RTX
@@ -45,6 +43,7 @@ public:
     vk::DescriptorSetLayout  descriptorSetLayout;
 
     int LightCount = 0;
+    int GISolutionIndex = 0;
 
    private:
 
@@ -60,7 +59,6 @@ public:
 
    SkyBox* SkyBoxRef = nullptr;
    int frameIndex = 0;
-
 };
 
 static inline void Lighting_RTXDeleter(Lighting_RTX* ref) {

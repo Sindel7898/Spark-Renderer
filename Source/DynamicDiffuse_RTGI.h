@@ -12,6 +12,7 @@ class  BufferManager;
 class  Model;
 class  Light;
 class  SkyBox;
+class  Lighting_RTX;
 
 
 
@@ -42,7 +43,7 @@ class DynamicDiffuse_RTGI
 {
 public:
 
-    DynamicDiffuse_RTGI(const std::string filepath,VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, SkyBox* skybox);
+    DynamicDiffuse_RTGI(const std::string filepath,VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, SkyBox* skybox, Lighting_RTX* LRTX);
     void CreateStorageBuffer();
     void createRayTracingDescriptorSetLayout();
     void createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, std::vector<BufferData>& fragmentUniformBuffers);
@@ -129,6 +130,8 @@ public:
     int SampleCount = 2;
     int FrameCount = 0;
     int LightCount;
+
+	Lighting_RTX* lighting_RTX = nullptr;
 private:
 
     VulkanContext*   vulkanContext = nullptr;

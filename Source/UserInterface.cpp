@@ -523,6 +523,22 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
                     ImGui::EndCombo();
                 }
 
+                if (ImGui::BeginCombo("GI Solution", currentGI_Solution.c_str())) {
+
+                    for (int i = 0; i < GlobalIllumination_Solution.size(); i++) {
+
+                        bool is_selected = (currentGI_Solution == GlobalIllumination_Solution[i]);
+
+                        if (ImGui::Selectable(GlobalIllumination_Solution[i].c_str(), is_selected)) {
+
+                            currentGI_Solution = GlobalIllumination_Solution[i];
+                            appref->lighting_RTX->GISolutionIndex = i;
+
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+
 
                 //if (ImGui::CollapsingHeader("RT Reflections", ImGuiTreeNodeFlags_DefaultOpen)) {
                 //    ImGui::Checkbox("Enable Raytraced Reflections", (bool*)&appref->RT_Reflection->bReflections);

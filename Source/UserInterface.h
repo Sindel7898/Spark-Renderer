@@ -69,13 +69,14 @@ private:
     std::vector<std::string> items{ "Directional", "Point" };
     std::string currentItem = "Point";
 
-
     std::vector<std::string> SkyBoxs{ "Day Sky", "Church", "Night Sky","City","Black"};
     std::string currentSkyBox = "Day Sky";
 
-
     std::vector<std::string> DDGI_Vertex_Options{ "First Vertex", "Second Vertex" };
     std::string currentDDGIVertex = "First Vertex";
+
+    std::vector<std::string> GlobalIllumination_Solution{ "DDGI", "SSGI","DDGI + SSGI","PT"};
+    std::string currentGI_Solution = "DDGI";
 
     ImVec2 viewportSize;
 
