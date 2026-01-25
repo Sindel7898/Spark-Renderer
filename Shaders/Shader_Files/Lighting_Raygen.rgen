@@ -200,12 +200,5 @@ void main() {
     directLighting += Lo  * lights[i].CameraPositionAndLightIntensity.a * shadow;
  }
 
- vec3 TotalLighting = vec3(0.0);
-        
-    
-      totallighting = directlighting;
-
-
-
-   imageStore(OutputImage, fullCoord, vec4(TotalLighting, 1.0));
+   imageStore(OutputImage, fullCoord, vec4(directLighting, 1.0));
 }
