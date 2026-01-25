@@ -94,10 +94,18 @@ vec3 SampleIrradiance(sampler2D IrradianceTexture,
                       int IrrAtlasWidth,
                       int VisSideLength,
                       int VisGutterSize,
-                      int VisAtlasWidth)
+                      int VisAtlasWidth, 
+                      vec3 Camera_Position)
 {
-    float push_bias = 0.01; 
-    vec3 SamplePosition = Position + normalize(Normal) * push_bias;
+    float self_shadow_bias = 0.1; 
+    vec3 Wo = normalize(Camera_Position.xyz - Position);
+    
+    float min_spacing = min(ProbeSpacing.x, ProbeSpacing.y); 
+    
+    vec3 bias_vector = (Normal * 0.2f + Wo * 0.8f) * (0.75f * min_spacing) * self_shadow_bias;
+
+    vec3 SamplePosition = Position + bias_vector;
+
     vec3 GridIndexF = (SamplePosition - GridBaseLocation) / ProbeSpacing;
     vec3 Alpha = fract(GridIndexF);
     ivec3 GridIndex = ivec3(floor(GridIndexF));
@@ -119,27 +127,30 @@ vec3 SampleIrradiance(sampler2D IrradianceTexture,
         // Calculate Irradiance Texel
         ivec2 irradiance_texel = GetProbeTexel(Normaluv, ProbeIndex, IrrSideLength, IrrGutterSize, IrrAtlasWidth, ProbeCount);
 
-        vec3 dir = SamplePosition - ProbeWorldPosition;
-        float r = length(dir);
-        dir *= -1.0 / r;
+        // Vector from Probe to Sample
+        vec3 probeToSample = SamplePosition - ProbeWorldPosition;
+        float distToProbe = length(probeToSample);
+        
+        // Direction from Sample to Probe 
+        vec3 dir = -probeToSample / distToProbe; //confusing but this basically negates the direction
 
+        // Smooth Backface Test
         float weight = (dot(dir, Normal) + 1.0) * 0.5;
-        weight = (weight * weight);
+        weight = (weight * weight) + 0.2; 
 
-        float weightNoCheb = (dot(dir, Normal) + 1.0) * 0.5;
-        weightNoCheb = (weightNoCheb * weightNoCheb) + 0.2;
-
+        // Trilinear Weight
         vec3 CornerWeight = mix(vec3(1.0) - Alpha, Alpha, vec3(Offset));
-        float TrilinearWeight = CornerWeight.x * CornerWeight.y * CornerWeight.z;
+        float TrilinearWeight = CornerWeight.x * CornerWeight.y * CornerWeight.z + + 0.001f;
 
-        if (TrilinearWeight <= 0.0001) continue;
+        if (TrilinearWeight <= 0.001) continue;
+        
+        weight *= TrilinearWeight;
+       
+        float weightNoCheb = weight; 
 
-        weight       *= (TrilinearWeight + 0.001);
-        weightNoCheb *= (TrilinearWeight + 0.001);
+        vec2 Diruv = (oct_encode(normalize(-dir)) * 0.5) + 0.5;
 
-        vec2 Diruv = (oct_encode(normalize(dir)) * 0.5) + 0.5;
-
-        //Calc VisibilityTexture Texel
+        // Calc VisibilityTexture Texel
         ivec2 visibility_texel = GetProbeTexel(Diruv, ProbeIndex, VisSideLength, VisGutterSize, VisAtlasWidth, ProbeCount);
         
         vec2 DepthInfo = texelFetch(VisibilityTexture, visibility_texel, 0).rg;
@@ -147,14 +158,20 @@ vec3 SampleIrradiance(sampler2D IrradianceTexture,
         float Mean  = DepthInfo.x; 
         float Mean2 = DepthInfo.y; 
         float chebyshev_weight = 1.0;
-        float r_biased = r - 0.05;  
+        
+        float r_biased = distToProbe - 0.05;  
 
         if(r_biased > Mean) {
             float variance = abs((Mean * Mean) - Mean2);
-            const float distanceDiff = r - Mean;
+            const float distanceDiff = distToProbe - Mean;
             chebyshev_weight = variance / (variance + (distanceDiff * distanceDiff));
-            weight *= chebyshev_weight;
+            
+            chebyshev_weight = max((chebyshev_weight * chebyshev_weight * chebyshev_weight), 0.0f);
         }
+        
+        chebyshev_weight = max(0.05, chebyshev_weight);
+
+        weight *= chebyshev_weight;
 
         vec3 probeIrradiance = sqrt(texelFetch(IrradianceTexture, irradiance_texel, 0).rgb);
         
@@ -168,5 +185,7 @@ vec3 SampleIrradiance(sampler2D IrradianceTexture,
     ComputedIrradiance       = ComputedIrradiance * ComputedIrradiance;
     ComputedIrradianceNoCheb = ComputedIrradianceNoCheb * ComputedIrradianceNoCheb;
     
-    return mix(ComputedIrradianceNoCheb, ComputedIrradiance, clamp(IrradianceNoCheb.a, 0.0, 1.0));
+    vec3 FinalIrradiance = mix(ComputedIrradianceNoCheb, ComputedIrradiance, clamp(IrradianceNoCheb.a, 0.0, 1.0));
+
+    return FinalIrradiance * 0.5 * 3.14159;
 }

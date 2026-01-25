@@ -1562,6 +1562,7 @@ void DynamicDiffuse_RTGI::DispatchSampleGIFromProbeDataCompute(vk::CommandBuffer
 	sampleGridInfo.sampleGridInfo.generalAtlasInfo.ProbeSideLength = ProbeSideLength;
 	sampleGridInfo.sampleGridInfo.generalAtlasInfo.GutterSize      = GutterSize;
 	sampleGridInfo.sampleGridInfo.generalAtlasInfo.RaysPerProbe    = RaysPerProbe;
+	sampleGridInfo.UseInfiniteBounce_infinite_bounces_multiplier_Padding = glm::vec4(camera->GetPosition(), 0);
 
 	commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(RTpcInfo), &sampleGridInfo);
 

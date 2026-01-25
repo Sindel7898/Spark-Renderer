@@ -165,6 +165,7 @@ void main()
      vec4 WorldPos =  transformations[objectID].WorldMatrix * vec4(VertexPosition,1.0);
      HitPosition   =  WorldPos.xyz;
 
+     vec3 CameraPosition = lights[0].CameraPositionAndLightIntensity.xyz;
 
         // --- Lighting ---
         vec3 LightDir = vec3(1,1,1);
@@ -242,7 +243,7 @@ void main()
                                           // Visibility Params
                                           pc.ProbeSideLength,   //Same values are being passed cus as of now they are both the same size. but this can be changed
                                           pc.GutterSize,
-                                          pc.AtlasWidthSize) * pc.UseInfiniteBounce_infinite_bounces_multiplier_LightCount.y;
+                                          pc.AtlasWidthSize,CameraPosition) * pc.UseInfiniteBounce_infinite_bounces_multiplier_LightCount.y;
 
              if (any(greaterThan(GI, vec3(0)))) {
                  Radiance += GI * Albedo / PI;

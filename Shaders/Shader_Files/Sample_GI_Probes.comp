@@ -13,6 +13,7 @@ layout(push_constant) uniform ImageSize{
     int   ProbeSideLength; 
     int   GutterSize;      
     int   NumRays;
+    vec4  CameraLocation;
 }pc;
 
 layout(binding = 0)   uniform sampler2D  PositionImage;
@@ -57,7 +58,7 @@ void main()
               // Visibility Params
               pc.ProbeSideLength,   //Same values are being passed cus as of now they are both the same size. but this can be changed
               pc.GutterSize,
-              pc.AtlasWidthSize
+              pc.AtlasWidthSize,pc.CameraLocation.xyz
           );
       };
 

@@ -58,7 +58,7 @@ const int GIIndex = 200;
 const float Constant  = 1.0;
 const float Linear    = 0.09;
 const float Quadratic = 0.032;
-
+const float MaxResevoirVolume = 35.0;
 
 uint pcg_hash(uint seed)
 {
@@ -286,6 +286,20 @@ void main() {
 
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    vec2  velocityUV = texelFetch(MotionVectorImage, TextCoord, 0).rg;
+    vec2  screenPosPrevious = TextCoord - (velocityUV * pc.ScreenSize_Padding_FrameIndex_LightCount.xy);
+    ivec2 prevCoord = ivec2(screenPosPrevious);      
+    bool  validHistory = all(greaterThanEqual(screenPosPrevious, vec2(0.0))) && all(lessThan(screenPosPrevious, pc.ScreenSize_Padding_FrameIndex_LightCount.xy));
+
+    if (validHistory) {
+      vec3 prevNormal = texelFetch(PrevNormalImage, prevCoord, 0).rgb;
+         validHistory = dot(prevNormal, surfaceData.normal) >= 0.9;
+    }
+
+
+    uint initial_sample_count = validHistory ? 20 : 35;
+
     Reservoir currentReservoir;
     currentReservoir.Light_Index = 0;
     currentReservoir.Light_Weight = 0.0;
@@ -296,7 +310,7 @@ void main() {
     float pdf = 1.0 / float(TotalNumOfLights); 
     float p_hat_current = 0.0; 
 
-    for (uint i = 0; i < 9; i++) {  
+    for (uint i = 0; i < initial_sample_count; i++) {  
         uint lightIndex = min(uint(rand01(rngState) * float(TotalNumOfLights)), uint(TotalNumOfLights - 1)); 
         vec3 RadianceCandidate = GetLightRadiance(lights[lightIndex], CameraPos, surfaceData, ViewDir, F, diffuse);  
         float p_hat = length(RadianceCandidate);
@@ -330,7 +344,7 @@ vec3 IndirectRadiance = vec3(0.0);
                                           // Visibility Params
                                           pc.ProbeSideLength,   //Same values are being passed cus as of now they are both the same size. but this can be changed
                                           pc.GutterSize,
-                                          pc.AtlasWidthSize);
+                                          pc.AtlasWidthSize,pc.CameraPosition.xyz);
 
                    
             IndirectRadiance         = HitIrradiance * (surfaceData.albedo / PI);
@@ -353,7 +367,7 @@ vec3 IndirectRadiance = vec3(0.0);
           BiasedPosition, payload.Normal,
           pc.GridBaseLocation_ScreenSizeWidth.xyz, pc.ProbeSpacing_ScreenSizeHeight.xyz,
           ivec3(pc.ProbeCount.xyz), pc.ProbeSideLength, pc.GutterSize, pc.AtlasWidthSize,
-          pc.ProbeSideLength, pc.GutterSize, pc.AtlasWidthSize
+          pc.ProbeSideLength, pc.GutterSize, pc.AtlasWidthSize,pc.CameraPosition.xyz
       );
       
      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -421,13 +435,7 @@ vec3 IndirectRadiance = vec3(0.0);
     // Feed data from the last resevoir 
     UpdateReservoir(temporalReservoir, currentReservoir.Light_Index, p_hat_current * currentReservoir.Light_Weight * currentReservoir.Num_OF_Lights_In_Resevoir, currentReservoir.Num_OF_Lights_In_Resevoir, rngState);
 
-    vec2 velocityUV = texelFetch(MotionVectorImage, TextCoord, 0).rg;
-    vec2 screenPosPrevious = TextCoord - (velocityUV * pc.ScreenSize_Padding_FrameIndex_LightCount.xy);
-    bool validHistory = all(greaterThanEqual(screenPosPrevious, vec2(0.0))) && all(lessThan(screenPosPrevious, pc.ScreenSize_Padding_FrameIndex_LightCount.xy));
-
-
     if (bTemporalReuse && validHistory) {
-        ivec2 prevCoord = ivec2(screenPosPrevious);      
         vec3 prevNormal = texelFetch(PrevNormalImage, prevCoord, 0).rgb;
         
         if (dot(prevNormal, surfaceData.normal) >= 0.9) {
@@ -436,7 +444,7 @@ vec3 IndirectRadiance = vec3(0.0);
             historyReservoir.Light_Index = uint(PrevResData.x);
             historyReservoir.Light_Weight = PrevResData.y;
             historyReservoir.Sum_Of_All_Weights = PrevResData.z;
-            historyReservoir.Num_OF_Lights_In_Resevoir = min(PrevResData.w,20);
+            historyReservoir.Num_OF_Lights_In_Resevoir = min(PrevResData.w,MaxResevoirVolume);
 
             vec3 historyRadiance = GetRadiance(historyReservoir.Light_Index, CameraPos, surfaceData, ViewDir, F, diffuse,IndirectRadiance);
             float p_hat_history = length(historyRadiance);
@@ -486,7 +494,7 @@ vec3 IndirectRadiance = vec3(0.0);
             vec3 neighbourRadiance = GetRadiance(neighbourReservoir.Light_Index, CameraPos, surfaceData, ViewDir, F, diffuse, IndirectRadiance);
             float p_hat_neighbour = length(neighbourRadiance);
 
-            float neighborM = min(neighbourReservoir.Num_OF_Lights_In_Resevoir, 20.0); 
+            float neighborM = min(neighbourReservoir.Num_OF_Lights_In_Resevoir, MaxResevoirVolume); 
             UpdateReservoir(spatialReservoir, neighbourReservoir.Light_Index, p_hat_neighbour * neighbourReservoir.Light_Weight * neighbourReservoir.Num_OF_Lights_In_Resevoir, neighbourReservoir.Num_OF_Lights_In_Resevoir, rngState);
         }
     }
@@ -523,11 +531,14 @@ vec3 IndirectRadiance = vec3(0.0);
                 RayDirection = normalize(-light.positionAndLightType.xyz); 
                 tMax = 10000.0; 
             }
-            
-            bool Hit = TraceShadow(rayOrigin, RayDirection, tMax);
+            bool Hit;
             
             vec3 radiance = GetRadiance(spatialReservoir.Light_Index, CameraPos, surfaceData, ViewDir, F, diffuse, IndirectRadiance);
             float p_hat_final = length(radiance);
+
+            if(p_hat_final > 0.0){
+               Hit = TraceShadow(rayOrigin, RayDirection, tMax);
+              }
 
             if (Hit && p_hat_final > 0.0) {
                 spatialReservoir.Light_Weight = (1.0 / p_hat_final) * (spatialReservoir.Sum_Of_All_Weights / spatialReservoir.Num_OF_Lights_In_Resevoir);
