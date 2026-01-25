@@ -13,6 +13,15 @@ struct Lightin_RTX_PC {
     glm::vec4 GI_Solution_Index_Padding;
 };
 
+enum GI_Solution
+{
+    _None = 0,
+    _DDGI = 1,
+	_SSGI = 2,
+	_DDGI_AND_SSGI = 3,
+	_PathTracing = 4
+};
+
 class Lighting_RTX
 {
 public:

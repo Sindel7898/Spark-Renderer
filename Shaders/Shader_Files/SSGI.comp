@@ -11,7 +11,6 @@ layout (binding = 7, rgba16f) uniform image2D SSGITexture;
 layout (binding = 6) uniform SSGIUniformBuffer {
     mat4 ProjectionMatrix;
     vec4 BlueNoiseImageIndex_DeltaTime_Width_Height;
-    vec4 GI_Solution_Padding;
 } ubo;
 
 
@@ -101,7 +100,7 @@ void main() {
    int   Height           = int(ubo.BlueNoiseImageIndex_DeltaTime_Width_Height.w);
 
     ivec2 TextlCord   = ivec2(gl_GlobalInvocationID.xy);
-    vec2 UV = (vec2(TextlCord) + 0.5) / vec2(Width,Height); // + 0.5 gives us the middle of the TEXEL not the edge
+    vec2 UV = (vec2(TextlCord * 2) + 0.5) / vec2(Width,Height); // + 0.5 gives us the middle of the TEXEL not the edge
 
     vec3 Color      = texture(DirectLigtingTexture, UV).rgb;
     vec3 Albedo     = texture(AlbedoTexture, UV).rgb;
@@ -117,8 +116,6 @@ void main() {
     float brightness = luminance(Color);
     
     int NUM_RAYS = int(mix(MAX_RAYS, MIN_RAYS, brightness));
-
-   //if(ubo.GI_Solution_Padding.x == 1 || ubo.GI_Solution_Padding.x == 2)
    
        for(int i = 0; i < NUM_RAYS; i++) {
        
@@ -144,9 +141,8 @@ void main() {
                giContribution += Direct;
    
             }
-          }
-     }
-
+      }
+}
     vec3 finalGI = (giContribution / float(max(1, NUM_RAYS)));
     imageStore(SSGITexture,ivec2(gl_GlobalInvocationID.xy), vec4(finalGI,1));
 }

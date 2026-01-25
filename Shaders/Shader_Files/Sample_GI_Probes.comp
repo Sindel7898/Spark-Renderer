@@ -13,7 +13,6 @@ layout(push_constant) uniform ImageSize{
     int   ProbeSideLength; 
     int   GutterSize;      
     int   NumRays;
-    vec4   GI_Solution_Padding;
 }pc;
 
 layout(binding = 0)   uniform sampler2D  PositionImage;
@@ -41,7 +40,6 @@ void main()
   
    vec3 Irradiance = vec3(0);
 
-   if(pc.GI_Solution_Padding.x == 0 || pc.GI_Solution_Padding.x == 2 ){
    
          if(dot(Normal, Normal) > 0.001){
           Irradiance = SampleIrradiance(
@@ -62,6 +60,6 @@ void main()
               pc.AtlasWidthSize
           );
       };
-   }
+
    imageStore(SampledGIImage, ivec2(gl_GlobalInvocationID.xy), vec4(Irradiance,1));
 }

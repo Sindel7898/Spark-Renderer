@@ -133,8 +133,6 @@ struct SampleGridInfo
 struct RTpcInfo
 {
     SampleGridInfo  sampleGridInfo;
-    glm::vec4 UseInfiniteBounce_infinite_bounces_multiplier_Padding;
-
 };
 
 

@@ -52,7 +52,7 @@ private:
     VulkanContext* vulkanContext = nullptr;
     BufferManager* bufferManager = nullptr;
     Camera* camera = nullptr;
-    vk::CommandPool commandPool = nullptr;
+    vk::CommandPool commandPool;
 
     Lighting_RTX* LightingPass;
     SSGI* ssgi;

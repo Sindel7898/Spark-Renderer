@@ -12,8 +12,6 @@ class  Lighting_RTX;
 struct SSGI_UniformBufferData {
     glm::mat4 ProjectionMatrix;
     glm::vec4 BlueNoiseImageIndex_WithPadding;
-    glm::vec4 GI_Solution_Padding;
-
 };
 
 

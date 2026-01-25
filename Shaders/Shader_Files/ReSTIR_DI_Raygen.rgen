@@ -345,50 +345,56 @@ vec3 IndirectRadiance = vec3(0.0);
       traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsCullBackFacingTrianglesEXT, 
                   0xFF, 0, 0, 0, rayOrigin, 0.1, DiffuseDirection, 1000.0, 0);
       
+    float biasDistance = pc.ProbeSpacing_ScreenSizeHeight.x * 0.2; 
+    vec3 BiasedPosition = payload.Position - (DiffuseDirection * biasDistance);
+
       vec3 HitIrradiance = SampleIrradiance(
           IrradianceStorageImage, VisibilityStorageImage,
-          payload.Position, payload.Normal,
+          BiasedPosition, payload.Normal,
           pc.GridBaseLocation_ScreenSizeWidth.xyz, pc.ProbeSpacing_ScreenSizeHeight.xyz,
           ivec3(pc.ProbeCount.xyz), pc.ProbeSideLength, pc.GutterSize, pc.AtlasWidthSize,
           pc.ProbeSideLength, pc.GutterSize, pc.AtlasWidthSize
       );
       
      ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    vec4 prevClip = pc.ProjectionViewMatrix * vec4(payload.Position, 1.0);
-    vec3 prevNDC = prevClip.xyz / prevClip.w;
-    vec2 prevUV = prevNDC.xy * 0.5 + 0.5;
+  //   vec4 prevClip = pc.ProjectionViewMatrix * vec4(payload.Position, 1.0);
+  //  vec3 prevNDC = prevClip.xyz / prevClip.w;
+  //  vec2 prevUV = prevNDC.xy * 0.5 + 0.5;
+  //
+  //  vec2 screenSize = pc.ScreenSize_Padding_FrameIndex_LightCount.xy;
+  //  ivec2 prevPixel = ivec2(prevUV * screenSize);
+  //
+  // bool validHistory = all(greaterThanEqual(prevPixel, vec2(0.0))) && all(lessThan(prevPixel, pc.ScreenSize_Padding_FrameIndex_LightCount.xy));
+  //
+  //    vec4 Resevoir_info = imageLoad(PrevResevoirImage, ivec2(prevPixel.xy)).rgba;
+  //       vec3 prevNormal = texelFetch(PrevNormalImage, prevPixel, 0).rgb;
+  //
+  //   //if (dot(prevNormal, payload.Normal) >= 0.9 && validHistory) {
+  //
+  //     uint lightIndex = uint(Resevoir_info.x);
+  //   
+  //      vec3 SecondaryViewDir = normalize(CameraPos - payload.Position);
+  //
+  //         SurfaceData hitSurfaceData;
+  //         hitSurfaceData.worldPos  = payload.Position;
+  //         hitSurfaceData.normal    = payload.Normal;
+  //         hitSurfaceData.albedo    = payload.Albedo;
+  //         hitSurfaceData.metallic  = 0.0;
+  //         hitSurfaceData.roughness = 1.0;
 
-    vec2 screenSize = pc.ScreenSize_Padding_FrameIndex_LightCount.xy;
-    ivec2 prevPixel = ivec2(prevUV * screenSize);
-
-   bool validHistory = all(greaterThanEqual(prevPixel, vec2(0.0))) && all(lessThan(prevPixel, pc.ScreenSize_Padding_FrameIndex_LightCount.xy));
-
-      vec4 Resevoir_info = imageLoad(PrevResevoirImage, ivec2(prevPixel.xy)).rgba;
-         vec3 prevNormal = texelFetch(PrevNormalImage, prevPixel, 0).rgb;
-
-     //if (dot(prevNormal, payload.Normal) >= 0.9 && validHistory) {
-
-       uint lightIndex = uint(Resevoir_info.x);
-     
-      vec3 SecondaryViewDir = normalize(CameraPos - payload.Position);
-
-           SurfaceData hitSurfaceData;
-           hitSurfaceData.worldPos  = payload.Position;
-           hitSurfaceData.normal    = payload.Normal;
-           hitSurfaceData.albedo    = payload.Albedo;
-           hitSurfaceData.metallic  = 0.0;
-           hitSurfaceData.roughness = 1.0;
-
-      vec3 DirectLightAtSecondary =  GetLightRadiance(lights[lightIndex], CameraPos, hitSurfaceData, SecondaryViewDir, F, vec3(payload.Albedo / PI));
+      //vec3 DirectLightAtSecondary =  GetLightRadiance(lights[lightIndex], CameraPos, hitSurfaceData, SecondaryViewDir, F, vec3(payload.Albedo / PI));
     
-      vec3 TotalIncomingIrradiance = ((DirectLightAtSecondary) + HitIrradiance * (payload.Albedo / PI))  * surfaceData.albedo;
-     
-           IndirectRadiance = TotalIncomingIrradiance;
+        vec3 L_in = HitIrradiance * (payload.Albedo / PI); 
+        vec3 L_out = L_in * surfaceData.albedo;
 
+       IndirectRadiance = L_out;
 }
         
         float GI_p_hat = length(IndirectRadiance);
-        float WeightOfGI = GI_p_hat  * float(TotalNumOfLights);
+        float G_bounded = min(GI_p_hat, 1);
+        float GI_p_hat_Residual = GI_p_hat - G_bounded;
+
+        float WeightOfGI = GI_p_hat;
 
         if(UpdateReservoir(currentReservoir, GIIndex, WeightOfGI, 1.0, rngState)){
             p_hat_current = GI_p_hat;

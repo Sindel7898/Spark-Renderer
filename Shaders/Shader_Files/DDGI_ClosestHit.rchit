@@ -245,7 +245,7 @@ void main()
                                           pc.AtlasWidthSize) * pc.UseInfiniteBounce_infinite_bounces_multiplier_LightCount.y;
 
              if (any(greaterThan(GI, vec3(0)))) {
-                 Radiance += GI * Albedo;
+                 Radiance += GI * Albedo / PI;
              }
         }
 

@@ -96,8 +96,8 @@ vec3 SampleIrradiance(sampler2D IrradianceTexture,
                       int VisGutterSize,
                       int VisAtlasWidth)
 {
-    float push_bias = 0.1; 
-    vec3 SamplePosition = Position + Normal * push_bias;
+    float push_bias = 0.01; 
+    vec3 SamplePosition = Position + normalize(Normal) * push_bias;
     vec3 GridIndexF = (SamplePosition - GridBaseLocation) / ProbeSpacing;
     vec3 Alpha = fract(GridIndexF);
     ivec3 GridIndex = ivec3(floor(GridIndexF));
