@@ -78,7 +78,7 @@ void App::LoadAllObjects()
 
 
 	////Sponza SETUP
-	auto Bunny = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto Bunny = std::shared_ptr<Model>(new Model("../Textures/Bunny2/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto Dragon = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto Sponza = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 
@@ -367,7 +367,7 @@ void App::SwitchScene(int index)
 			dynamicDiffuse_RTGI->NumOfProbesZ = 13;
 			dynamicDiffuse_RTGI->RaysPerProbe = 188;
 			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-55.011, -1.357, -23.000);
-			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(8.500, 2.896, 4.000);
+			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(11.000, 5.500, 5.000);
 
 		}
 

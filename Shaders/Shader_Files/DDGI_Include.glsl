@@ -170,8 +170,14 @@ vec3 SampleIrradiance(sampler2D IrradianceTexture,
         }
         
         chebyshev_weight = max(0.05, chebyshev_weight);
-
         weight *= chebyshev_weight;
+
+        const float crushThreshold = 0.2;
+
+        if (weight < crushThreshold) 
+        {
+            weight *= (weight * weight) * (1.0 / (crushThreshold * crushThreshold)); 
+        }
 
         vec3 probeIrradiance = sqrt(texelFetch(IrradianceTexture, irradiance_texel, 0).rgb);
         
