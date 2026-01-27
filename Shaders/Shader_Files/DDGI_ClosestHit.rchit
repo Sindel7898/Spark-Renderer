@@ -216,10 +216,10 @@ void main()
 
             float NdotL = max(dot(HitNormal, LightDir), 0.0);
 
-            vec3 shadowOrigin   = HitPosition + (WorldN * 0.001);
+            vec3 shadowOrigin   = HitPosition + (WorldN * 0.05);
             const uint rayFlags = gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
             const uint cullMask = 0xFF;
-            const float tMin    = 0.001;
+            const float tMin    = 0.0;
 
             shadow_Payload.Shadow = 0;
             traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 1, shadowOrigin, tMin, LightDir, lightDist, 1);
@@ -238,7 +238,7 @@ void main()
                                           IrradianceStorageImage,
                                           VisibilityStorageImage,
                                           HitPosition,
-                                          HitNormal,
+                                          WorldN,
                                           pc.GridBaseLocation_ScreenSizeWidth.xyz,
                                           pc.ProbeSpacing_ScreenSizeHeight.xyz,
                                           ivec3(pc.ProbeCount.xyz),

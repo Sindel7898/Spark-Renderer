@@ -9,6 +9,8 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/matrix_decompose.hpp>
+#include <random>
+#include <glm/gtx/euler_angles.hpp> 
 
 DynamicDiffuse_RTGI::DynamicDiffuse_RTGI(const std::string filepath, VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, SkyBox* skybox, Lighting_RTX* LRTX)
 {
@@ -76,7 +78,7 @@ void DynamicDiffuse_RTGI::CreateAtlasImages() {
 	RadianceImageAtlasImage.ImageID = " DDGI Radiance Atlas Image"; 
 	bufferManager->CreateImage(&RadianceImageAtlasImage, RadianceImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
 	RadianceImageAtlasImage.imageView = bufferManager->CreateImageView(&RadianceImageAtlasImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	RadianceImageAtlasImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
+	RadianceImageAtlasImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 
 	////////////////////////////////////////////////////////////
 	int IrradianceSize = (ProbeSideLength + GutterSize);
@@ -1467,6 +1469,17 @@ void DynamicDiffuse_RTGI::DrawNode(vk::CommandBuffer commandBuffer, vk::Pipeline
 	}
 }
 
+glm::mat4 GetRandomRotationMatrix() {
+	static std::default_random_engine generator;
+	static std::uniform_real_distribution<float> distribution(0.0f, 360.0f);
+
+	float pitch = glm::radians(distribution(generator));
+	float yaw = glm::radians(distribution(generator));
+	float roll = glm::radians(distribution(generator));
+
+	return glm::yawPitchRoll(yaw, pitch, roll);
+}
+
 void DynamicDiffuse_RTGI::DispatchGridCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex)
 {
 		uint32_t numElements = NumOfProbesX * NumOfProbesY * NumOfProbesZ;
@@ -1488,10 +1501,6 @@ void DynamicDiffuse_RTGI::DispatchGridCompute(vk::CommandBuffer commandBuffer, v
 
 void DynamicDiffuse_RTGI::DispatchDirectionsCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex, float deltaTime)
 {
-	if (RayRotationRadians >= 360.0f) {
-		RayRotationRadians  = 0.0f;
-	}
-
 
 	uint32_t numElements = RaysPerProbe;
 	uint32_t localSizeX = 32;
@@ -1501,14 +1510,9 @@ void DynamicDiffuse_RTGI::DispatchDirectionsCompute(vk::CommandBuffer commandBuf
 	gridData.probeCount = glm::vec4(NumOfProbesX, NumOfProbesY, NumOfProbesZ, RaysPerProbe);
 	gridData.probeOffset = glm::vec4(ProbeOffset, 1);
 	gridData.probeBaseLocation = glm::vec4(GridLocation, 1);
-
-	gridData.RotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(RayRotationRadians), glm::vec3(1.0f, 1.0f, 1.0f));
-	RayRotationRadians += 0.1 * deltaTime;
-
-
+	gridData.RotationMatrix = GetRandomRotationMatrix();
 
 	commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(GridData), &gridData);
-
 	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, 0, 1, &GridDescriptorSets[imageIndex], 0, nullptr);
 	commandBuffer.dispatch(workGroupsX, 1, 1);
 }

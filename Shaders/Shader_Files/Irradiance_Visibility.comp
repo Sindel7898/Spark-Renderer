@@ -2,201 +2,127 @@
 #extension GL_GOOGLE_include_directive : require
 #include "DDGI_Include.glsl"
 
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-layout(binding = 0) readonly buffer StorageBuffer2 {
-   vec4 FibonacciDirections[];
-} SB0;
-
-layout(binding = 1, rgba16f)  uniform image2D  Radiance_Visibility;
-layout(binding = 2, rgba16f)  uniform image2D  Iradiance;
-layout(binding = 3, rgba16f)  uniform image2D  Visibility;
-layout(binding = 4, rgba16f)  uniform image2D  Prev_Iradiance;
-layout(binding = 5, rgba16f)  uniform image2D  Prev_Visibility;
+layout(binding = 0) readonly buffer StorageBuffer2 { vec4 FibonacciDirections[]; } SB0;
+layout(binding = 1, rgba16f) uniform image2D Radiance_Visibility;
+layout(binding = 2, rgba16f) uniform image2D Iradiance;
+layout(binding = 3, rgba16f) uniform image2D Visibility;
+layout(binding = 4, rgba16f) uniform image2D Prev_Iradiance;
+layout(binding = 5, rgba16f) uniform image2D Prev_Visibility;
 
 layout(push_constant) uniform PushConstants {
-    int   AtlasWidthSize;  
-    int   ProbeSideLength; 
-    int   GutterSize;      
-    int   NumRays;
-}pc;
+    int AtlasWidthSize; int ProbeSideLength; int GutterSize; int NumRays;
+} pc;
 
+struct ProbeInformation { vec4 probeLocationsXYZ_ProbeState; };
+layout(set = 0,binding = 6) buffer StorageBufferObject { ProbeInformation ProbeData[]; } SBO;
 
-struct ProbeInformation {
-    vec4 probeLocationsXYZ_ProbeState;
-};
+shared vec3 RayDirections[256]; 
 
-layout(set = 0,binding = 6) buffer StorageBufferObject {
-      ProbeInformation  ProbeData[];
-}SBO;
+void AccumulateRay(inout vec3 irradiance, inout vec4 visibility, inout float total_weight_irrad, 
+                   vec4 ray_data, float w_irrad, float w_vis) 
+{
+    float ray_dist = ray_data.a;
 
-layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
-                                                                                                                                       //
-                                                                                                                                           //
+    if (ray_dist > -5.0) { 
+        
+        //Irradiance Accumulation
+        if (w_irrad > 0.0001) {
+            vec3 ray_radiance = ray_data.rgb * 0.95; // Energy conservation
+            irradiance += ray_radiance * w_irrad;
+            total_weight_irrad += w_irrad;
+        }
 
-#define PROCESS_RAY(ray_data, weight) \
-    { \
-        float ray_dist = ray_data.a; \
-        RAW_RAYDISTANCE += ray_dist; \
-        bool skip_arithmetic = false; \
-        if (ray_dist < 0.0f && use_backfacing_blending) { \
-            backfaces++; \
-            if (backfaces >= max_backfaces) { \
-                imageStore(Visibility, fragCoord, vec4(0,0,0,1)); \
-                imageStore(Iradiance, fragCoord, vec4(0,0,0,1)); \
-                return; \
-            } \
-            skip_arithmetic = true; \
-        } \
-        if (!skip_arithmetic) { \
-            if (weight > 0.0001) { \
-                vec3 ray_radiance = ray_data.rgb * energy_conservation; \
-                irradiance += ray_radiance * weight; \
-                total_weight += weight; \
-                ray_dist = min(abs(ray_dist), 100.0f); \
-                visibility.x += ray_dist * weight; \
-                visibility.y += (ray_dist * ray_dist) * weight; \
-                visibility.z += weight; \
-            } \
-        } \
+        // Visibility Accumulation
+        if (w_vis > 0.0001) {
+            float d = min(abs(ray_dist), 100.0);
+            // Mean and Mean^2
+            visibility.x += d * w_vis;
+            visibility.y += (d * d) * w_vis;
+            visibility.z += w_vis; // Weight Sum for visibility
+        }
     }
-
-
-
-
-// Shared variables for workgroup
-shared vec3 RayDirections[300];
+}
 
 void main() 
 {
-    //Load up all the directions
-    uint flat_idx   = gl_LocalInvocationIndex; 
-    uint group_size = gl_WorkGroupSize.x * gl_WorkGroupSize.y; 
-    
-    // Parallel load
+    uint flat_idx = gl_LocalInvocationIndex;
+    uint group_size = gl_WorkGroupSize.x * gl_WorkGroupSize.y;
     for (uint i = flat_idx; i < uint(pc.NumRays); i += group_size) {
         RayDirections[i] = SB0.FibonacciDirections[i].xyz;
     }
-  
-  barrier();
+    barrier();
 
+    ivec2 fragCoord = ivec2(gl_GlobalInvocationID.xy);
+    int ProbeSideLength_With_Gutter = pc.ProbeSideLength + pc.GutterSize;
+    int ProbeIndex = get_probe_index_from_pixels(fragCoord, pc.AtlasWidthSize, ProbeSideLength_With_Gutter);
+    ivec2 localPos = fragCoord % ProbeSideLength_With_Gutter;
+    int probe_last_pixel = ProbeSideLength_With_Gutter - 1;
 
+    // Identify Border Pixels
+    bool border_pixel = (localPos.x == 0 || localPos.x == probe_last_pixel || 
+                         localPos.y == 0 || localPos.y == probe_last_pixel);
 
-   ivec2 fragCoord = ivec2(gl_GlobalInvocationID.xy);
-   const float energy_conservation = 0.95;
+    if (!border_pixel) {
+        vec3 irradiance = vec3(0.0);
+        vec4 visibility = vec4(0.0);
+        float total_weight_irrad = 0.0;
+        
+        vec3 texel_dir = oct_decode(get_normalized_probe_texel_coord(fragCoord, pc.ProbeSideLength, pc.GutterSize));
+        
 
-    int ProbeSideLength_With_Gutter  = pc.ProbeSideLength + pc.GutterSize ;
-    int probe_last_pixel = pc.ProbeSideLength + (pc.GutterSize - 1); // subtract by one because the gutter is on each side
+        float dist_exponent = 10.0; 
 
-    int ProbeIndex =  get_probe_index_from_pixels(fragCoord,pc.AtlasWidthSize,ProbeSideLength_With_Gutter);
+        for (int i = 0; i < pc.NumRays; i++) {
+            vec4 ray_data = imageLoad(Radiance_Visibility, ivec2(i, ProbeIndex));
+            vec3 ray_dir = RayDirections[i];
+            
+            float w_irrad = max(dot(texel_dir, ray_dir), 0.0);
+            
+            float w_vis = pow(w_irrad, dist_exponent);
+            
+            AccumulateRay(irradiance, visibility, total_weight_irrad, ray_data, w_irrad, w_vis);
+        }
 
-    ProbeInformation info = SBO.ProbeData[ProbeIndex];
+        if (total_weight_irrad > 0.001) {
+            irradiance *= 1.0 / (2.0 * max(total_weight_irrad, 0.00001)); 
+            
+            vec3 prev_irrad = imageLoad(Prev_Iradiance, fragCoord).rgb;
+            
+            float hysteresis = 0.95;
+            vec3 delta = abs(irradiance - prev_irrad);
+            if (max(max(delta.r, delta.g), delta.b) > 0.2) hysteresis = 0.75; 
+            
+            imageStore(Iradiance, fragCoord, vec4(mix(irradiance, prev_irrad, hysteresis), 1.0));
+        }
 
-    ivec2 localPos      = fragCoord % ProbeSideLength_With_Gutter;
-
-    bool border_pixel   = (localPos.x == 0) || (localPos.x  == probe_last_pixel )||
-                          (localPos.y == 0) || (localPos.y  == probe_last_pixel );
-
-     if (border_pixel) {
-        imageStore(Iradiance, fragCoord, vec4(0.0, 0.0, 0.0, 1.0));
-        imageStore(Visibility, fragCoord, vec4(0.0, 0.0, 0.0, 1.0));
-        return;
+        if (visibility.z > 0.001) {
+            float mean = visibility.x / visibility.z;
+            float mean_sq = visibility.y / visibility.z;
+            
+            vec2 result = vec2(mean, mean_sq);
+            vec2 prev_vis = imageLoad(Prev_Visibility, fragCoord).rg;
+            
+            imageStore(Visibility, fragCoord, vec4(mix(result, prev_vis, 0.95), 1.0, 1.0));
+        }
     }
 
-     vec3 irradiance = vec3(0.0);
-     vec4 visibility = vec4(0.0);
-    float total_weight     = 0.0;
-     vec4 final_color      = vec4(0.0, 0.0, 0.0, 1000.0);
-     uint max_backfaces    = uint(pc.NumRays * 0.1f); // 10% of the total amount of rays being cast
-     uint backfaces = 0;
-     const bool use_backfacing_blending = false;
-     float RAW_RAYDISTANCE = 0;
-     vec3 texel_direction = oct_decode(get_normalized_probe_texel_coord(fragCoord,pc.ProbeSideLength,pc.GutterSize));
+    memoryBarrierImage();
+    barrier();
 
-     int i = 0;
+    if (border_pixel) {
+        ivec2 sourceCoord = fragCoord;
+        
+        if (localPos.x == 0) sourceCoord.x += 1;
+        if (localPos.x == probe_last_pixel) sourceCoord.x -= 1;
+        if (localPos.y == 0) sourceCoord.y += 1;
+        if (localPos.y == probe_last_pixel) sourceCoord.y -= 1;
 
-     for (; i <= pc.NumRays - 4; i += 4) {
-       
-           vec4 ray_data0 = imageLoad(Radiance_Visibility, ivec2(i + 0, ProbeIndex));
-           vec4 ray_data1 = imageLoad(Radiance_Visibility, ivec2(i + 1, ProbeIndex));
-           vec4 ray_data2 = imageLoad(Radiance_Visibility, ivec2(i + 2, ProbeIndex));
-           vec4 ray_data3 = imageLoad(Radiance_Visibility, ivec2(i + 3, ProbeIndex));
-
-           vec3 ray_direction0   = RayDirections[i + 0].xyz;
-           vec3 ray_direction1   = RayDirections[i + 1].xyz;
-           vec3 ray_direction2   = RayDirections[i + 2].xyz;
-           vec3 ray_direction3   = RayDirections[i + 3].xyz;
-
-           float weight0 = max(dot(texel_direction, ray_direction0), 0.0); 
-           float weight1 = max(dot(texel_direction, ray_direction1), 0.0); 
-           float weight2 = max(dot(texel_direction, ray_direction2), 0.0); 
-           float weight3 = max(dot(texel_direction, ray_direction3), 0.0); 
-
-           PROCESS_RAY(ray_data0, weight0);
-           PROCESS_RAY(ray_data1, weight1);
-           PROCESS_RAY(ray_data2, weight2);
-           PROCESS_RAY(ray_data3, weight3);
-
-
-       }
-         for (; i < pc.NumRays; i++) {
-             vec4 d = imageLoad(Radiance_Visibility, ivec2(i, ProbeIndex));
-             float weight = max(dot(texel_direction, RayDirections[i]), 0.0); 
-             PROCESS_RAY(d, weight);
-        }
-     
-              
-    
-          int valid_start = 1;
-          int valid_end   = pc.ProbeSideLength;
-         
-          bool isLeftEdge   = (localPos.x == valid_start);
-          bool isRightEdge  = (localPos.x == valid_end);
-          bool isTopEdge    = (localPos.y == valid_start);
-          bool isBottomEdge = (localPos.y == valid_end);
-
-
-
-
-         if (total_weight > 0.000) {
-             irradiance /=  total_weight;
-         
-             vec3 previous_value = imageLoad( Prev_Iradiance, fragCoord).rgb;
-             vec3 result         = mix(irradiance, previous_value,  0.95f);
-             imageStore(Iradiance , fragCoord, vec4(result,1));
-
-             if (isLeftEdge)   imageStore(Iradiance, fragCoord + ivec2(-1,  0), vec4(result, 1));
-             if (isRightEdge)  imageStore(Iradiance, fragCoord + ivec2( 1,  0), vec4(result, 1));
-             if (isTopEdge)    imageStore(Iradiance, fragCoord + ivec2( 0, -1), vec4(result, 1));
-             if (isBottomEdge) imageStore(Iradiance, fragCoord + ivec2( 0,  1), vec4(result, 1));
-             
-             if (isLeftEdge && isTopEdge)      imageStore(Iradiance, fragCoord + ivec2(-1, -1), vec4(result, 1));
-             if (isRightEdge && isTopEdge)     imageStore(Iradiance, fragCoord + ivec2( 1, -1), vec4(result, 1));
-             if (isLeftEdge && isBottomEdge)   imageStore(Iradiance, fragCoord + ivec2(-1,  1), vec4(result, 1));
-             if (isRightEdge && isBottomEdge)  imageStore(Iradiance, fragCoord + ivec2( 1,  1), vec4(result, 1));
-         }
-          
-          if (total_weight > 0.000) {
-          
-                // Get weighted average
-               float mean     = visibility.x / visibility.z; 
-               float mean_sq  = visibility.y / visibility.z;
-                
-               vec2 Vsibility = vec2(mean,mean_sq);
-          
-               vec2 previous_value = imageLoad(Prev_Visibility, fragCoord).rg;
-               vec2 result         = mix( Vsibility, previous_value, 0.95f);
-          
-                imageStore(Visibility, fragCoord, vec4(result,RAW_RAYDISTANCE, 1.0));
-
-                if (isLeftEdge)   imageStore(Visibility, fragCoord + ivec2(-1,  0), vec4(result, RAW_RAYDISTANCE, 1.0));
-                if (isRightEdge)  imageStore(Visibility, fragCoord + ivec2( 1,  0), vec4(result, RAW_RAYDISTANCE, 1.0));
-                if (isTopEdge)    imageStore(Visibility, fragCoord + ivec2( 0, -1), vec4(result, RAW_RAYDISTANCE, 1.0));
-                if (isBottomEdge) imageStore(Visibility, fragCoord + ivec2( 0,  1), vec4(result, RAW_RAYDISTANCE, 1.0));
-                
-                if (isLeftEdge && isTopEdge)      imageStore(Visibility, fragCoord + ivec2(-1, -1), vec4(result, RAW_RAYDISTANCE, 1.0));
-                if (isRightEdge && isTopEdge)     imageStore(Visibility, fragCoord + ivec2( 1, -1), vec4(result, RAW_RAYDISTANCE, 1.0));
-                if (isLeftEdge && isBottomEdge)   imageStore(Visibility, fragCoord + ivec2(-1,  1), vec4(result, RAW_RAYDISTANCE, 1.0));
-                if (isRightEdge && isBottomEdge)  imageStore(Visibility, fragCoord + ivec2( 1,  1), vec4(result, RAW_RAYDISTANCE, 1.0));
-            }
-
+        vec4 cop_irrad = imageLoad(Iradiance, sourceCoord);
+        vec4 cop_vis   = imageLoad(Visibility, sourceCoord);
+        
+        imageStore(Iradiance, fragCoord, cop_irrad);
+        imageStore(Visibility, fragCoord, cop_vis);
+    }
 }

@@ -1643,7 +1643,7 @@ void App::CreateGraphicsPipeline()
 		vulkanContext.LogicalDevice.destroyShaderModule(RayGen_ShaderModule);
 		vulkanContext.LogicalDevice.destroyShaderModule(RayClosestHit_ShaderModule);
 		vulkanContext.LogicalDevice.destroyShaderModule(RayMiss_ShaderModule);
-
+		vulkanContext.LogicalDevice.destroyShaderModule(RayMiss2_ShaderModule);
 	}
 
 	{
@@ -2729,15 +2729,13 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 
 
 			{
-
 				ImageTransitionData TransitiontoGeneraCompute{};
-				TransitiontoGeneraCompute.oldlayout = vk::ImageLayout::eUndefined;
+				TransitiontoGeneraCompute.oldlayout = vk::ImageLayout::eGeneral;
 				TransitiontoGeneraCompute.newlayout = vk::ImageLayout::eGeneral;
-				TransitiontoGeneraCompute.AspectFlag = vk::ImageAspectFlagBits::eColor;
-				TransitiontoGeneraCompute.SourceAccessflag = vk::AccessFlagBits::eNone;
-				TransitiontoGeneraCompute.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
-				TransitiontoGeneraCompute.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
-				TransitiontoGeneraCompute.DestinationOnThePipeline = vk::PipelineStageFlagBits::eComputeShader;
+				TransitiontoGeneraCompute.SourceAccessflag = vk::AccessFlagBits::eShaderWrite;
+				TransitiontoGeneraCompute.DestinationAccessflag = vk::AccessFlagBits::eTransferRead;
+				TransitiontoGeneraCompute.SourceOnThePipeline = vk::PipelineStageFlagBits::eComputeShader;
+				TransitiontoGeneraCompute.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
 
 				bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->IradianceImageAtlasImage, TransitiontoGeneraCompute);
 				bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->VisibilityImageAtlasImage, TransitiontoGeneraCompute);
@@ -2995,10 +2993,9 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 
 		}
 
+		vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 	}	
 	
-	     vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
-
 		{
 			vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
 			SkyBoxRenderAttachInfo.clearValue = clearColor;

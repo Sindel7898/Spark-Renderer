@@ -106,11 +106,6 @@ public:
     glm::vec3 ProbeOffset     = glm::vec3(3.000, 3.000, 3.000);
     glm::vec3 GridLocation     = glm::vec3(-12.000, -2.000, -14.000);
 
-
-    float RayRotationRadians = 0;;
-    float RotationSpeed = 1;
-
-
     int ProbeSideLength = (6 * 6);
     int GutterSize = 2;
 

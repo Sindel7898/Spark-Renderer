@@ -43,6 +43,22 @@ vec3 spherical_fibonacci(float i, float n) {
 #undef madfrac
 }
 
+ 
+
+vec3 RTXGISphericalFibonacci(float sampleIndex, float numSamples)
+{
+    const float RTXGI_PI = 3.1415926535897932;
+    const float RTXGI_2PI = 6.2831853071795864;
+
+    const float b = (sqrt(5.0) * 0.5 + 0.5) - 1.0;
+    float phi = RTXGI_2PI * fract(sampleIndex * b);
+    float cosTheta = 1.0 - (2.0 * sampleIndex + 1.0) * (1.0 / numSamples);
+    float sinTheta = sqrt(clamp(1.0 - (cosTheta * cosTheta), 0.0, 1.0));
+
+    return vec3((cos(phi) * sinTheta), (sin(phi) * sinTheta), cosTheta);
+}
+
+
 void main() 
 {
     uint index = gl_GlobalInvocationID.x;
@@ -85,9 +101,11 @@ void main()
         const int SampleCount = int(pc.probeCount_RayCount.w);
        
         if (index >= SampleCount) return;  
-        vec3 fibDir = spherical_fibonacci(float(index), float(SampleCount));
-        vec4 Direction = normalize(vec4(fibDir, 0.0));
+        vec3 fibDir = RTXGISphericalFibonacci(float(index), float(SampleCount));
+        vec4 Direction = normalize(vec4(fibDir, 1.0));
 
-        SB02.FibonacciDirections[index] =  vec4(Direction.xyz, 0.0);
+        vec3 rotatedDir = mat3(pc.Matrix) * Direction.xyz;
+
+        SB02.FibonacciDirections[index] = vec4(normalize(rotatedDir), 0.0);
    }
 }
