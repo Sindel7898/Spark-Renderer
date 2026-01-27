@@ -39,7 +39,7 @@ struct RTGIPayload {
        vec4 normal;
        vec4 radiance;
        vec4 position;
-       vec4 albedo_Hit; 
+       vec4 albedo; 
 };
 
 layout(location = 0) rayPayloadEXT ShadowPayload shadowPayload;
@@ -87,7 +87,7 @@ vec3 PathTraceGI(vec3 origin, vec3 normal) {
         vec3 direction = GetHemisphereSample(vec2(rx, ry), currentNormal);
 
         RTGIpayload.radiance   = vec4(0.0);
-        RTGIpayload.albedo_Hit = vec4(0.0);
+        RTGIpayload.albedo = vec4(0.0);
         RTGIpayload.normal     = vec4(0.0); 
         RTGIpayload.position   = vec4(0.0);
 
@@ -103,7 +103,7 @@ vec3 PathTraceGI(vec3 origin, vec3 normal) {
 
              accumulatedIndirect += RTGIpayload.radiance.rgb * throughput;
              
-             throughput *= RTGIpayload.albedo_Hit.rgb; 
+             throughput *= RTGIpayload.albedo.rgb; 
 
              currentOrigin = RTGIpayload.position.xyz + RTGIpayload.normal.xyz * 0.001;
              currentNormal = RTGIpayload.normal.xyz;
@@ -203,5 +203,5 @@ void main() {
         indirectLighting = PathTraceGI(WorldPos, Normal) * Albedo /PI;    
     }
 
-    imageStore(OutputImage, fullCoord, vec4(directLighting + indirectLighting, 1.0));
+    imageStore(OutputImage, fullCoord, vec4(directLighting + indirectLighting * 3, 1.0));
 }

@@ -72,7 +72,7 @@ struct RTGIPayload {
        vec4 normal;
        vec4 radiance;
        vec4 position;
-       vec4 albedo_Hit;
+       vec4 albedo;
 };
 
 struct ShadowPayload {
@@ -209,5 +209,5 @@ vec3 directLighting = vec3(0.0);
     payload.radiance = vec4(directLighting + Emissive,0); 
     payload.normal   = vec4(HitNormal.xyz,0);
     payload.position = vec4(HitPosition,0);
-    payload.albedo   = vec4(Albedo,1);
+    payload.albedo   = vec4(Albedo,0);
 }
