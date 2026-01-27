@@ -93,11 +93,9 @@ void main() {
      }
 
 
-    vec3 FinalColor = (DirectLighting + GI * AO);
+    vec3 FinalColor = (DirectLighting + (GI * GIboost) * AO);
 
      vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, Brightness, Saturation, Concentration);
-
-     vec3 GIOnly =   (DDGI + SSGI) * AO;
 
      outFragColor = vec4(CorrectedColor,1.0);
 }

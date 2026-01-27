@@ -100,7 +100,7 @@ vec3 SampleIrradiance(sampler2D IrradianceTexture,
     float self_shadow_bias = 0.1; 
     vec3 Wo = normalize(Camera_Position.xyz - Position);
     
-    float min_spacing = min(ProbeSpacing.x, ProbeSpacing.y); 
+    float min_spacing = min(1, 1); 
     
     vec3 bias_vector = (Normal * 0.2f + Wo * 0.8f) * (0.75f * min_spacing) * self_shadow_bias;
 
@@ -142,7 +142,7 @@ vec3 SampleIrradiance(sampler2D IrradianceTexture,
         vec3 CornerWeight = mix(vec3(1.0) - Alpha, Alpha, vec3(Offset));
         float TrilinearWeight = CornerWeight.x * CornerWeight.y * CornerWeight.z + + 0.001f;
 
-        if (TrilinearWeight <= 0.001) continue;
+        //if (TrilinearWeight <= 0.001) continue;
         
         weight *= TrilinearWeight;
        
@@ -186,12 +186,12 @@ vec3 SampleIrradiance(sampler2D IrradianceTexture,
     }
      
     vec3 ComputedIrradiance       = (Irradiance.rgb       * (1.0 / max(Irradiance.a, 0.0001)));
-    vec3 ComputedIrradianceNoCheb = (IrradianceNoCheb.rgb * (1.0 / max(IrradianceNoCheb.a, 0.0001)));
+    //vec3 ComputedIrradianceNoCheb = (IrradianceNoCheb.rgb * (1.0 / max(IrradianceNoCheb.a, 0.0001)));
 
     ComputedIrradiance       = ComputedIrradiance * ComputedIrradiance;
-    ComputedIrradianceNoCheb = ComputedIrradianceNoCheb * ComputedIrradianceNoCheb;
+    //ComputedIrradianceNoCheb = ComputedIrradianceNoCheb * ComputedIrradianceNoCheb;
     
-    vec3 FinalIrradiance = mix(ComputedIrradianceNoCheb, ComputedIrradiance, clamp(IrradianceNoCheb.a, 0.0, 1.0));
+    //vec3 FinalIrradiance = mix(ComputedIrradianceNoCheb, ComputedIrradiance, clamp(IrradianceNoCheb.a, 0.0, 1.0));
 
-    return FinalIrradiance * 0.5 * 3.14159;
+    return ComputedIrradiance * 0.5 * 3.14159;
 }

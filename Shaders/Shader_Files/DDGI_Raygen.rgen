@@ -92,7 +92,7 @@ void main() {
           
            payload.Hit = 0;
            payload.Color = vec3(0.0);
-           payload.Distance = tMax;
+           payload.Distance = 0;
 
           traceRayEXT(topLevelAS, rayFlags, cullMask, 0, 0, 0, probeOrigin.xyz, tMin, rayDirection, tMax, 0);
 
@@ -101,13 +101,13 @@ void main() {
 
           if(payload.Hit == 0){
               Radiance = CubeMapIrradiance;
-              Distance = 1000;
+              Distance = 10000;
              }
           imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(Radiance,Distance));
 
        }
          else if (probeState ==  PROBE_STATE_SLEEP){
-          imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(0,0,0, 100.0));
+          imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(0,0,0, 1000.0));
           return;
        }else if (probeState == PROBE_STATE_DISABLED) {
            imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(0.0, 0.0, 0.0, 0.0));

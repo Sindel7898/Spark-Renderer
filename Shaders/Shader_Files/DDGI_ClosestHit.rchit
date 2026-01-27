@@ -102,6 +102,12 @@ void main()
     vec3  HitPosition = vec3(0.0);
     float Distance    = 0;
 
+     if (gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT) {
+        Distance = gl_RayTminEXT + gl_HitTEXT;
+        Distance *= -0.2;        
+    }
+
+    else{
     uint packed = gl_InstanceCustomIndexEXT;
     uint meshBufferID = packed & 0xFFF;
     uint objectID   = packed >> 12;
@@ -250,7 +256,8 @@ void main()
              }
         }
 
-        Distance = gl_RayTminEXT + gl_HitTEXT;
+    Distance = gl_RayTminEXT + gl_HitTEXT;
+    }
 
     payload.Color       = Radiance;
     payload.Distance    = Distance;

@@ -1503,7 +1503,7 @@ void DynamicDiffuse_RTGI::DispatchDirectionsCompute(vk::CommandBuffer commandBuf
 	gridData.probeBaseLocation = glm::vec4(GridLocation, 1);
 
 	gridData.RotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(RayRotationRadians), glm::vec3(1.0f, 1.0f, 1.0f));
-	RayRotationRadians += 0.01 * deltaTime;
+	RayRotationRadians += 0.1 * deltaTime;
 
 
 
