@@ -76,8 +76,8 @@ layout(push_constant) uniform PushConstant {
 
 struct Payload {
    vec3   Color;
-    float Distance;
-    int   Hit;
+   float  Distance;
+   vec4   Hit_Padding;
 };
 
 struct Shadow_Payload {
@@ -101,7 +101,7 @@ void main()
     vec3  HitNormal   = vec3(0.0);
     vec3  HitPosition = vec3(0.0);
     float Distance    = 0;
-
+    vec3  Emissive    = vec3(0);
      if (gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT) {
         Distance = gl_RayTminEXT + gl_HitTEXT;
         Distance *= -0.2;        
@@ -161,7 +161,7 @@ void main()
      vec3  Albedo     = texture(Albedo_AssetImages          [nonuniformEXT(matID)], TexCoord).rgb;
      float Metallic   = texture(MetalicRoughness_AssetImages[nonuniformEXT(matID)], TexCoord).r;
      float Roughness  = texture(MetalicRoughness_AssetImages[nonuniformEXT(matID)], TexCoord).r;
-     vec3  Emissive   = texture(Emmisive_AssetImages        [nonuniformEXT(matID)], TexCoord).rgb;
+           Emissive   = texture(Emmisive_AssetImages        [nonuniformEXT(matID)], TexCoord).rgb;
 
      vec3 textureMap = texture(Normal_AssetImages[nonuniformEXT(matID)], TexCoord).rgb;
     
@@ -259,7 +259,7 @@ void main()
     Distance = gl_RayTminEXT + gl_HitTEXT;
     }
 
-    payload.Color       = Radiance;
+    payload.Color       = Radiance + Emissive;
     payload.Distance    = Distance;
-    payload.Hit         = 1;
+    payload.Hit_Padding = vec4(1,0,0,0);
 }

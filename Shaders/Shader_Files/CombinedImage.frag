@@ -92,10 +92,12 @@ void main() {
         GI = DDGIresult + SSGI;
      }
 
-
+    if(pc.MaxGamma_MinGamma_GISolution_Padding.z == 3) {
+        GI = vec3(0);
+     }
     vec3 FinalColor = (DirectLighting + (GI * GIboost) * AO);
 
-     vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, Brightness, Saturation, Concentration);
+    vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, Brightness, Saturation, Concentration);
 
-     outFragColor = vec4(CorrectedColor,1.0);
+    outFragColor = vec4(CorrectedColor,1.0);
 }

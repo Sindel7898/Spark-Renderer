@@ -69,18 +69,18 @@ layout(push_constant) uniform PushConstant{
 }PC;
 
 struct RTGIPayload {
-       vec3 normal;
-       vec3 radiance;
-       vec3 position;
-       vec3 albedo;
+       vec4 normal;
+       vec4 radiance;
+       vec4 position;
+       vec4 albedo_Hit;
 };
 
 struct ShadowPayload {
        int visibility;
 };
 
-layout(location = 1) rayPayloadInEXT RTGIPayload payload;
 layout(location = 0) rayPayloadEXT  ShadowPayload shadowPayload;
+layout(location = 1) rayPayloadInEXT RTGIPayload payload;
 
 hitAttributeEXT vec2 attribs;
 
@@ -206,8 +206,8 @@ vec3 directLighting = vec3(0.0);
         directLighting += (Lo * lights[i].CameraPositionAndLightIntensity.a) * shadowPayload.visibility;
     }
 
-    payload.radiance = directLighting + Emissive; 
-    payload.normal = HitNormal.xyz;
-    payload.position = HitPosition;
-    payload.albedo = Albedo;
+    payload.radiance = vec4(directLighting + Emissive,0); 
+    payload.normal   = vec4(HitNormal.xyz,0);
+    payload.position = vec4(HitPosition,0);
+    payload.albedo   = vec4(Albedo,1);
 }

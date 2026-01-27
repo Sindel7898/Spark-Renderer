@@ -2,17 +2,17 @@
 #extension GL_EXT_ray_tracing : require
 
 struct RTGIPayload {
-       vec3 normal;
-       vec3 radiance;
-       vec3 position;
-       vec3 albedo;
+       vec4 normal;
+       vec4 radiance;
+       vec4 position;
+       vec4 albedo;
 };
 
 layout(location = 1) rayPayloadInEXT RTGIPayload   RTGIpayload;
 
 void main() {
-  RTGIpayload.normal   = vec3(0.0);
-  RTGIpayload.radiance   = vec3(0.0);
-  RTGIpayload.position   = vec3(0.0);
-  RTGIpayload.albedo   = vec3(0.0);
+  RTGIpayload.normal     = vec4(0.0);
+  RTGIpayload.radiance   = vec4(0.0);
+  RTGIpayload.position   = vec4(0.0);
+  RTGIpayload.albedo     = vec4(0.0);
 }

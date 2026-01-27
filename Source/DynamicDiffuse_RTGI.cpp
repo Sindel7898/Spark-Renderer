@@ -1329,77 +1329,81 @@ uint32_t DynamicDiffuse_RTGI::alignedSize(uint32_t value, uint32_t alignment)
 
 void DynamicDiffuse_RTGI::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferData RayMisBuffer, vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
 {
-      vk::BufferDeviceAddressInfo raygenShaderBindingTableDeviceAdressesInfo;
-      raygenShaderBindingTableDeviceAdressesInfo.buffer = RayGenBuffer.buffer;
-      
-      vk::BufferDeviceAddressInfo missShaderBindingTableDeviceAdressesInfo;
-      missShaderBindingTableDeviceAdressesInfo.buffer = RayMisBuffer.buffer;
-      
-      vk::BufferDeviceAddressInfo hitShaderBindingTableDeviceAdressesInfo;
-      hitShaderBindingTableDeviceAdressesInfo.buffer = RayHitBuffer.buffer;
-      
-      auto raygenShaderBindingTableAdress = vulkanContext->LogicalDevice.getBufferAddress(raygenShaderBindingTableDeviceAdressesInfo);
-      auto missShaderBindingTableAdress   = vulkanContext->LogicalDevice.getBufferAddress(missShaderBindingTableDeviceAdressesInfo);
-      auto hitShaderBindingTableAdress    = vulkanContext->LogicalDevice.getBufferAddress(hitShaderBindingTableDeviceAdressesInfo);
-      
-      
-      const uint32_t handleSizeAligned = alignedSize(
-      	vulkanContext->RayTracingPipelineProperties.shaderGroupHandleSize,
-      	vulkanContext->RayTracingPipelineProperties.shaderGroupHandleAlignment);
-      
-      vk::StridedDeviceAddressRegionKHR    raygenShaderSbtEntry{};
-      raygenShaderSbtEntry.deviceAddress = raygenShaderBindingTableAdress;
-      raygenShaderSbtEntry.stride = handleSizeAligned;
-      raygenShaderSbtEntry.size = handleSizeAligned;
-      
-      
-      vk::StridedDeviceAddressRegionKHR  missShaderSbtEntry{};
-      missShaderSbtEntry.deviceAddress = missShaderBindingTableAdress;
-      missShaderSbtEntry.stride = handleSizeAligned;
-      missShaderSbtEntry.size = handleSizeAligned;
-      
-      vk::StridedDeviceAddressRegionKHR hitShaderSbtEntry{};
-      hitShaderSbtEntry.deviceAddress = hitShaderBindingTableAdress;
-      hitShaderSbtEntry.stride = handleSizeAligned;
-      hitShaderSbtEntry.size = handleSizeAligned;
-      
-      //vk::StridedDeviceAddressRegionKHR hitShaderSbtEntry{};
-      
-      vk::StridedDeviceAddressRegionKHR callableShaderSbtEntry{};
-      
-      VkStridedDeviceAddressRegionKHR  TEMP_raygenShaderSbtEntry   = static_cast<VkStridedDeviceAddressRegionKHR>(raygenShaderSbtEntry);
-      VkStridedDeviceAddressRegionKHR  TEMP_missShaderSbtEntry     = static_cast<VkStridedDeviceAddressRegionKHR>(missShaderSbtEntry);;
-      VkStridedDeviceAddressRegionKHR  TEMP_hitShaderSbtEntry      = static_cast<VkStridedDeviceAddressRegionKHR>(hitShaderSbtEntry);;
-      VkStridedDeviceAddressRegionKHR  TEMP_callableShaderSbtEntry = static_cast<VkStridedDeviceAddressRegionKHR>(callableShaderSbtEntry);;
-      
-	  uint32_t totalProbes  = NumOfProbesX * NumOfProbesY * NumOfProbesZ;
-      int depth  = 1;
 
-	  RTpcInfo rtpcInfo;
-	  rtpcInfo.sampleGridInfo.GridBaseLocation_ScreenSizeWidth = glm::vec4(GridLocation.x, GridLocation.y, GridLocation.z, vulkanContext->swapchainExtent.width);
-	  rtpcInfo.sampleGridInfo.ProbeSpacing_ScreenSizeHeight = glm::vec4(ProbeOffset.x, ProbeOffset.y, ProbeOffset.z, vulkanContext->swapchainExtent.height);
-	  rtpcInfo.sampleGridInfo.ProbeCount = glm::vec4(NumOfProbesX, NumOfProbesY, NumOfProbesZ, skyboxRef->SkyBoxIndex);
-	  rtpcInfo.sampleGridInfo.generalAtlasInfo.AtlasWidthSize = IradianceImageExtent.width;
-	  rtpcInfo.sampleGridInfo.generalAtlasInfo.ProbeSideLength = ProbeSideLength;
-	  rtpcInfo.sampleGridInfo.generalAtlasInfo.GutterSize = GutterSize;
-	  rtpcInfo.sampleGridInfo.generalAtlasInfo.RaysPerProbe = RaysPerProbe;
-	  rtpcInfo.UseInfiniteBounce_infinite_bounces_multiplier_Padding = glm::vec4(UseinfiniteBounce, infiniteBounceMultiplyer, SampleCount, LightCount);
+	if (lighting_RTX->GISolutionIndex == 0 || lighting_RTX->GISolutionIndex == 2)
+	{
+		vk::BufferDeviceAddressInfo raygenShaderBindingTableDeviceAdressesInfo;
+		raygenShaderBindingTableDeviceAdressesInfo.buffer = RayGenBuffer.buffer;
 
-	  commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR, 0, sizeof(RTpcInfo), &rtpcInfo);
-      commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, pipelinelayout, 0, 1, &RaytracingDescriptorSets[imageIndex],0,nullptr);
-      
-      vulkanContext->vkCmdTraceRaysKHR(
-      	commandbuffer,
-      	&TEMP_raygenShaderSbtEntry,
-      	&TEMP_missShaderSbtEntry,
-      	&TEMP_hitShaderSbtEntry,
-      	&TEMP_callableShaderSbtEntry,
-		RaysPerProbe,
-		totalProbes,
-      	depth);
+		vk::BufferDeviceAddressInfo missShaderBindingTableDeviceAdressesInfo;
+		missShaderBindingTableDeviceAdressesInfo.buffer = RayMisBuffer.buffer;
+
+		vk::BufferDeviceAddressInfo hitShaderBindingTableDeviceAdressesInfo;
+		hitShaderBindingTableDeviceAdressesInfo.buffer = RayHitBuffer.buffer;
+
+		auto raygenShaderBindingTableAdress = vulkanContext->LogicalDevice.getBufferAddress(raygenShaderBindingTableDeviceAdressesInfo);
+		auto missShaderBindingTableAdress = vulkanContext->LogicalDevice.getBufferAddress(missShaderBindingTableDeviceAdressesInfo);
+		auto hitShaderBindingTableAdress = vulkanContext->LogicalDevice.getBufferAddress(hitShaderBindingTableDeviceAdressesInfo);
 
 
-	  FrameCount++;
+		const uint32_t handleSizeAligned = alignedSize(
+			vulkanContext->RayTracingPipelineProperties.shaderGroupHandleSize,
+			vulkanContext->RayTracingPipelineProperties.shaderGroupHandleAlignment);
+
+		vk::StridedDeviceAddressRegionKHR    raygenShaderSbtEntry{};
+		raygenShaderSbtEntry.deviceAddress = raygenShaderBindingTableAdress;
+		raygenShaderSbtEntry.stride = handleSizeAligned;
+		raygenShaderSbtEntry.size = handleSizeAligned;
+
+
+		vk::StridedDeviceAddressRegionKHR  missShaderSbtEntry{};
+		missShaderSbtEntry.deviceAddress = missShaderBindingTableAdress;
+		missShaderSbtEntry.stride = handleSizeAligned;
+		missShaderSbtEntry.size = handleSizeAligned;
+
+		vk::StridedDeviceAddressRegionKHR hitShaderSbtEntry{};
+		hitShaderSbtEntry.deviceAddress = hitShaderBindingTableAdress;
+		hitShaderSbtEntry.stride = handleSizeAligned;
+		hitShaderSbtEntry.size = handleSizeAligned;
+
+		//vk::StridedDeviceAddressRegionKHR hitShaderSbtEntry{};
+
+		vk::StridedDeviceAddressRegionKHR callableShaderSbtEntry{};
+
+		VkStridedDeviceAddressRegionKHR  TEMP_raygenShaderSbtEntry = static_cast<VkStridedDeviceAddressRegionKHR>(raygenShaderSbtEntry);
+		VkStridedDeviceAddressRegionKHR  TEMP_missShaderSbtEntry = static_cast<VkStridedDeviceAddressRegionKHR>(missShaderSbtEntry);;
+		VkStridedDeviceAddressRegionKHR  TEMP_hitShaderSbtEntry = static_cast<VkStridedDeviceAddressRegionKHR>(hitShaderSbtEntry);;
+		VkStridedDeviceAddressRegionKHR  TEMP_callableShaderSbtEntry = static_cast<VkStridedDeviceAddressRegionKHR>(callableShaderSbtEntry);;
+
+		uint32_t totalProbes = NumOfProbesX * NumOfProbesY * NumOfProbesZ;
+		int depth = 1;
+
+		RTpcInfo rtpcInfo;
+		rtpcInfo.sampleGridInfo.GridBaseLocation_ScreenSizeWidth = glm::vec4(GridLocation.x, GridLocation.y, GridLocation.z, vulkanContext->swapchainExtent.width);
+		rtpcInfo.sampleGridInfo.ProbeSpacing_ScreenSizeHeight = glm::vec4(ProbeOffset.x, ProbeOffset.y, ProbeOffset.z, vulkanContext->swapchainExtent.height);
+		rtpcInfo.sampleGridInfo.ProbeCount = glm::vec4(NumOfProbesX, NumOfProbesY, NumOfProbesZ, skyboxRef->SkyBoxIndex);
+		rtpcInfo.sampleGridInfo.generalAtlasInfo.AtlasWidthSize = IradianceImageExtent.width;
+		rtpcInfo.sampleGridInfo.generalAtlasInfo.ProbeSideLength = ProbeSideLength;
+		rtpcInfo.sampleGridInfo.generalAtlasInfo.GutterSize = GutterSize;
+		rtpcInfo.sampleGridInfo.generalAtlasInfo.RaysPerProbe = RaysPerProbe;
+		rtpcInfo.UseInfiniteBounce_infinite_bounces_multiplier_Padding = glm::vec4(UseinfiniteBounce, infiniteBounceMultiplyer, SampleCount, LightCount);
+
+		commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR, 0, sizeof(RTpcInfo), &rtpcInfo);
+		commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, pipelinelayout, 0, 1, &RaytracingDescriptorSets[imageIndex], 0, nullptr);
+
+		vulkanContext->vkCmdTraceRaysKHR(
+			commandbuffer,
+			&TEMP_raygenShaderSbtEntry,
+			&TEMP_missShaderSbtEntry,
+			&TEMP_hitShaderSbtEntry,
+			&TEMP_callableShaderSbtEntry,
+			RaysPerProbe,
+			totalProbes,
+			depth);
+
+
+		FrameCount++;
+	}
 }
 
 bool DynamicDiffuse_RTGI::UpdateUniformBuffer(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, std::vector<BufferData>& fragmentUniformBuffers,GBuffer gbuffer,bool ForceUpdate,int lightcount)
@@ -1482,6 +1486,8 @@ glm::mat4 GetRandomRotationMatrix() {
 
 void DynamicDiffuse_RTGI::DispatchGridCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex)
 {
+	if (lighting_RTX->GISolutionIndex == 0 || lighting_RTX->GISolutionIndex == 2) {
+	
 		uint32_t numElements = NumOfProbesX * NumOfProbesY * NumOfProbesZ;
 		uint32_t localSizeX = 32;
 		uint32_t workGroupsX = (numElements + localSizeX - 1) / localSizeX;
@@ -1497,87 +1503,102 @@ void DynamicDiffuse_RTGI::DispatchGridCompute(vk::CommandBuffer commandBuffer, v
 		commandBuffer.dispatch(workGroupsX, 1, 1);
 
 		UpdateGrid = 0;
+	
+	
+	}
 }
 
 void DynamicDiffuse_RTGI::DispatchDirectionsCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex, float deltaTime)
 {
+	if (lighting_RTX->GISolutionIndex == 0 || lighting_RTX->GISolutionIndex == 2) {
 
-	uint32_t numElements = RaysPerProbe;
-	uint32_t localSizeX = 32;
-	uint32_t workGroupsX = (numElements + localSizeX - 1) / localSizeX;
+		uint32_t numElements = RaysPerProbe;
+		uint32_t localSizeX = 32;
+		uint32_t workGroupsX = (numElements + localSizeX - 1) / localSizeX;
 
-	GridData gridData;
-	gridData.probeCount = glm::vec4(NumOfProbesX, NumOfProbesY, NumOfProbesZ, RaysPerProbe);
-	gridData.probeOffset = glm::vec4(ProbeOffset, 1);
-	gridData.probeBaseLocation = glm::vec4(GridLocation, 1);
-	gridData.RotationMatrix = GetRandomRotationMatrix();
+		GridData gridData;
+		gridData.probeCount = glm::vec4(NumOfProbesX, NumOfProbesY, NumOfProbesZ, RaysPerProbe);
+		gridData.probeOffset = glm::vec4(ProbeOffset, 1);
+		gridData.probeBaseLocation = glm::vec4(GridLocation, 1);
+		gridData.RotationMatrix = GetRandomRotationMatrix();
 
-	commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(GridData), &gridData);
-	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, 0, 1, &GridDescriptorSets[imageIndex], 0, nullptr);
-	commandBuffer.dispatch(workGroupsX, 1, 1);
+		commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(GridData), &gridData);
+		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, 0, 1, &GridDescriptorSets[imageIndex], 0, nullptr);
+		commandBuffer.dispatch(workGroupsX, 1, 1);
+
+	}
+
 }
 
 void DynamicDiffuse_RTGI::DispatchCalcProbeDataCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex)
 {
+	if (lighting_RTX->GISolutionIndex == 0 || lighting_RTX->GISolutionIndex == 2) {
 
-	GeneralAtlasInfo generalAtlasInfo;
-	generalAtlasInfo.AtlasWidthSize = IradianceImageExtent.width;
-	generalAtlasInfo.ProbeSideLength = ProbeSideLength;
-	generalAtlasInfo.GutterSize = GutterSize;
-	generalAtlasInfo.RaysPerProbe = RaysPerProbe;
+		GeneralAtlasInfo generalAtlasInfo;
+		generalAtlasInfo.AtlasWidthSize = IradianceImageExtent.width;
+		generalAtlasInfo.ProbeSideLength = ProbeSideLength;
+		generalAtlasInfo.GutterSize = GutterSize;
+		generalAtlasInfo.RaysPerProbe = RaysPerProbe;
 
-	commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(GeneralAtlasInfo), &generalAtlasInfo);
+		commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(GeneralAtlasInfo), &generalAtlasInfo);
 
-	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, 0, 1, &ConstructProbeDataDescriptorSets[imageIndex], 0, nullptr);
+		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, 0, 1, &ConstructProbeDataDescriptorSets[imageIndex], 0, nullptr);
 
-	uint32_t workGroupsX = (IradianceImageExtent.width  +  7) / 8;
-	uint32_t workGroupsY = (IradianceImageExtent.height +  7) / 8;
+		uint32_t workGroupsX = (IradianceImageExtent.width + 7) / 8;
+		uint32_t workGroupsY = (IradianceImageExtent.height + 7) / 8;
 
-	commandBuffer.dispatch(workGroupsX, workGroupsY, 1);
+		commandBuffer.dispatch(workGroupsX, workGroupsY, 1);
+	}
 }
 
 void DynamicDiffuse_RTGI::DispatchProbeStatus(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex)
 {
+	if (lighting_RTX->GISolutionIndex == 0 || lighting_RTX->GISolutionIndex == 2) {
 
-	GeneralAtlasInfo generalAtlasInfo;
-	generalAtlasInfo.AtlasWidthSize = IradianceImageExtent.width;
-	generalAtlasInfo.ProbeSideLength = ProbeSideLength;
-	generalAtlasInfo.GutterSize = GutterSize;
-	generalAtlasInfo.RaysPerProbe = RaysPerProbe;
+		GeneralAtlasInfo generalAtlasInfo;
+		generalAtlasInfo.AtlasWidthSize = IradianceImageExtent.width;
+		generalAtlasInfo.ProbeSideLength = ProbeSideLength;
+		generalAtlasInfo.GutterSize = GutterSize;
+		generalAtlasInfo.RaysPerProbe = RaysPerProbe;
 
-	commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(GeneralAtlasInfo), &generalAtlasInfo);
+		commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(GeneralAtlasInfo), &generalAtlasInfo);
 
-	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, 0, 1, &ProbeStatusDescriptorSets[imageIndex], 0, nullptr);
+		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, 0, 1, &ProbeStatusDescriptorSets[imageIndex], 0, nullptr);
 
-	uint32_t workGroupsX = (IradianceImageExtent.width  + 7) / 8;
-	uint32_t workGroupsY = (IradianceImageExtent.height + 7) / 8;
-	commandBuffer.dispatch(workGroupsX, workGroupsY, 1);
+		uint32_t workGroupsX = (IradianceImageExtent.width + 7) / 8;
+		uint32_t workGroupsY = (IradianceImageExtent.height + 7) / 8;
+		commandBuffer.dispatch(workGroupsX, workGroupsY, 1);
+	}
 }
 
 
 void DynamicDiffuse_RTGI::DispatchSampleGIFromProbeDataCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex)
 {
+	if (lighting_RTX->GISolutionIndex == 0 || lighting_RTX->GISolutionIndex == 2) {
 
-	RTpcInfo sampleGridInfo;
-	sampleGridInfo.sampleGridInfo.GridBaseLocation_ScreenSizeWidth = glm::vec4(GridLocation.x, GridLocation.y, GridLocation.z, vulkanContext->swapchainExtent.width);
-	sampleGridInfo.sampleGridInfo.ProbeSpacing_ScreenSizeHeight    = glm::vec4( ProbeOffset.x, ProbeOffset.y , ProbeOffset.z , vulkanContext->swapchainExtent.height);
-	sampleGridInfo.sampleGridInfo.ProbeCount                       = glm::vec4( NumOfProbesX , NumOfProbesY  , NumOfProbesZ  , 0);
-	sampleGridInfo.sampleGridInfo.generalAtlasInfo.AtlasWidthSize  = IradianceImageExtent.width;
-	sampleGridInfo.sampleGridInfo.generalAtlasInfo.ProbeSideLength = ProbeSideLength;
-	sampleGridInfo.sampleGridInfo.generalAtlasInfo.GutterSize      = GutterSize;
-	sampleGridInfo.sampleGridInfo.generalAtlasInfo.RaysPerProbe    = RaysPerProbe;
-	sampleGridInfo.UseInfiniteBounce_infinite_bounces_multiplier_Padding = glm::vec4(camera->GetPosition(), 0);
 
-	commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(RTpcInfo), &sampleGridInfo);
+		RTpcInfo sampleGridInfo;
+		sampleGridInfo.sampleGridInfo.GridBaseLocation_ScreenSizeWidth = glm::vec4(GridLocation.x, GridLocation.y, GridLocation.z, vulkanContext->swapchainExtent.width);
+		sampleGridInfo.sampleGridInfo.ProbeSpacing_ScreenSizeHeight = glm::vec4(ProbeOffset.x, ProbeOffset.y, ProbeOffset.z, vulkanContext->swapchainExtent.height);
+		sampleGridInfo.sampleGridInfo.ProbeCount = glm::vec4(NumOfProbesX, NumOfProbesY, NumOfProbesZ, 0);
+		sampleGridInfo.sampleGridInfo.generalAtlasInfo.AtlasWidthSize = IradianceImageExtent.width;
+		sampleGridInfo.sampleGridInfo.generalAtlasInfo.ProbeSideLength = ProbeSideLength;
+		sampleGridInfo.sampleGridInfo.generalAtlasInfo.GutterSize = GutterSize;
+		sampleGridInfo.sampleGridInfo.generalAtlasInfo.RaysPerProbe = RaysPerProbe;
+		sampleGridInfo.UseInfiniteBounce_infinite_bounces_multiplier_Padding = glm::vec4(camera->GetPosition(), 0);
 
-	commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, 0, 1, &DDGISamplingDescriptorSets[imageIndex], 0, nullptr);
+		commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(RTpcInfo), &sampleGridInfo);
 
-	
+		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, 0, 1, &DDGISamplingDescriptorSets[imageIndex], 0, nullptr);
 
-	uint32_t workGroupsX = (vulkanContext->swapchainExtent.width  + 31) / 32;
-	uint32_t workGroupsY = (vulkanContext->swapchainExtent.height + 31) / 32;
 
-	commandBuffer.dispatch(workGroupsX, workGroupsY, 1);
+
+		uint32_t workGroupsX = (vulkanContext->swapchainExtent.width + 31) / 32;
+		uint32_t workGroupsY = (vulkanContext->swapchainExtent.height + 31) / 32;
+
+		commandBuffer.dispatch(workGroupsX, workGroupsY, 1);
+
+	}
 }
 
 

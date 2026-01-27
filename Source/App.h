@@ -248,9 +248,6 @@ private:
 
 
 	//RT Bind Tables
-	BufferData Reflection_raygenShaderBindingTableBuffer;
-	BufferData Reflection_missShaderBindingTableBuffer;
-	BufferData Reflection_hitShaderBindingTableBuffer;
 
 	BufferData Lighting_raygenShaderBindingTableBuffer;
 	BufferData Lighting_missShaderBindingTableBuffer;
