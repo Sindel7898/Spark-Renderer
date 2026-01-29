@@ -20,6 +20,8 @@ class SSGI
 public:
 
     SSGI(BufferManager* buffermanager, VulkanContext* vulkancontext, Camera* cameraref, vk::CommandPool commandpool, Lighting_RTX* lighting);
+    ~SSGI();
+
     void CreateNoiseTextures();
     void CreateGIImage();
     void DestroyImage();
@@ -28,7 +30,6 @@ public:
     void UpdateUniformBuffer(uint32_t currentImage, float DeltaTime);
     void ComputeSSGI(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
     void CreateUniformBuffer();    
-    void CleanUp();
 
     std::vector<ImageData> BlueNoiseTextures;
 
@@ -55,12 +56,3 @@ private:
 
 };
 
-
-static inline void SSGIDeleter(SSGI* ssgi) {
-
-        if (ssgi) {
-            ssgi->CleanUp();
-            delete ssgi;
-        }
-   
-};

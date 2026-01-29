@@ -54,13 +54,13 @@ App::App() : window(1920, 1080, "Spark Renderer")
 
 	SwitchScene(0);
 
-	lighting_RTX = std::unique_ptr<Lighting_RTX, decltype(&Lighting_RTXDeleter)>(new Lighting_RTX(&bufferManger, &vulkanContext, &camera, commandPool, skyBox.get()), Lighting_RTXDeleter);
-	ssao_FullScreenQuad = std::unique_ptr<SSA0_FullScreenQuad, decltype(&SSA0_FullScreenQuadDeleter)>(new SSA0_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), SSA0_FullScreenQuadDeleter);
-	fxaa_FullScreenQuad = std::unique_ptr<FXAA_FullScreenQuad, decltype(&FXAA_FullScreenQuadDeleter)>(new FXAA_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool), FXAA_FullScreenQuadDeleter);
-	Combined_FullScreenQuad = std::unique_ptr<CombinedResult_FullScreenQuad, decltype(&CombinedResult_FullScreenQuadDeleter)>(new CombinedResult_FullScreenQuad(&bufferManger, &vulkanContext, &camera, commandPool, lighting_RTX.get()), CombinedResult_FullScreenQuadDeleter);
-	SSGI_FullScreenQuad = std::unique_ptr<SSGI, decltype(&SSGIDeleter)>(new SSGI(&bufferManger, &vulkanContext, &camera, commandPool, lighting_RTX.get()), SSGIDeleter);
-	dynamicDiffuse_RTGI = std::unique_ptr<DynamicDiffuse_RTGI, decltype(&DynamicDiffuse_RTGIDeleter)>(new DynamicDiffuse_RTGI("../Textures/Sphere/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger, skyBox.get(), lighting_RTX.get()), DynamicDiffuse_RTGIDeleter);
-	Restir_DI = std::unique_ptr<ReSTIR_DI, decltype(&ReSTIR_DI_Deleter)>(new ReSTIR_DI(&vulkanContext, commandPool, &camera, &bufferManger, lighting_RTX.get(), SSGI_FullScreenQuad.get(), dynamicDiffuse_RTGI.get()), ReSTIR_DI_Deleter);
+	lighting_RTX            = std::make_unique<Lighting_RTX>                 (&bufferManger, &vulkanContext, &camera, commandPool, skyBox.get());
+	ssao_FullScreenQuad     = std::make_unique<SSA0_FullScreenQuad>          (&bufferManger, &vulkanContext, &camera, commandPool);
+	fxaa_FullScreenQuad     = std::make_unique<FXAA_FullScreenQuad>          (&bufferManger, &vulkanContext, &camera, commandPool);
+	Combined_FullScreenQuad = std::make_unique<CombinedResult_FullScreenQuad>(&bufferManger, &vulkanContext, &camera, commandPool, lighting_RTX.get());
+	SSGI_FullScreenQuad     = std::make_unique<SSGI>                         (&bufferManger, &vulkanContext, &camera, commandPool, lighting_RTX.get());
+	dynamicDiffuse_RTGI     = std::make_unique<DynamicDiffuse_RTGI>          ("../Textures/Sphere/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger, skyBox.get(), lighting_RTX.get());
+	Restir_DI               = std::make_unique<ReSTIR_DI>                    (&vulkanContext, commandPool, &camera, &bufferManger, lighting_RTX.get(), SSGI_FullScreenQuad.get(), dynamicDiffuse_RTGI.get());
 
 	createCommandBuffer();
 	CreateGraphicsPipeline();

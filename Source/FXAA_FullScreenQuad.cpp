@@ -113,9 +113,8 @@ void FXAA_FullScreenQuad::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayo
 	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
 }
 
-void FXAA_FullScreenQuad::CleanUp()
+FXAA_FullScreenQuad::~FXAA_FullScreenQuad()
 {
 	Drawable::Destructor();
-
 }
 

@@ -470,7 +470,7 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
                 if (ImGui::InputInt("Lights in Scene", &NumberOfLights, 1, 10))
                 {
                     if (NumberOfLights < 0) NumberOfLights = 0;
-                    if (NumberOfLights > 100) NumberOfLights = 100;
+                    if (NumberOfLights > MAX_LIGHT_COUNT) NumberOfLights = MAX_LIGHT_COUNT;
 
                     appref->SpawnLights(NumberOfLights);
                 }

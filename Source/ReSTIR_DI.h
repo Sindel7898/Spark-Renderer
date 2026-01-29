@@ -22,6 +22,8 @@ class ReSTIR_DI
 {
 public:
     ReSTIR_DI(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, Lighting_RTX* rLightingPass, SSGI* rssgi, DynamicDiffuse_RTGI* DDGIr);
+    ~ReSTIR_DI();
+
     void createDescriptorSetLayout();
 
     void createDescriptorDDGIATLAS(vk::DescriptorPool descriptorpool);
@@ -62,14 +64,5 @@ private:
     std::vector<vk::DescriptorSet>  RaytracingDDGIDescriptorSets;
 
     vk::AccelerationStructureKHR*   TLASr;
-
-};
-
-static inline void ReSTIR_DI_Deleter(ReSTIR_DI* restir) {
-
-    if (restir) {
-        restir->CleanUp();
-        delete restir;
-    }
 
 };

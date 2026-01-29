@@ -44,12 +44,15 @@ class DynamicDiffuse_RTGI
 public:
 
     DynamicDiffuse_RTGI(const std::string filepath,VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* rcamera, BufferManager* buffermanger, SkyBox* skybox, Lighting_RTX* LRTX);
+    ~DynamicDiffuse_RTGI();
+
     void CreateStorageBuffer();
     void createRayTracingDescriptorSetLayout();
     void createRaytracedDescriptorSets(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, std::vector<BufferData>& fragmentUniformBuffers);
     void createDescriptorSets(vk::DescriptorPool descriptorpool, GBuffer gbuffer);
     void CreateVertexAndIndexBuffer();
     uint32_t alignedSize(uint32_t value, uint32_t alignment);
+    
     void Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferData RayMisBuffer, vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
     bool UpdateUniformBuffer(vk::DescriptorPool descriptorpool, vk::AccelerationStructureKHR TLAS, std::vector<BufferData>& fragmentUniformBuffers, GBuffer gbuffer, bool ForceUpdate, int lightcount);
     void DrawNode(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex, const std::vector<std::shared_ptr<Node>>& nodes);
@@ -146,14 +149,4 @@ private:
     SkyBox* skyboxRef = nullptr;
 
     int UpdateGrid;
-};
-
-
-static inline void DynamicDiffuse_RTGIDeleter(DynamicDiffuse_RTGI* rayTracing) {
-
-        if (rayTracing) {
-            rayTracing->CleanUp();
-            delete rayTracing;
-        }
-   
 };

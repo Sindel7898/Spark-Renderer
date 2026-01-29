@@ -363,10 +363,16 @@ void SSA0_FullScreenQuad::DrawSSAOBlurVertical(vk::CommandBuffer commandbuffer, 
 	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
 
 }
-void SSA0_FullScreenQuad::CleanUp()
-{
-	bufferManager->DestroyImage(NoiseTexture);
-	vulkanContext->LogicalDevice.destroyDescriptorSetLayout(SSAOBlurDescriptorSetLayout);
+
+SSA0_FullScreenQuad::~SSA0_FullScreenQuad()
+{	
+	if (bufferManager && NoiseTexture.image) {
+		bufferManager->DestroyImage(NoiseTexture);
+	}
+
+	if (vulkanContext && vulkanContext->LogicalDevice && SSAOBlurDescriptorSetLayout) {
+		vulkanContext->LogicalDevice.destroyDescriptorSetLayout(SSAOBlurDescriptorSetLayout);
+	}
+
 	Drawable::Destructor();
 }
-

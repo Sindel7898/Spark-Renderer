@@ -113,26 +113,14 @@ public:
 
 	bool bWireFrame = false;
 	//Drawables
-	std::unique_ptr<Lighting_RTX, decltype(&Lighting_RTXDeleter)>
-		lighting_RTX{ nullptr, &Lighting_RTXDeleter };
+	std::unique_ptr<Lighting_RTX>                  lighting_RTX;
+	std::unique_ptr<SSA0_FullScreenQuad>           ssao_FullScreenQuad;
+	std::unique_ptr<FXAA_FullScreenQuad>           fxaa_FullScreenQuad;
+	std::unique_ptr<SSGI>                          SSGI_FullScreenQuad;
+	std::unique_ptr<CombinedResult_FullScreenQuad> Combined_FullScreenQuad;
+	std::unique_ptr<DynamicDiffuse_RTGI>           dynamicDiffuse_RTGI;
+	std::unique_ptr<ReSTIR_DI>                     Restir_DI;
 
-	std::unique_ptr<SSA0_FullScreenQuad, decltype(&SSA0_FullScreenQuadDeleter)>
-		ssao_FullScreenQuad{ nullptr, &SSA0_FullScreenQuadDeleter };
-
-	std::unique_ptr<FXAA_FullScreenQuad, decltype(&FXAA_FullScreenQuadDeleter)>
-		fxaa_FullScreenQuad{ nullptr, &FXAA_FullScreenQuadDeleter };
-
-	std::unique_ptr<SSGI, decltype(&SSGIDeleter)>
-		SSGI_FullScreenQuad{ nullptr, &SSGIDeleter };
-
-	std::unique_ptr<CombinedResult_FullScreenQuad, decltype(&CombinedResult_FullScreenQuadDeleter)>
-		Combined_FullScreenQuad{ nullptr, &CombinedResult_FullScreenQuadDeleter };
-
-	std::unique_ptr<DynamicDiffuse_RTGI, decltype(&DynamicDiffuse_RTGIDeleter)>
-		dynamicDiffuse_RTGI { nullptr, &DynamicDiffuse_RTGIDeleter };
-
-	std::unique_ptr<ReSTIR_DI, decltype(&ReSTIR_DI_Deleter)>
-		Restir_DI{ nullptr, &ReSTIR_DI_Deleter };
 
 	VkDescriptorSet FinalRenderTextureId;
 	VkDescriptorSet SSGITextureId;

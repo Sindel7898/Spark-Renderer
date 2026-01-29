@@ -19,6 +19,34 @@ SSGI::SSGI(BufferManager* buffermanager, VulkanContext* vulkancontext, Camera* c
 	createDescriptorSetLayout();
 }
 
+SSGI::~SSGI()
+{
+	if (bufferManager)
+	{
+		for (ImageData noise : BlueNoiseTextures)
+		{
+			bufferManager->DestroyImage(noise);
+		}
+		BlueNoiseTextures.clear();
+
+		for (size_t i = 0; i < ComputeUniformBuffers.size(); i++)
+		{
+			if (ComputeUniformBuffers[i].buffer) {
+				bufferManager->UnmapMemory(ComputeUniformBuffers[i]);
+				bufferManager->DestroyBuffer(ComputeUniformBuffers[i]);
+			}
+		}
+
+		ComputeUniformBuffers.clear();
+		ComputeUniformBuffersMappedMem.clear();
+
+		if (descriptorSetLayout) {
+			vulkanContext->LogicalDevice.destroyDescriptorSetLayout(descriptorSetLayout);
+		}
+	}
+}
+
+
 void SSGI::CreateNoiseTextures()
 {
 
@@ -366,31 +394,5 @@ void SSGI::ComputeSSGI(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipel
 	}
 }
 
-void SSGI::CleanUp()
-{
-	if (bufferManager)
-	{
-		for (ImageData noise : BlueNoiseTextures)
-		{
-			bufferManager->DestroyImage(noise);
-		}
-		BlueNoiseTextures.clear();
-
-		for (size_t i = 0; i < ComputeUniformBuffers.size(); i++)
-		{
-			if (ComputeUniformBuffers[i].buffer) {
-				bufferManager->UnmapMemory(ComputeUniformBuffers[i]);
-				bufferManager->DestroyBuffer(ComputeUniformBuffers[i]);
-			}
-		}
-
-		ComputeUniformBuffers.clear();
-		ComputeUniformBuffersMappedMem.clear();
-
-		if (descriptorSetLayout) {
-			vulkanContext->LogicalDevice.destroyDescriptorSetLayout(descriptorSetLayout);
-		}
-	}
-}
 
 

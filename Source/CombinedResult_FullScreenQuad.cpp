@@ -21,6 +21,15 @@ CombinedResult_FullScreenQuad::CombinedResult_FullScreenQuad(BufferManager* buff
 
 }
 
+CombinedResult_FullScreenQuad::~CombinedResult_FullScreenQuad()
+{
+	if (Gamma_Correction_descriptorSetLayout) {
+		vulkanContext->LogicalDevice.destroyDescriptorSetLayout(Gamma_Correction_descriptorSetLayout);
+	}
+
+	Drawable::Destructor();
+}
+
 void CombinedResult_FullScreenQuad::CreateImage(vk::Extent3D imageExtent)
 {
 	Combined_Lighting_Image.ImageID = "Combined Lighting  Image  Texture";
@@ -310,14 +319,4 @@ void CombinedResult_FullScreenQuad::DrawGammaCorrection(vk::CommandBuffer comman
 	commandbuffer.drawIndexed(bufferManager->quadIndices.size(), 1, 0, 0, 0);
 }
 
-void CombinedResult_FullScreenQuad::CleanUp()
-{
-
-	if (Gamma_Correction_descriptorSetLayout) {
-		vulkanContext->LogicalDevice.destroyDescriptorSetLayout(Gamma_Correction_descriptorSetLayout);
-	}
-
-	Drawable::Destructor();
-
-}
 

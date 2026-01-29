@@ -18,6 +18,11 @@ ReSTIR_DI::ReSTIR_DI(VulkanContext* vulkancontext, vk::CommandPool commandpool, 
 	createDescriptorSetLayout();
 }
 
+ReSTIR_DI::~ReSTIR_DI()
+{
+	CleanUp();
+}
+
 void ReSTIR_DI::CreateImage() {
 
 	vk::Extent3D SampledImageExtent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
@@ -337,7 +342,7 @@ void ReSTIR_DI::UpdateDescrptorSets()
 			vk::DescriptorBufferInfo LightUniformBufferInfo;
 			LightUniformBufferInfo.buffer = LightingPass->UniformBuffers[i].buffer;
 			LightUniformBufferInfo.offset = 0;
-			LightUniformBufferInfo.range = sizeof(LightUniformData) * 1000;
+			LightUniformBufferInfo.range = sizeof(LightUniformData) * MAX_LIGHT_COUNT;
 
 			vk::WriteDescriptorSet LightUniformBufferDescriptorWrite{};
 			LightUniformBufferDescriptorWrite.dstSet = RaytracingDescriptorSets[i];
@@ -742,9 +747,9 @@ void ReSTIR_DI::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferDat
 
 	vk::StridedDeviceAddressRegionKHR callableShaderSbtEntry{};
 
-	VkStridedDeviceAddressRegionKHR  TEMP_raygenShaderSbtEntry = static_cast<VkStridedDeviceAddressRegionKHR>(raygenShaderSbtEntry);
-	VkStridedDeviceAddressRegionKHR  TEMP_missShaderSbtEntry = static_cast<VkStridedDeviceAddressRegionKHR>(missShaderSbtEntry);;
-	VkStridedDeviceAddressRegionKHR  TEMP_hitShaderSbtEntry = static_cast<VkStridedDeviceAddressRegionKHR>(hitShaderSbtEntry);;
+	VkStridedDeviceAddressRegionKHR  TEMP_raygenShaderSbtEntry   = static_cast<VkStridedDeviceAddressRegionKHR>(raygenShaderSbtEntry);
+	VkStridedDeviceAddressRegionKHR  TEMP_missShaderSbtEntry     = static_cast<VkStridedDeviceAddressRegionKHR>(missShaderSbtEntry);;
+	VkStridedDeviceAddressRegionKHR  TEMP_hitShaderSbtEntry      = static_cast<VkStridedDeviceAddressRegionKHR>(hitShaderSbtEntry);;
 	VkStridedDeviceAddressRegionKHR  TEMP_callableShaderSbtEntry = static_cast<VkStridedDeviceAddressRegionKHR>(callableShaderSbtEntry);;
 
 	

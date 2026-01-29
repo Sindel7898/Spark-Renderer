@@ -26,6 +26,12 @@ DynamicDiffuse_RTGI::DynamicDiffuse_RTGI(const std::string filepath, VulkanConte
 	createRayTracingDescriptorSetLayout();
 	CreateAtlasImages();
 }
+DynamicDiffuse_RTGI::~DynamicDiffuse_RTGI()
+{
+	CleanUp();
+}
+
+
 void DynamicDiffuse_RTGI::CreateVertexAndIndexBuffer() {
 
 	storedModelData = &AssetManager::GetInstance().GetStoredModelData(FilePath);
@@ -1219,7 +1225,7 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			vk::DescriptorBufferInfo LightUniformBuffersInfo{};
 			LightUniformBuffersInfo.buffer = fragmentUniformBuffers[i].buffer;
 			LightUniformBuffersInfo.offset = 0;
-			LightUniformBuffersInfo.range = sizeof(LightUniformData) * 1000;
+			LightUniformBuffersInfo.range = sizeof(LightUniformData) * MAX_LIGHT_COUNT;
 
 			vk::WriteDescriptorSet lightUniformBufferdescriptorWrite{};
 			lightUniformBufferdescriptorWrite.dstSet = RaytracingDescriptorSets[i];
