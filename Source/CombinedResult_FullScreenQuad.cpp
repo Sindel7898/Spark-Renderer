@@ -48,7 +48,7 @@ void CombinedResult_FullScreenQuad::CreateImage(vk::Extent3D imageExtent)
 	IMGUI_PRESENT_IMAGE_GAMMA_CORRECTED.imageSampler = bufferManager->CreateImageSampler();
 
 	Final_Denoised_Image.ImageID = "Denoised Image Texture";
-	bufferManager->CreateImage(&Final_Denoised_Image, imageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	bufferManager->CreateImage(&Final_Denoised_Image, imageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eStorage);
 	Final_Denoised_Image.imageView = bufferManager->CreateImageView(&Final_Denoised_Image, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	Final_Denoised_Image.imageSampler = bufferManager->CreateImageSampler();
 

@@ -100,14 +100,14 @@ public:
 
     std::vector<ProbeInformation> ProbeData;
 
-    int NumOfProbesX = 9;
-    int NumOfProbesY = 9;
-    int NumOfProbesZ = 9;
+    int NumOfProbesX = 10;
+    int NumOfProbesY = 10;
+    int NumOfProbesZ = 10;
 
     int RaysPerProbe = 128;
 
-    glm::vec3 ProbeOffset     = glm::vec3(3.000, 3.000, 3.000);
-    glm::vec3 GridLocation     = glm::vec3(-12.000, -2.000, -14.000);
+    glm::vec3 ProbeOffset      = glm::vec3(3.000, 3.000, 5.000);
+    glm::vec3 GridLocation     = glm::vec3(-13.000, -4.000, -20.000);
 
     int ProbeSideLength = (6 * 6);
     int GutterSize = 2;

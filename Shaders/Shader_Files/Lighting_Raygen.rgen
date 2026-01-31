@@ -133,9 +133,13 @@ void main() {
 
    vec3  ViewDir    = normalize(lights[0].CameraPositionAndLightIntensity.xyz -  WorldPos);
 
+   if (dot(Normal, ViewDir) < 0.0) {
+    Normal = -Normal;
+}
+
    const float tMin = 0.001;
    vec3 F0 = mix(vec3(0.04), Albedo, Metallic);
-   vec3 shadowOrigin = WorldPos + (Normal * 0.01);
+   vec3 shadowOrigin = WorldPos + (Normal * 0.04);
 
    for (int i = 0; i < PC.LightCount; i++) {
         LightData light = lights[i];
@@ -145,7 +149,7 @@ void main() {
         if(light.positionAndLightType.w < 0.5){
              LightDir = normalize(-light.positionAndLightType.xyz);
              radiance = light.colorAndAmbientStrength.rgb;
-             tMax = 10000.0;
+             tMax = 1000.0;
         }
         else if (light.positionAndLightType.w > 0.5){
              vec3 LightPos    = light.positionAndLightType.xyz;
@@ -157,7 +161,6 @@ void main() {
         }  
 
         float NdotL = max(dot(Normal, LightDir), 0.0);         
-        if (NdotL <= 0.0) continue;
 
         vec3 halfwayDir  = normalize(LightDir + ViewDir);
         float HdotV  = max(dot(halfwayDir, ViewDir), 0.0);
@@ -180,7 +183,6 @@ void main() {
 
         shadowPayload.visibility = 0; 
 
-        if (length(Lo) > 0.0){
             traceRayEXT(
                topLevelAS, 
                gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT, 
@@ -192,7 +194,6 @@ void main() {
                tMax, 
                0 
             );
-        }
         
         directLighting += Lo * lights[i].CameraPositionAndLightIntensity.a * float(shadowPayload.visibility);
     }
@@ -200,8 +201,8 @@ void main() {
     vec3 indirectLighting = vec3(0);
 
     if(PC.GI_Solution_Index_Padding.x == 3 || PC.GI_Solution_Index_Padding.x == 4){ 
-        indirectLighting = PathTraceGI(WorldPos, Normal) * Albedo /PI;    
+        indirectLighting = PathTraceGI(WorldPos, Normal) * Albedo;    
     }
 
-    imageStore(OutputImage, fullCoord, vec4(directLighting + indirectLighting * 3, 1.0));
+    imageStore(OutputImage, fullCoord, vec4(directLighting + Emmisive + indirectLighting, 1.0));
 }

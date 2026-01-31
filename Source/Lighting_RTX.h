@@ -30,7 +30,7 @@ public:
     void createDescriptorSetLayout();
     void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, GBuffer* Gbuffer, vk::AccelerationStructureKHR* TLAS);
     void UpdateDescrptorSets();
-    void UpdateUniformBuffer(uint32_t currentImage, const std::vector<std::shared_ptr<Light>>& lightref);
+    void UpdateUniformBuffer(uint32_t currentImage, const std::vector<std::unique_ptr<Light>>& lightref);
     uint32_t alignedSize(uint32_t value, uint32_t alignment);
 
     void Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferData RayMisBuffer, vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);

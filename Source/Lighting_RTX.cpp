@@ -158,7 +158,7 @@ void Lighting_RTX::createDescriptorSetLayout()
     Scene_trasnformation_BuffersLayout.binding = 16;
     Scene_trasnformation_BuffersLayout.descriptorCount = 1;
     Scene_trasnformation_BuffersLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
-    Scene_trasnformation_BuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
+    Scene_trasnformation_BuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR | vk::ShaderStageFlagBits::eAnyHitKHR;
 
     std::array<vk::DescriptorSetLayoutBinding, 17> bindings = {
         PositionSamplerLayout, NormalSamplerLayout, AlbedoSamplerLayout, MaterialsSamplerLayout,
@@ -449,7 +449,7 @@ void Lighting_RTX::UpdateDescrptorSets()
         vk::DescriptorBufferInfo TransformUniformBuffersInfo{};
         TransformUniformBuffersInfo.buffer = bufferManager->AllScene_TransformationUniformBuffers[i].buffer;
         TransformUniformBuffersInfo.offset = 0;
-        TransformUniformBuffersInfo.range = sizeof(GlobalTransformationMatrices) * MAX_OBJECT_COUNT;
+        TransformUniformBuffersInfo.range = sizeof(GlobalTransformationMatrices) * bufferManager->AllScene_TransformationUniformBuffers.size();
 
         vk::WriteDescriptorSet TransformUniformBufferdescriptorWrite{};
         TransformUniformBufferdescriptorWrite.dstSet = DescriptorSets[i];
@@ -473,7 +473,8 @@ void Lighting_RTX::UpdateDescrptorSets()
     }
 }
 
-void Lighting_RTX::UpdateUniformBuffer(uint32_t currentImage, const std::vector<std::shared_ptr<Light>>& lightref)
+
+void Lighting_RTX::UpdateUniformBuffer(uint32_t currentImage, const std::vector<std::unique_ptr<Light>>& lightref)
 {
     if (SkyBoxRef && SkyBoxRef->bSkyBoxUpdate)
     {
@@ -502,6 +503,9 @@ void Lighting_RTX::UpdateUniformBuffer(uint32_t currentImage, const std::vector<
     }
 
     LightCount = static_cast<int>(lightDataspack.size());
+    
+    memset(UniformBuffersMappedMem[currentImage], 0, sizeof(LightUniformData) * MAX_LIGHT_COUNT);
+
     if (LightCount > 0) {
         memcpy(UniformBuffersMappedMem[currentImage], lightDataspack.data(), lightDataspack.size() * sizeof(LightUniformData));
     }

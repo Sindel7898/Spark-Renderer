@@ -171,6 +171,7 @@ void main()
      vec4 WorldPos =  transformations[objectID].WorldMatrix * vec4(VertexPosition,1.0);
      HitPosition   =  WorldPos.xyz;
 
+
      vec3 CameraPosition = lights[0].CameraPositionAndLightIntensity.xyz;
 
         // --- Lighting ---
@@ -228,7 +229,6 @@ void main()
               Radiance += Lo;
         }
         
-        //Radiance += Emissive * 3;
 
             int UseInfiniteBounce = int(pc.UseInfiniteBounce_infinite_bounces_multiplier_LightCount.x);
         

@@ -25,7 +25,7 @@ void AccumulateRay(inout vec3 irradiance, inout vec4 visibility, inout float tot
 {
     float ray_dist = ray_data.a;
 
-    if (ray_dist > -5.0) { 
+    if (ray_dist > -10.0) { 
         
         //Irradiance Accumulation
         if (w_irrad > 0.0001) {

@@ -136,7 +136,7 @@ public:
 	std::vector<std::shared_ptr<Model>> AltCornelSceneModels;
 
 	std::vector<Model*> Models;
-	std::vector<std::shared_ptr<Light>> lights;
+	std::vector<std::unique_ptr<Light>> lights;
 	std::vector<Drawable*> UserInterfaceItems;
 
 private:

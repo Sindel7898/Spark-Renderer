@@ -13,7 +13,7 @@ class Light : public Drawable
 public:
 
     Light(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* camera, BufferManager* buffermanger);
-
+    ~Light();
     void CreateVertexAndIndexBuffer() override;
     void CreateUniformBuffer() override;
     void CastShadowsSwitch(bool bCastShadow);
@@ -60,13 +60,4 @@ private:
         {{-1.0f, -1.0f, -1.0f}}, {{ 1.0f, -1.0f, -1.0f}}, {{ 1.0f, -1.0f,  1.0f}},
         {{ 1.0f, -1.0f,  1.0f}}, {{-1.0f, -1.0f,  1.0f}}, {{-1.0f, -1.0f, -1.0f}}
     };
-};
-
-
-static inline void LightDeleter(Light* light) {
-
-        if (light) {
-            light->CleanUp();
-            delete light;
-        }
 };

@@ -30,8 +30,7 @@ public:
 
     void init(vk::CommandPool commandPool);
 
-    void render(VkCommandBuffer commandBuffer, ImageData InImage, GBuffer inColorTexture, ImageData inDepthTexture, ImageData OutImage);
-
+    void render(VkCommandBuffer commandBuffer, ImageData InImage, GBuffer inColorTexture, ImageData inDepthTexture, ImageData OutImage, VkFormat depthFormat);
     void requiredExtensions(std::vector<const char*>& instanceExtensions, std::vector<const char*>& deviceExtensions);
 
     void CleanUp();

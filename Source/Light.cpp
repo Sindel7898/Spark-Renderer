@@ -34,6 +34,11 @@ Light::Light(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera* 
 	transformMatrices.modelMatrix = glm::scale    (transformMatrices.modelMatrix , scale);
 }
 
+Light::~Light()
+{
+	CleanUp();
+}
+
 
 void Light::CreateVertexAndIndexBuffer()
 {

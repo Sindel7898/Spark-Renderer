@@ -229,7 +229,7 @@ void App::SpawnLights(int NumOfLights)
 	std::uniform_real_distribution<float> disc(0, 1);
 
 	for (int i = 0; i < NumOfLights; i++) {
-		std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(&vulkanContext, commandPool, &camera, &bufferManger), LightDeleter);
+		auto light = std::make_unique<Light>(&vulkanContext, commandPool, &camera, &bufferManger);
 
 		float randX = disXZ(gen);
 		float randY = disY(gen);
@@ -287,7 +287,7 @@ void App::SwitchScene(int index)
 		std::uniform_real_distribution<float> disc(0, 1);
 
 		for (int i = 0; i < LightCount; i++) {
-			std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(&vulkanContext, commandPool, &camera, &bufferManger), LightDeleter);
+			auto light = std::make_unique<Light>(&vulkanContext, commandPool, &camera, &bufferManger);
 
 			float randX = disXZ(gen);
 			float randY = disY(gen);
@@ -308,12 +308,12 @@ void App::SwitchScene(int index)
 
 		if (dynamicDiffuse_RTGI)
 		{
-			dynamicDiffuse_RTGI->NumOfProbesX = 9;
-			dynamicDiffuse_RTGI->NumOfProbesY = 9;
-			dynamicDiffuse_RTGI->NumOfProbesZ = 9;
+			dynamicDiffuse_RTGI->NumOfProbesX = 10;
+			dynamicDiffuse_RTGI->NumOfProbesY = 10;
+			dynamicDiffuse_RTGI->NumOfProbesZ = 10;
 			dynamicDiffuse_RTGI->RaysPerProbe = 128;
-			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(3.000, 3.000, 3.000);
-			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-12.000, -2.000, -14.000);
+			dynamicDiffuse_RTGI->ProbeOffset  = glm::vec3(3.000, 3.000, 5.000);
+			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-13.000, -4.000, -20.000);
 		}
 
 		camera.SetPosition(glm::vec3{ -0.896284, 12.566, -37.7205 });
@@ -341,7 +341,7 @@ void App::SwitchScene(int index)
 		std::uniform_real_distribution<float> disc(0, 1);
 
 		for (int i = 0; i < LightCount; i++) {
-			std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(&vulkanContext, commandPool, &camera, &bufferManger), LightDeleter);
+			auto light = std::make_unique<Light>(&vulkanContext, commandPool, &camera, &bufferManger);
 
 			float randX = disXZ(gen);
 			float randY = disY(gen);
@@ -366,8 +366,8 @@ void App::SwitchScene(int index)
 			dynamicDiffuse_RTGI->NumOfProbesY = 13;
 			dynamicDiffuse_RTGI->NumOfProbesZ = 13;
 			dynamicDiffuse_RTGI->RaysPerProbe = 188;
-			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-55.011, -1.357, -23.000);
-			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(11.000, 5.500, 5.000);
+			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-55.011, 1.000, -23.000);
+			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(11.000, 4.000, 5.000);
 
 		}
 
@@ -395,7 +395,7 @@ void App::SwitchScene(int index)
 		std::uniform_real_distribution<float> disc(0, 1);
 
 		for (int i = 0; i < LightCount; i++) {
-			std::shared_ptr<Light> light = std::shared_ptr<Light>(new Light(&vulkanContext, commandPool, &camera, &bufferManger), LightDeleter);
+			auto light = std::make_unique<Light>(&vulkanContext, commandPool, &camera, &bufferManger);
 
 			float randX = disXZ(gen);
 			float randY = disY(gen);
@@ -416,12 +416,12 @@ void App::SwitchScene(int index)
 
 		if (dynamicDiffuse_RTGI)
 		{
-			dynamicDiffuse_RTGI->NumOfProbesX = 9;
-			dynamicDiffuse_RTGI->NumOfProbesY = 9;
-			dynamicDiffuse_RTGI->NumOfProbesZ = 9;
+			dynamicDiffuse_RTGI->NumOfProbesX = 10;
+			dynamicDiffuse_RTGI->NumOfProbesY = 10;
+			dynamicDiffuse_RTGI->NumOfProbesZ = 10;
 			dynamicDiffuse_RTGI->RaysPerProbe = 128;
-			dynamicDiffuse_RTGI->ProbeOffset  = glm::vec3(3.000, 3.000, 3.000);
-			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-12.000, -2.000, -14.000);
+			dynamicDiffuse_RTGI->ProbeOffset  = glm::vec3(3.000, 3.000, 5.000);
+			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-13.000, -4.000, -20.000);
 		}
 
 		camera.SetPosition(glm::vec3{ -0.896284, 12.566, -37.7205 });
@@ -3028,6 +3028,28 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			commandBuffer.endRendering();
 		}
 
+		{
+			vk::ImageMemoryBarrier barrier{};
+			barrier.oldLayout = vk::ImageLayout::eUndefined;
+			barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.image = Combined_FullScreenQuad->Combined_Lighting_Image.image;
+			barrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
+
+			barrier.srcAccessMask = vk::AccessFlagBits::eNone;
+			barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+
+			commandBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eTopOfPipe,
+				vk::PipelineStageFlagBits::eColorAttachmentOutput,
+				{},
+				0, nullptr,
+				0, nullptr,
+				1, &barrier
+			);
+		}
+
 
 		{
 			vk::RenderingAttachmentInfo CombinedImageAttachInfo;
@@ -3146,34 +3168,55 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			commandBuffer.endRendering();
 		}
 
-		//{
-		//	
-		//	vulkanContext.DLSS_IntergrationRef->render(commandBuffer,
-		//		Combined_FullScreenQuad->Combined_Lighting_Image,
-		//		gbuffer,
-		//		DepthTextureData,
-		//		Combined_FullScreenQuad->Final_Denoised_Image);
-		//	
-		//	vk::ImageMemoryBarrier dlssBarrier{};
-		//	dlssBarrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite; 
-		//	dlssBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;  
-		//	dlssBarrier.oldLayout = vk::ImageLayout::eGeneral;            
-		//	dlssBarrier.newLayout = vk::ImageLayout::eGeneral;
-		//	dlssBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		//	dlssBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		//	dlssBarrier.image = Combined_FullScreenQuad->Final_Denoised_Image.image;
-		//	dlssBarrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
-		//
-		//	commandBuffer.pipelineBarrier(
-		//		vk::PipelineStageFlagBits::eComputeShader | vk::PipelineStageFlagBits::eRayTracingShaderKHR,
-		//		vk::PipelineStageFlagBits::eAllCommands | vk::PipelineStageFlagBits::eAllGraphics,
-		//		{},
-		//		0, nullptr,
-		//		0, nullptr,
-		//		1, & dlssBarrier
-		//	);
-		//
-		//}
+		{
+			vk::ImageMemoryBarrier barrier{};
+			barrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+			barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+			barrier.oldLayout = vk::ImageLayout::eColorAttachmentOptimal; 
+			barrier.newLayout = vk::ImageLayout::eGeneral; 
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.image = Combined_FullScreenQuad->Combined_Lighting_Image.image;
+			barrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
+
+			commandBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eColorAttachmentOutput,
+				vk::PipelineStageFlagBits::eComputeShader, 
+				{},
+				0, nullptr,
+				0, nullptr,
+				1, &barrier
+			);
+		}
+
+		{
+			
+			vulkanContext.DLSS_IntergrationRef->render(commandBuffer,
+				Combined_FullScreenQuad->Combined_Lighting_Image,
+				gbuffer,
+				DepthTextureData,
+				Combined_FullScreenQuad->Combined_Lighting_Image, (VkFormat)vulkanContext.FindCompatableDepthFormat());
+			
+			vk::ImageMemoryBarrier dlssBarrier{};
+			dlssBarrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite; 
+			dlssBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;  
+			dlssBarrier.oldLayout = vk::ImageLayout::eGeneral;            
+			dlssBarrier.newLayout = vk::ImageLayout::eGeneral;
+			dlssBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			dlssBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			dlssBarrier.image = Combined_FullScreenQuad->Final_Denoised_Image.image;
+			dlssBarrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
+		
+			commandBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eComputeShader | vk::PipelineStageFlagBits::eRayTracingShaderKHR,
+				vk::PipelineStageFlagBits::eAllCommands | vk::PipelineStageFlagBits::eAllGraphics,
+				{},
+				0, nullptr,
+				0, nullptr,
+				1, & dlssBarrier
+			);
+		
+		}
 
 		/////////////////// FORWARD PASS END ///////////////////////// 
 		vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
@@ -3311,7 +3354,7 @@ void App::recreateSwapChain() {
 	camera.SetSwapchainWidth(vulkanContext.swapchainExtent.width);
 	createDepthTextureImage();
 	createGBuffer();
-	//vulkanContext.DLSS_IntergrationRef->init(commandPool);
+	vulkanContext.DLSS_IntergrationRef->init(commandPool);
 }
 
 void App::recreatePipeline()
@@ -3444,24 +3487,22 @@ void App::destroyPipeline()
  App::~App()
 {
 
-	//userinterface.reset();
+	vulkanContext.LogicalDevice.waitIdle();
+	
 	DestroyBuffers();
 
 	if (!commandBuffers.empty()) {
 		vulkanContext.LogicalDevice.freeCommandBuffers(commandPool, commandBuffers);
 		commandBuffers.clear();
 	}
+
 	vulkanContext.LogicalDevice.destroyDescriptorPool(DescriptorPool);
 	vulkanContext.LogicalDevice.destroyCommandPool(commandPool);
-
 	destroyPipeline();
-
 	DestroySyncObjects();
+
 	vkb::destroy_debug_utils_messenger(vulkanContext.VulkanInstance, vulkanContext.Debug_Messenger);
-	//vulkanContext.reset();
 
-
-	//window.reset();
 #ifndef NDEBUG
 	_CrtDumpMemoryLeaks();  
 #endif
