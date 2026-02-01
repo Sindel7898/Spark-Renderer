@@ -877,8 +877,8 @@ void App::createGBuffer()
 
 	bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd,vulkanContext.graphicsQueue);
 
-	FinalRenderTextureId = ImGui_ImplVulkan_AddTexture(Combined_FullScreenQuad->Combined_Lighting_Image.imageSampler,
-		                                               Combined_FullScreenQuad->Combined_Lighting_Image.imageView,
+	FinalRenderTextureId = ImGui_ImplVulkan_AddTexture(Combined_FullScreenQuad->Final_Denoised_Image.imageSampler,
+		                                               Combined_FullScreenQuad->Final_Denoised_Image.imageView,
 		                                               VK_IMAGE_LAYOUT_GENERAL);
 
 
@@ -3195,7 +3195,7 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 				Combined_FullScreenQuad->Combined_Lighting_Image,
 				gbuffer,
 				DepthTextureData,
-				Combined_FullScreenQuad->Combined_Lighting_Image, (VkFormat)vulkanContext.FindCompatableDepthFormat());
+				Combined_FullScreenQuad->Final_Denoised_Image, (VkFormat)vulkanContext.FindCompatableDepthFormat());
 			
 			vk::ImageMemoryBarrier dlssBarrier{};
 			dlssBarrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite; 

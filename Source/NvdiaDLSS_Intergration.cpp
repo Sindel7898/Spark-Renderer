@@ -68,28 +68,23 @@ void NvdiaDLSS_Intergration::init(vk::CommandPool commandPool) {
     NVSDK_NGX_PerfQuality_Value dlssQuality = NVSDK_NGX_PerfQuality_Value_DLAA;
 
     int dlssCreateFeatureFlags = NVSDK_NGX_DLSS_Feature_Flags_IsHDR |
-        NVSDK_NGX_DLSS_Feature_Flags_MVJittered |
-        NVSDK_NGX_DLSS_Feature_Flags_RayReconstruction;
+        NVSDK_NGX_DLSS_Feature_Flags_MVJittered | NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
 
-    NVSDK_NGX_DLSS_Create_Params dlssCreateParams{
-        .Feature = {
-            .InWidth = displayWidth,     
-            .InHeight = displayHeight,   
-            .InTargetWidth = displayWidth,
-            .InTargetHeight = displayHeight,
-            .InPerfQualityValue = dlssQuality,
-        },
-        .InFeatureCreateFlags = dlssCreateFeatureFlags,
-    };
+    NVSDK_NGX_DLSSD_Create_Params dlssdCreateParams = {};
+    dlssdCreateParams.InDenoiseMode = NVSDK_NGX_DLSS_Denoise_Mode_DLUnified; 
+    dlssdCreateParams.InRoughnessMode = NVSDK_NGX_DLSS_Roughness_Mode_Unpacked; 
+    dlssdCreateParams.InUseHWDepth = NVSDK_NGX_DLSS_Depth_Type_Linear;
+    dlssdCreateParams.InWidth = displayWidth;
+    dlssdCreateParams.InHeight = displayHeight;
+    dlssdCreateParams.InTargetWidth = displayWidth;
+    dlssdCreateParams.InTargetHeight = displayHeight;
+    dlssdCreateParams.InPerfQualityValue = dlssQuality;
+    dlssdCreateParams.InFeatureCreateFlags = dlssCreateFeatureFlags;
 
     auto commmandBuffer = m_bufferManager->CreateSingleUseCommandBuffer(commandPool);
 
-    NVSDK_NGX_Result createDlssResult = NGX_VULKAN_CREATE_DLSS_EXT(
-        commmandBuffer,
-        1, 1,
-        &dlssFeatureHandle_,
-        paramsDLSS_,
-        &dlssCreateParams
+    NVSDK_NGX_Result createDlssResult = NGX_VULKAN_CREATE_DLSSD_EXT1(
+        m_device, commmandBuffer, 1, 1, &dlssFeatureHandle_, paramsDLSS_, &dlssdCreateParams
     );
 
     if (NVSDK_NGX_FAILED(createDlssResult)) {
@@ -100,9 +95,8 @@ void NvdiaDLSS_Intergration::init(vk::CommandPool commandPool) {
 }
 
 void NvdiaDLSS_Intergration::render(VkCommandBuffer commandBuffer, ImageData InImage,
-                                                                   GBuffer   inColorTexture,
-                                                                   ImageData inDepthTexture,
-                                                                   ImageData OutImage, VkFormat depthFormat)
+    GBuffer inColorTexture, ImageData inDepthTexture,
+    ImageData OutImage, VkFormat depthFormat)
 {
 
     NVSDK_NGX_Resource_VK inColorResource = NVSDK_NGX_Create_ImageView_Resource_VK(
@@ -125,35 +119,53 @@ void NvdiaDLSS_Intergration::render(VkCommandBuffer commandBuffer, ImageData InI
         { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_FORMAT_R16G16B16A16_SFLOAT,
         m_vulkanContext->swapchainExtent.width, m_vulkanContext->swapchainExtent.height, false);
 
-    float width = static_cast<float>(m_vulkanContext->swapchainExtent.width);
+    NVSDK_NGX_Resource_VK diffuseAlbedoResource = NVSDK_NGX_Create_ImageView_Resource_VK(
+        inColorTexture.Albedo.imageView, inColorTexture.Albedo.image,
+        { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_FORMAT_R16G16B16A16_SFLOAT,
+        m_vulkanContext->swapchainExtent.width, m_vulkanContext->swapchainExtent.height, false);
+
+    NVSDK_NGX_Resource_VK normalsResource = NVSDK_NGX_Create_ImageView_Resource_VK(
+        inColorTexture.Normal.imageView, inColorTexture.Normal.image,
+        { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_FORMAT_R16G16B16A16_SFLOAT,
+        m_vulkanContext->swapchainExtent.width, m_vulkanContext->swapchainExtent.height, false);
+
+    NVSDK_NGX_Resource_VK roughnessResource = NVSDK_NGX_Create_ImageView_Resource_VK(
+        inColorTexture.Materials.imageView, inColorTexture.Materials.image,
+        { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_FORMAT_R8G8B8A8_UNORM, 
+        m_vulkanContext->swapchainExtent.width, m_vulkanContext->swapchainExtent.height, false);
+
+    float width  = static_cast<float>(m_vulkanContext->swapchainExtent.width);
     float height = static_cast<float>(m_vulkanContext->swapchainExtent.height);
 
-    NVSDK_NGX_VK_DLSS_Eval_Params evalParams = {};
-    evalParams.Feature.pInColor = &inColorResource;
-    evalParams.Feature.pInOutput = &outColorResource;
-    evalParams.Feature.InSharpness = 0.0f;
+    NVSDK_NGX_VK_DLSSD_Eval_Params evalParams = {};
+    evalParams.pInColor = &inColorResource;     
+    evalParams.pInOutput = &outColorResource;   
     evalParams.pInDepth = &depthResource;
     evalParams.pInMotionVectors = &motionVectorResource;
     evalParams.InJitterOffsetX = m_camera->GetjitterInPixelSpace().x;
     evalParams.InJitterOffsetY = m_camera->GetjitterInPixelSpace().y;
-    evalParams.pInExposureTexture = nullptr;
-    evalParams.InRenderSubrectDimensions.Width = static_cast<uint32_t>(width);
-    evalParams.InRenderSubrectDimensions.Height = static_cast<uint32_t>(height);
+    evalParams.InRenderSubrectDimensions = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
     evalParams.InMVScaleX = width;
     evalParams.InMVScaleY = height;
     evalParams.InReset = 0;
+    evalParams.pInDiffuseAlbedo = &diffuseAlbedoResource;
+    evalParams.pInSpecularAlbedo = &inColorResource;
+    evalParams.pInNormals = &normalsResource;
+    evalParams.pInRoughness = &roughnessResource;
+    evalParams.pInSpecularHitDistance = &inColorResource;
 
-    NVSDK_NGX_Result result = NGX_VULKAN_EVALUATE_DLSS_EXT(
-        commandBuffer, dlssFeatureHandle_, paramsDLSS_, &evalParams);
+    NVSDK_NGX_Result result = NGX_VULKAN_EVALUATE_DLSSD_EXT(
+        commandBuffer,
+        dlssFeatureHandle_,
+        paramsDLSS_,
+        &evalParams
+    );
 
-
-   if (result != NVSDK_NGX_Result_Success) {
-       auto store = GetNGXResultAsString(result);
-       throw std::runtime_error("DLSS Evaluation Failed");
-   }
+    if (result != NVSDK_NGX_Result_Success) {
+        auto store = GetNGXResultAsString(result);
+        throw std::runtime_error("DLSS Evaluation Failed");
+    }
 }
-
-
 
 void NvdiaDLSS_Intergration::requiredExtensions(std::vector<const char*>& instanceExtensions, std::vector<const char*>& deviceExtensions)
 {
