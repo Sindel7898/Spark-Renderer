@@ -94,7 +94,7 @@ void main()
 
     uint packed = gl_InstanceCustomIndexEXT;
     uint meshBufferID = packed & 0xFFF;
-    uint objectID   = packed >> 12;
+    uint objectID     = packed >> 12;
 
     VertexAndIndexOffsets offsets = OffsetBuffer.Offsets[meshBufferID];
     uint baseIndex = offsets.IndexOffset + (3 * gl_PrimitiveID);
@@ -142,6 +142,7 @@ void main()
      mat3 WorldSpaceTBN = mat3(WorldT, WorldB, WorldN);
     
       uint matID = offsets.MaterialIndex;
+
      vec3  Albedo     = texture(Albedo_AssetImages          [nonuniformEXT(matID)], TexCoord).rgb;
      float Metallic   = texture(MetalicRoughness_AssetImages[nonuniformEXT(matID)], TexCoord).r;
      float Roughness  = texture(MetalicRoughness_AssetImages[nonuniformEXT(matID)], TexCoord).r;

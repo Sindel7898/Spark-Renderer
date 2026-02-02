@@ -449,7 +449,7 @@ void Lighting_RTX::UpdateDescrptorSets()
         vk::DescriptorBufferInfo TransformUniformBuffersInfo{};
         TransformUniformBuffersInfo.buffer = bufferManager->AllScene_TransformationUniformBuffers[i].buffer;
         TransformUniformBuffersInfo.offset = 0;
-        TransformUniformBuffersInfo.range = sizeof(GlobalTransformationMatrices) * bufferManager->AllScene_TransformationUniformBuffers.size();
+        TransformUniformBuffersInfo.range = sizeof(GlobalTransformationMatrices) * 100;
 
         vk::WriteDescriptorSet TransformUniformBufferdescriptorWrite{};
         TransformUniformBufferdescriptorWrite.dstSet = DescriptorSets[i];

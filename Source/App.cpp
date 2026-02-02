@@ -78,9 +78,9 @@ void App::LoadAllObjects()
 
 
 	////Sponza SETUP
+	auto Sponza = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto Bunny = std::shared_ptr<Model>(new Model("../Textures/Bunny2/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto Dragon = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	auto Sponza = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 
 	Bunny->Instances[0]->SetPostion(glm::vec3(-14.224, -0.329, 0.357));
 	Bunny->Instances[0]->SetRotation(glm::vec3(-179.999, -33.858, -179.999));
@@ -3311,9 +3311,13 @@ void App::recreateSwapChain() {
 void App::recreatePipeline()
 {
 	vulkanContext.LogicalDevice.waitIdle();
+	DestroyShaderBindingTable();
+
 	destroyPipeline();
 
 	CreateGraphicsPipeline();
+
+	createShaderBindingTable();
 }
 
 

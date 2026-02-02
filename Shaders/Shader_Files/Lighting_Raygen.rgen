@@ -80,7 +80,7 @@ vec3 PathTraceGI(vec3 origin, vec3 normal) {
     vec3 currentOrigin = origin + normal * 0.001; 
     vec3 currentNormal = normal;
 
-    for (int bounce = 0; bounce < 20; bounce++) { 
+    for (int bounce = 0; bounce < 3; bounce++) { 
         float rx = rand_pcg(seed);
         float ry = rand_pcg(seed);
         
@@ -206,3 +206,40 @@ void main() {
 
     imageStore(OutputImage, fullCoord, vec4(directLighting + Emmisive + indirectLighting, 1.0));
 }
+
+//
+//void main() {
+//    ivec2 fullCoord = ivec2(gl_LaunchIDEXT.xy);
+//
+//    // 1. Get the target point for this pixel from the G-Buffer
+//    vec3 TargetWorldPos = texelFetch(PositionImage, fullCoord, 0).rgb;
+//    
+//    // 2. Get the Camera Position
+//    vec3 CameraPos = lights[0].CameraPositionAndLightIntensity.xyz;
+//
+//    // 3. Calculate Direction from Camera to Pixel
+//    vec3 direction = normalize(TargetWorldPos - CameraPos);
+//
+//    // 4. Initialize Payload (Debug Color: Red)
+//    // If you see pure RED, it means the ray missed everything (TLAS mismatch)
+//    RTGIpayload.radiance = vec4(0.0);
+//    RTGIpayload.albedo   = vec4(1.0, 0.0, 0.0, 1.0); 
+//    RTGIpayload.normal   = vec4(0.0);
+//    RTGIpayload.position = vec4(0.0);
+//
+//    // 5. Trace Primary Ray
+//    traceRayEXT(
+//        topLevelAS, 
+//        gl_RayFlagsOpaqueEXT, 
+//        0xFF, 
+//        0, 0, 0, 
+//        CameraPos,    // Origin
+//        0.001,        // tMin
+//        direction,    // Direction
+//        10000.0,      // tMax
+//        1             // Payload Location 1 (RTGIPayload)
+//    );
+//
+//    // 6. Output
+//    imageStore(OutputImage, fullCoord, vec4(RTGIpayload.normal.rgb, 1.0));
+//}
