@@ -531,7 +531,7 @@ vec3 IndirectRadiance = vec3(0.0);
         spatialReservoir.Num_OF_Lights_In_Resevoir = 10.0;
     }
 
-     if (DDGISamplingVertex == 0){ // primary vertex
+     if (DDGISamplingVertex == 0 &&bDDGI ){ // primary vertex
           
           vec3 HitIrradiance       =  SampleIrradiance(
                                           IrradianceStorageImage,

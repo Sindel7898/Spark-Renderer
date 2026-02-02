@@ -246,8 +246,8 @@ void SSGI::createDescriptorSets(vk::DescriptorPool descriptorpool,GBuffer gbuffe
 
 			vk::DescriptorImageInfo ViewSpacePositionimageInfo{};
 			ViewSpacePositionimageInfo.imageLayout = vk::ImageLayout::eGeneral;
-			ViewSpacePositionimageInfo.imageView = gbuffer.ViewSpacePosition.imageView;
-			ViewSpacePositionimageInfo.sampler = gbuffer.ViewSpacePosition.imageSampler;
+			ViewSpacePositionimageInfo.imageView = gbuffer.Position.imageView;
+			ViewSpacePositionimageInfo.sampler = gbuffer.Position.imageSampler;
 
 			vk::WriteDescriptorSet ViewSpacePositionSamplerdescriptorWrite{};
 			ViewSpacePositionSamplerdescriptorWrite.dstSet = DescriptorSets[i];
@@ -365,6 +365,7 @@ void SSGI::UpdateUniformBuffer(uint32_t currentImage, float DeltaTime)
 	 NoiseIndex = (NoiseIndex + 1)  % BlueNoiseTextures.size();
 
 	SSGI_UniformBufferData SSGI_UniformBufferData;
+	SSGI_UniformBufferData.ViewMatrix = camera->GetViewMatrix();
  	SSGI_UniformBufferData.ProjectionMatrix = camera->GetProjectionMatrix();
 	SSGI_UniformBufferData.ProjectionMatrix[1][1] *= -1;
 	SSGI_UniformBufferData.BlueNoiseImageIndex_WithPadding = glm::vec4(NoiseIndex, DeltaTime, vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height);

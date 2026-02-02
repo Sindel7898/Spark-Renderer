@@ -70,7 +70,6 @@ struct Vertex {
 
 struct GBuffer {
     ImageData Position;
-    ImageData ViewSpacePosition;
     ImageData Normal;
     ImageData PrevNormal;
     ImageData ViewSpaceNormal;
@@ -78,6 +77,7 @@ struct GBuffer {
     ImageData Albedo;
     ImageData Emissive;
     ImageData MotionVector;
+    ImageData SpecularAlbedo;
 
 };
 

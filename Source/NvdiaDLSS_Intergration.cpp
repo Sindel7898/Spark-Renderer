@@ -65,7 +65,7 @@ void NvdiaDLSS_Intergration::init(vk::CommandPool commandPool) {
     uint32_t displayWidth = m_vulkanContext->swapchainExtent.width;
     uint32_t displayHeight = m_vulkanContext->swapchainExtent.height;
 
-    NVSDK_NGX_PerfQuality_Value dlssQuality = NVSDK_NGX_PerfQuality_Value_DLAA;
+    NVSDK_NGX_PerfQuality_Value dlssQuality = NVSDK_NGX_PerfQuality_Value_Balanced;
 
     int dlssCreateFeatureFlags = NVSDK_NGX_DLSS_Feature_Flags_IsHDR |
         NVSDK_NGX_DLSS_Feature_Flags_MVJittered | NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
@@ -134,6 +134,11 @@ void NvdiaDLSS_Intergration::render(VkCommandBuffer commandBuffer, ImageData InI
         { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_FORMAT_R8G8B8A8_UNORM, 
         m_vulkanContext->swapchainExtent.width, m_vulkanContext->swapchainExtent.height, false);
 
+    NVSDK_NGX_Resource_VK specularAlbedoResource = NVSDK_NGX_Create_ImageView_Resource_VK(
+        inColorTexture.SpecularAlbedo.imageView, inColorTexture.SpecularAlbedo.image,
+        { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_FORMAT_R8G8B8A8_UNORM,
+        m_vulkanContext->swapchainExtent.width, m_vulkanContext->swapchainExtent.height, false);
+
     float width  = static_cast<float>(m_vulkanContext->swapchainExtent.width);
     float height = static_cast<float>(m_vulkanContext->swapchainExtent.height);
 
@@ -142,17 +147,18 @@ void NvdiaDLSS_Intergration::render(VkCommandBuffer commandBuffer, ImageData InI
     evalParams.pInOutput = &outColorResource;   
     evalParams.pInDepth = &depthResource;
     evalParams.pInMotionVectors = &motionVectorResource;
+    evalParams.pInDiffuseAlbedo = &diffuseAlbedoResource;
+    evalParams.pInNormals = &normalsResource;
+    evalParams.pInRoughness = &roughnessResource;
+    evalParams.pInSpecularAlbedo = &specularAlbedoResource;
     evalParams.InJitterOffsetX = m_camera->GetjitterInPixelSpace().x;
     evalParams.InJitterOffsetY = m_camera->GetjitterInPixelSpace().y;
     evalParams.InRenderSubrectDimensions = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
     evalParams.InMVScaleX = width;
     evalParams.InMVScaleY = height;
     evalParams.InReset = 0;
-    evalParams.pInDiffuseAlbedo = &diffuseAlbedoResource;
-    evalParams.pInSpecularAlbedo = &diffuseAlbedoResource;
-    evalParams.pInNormals = &normalsResource;
-    evalParams.pInRoughness = &roughnessResource;
-    evalParams.pInSpecularHitDistance = &inColorResource;
+
+    //evalParams.pInSpecularHitDistance = &inColorResource;
 
     NVSDK_NGX_Result result = NGX_VULKAN_EVALUATE_DLSSD_EXT(
         commandBuffer,

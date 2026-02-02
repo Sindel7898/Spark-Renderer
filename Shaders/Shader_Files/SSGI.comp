@@ -1,7 +1,7 @@
 #version 450
 
 layout (binding = 0) uniform sampler2D NormalTexture;
-layout (binding = 1) uniform sampler2D ViewSpacePosition;
+layout (binding = 1) uniform sampler2D WorldSpacePosition;
 layout (binding = 2) uniform sampler2D DepthTexture;
 layout (binding = 3) uniform sampler2D AlbedoTexture;
 layout (binding = 4) uniform sampler2D DirectLigtingTexture;
@@ -10,12 +10,13 @@ layout (binding = 7, rgba16f) uniform image2D SSGITexture;
 
 layout (binding = 6) uniform SSGIUniformBuffer {
     mat4 ProjectionMatrix;
+    mat4 ViewMatrix;
     vec4 BlueNoiseImageIndex_DeltaTime_Width_Height;
 } ubo;
 
 
 const int MIN_ITERATION = 0;
-const int MAX_ITERATION = 35;
+const int MAX_ITERATION = 60;
 const int MAX_RAYS = 5;
 const int MIN_RAYS = 1;
 
@@ -26,6 +27,18 @@ struct RayHit {
     float Distance;
     bool hit;
 };
+
+uvec3 pcg3d(uvec3 v) {
+    v = v * 1664525u + 1013904223u;
+    v.x += v.y * v.z;
+    v.y += v.z * v.x;
+    v.z += v.x * v.y;
+    v ^= v >> 16u;
+    v.x += v.y * v.z;
+    v.y += v.z * v.x;
+    v.z += v.x * v.y;
+    return v;
+}
 
 vec3 GetPerpendicularVector(vec3 v) {
 
@@ -74,7 +87,7 @@ RayHit  FindIntersectionPoint(vec3 SamplePosInVS, vec3 DirInVS, float MaxTraceDi
         }
         
         // Sample depth with LOD to improve cache performance
-        vec3 scenePosVS  = texture(ViewSpacePosition,uv).xyz;
+        vec4  scenePosVS  = ubo.ViewMatrix * vec4(texture(WorldSpacePosition,uv).xyz,1);
         float rayDepth   = -rayPosInVS.z;
         float sceneDepth = -scenePosVS.z;
         
@@ -104,7 +117,7 @@ void main() {
 
     vec3 Color      = texture(DirectLigtingTexture, UV).rgb;
     vec3 Albedo     = texture(AlbedoTexture, UV).rgb;
-    vec3 VSposition = texture(ViewSpacePosition, UV).rgb;
+    vec4 VSposition = ubo.ViewMatrix * vec4(texture(WorldSpacePosition, UV).rgb,1);
     vec3 Normal     = normalize(texture(NormalTexture, UV).xyz);
     
    
@@ -120,15 +133,20 @@ void main() {
        for(int i = 0; i < NUM_RAYS; i++) {
        
             //vec2 noise = rand2(tiledUV + inTexCoord * 17.0, seed, float(i));
-            int index = int(ubo.BlueNoiseImageIndex_DeltaTime_Width_Height.x);
-            vec2 noise = texture(BlueNoise[index], tiledUV).rg;
+           //int index = int(ubo.BlueNoiseImageIndex_DeltaTime_Width_Height.x);
+           //vec2 noise = texture(BlueNoise[index], tiledUV).rg;
+           //vec3 stochasticNormal = GetHemisphereSample(noise, Normal);
        
-            vec3 stochasticNormal = GetHemisphereSample(noise, Normal);
-       
+        uvec3 seed = uvec3(gl_GlobalInvocationID.xy, uint(i) + uint(ubo.BlueNoiseImageIndex_DeltaTime_Width_Height.x * 100.0));
+        uvec3 h = pcg3d(seed);
+        vec2 randVal = vec2(h.xy) * (1.0 / 4294967295.0); // scale between 0 and 1 
+
+        vec3 stochasticNormal = GetHemisphereSample(randVal, Normal);
+
             if(dot(stochasticNormal, stochasticNormal) > 0.001){
             
               RayHit hit  = FindIntersectionPoint(
-                            offsetPositionAlongNormal(VSposition, Normal), 
+                            offsetPositionAlongNormal(VSposition.xyz, Normal), 
                             stochasticNormal, 
                             200.0);
    

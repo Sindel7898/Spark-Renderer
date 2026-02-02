@@ -540,8 +540,8 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 
 			vk::DescriptorImageInfo ViewSpaceImageInfo{};
 			ViewSpaceImageInfo.imageLayout = vk::ImageLayout::eGeneral;
-			ViewSpaceImageInfo.imageView   = gbuffer.ViewSpacePosition.imageView;
-			ViewSpaceImageInfo.sampler     = gbuffer.ViewSpacePosition.imageSampler;
+			ViewSpaceImageInfo.imageView   = gbuffer.Position.imageView;
+			ViewSpaceImageInfo.sampler     = gbuffer.Position.imageSampler;
 		
 
 			vk::WriteDescriptorSet ViewSpacePositionSamplerdescriptorWrite{};
@@ -606,8 +606,8 @@ void RT_Reflections::createRaytracedDescriptorSets(vk::DescriptorPool descriptor
 
 			vk::DescriptorImageInfo ViewSpaceImageInfo{};
 			ViewSpaceImageInfo.imageLayout = vk::ImageLayout::eGeneral;
-			ViewSpaceImageInfo.imageView = gbuffer.ViewSpacePosition.imageView;
-			ViewSpaceImageInfo.sampler = gbuffer.ViewSpacePosition.imageSampler;
+			ViewSpaceImageInfo.imageView = gbuffer.Position.imageView;
+			ViewSpaceImageInfo.sampler = gbuffer.Position.imageSampler;
 
 
 			vk::WriteDescriptorSet ViewSpacePositionSamplerdescriptorWrite{};

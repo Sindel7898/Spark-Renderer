@@ -85,11 +85,11 @@ void main() {
      }
 
      if(pc.MaxGamma_MinGamma_GISolution_Padding.z == 1) {
-        GI = SSGI;
+        GI = SSGIGIresult;
      }
 
      if(pc.MaxGamma_MinGamma_GISolution_Padding.z == 2) {
-        GI = DDGIresult + SSGI;
+        GI = DDGIresult + SSGIGIresult;
      }
 
     if(pc.MaxGamma_MinGamma_GISolution_Padding.z == 3) {

@@ -783,10 +783,6 @@ void App::createGBuffer()
 	gbuffer.Position.imageView = bufferManger.CreateImageView(&gbuffer.Position, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	gbuffer.Position.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
-	gbuffer.ViewSpacePosition.ImageID = "Gbuffer Position Texture";
-	bufferManger.CreateImage(&gbuffer.ViewSpacePosition,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
-	gbuffer.ViewSpacePosition.imageView = bufferManger.CreateImageView(&gbuffer.ViewSpacePosition, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	gbuffer.ViewSpacePosition.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	gbuffer.Normal.ImageID = "Gbuffer WorldSpaceNormal Texture";
 	bufferManger.CreateImage(&gbuffer.Normal,swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferSrc);
@@ -826,6 +822,11 @@ void App::createGBuffer()
 	gbuffer.MotionVector.imageView = bufferManger.CreateImageView(&gbuffer.MotionVector, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	gbuffer.MotionVector.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
+	gbuffer.SpecularAlbedo.ImageID = "SpecularAlbedo Texture";
+	bufferManger.CreateImage(&gbuffer.SpecularAlbedo, swapchainextent, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled);
+	gbuffer.SpecularAlbedo.imageView = bufferManger.CreateImageView(&gbuffer.SpecularAlbedo, vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor);
+	gbuffer.SpecularAlbedo.imageSampler = bufferManger.CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+
 
 	fxaa_FullScreenQuad->CreateImage(swapchainextent);
 	SSGI_FullScreenQuad->CreateGIImage();
@@ -857,7 +858,6 @@ void App::createGBuffer()
 	vulkanContext.ResetTemporalAccumilation();
 
 	bufferManger.TransitionImage(cmd, &gbuffer.Position, TransitionToGeneral);
-	bufferManger.TransitionImage(cmd, &gbuffer.ViewSpacePosition, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &gbuffer.Normal, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &gbuffer.ViewSpaceNormal, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &gbuffer.Albedo, TransitionToGeneral);
@@ -1372,13 +1372,13 @@ void App::CreateGraphicsPipeline()
 
 		std::array<vk::Format, 8> colorFormats = {
 	                             vk::Format::eR16G16B16A16Sfloat, // Position
-								 vk::Format::eR16G16B16A16Sfloat, // ViewSpacePosition
 	                             vk::Format::eR16G16B16A16Sfloat, // Normal
 					             vk::Format::eR16G16B16A16Sfloat, // // ViewSpaceNormal
 	                             vk::Format::eR8G8B8A8Srgb,       // Albedo
 								 vk::Format::eR8G8B8A8Srgb,       // Emmisive
 								 vk::Format::eR8G8B8A8Unorm,      //Material
-								 vk::Format::eR16G16B16A16Sfloat       //ReflectionMask
+								 vk::Format::eR16G16B16A16Sfloat, //ReflectionMask
+								 vk::Format::eR8G8B8A8Unorm
 	                             };
 
 
@@ -2361,13 +2361,6 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 		PositioncolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
 		PositioncolorAttachmentInfo.clearValue = clearColor;
 
-		vk::RenderingAttachmentInfo ViewSpacePositioncolorAttachmentInfo{};
-		ViewSpacePositioncolorAttachmentInfo.imageView = gbuffer.ViewSpacePosition.imageView;
-		ViewSpacePositioncolorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		ViewSpacePositioncolorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
-		ViewSpacePositioncolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
-		ViewSpacePositioncolorAttachmentInfo.clearValue = clearColor;
-
 		vk::RenderingAttachmentInfo NormalcolorAttachmentInfo{};
 		NormalcolorAttachmentInfo.imageView = gbuffer.Normal.imageView;
 		NormalcolorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
@@ -2410,10 +2403,17 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 		MotionVectorcolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
 		MotionVectorcolorAttachmentInfo.clearValue = clearColor;
 
-		std::array<vk::RenderingAttachmentInfo, 8> ColorAttachments{ PositioncolorAttachmentInfo,ViewSpacePositioncolorAttachmentInfo,
+		vk::RenderingAttachmentInfo SpecularcolorAttachmentInfo{};
+		SpecularcolorAttachmentInfo.imageView = gbuffer.SpecularAlbedo.imageView;
+		SpecularcolorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		SpecularcolorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eClear;
+		SpecularcolorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		SpecularcolorAttachmentInfo.clearValue = clearColor;
+
+		std::array<vk::RenderingAttachmentInfo, 8> ColorAttachments{ PositioncolorAttachmentInfo,
 																	 NormalcolorAttachmentInfo, ViewSpaceNormalcolorAttachmentInfo,
 																	 AlbedocolorAttachmentInfo,EmmisivAttachmentInfo,
-																	 MaterialscolorAttachmentInfo,MotionVectorcolorAttachmentInfo };
+																	 MaterialscolorAttachmentInfo,MotionVectorcolorAttachmentInfo,SpecularcolorAttachmentInfo };
 
 		vk::RenderingAttachmentInfo depthStencilAttachment;
 		depthStencilAttachment.imageView = DepthTextureData.imageView;
@@ -3259,7 +3259,6 @@ void App::destroy_DepthImage()
 void App::destroy_GbufferImages()
 {
 	bufferManger.DestroyImage(gbuffer.Position);
-	bufferManger.DestroyImage(gbuffer.ViewSpacePosition);
 	bufferManger.DestroyImage(gbuffer.Normal);
 	bufferManger.DestroyImage(gbuffer.ViewSpaceNormal);
 	bufferManger.DestroyImage(gbuffer.Materials);
@@ -3267,6 +3266,7 @@ void App::destroy_GbufferImages()
 	bufferManger.DestroyImage(gbuffer.Emissive);
 	bufferManger.DestroyImage(gbuffer.MotionVector);
 	bufferManger.DestroyImage(gbuffer.PrevNormal);
+	bufferManger.DestroyImage(gbuffer.SpecularAlbedo);
 
 	ssao_FullScreenQuad->DestroyImage();
 	fxaa_FullScreenQuad->DestroyImage();

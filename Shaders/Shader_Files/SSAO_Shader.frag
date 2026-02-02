@@ -24,7 +24,7 @@ void main() {
     if(KD.KernelSizeRadiusBiasAndBool.w == 1){
         
         vec2 TextureSize       = vec2(textureSize(samplerposition,0));
-        vec3 ViewSpaceFragPos  = textureLod(samplerposition,inTexCoord,0).rgb;
+        vec4 ViewSpaceFragPos  = KD.CameraViewMatrix * vec4(textureLod(samplerposition,inTexCoord,0).rgb,1);
         vec3 ViewSpaceNormal   = textureLod(samplerNormal, inTexCoord,0).rgb;
         vec3 randomVec         = textureLod(samplerNoise,inTexCoord * TextureSize,0).rgb;
         
@@ -37,7 +37,7 @@ void main() {
        for(int i = 0; i < KD.KernelSizeRadiusBiasAndBool.x; ++i){
        
            vec3 samplePos = TBN * KD.samples[i].xyz;
-                samplePos = ViewSpaceFragPos + samplePos * radius;
+                samplePos = ViewSpaceFragPos.xyz + samplePos * radius;
        
            vec4 offset = KD.CameraProjMatrix * vec4(samplePos, 1.0);
            offset.xyz /= offset.w;               
