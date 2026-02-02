@@ -29,6 +29,9 @@ void Camera::Initialize(float Fov, float NearClip, float FarClip) {
 
     UpdateCameraVectors();
     UpdateViewMatrix();       
+    frameIndex = (frameIndex + 1) % 8;
+    updateJitterMat(frameIndex, 8, swapchainWidth, swapchainHeight);
+    UpdateJitter(GetjitterInNDCSpace().x, GetjitterInNDCSpace().y);
     UpdateProjectionMatrix(); 
 
     Prev_viewMatrix = viewMatrix;

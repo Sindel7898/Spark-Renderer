@@ -108,7 +108,7 @@ void App::LoadAllObjects()
 
 
 	////////CORNEL SETUP////////////////////////////////////////
-	auto Bunny2 = std::shared_ptr<Model>(new Model("../Textures/Bunny/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto Bunny2 = std::shared_ptr<Model>(new Model("../Textures/Bunny2/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto Dragon2 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto CornelBox = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 
@@ -892,6 +892,7 @@ void App::UpdateTextureID()
 	}
 	else
 	{
+
 		FinalRenderTextureId = ImGui_ImplVulkan_AddTexture(Combined_FullScreenQuad->Combined_Lighting_Image.imageSampler,
 			Combined_FullScreenQuad->Combined_Lighting_Image.imageView,
 			VK_IMAGE_LAYOUT_GENERAL);

@@ -87,8 +87,7 @@ void main()
     vec3 UV      = (inCurrClipPos.xyz / inCurrClipPos.w).xyz * 0.5 + 0.5;
     vec3 PrevUV  = (inPrevClipPos.xyz / inPrevClipPos.w).xyz * 0.5 + 0.5;
 
-    outVelocity = vec4((UV - PrevUV).xyz, 1.0);
-
+    outVelocity = vec4((PrevUV - UV).xyz, 1.0);
 
     // =======================
     vec3 Albedo     = textureLod(samplerColor, inTexCoord, 0).rgb;
