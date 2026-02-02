@@ -1173,7 +1173,7 @@ void DynamicDiffuse_RTGI::createRaytracedDescriptorSets(vk::DescriptorPool descr
 			vk::DescriptorBufferInfo TransformUniformBuffersInfo{};
 			TransformUniformBuffersInfo.buffer = bufferManager->AllScene_TransformationUniformBuffers[i].buffer;
 			TransformUniformBuffersInfo.offset = 0;
-			TransformUniformBuffersInfo.range = sizeof(GlobalTransformationMatrices) * 100;
+			TransformUniformBuffersInfo.range = VK_WHOLE_SIZE;
 
 			vk::WriteDescriptorSet TransformUniformBufferdescriptorWrite{};
 			TransformUniformBufferdescriptorWrite.dstSet = RaytracingDescriptorSets[i];
