@@ -42,6 +42,13 @@ void ReSTIR_DI::CreateImage() {
 	ReSTIRDI_Results.imageView = bufferManager->CreateImageView(&ReSTIRDI_Results, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	ReSTIRDI_Results.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
 
+	ReSTIRDI_Denoised_Results.ImageID = " Prev ReSTIR DI Denoised Image";
+	bufferManager->CreateImage(&ReSTIRDI_Denoised_Results, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eColorAttachment);
+	ReSTIRDI_Denoised_Results.imageView = bufferManager->CreateImageView(&ReSTIRDI_Denoised_Results, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	ReSTIRDI_Denoised_Results.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
+
+
+
 	vk::CommandBuffer cmd = bufferManager->CreateSingleUseCommandBuffer(commandPool);
 
 	vk::ClearColorValue clearColor(std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f});
@@ -88,6 +95,11 @@ void ReSTIR_DI::DestroyImage() {
 	if (ReSTIRDI_Results.image)
 	{
 		bufferManager->DestroyImage(ReSTIRDI_Results);
+	}
+
+	if (ReSTIRDI_Denoised_Results.image)
+	{
+		bufferManager->DestroyImage(ReSTIRDI_Denoised_Results);
 	}
 }
 

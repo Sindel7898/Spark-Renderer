@@ -43,6 +43,7 @@ public:
     ImageData ResevoirImage;
     ImageData PrevResevoirImage;
     ImageData ReSTIRDI_Results;
+    ImageData ReSTIRDI_Denoised_Results;
 
     bool bTemporalReuse = true;
 	bool bSpatialReuse = true;

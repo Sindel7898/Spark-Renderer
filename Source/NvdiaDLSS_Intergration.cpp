@@ -149,7 +149,7 @@ void NvdiaDLSS_Intergration::render(VkCommandBuffer commandBuffer, ImageData InI
     evalParams.InMVScaleY = height;
     evalParams.InReset = 0;
     evalParams.pInDiffuseAlbedo = &diffuseAlbedoResource;
-    evalParams.pInSpecularAlbedo = &inColorResource;
+    evalParams.pInSpecularAlbedo = &diffuseAlbedoResource;
     evalParams.pInNormals = &normalsResource;
     evalParams.pInRoughness = &roughnessResource;
     evalParams.pInSpecularHitDistance = &inColorResource;

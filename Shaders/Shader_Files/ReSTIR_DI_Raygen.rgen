@@ -325,31 +325,6 @@ void main() {
 vec3 IndirectRadiance = vec3(0.0);
 
     if (bDDGI) {
-       
-
-        if (DDGISamplingVertex == 0){ // primary vertex
-          
-          vec3 HitIrradiance       =  SampleIrradiance(
-                                          IrradianceStorageImage,
-                                          VisibilityStorageImage,
-                                          surfaceData.worldPos,
-                                          surfaceData.normal,
-                                          pc.GridBaseLocation_ScreenSizeWidth.xyz,
-                                          pc.ProbeSpacing_ScreenSizeHeight.xyz,
-                                          ivec3(pc.ProbeCount.xyz),
-                                          // Irradiance Params
-                                          pc.ProbeSideLength,
-                                          pc.GutterSize,
-                                          pc.AtlasWidthSize,
-                                          // Visibility Params
-                                          pc.ProbeSideLength,   //Same values are being passed cus as of now they are both the same size. but this can be changed
-                                          pc.GutterSize,
-                                          pc.AtlasWidthSize,pc.CameraPosition.xyz);
-
-                   
-            IndirectRadiance         = HitIrradiance * (surfaceData.albedo / PI);
-        
-        }
 
   if (DDGISamplingVertex == 1) { // Secondary vertex
       payload.rayType = 1; 
@@ -555,6 +530,32 @@ vec3 IndirectRadiance = vec3(0.0);
         spatialReservoir.Sum_Of_All_Weights *= scale;
         spatialReservoir.Num_OF_Lights_In_Resevoir = 10.0;
     }
+
+     if (DDGISamplingVertex == 0){ // primary vertex
+          
+          vec3 HitIrradiance       =  SampleIrradiance(
+                                          IrradianceStorageImage,
+                                          VisibilityStorageImage,
+                                          surfaceData.worldPos,
+                                          surfaceData.normal,
+                                          pc.GridBaseLocation_ScreenSizeWidth.xyz,
+                                          pc.ProbeSpacing_ScreenSizeHeight.xyz,
+                                          ivec3(pc.ProbeCount.xyz),
+                                          // Irradiance Params
+                                          pc.ProbeSideLength,
+                                          pc.GutterSize,
+                                          pc.AtlasWidthSize,
+                                          // Visibility Params
+                                          pc.ProbeSideLength,   //Same values are being passed cus as of now they are both the same size. but this can be changed
+                                          pc.GutterSize,
+                                          pc.AtlasWidthSize,pc.CameraPosition.xyz);
+
+                   
+            IndirectRadiance    = HitIrradiance * (surfaceData.albedo / PI);
+          
+          FinalRadiance += IndirectRadiance;
+        }
+
 
     vec4 Res = vec4(spatialReservoir.Light_Index, spatialReservoir.Light_Weight, spatialReservoir.Sum_Of_All_Weights, spatialReservoir.Num_OF_Lights_In_Resevoir);
     imageStore(ResevoirImage, TextCoord, Res);            

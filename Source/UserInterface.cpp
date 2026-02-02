@@ -452,6 +452,11 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
                 ImGui::SeparatorText("Post-Processing");
                 ImGui::Checkbox("FXAA", (bool*)&appref->fxaa_FullScreenQuad->bFXAA);
 
+                if (ImGui::Checkbox("Ray Reconstruction", (bool*)&appref->bUseDLSS))
+                {
+                    appref->UpdateTextureID();
+                }
+
                 if (ImGui::CollapsingHeader("Color Settings", ImGuiTreeNodeFlags_DefaultOpen))
                 {
                     ImGui::SliderFloat("Brightness", &appref->Combined_FullScreenQuad->Brightness, 0.0f, 2.0f, "%.2f");

@@ -82,6 +82,8 @@ public:
 
 	void createGBuffer();
 
+	void UpdateTextureID();
+
 	void CreateGraphicsPipeline();
 
 	uint32_t alignedSize(uint32_t value, uint32_t alignment);
@@ -112,6 +114,8 @@ public:
 	int DefferedDecider = 3;
 
 	bool bWireFrame = false;
+	bool bUseDLSS = false;
+
 	//Drawables
 	std::unique_ptr<Lighting_RTX>                  lighting_RTX;
 	std::unique_ptr<SSA0_FullScreenQuad>           ssao_FullScreenQuad;
@@ -223,7 +227,6 @@ private:
 	ImageData DepthTextureData;
 
 	bool bRecreateDepth = false;
-
 	bool binitiallayout = true;
 
 	GBuffer gbuffer;

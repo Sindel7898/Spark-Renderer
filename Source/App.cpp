@@ -873,40 +873,59 @@ void App::createGBuffer()
 	bufferManger.TransitionImage(cmd, &dynamicDiffuse_RTGI->Probe_Sampled_GI_Image, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &Restir_DI->PrevResevoirImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &Restir_DI->ReSTIRDI_Results, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &Restir_DI->ReSTIRDI_Denoised_Results, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &lighting_RTX->ResultingStorageImage, TransitionToGeneral);
 
 	bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd,vulkanContext.graphicsQueue);
 
-	FinalRenderTextureId = ImGui_ImplVulkan_AddTexture(Combined_FullScreenQuad->Final_Denoised_Image.imageSampler,
-		                                               Combined_FullScreenQuad->Final_Denoised_Image.imageView,
-		                                               VK_IMAGE_LAYOUT_GENERAL);
+	UpdateTextureID();
 
-
-	SSGITextureId    = ImGui_ImplVulkan_AddTexture(SSGI_FullScreenQuad->SSGIPassImage.imageSampler,
-		                                           SSGI_FullScreenQuad->SSGIPassImage.imageView,
-		                                           VK_IMAGE_LAYOUT_GENERAL);
-	
-
-	ReSTIR_DITextureId = ImGui_ImplVulkan_AddTexture(Restir_DI->ReSTIRDI_Results.imageSampler,
-		                                             Restir_DI->ReSTIRDI_Results.imageView,
-		                                             VK_IMAGE_LAYOUT_GENERAL);
-
-	DDGI_Radiance = ImGui_ImplVulkan_AddTexture(dynamicDiffuse_RTGI->RadianceImageAtlasImage.imageSampler,
-		                                        dynamicDiffuse_RTGI->RadianceImageAtlasImage.imageView,
-		                                        VK_IMAGE_LAYOUT_GENERAL);
-
-
-   Sampled_GI_ID = ImGui_ImplVulkan_AddTexture(dynamicDiffuse_RTGI->Probe_Sampled_GI_Image.imageSampler,
-	                                           dynamicDiffuse_RTGI->Probe_Sampled_GI_Image.imageView,
-			                                   VK_IMAGE_LAYOUT_GENERAL);
-
-
-	std::cout << "Swapchain size: "
-		<< vulkanContext.swapchainExtent.width << " x "
-		<< vulkanContext.swapchainExtent.height
-		<< std::endl;
 }
 
+void App::UpdateTextureID()
+{
+	if (bUseDLSS)
+	{
+		FinalRenderTextureId = ImGui_ImplVulkan_AddTexture(Combined_FullScreenQuad->Final_Denoised_Image.imageSampler,
+			Combined_FullScreenQuad->Final_Denoised_Image.imageView,
+			VK_IMAGE_LAYOUT_GENERAL);
+	}
+	else
+	{
+		FinalRenderTextureId = ImGui_ImplVulkan_AddTexture(Combined_FullScreenQuad->Combined_Lighting_Image.imageSampler,
+			Combined_FullScreenQuad->Combined_Lighting_Image.imageView,
+			VK_IMAGE_LAYOUT_GENERAL);
+	}
+
+
+	if (bUseDLSS)
+	{
+		ReSTIR_DITextureId = ImGui_ImplVulkan_AddTexture(Restir_DI->ReSTIRDI_Denoised_Results.imageSampler,
+			Restir_DI->ReSTIRDI_Denoised_Results.imageView,
+			VK_IMAGE_LAYOUT_GENERAL);
+	}
+	else
+	{
+		ReSTIR_DITextureId = ImGui_ImplVulkan_AddTexture(Restir_DI->ReSTIRDI_Results.imageSampler,
+			Restir_DI->ReSTIRDI_Results.imageView,
+			VK_IMAGE_LAYOUT_GENERAL);
+	}
+
+	SSGITextureId = ImGui_ImplVulkan_AddTexture(SSGI_FullScreenQuad->SSGIPassImage.imageSampler,
+		SSGI_FullScreenQuad->SSGIPassImage.imageView,
+		VK_IMAGE_LAYOUT_GENERAL);
+
+
+	DDGI_Radiance = ImGui_ImplVulkan_AddTexture(dynamicDiffuse_RTGI->RadianceImageAtlasImage.imageSampler,
+		dynamicDiffuse_RTGI->RadianceImageAtlasImage.imageView,
+		VK_IMAGE_LAYOUT_GENERAL);
+
+
+	Sampled_GI_ID = ImGui_ImplVulkan_AddTexture(dynamicDiffuse_RTGI->Probe_Sampled_GI_Image.imageSampler,
+		dynamicDiffuse_RTGI->Probe_Sampled_GI_Image.imageView,
+		VK_IMAGE_LAYOUT_GENERAL);
+
+}
 void App::CreateGraphicsPipeline()
 {
 
@@ -2667,8 +2686,6 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 		vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 		{
-
-
 			vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DDGI_Calculate_Irradiance_Label);
 
 			{
@@ -2859,11 +2876,35 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 				ReSTIR_RT_PipelineLayout,
 				currentFrame);
 
+			ImageData* ReSTIR_Image = nullptr;
+
+			if (bUseDLSS)
+			{
+				vk::ImageMemoryBarrier barrier{};
+				barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+				barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+				barrier.oldLayout = vk::ImageLayout::eGeneral;
+				barrier.newLayout = vk::ImageLayout::eGeneral;
+				barrier.image = Restir_DI->ReSTIRDI_Results.image;
+				barrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
+				commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eRayTracingShaderKHR, vk::PipelineStageFlagBits::eComputeShader, {}, 0, nullptr, 0, nullptr, 1, & barrier);
+
+				vulkanContext.DLSS_IntergrationRef->render(commandBuffer, Restir_DI->ReSTIRDI_Results, gbuffer,
+					DepthTextureData, Restir_DI->ReSTIRDI_Denoised_Results,
+					(VkFormat)vulkanContext.FindCompatableDepthFormat());
+
+				ReSTIR_Image = &Restir_DI->ReSTIRDI_Denoised_Results;
+			}
+			else
+			{
+				ReSTIR_Image = &Restir_DI->ReSTIRDI_Results;
+			}
+
 			////////////////////////////////////////////////////////////////////
 			vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
 			SkyBoxRenderAttachInfo.clearValue = clearColor;
 			SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-			SkyBoxRenderAttachInfo.imageView = Restir_DI->ReSTIRDI_Results.imageView;
+			SkyBoxRenderAttachInfo.imageView = ReSTIR_Image->imageView;
 			SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
 			SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
 
@@ -2893,7 +2934,7 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 
 
 			vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
-			LightPassColorAttachmentInfo.imageView = Restir_DI->ReSTIRDI_Results.imageView;;
+			LightPassColorAttachmentInfo.imageView = ReSTIR_Image->imageView;
 			LightPassColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 			LightPassColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eLoad;
 			LightPassColorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
@@ -2959,126 +3000,86 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 	/////////////////// LIGHTING PASS END ///////////////////////// 
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
-
 	if (DefferedDecider != 2) {
+		if (DefferedDecider == 3 || DefferedDecider == 0) {
+			commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, DeferedLightingPassPipeline);
+			lighting_RTX->Draw(Lighting_raygenShaderBindingTableBuffer, Lighting_hitShaderBindingTableBuffer,
+				Lighting_missShaderBindingTableBuffer, commandBuffer, DeferedLightingPassPipelineLayout, currentFrame);
+		}
+
+
 		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, SSGIPipeline);
 		SSGI_FullScreenQuad->ComputeSSGI(commandBuffer, SSGIPipelineLayout, currentFrame);
 
-		vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, SSGI_Label);
-		{
+		vk::RenderingAttachmentInfo CombinedImageAttachInfo{};
+		CombinedImageAttachInfo.imageView = Combined_FullScreenQuad->Combined_Lighting_Image.imageView;
+		CombinedImageAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		CombinedImageAttachInfo.loadOp = vk::AttachmentLoadOp::eClear;
+		CombinedImageAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+		CombinedImageAttachInfo.clearValue = clearColor;
 
-			vk::ImageMemoryBarrier barrier{};
-			barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
-			barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-			barrier.oldLayout = vk::ImageLayout::eGeneral;
-			barrier.newLayout = vk::ImageLayout::eGeneral;
-			barrier.image = SSGI_FullScreenQuad->SSGIPassImage.image;
-			barrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
+		vk::RenderingInfo CombinedImageInfo{};
+		CombinedImageInfo.layerCount = 1;
+		CombinedImageInfo.colorAttachmentCount = 1;
+		CombinedImageInfo.pColorAttachments = &CombinedImageAttachInfo;
+		CombinedImageInfo.renderArea.extent = vulkanContext.swapchainExtent;
 
-			commandBuffer.pipelineBarrier(
-				vk::PipelineStageFlagBits::eComputeShader,
-				vk::PipelineStageFlagBits::eFragmentShader,
-				{}, 0, nullptr, 0, nullptr, 1, &barrier
-			);
+		commandBuffer.beginRendering(CombinedImageInfo);
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, CombinedImagePassPipeline);
+		Combined_FullScreenQuad->Draw(commandBuffer, CombinedImagePipelineLayout, currentFrame);
+		commandBuffer.endRendering();
 
-			ImageTransitionData TransitionDeptTODepthOptimal{};
-			TransitionDeptTODepthOptimal.oldlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			TransitionDeptTODepthOptimal.newlayout = vk::ImageLayout::eDepthAttachmentOptimal;
-			TransitionDeptTODepthOptimal.AspectFlag = vk::ImageAspectFlagBits::eDepth;
-			TransitionDeptTODepthOptimal.SourceAccessflag = vk::AccessFlagBits::eShaderRead;
-			TransitionDeptTODepthOptimal.DestinationAccessflag = vk::AccessFlagBits::eDepthStencilAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentRead;
-			TransitionDeptTODepthOptimal.SourceOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
-			TransitionDeptTODepthOptimal.DestinationOnThePipeline = vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests;
-			bufferManger.TransitionImage(commandBuffer, &DepthTextureData, TransitionDeptTODepthOptimal);
 
+		ImageData* CombinedImageRef = nullptr;
+
+		if (bUseDLSS) {
+		   
+			vk::ImageMemoryBarrier dlssReadBarrier{};
+			dlssReadBarrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+			dlssReadBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+			dlssReadBarrier.oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			dlssReadBarrier.newLayout = vk::ImageLayout::eGeneral;
+			dlssReadBarrier.image = Combined_FullScreenQuad->Combined_Lighting_Image.image;
+			dlssReadBarrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
+			commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eComputeShader, {}, 0, nullptr, 0, nullptr, 1, & dlssReadBarrier);
+
+			vulkanContext.DLSS_IntergrationRef->render(commandBuffer, Combined_FullScreenQuad->Combined_Lighting_Image, gbuffer,
+				DepthTextureData, Combined_FullScreenQuad->Final_Denoised_Image, (VkFormat)vulkanContext.FindCompatableDepthFormat());
+		  
+			CombinedImageRef = &Combined_FullScreenQuad->Final_Denoised_Image;
 		}
-
-		vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
-	}	
-	
+		else
 		{
-			vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
-			SkyBoxRenderAttachInfo.clearValue = clearColor;
-			SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-			SkyBoxRenderAttachInfo.imageView = lighting_RTX->ResultingStorageImage.imageView;
-			SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
-			SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
-
-			vk::RenderingAttachmentInfo DepthAttachInfo;
-			DepthAttachInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
-			DepthAttachInfo.imageView = DepthTextureData.imageView;
-			DepthAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
-			DepthAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
-			DepthAttachInfo.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
-
-			vk::RenderingInfo SkyBoxRenderInfo{};
-			SkyBoxRenderInfo.layerCount = 1;
-			SkyBoxRenderInfo.colorAttachmentCount = 1;
-			SkyBoxRenderInfo.pColorAttachments = &SkyBoxRenderAttachInfo;
-			SkyBoxRenderInfo.pDepthAttachment = &DepthAttachInfo;
-			SkyBoxRenderInfo.renderArea.extent.width = vulkanContext.swapchainExtent.width;
-			SkyBoxRenderInfo.renderArea.extent.height = vulkanContext.swapchainExtent.height;
-
-
-			commandBuffer.setViewport(0, 1, &viewport);
-			commandBuffer.setScissor(0, 1, &scissor);
-			commandBuffer.beginRendering(SkyBoxRenderInfo);
-			commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
-			skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
-			commandBuffer.endRendering();
+			CombinedImageRef = &Combined_FullScreenQuad->Combined_Lighting_Image;
 		}
+		
+		vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo{};
+		SkyBoxRenderAttachInfo.imageView = CombinedImageRef->imageView;
+		SkyBoxRenderAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		SkyBoxRenderAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad; 
+		SkyBoxRenderAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+
+		vk::RenderingAttachmentInfo DepthAttachInfo{};
+		DepthAttachInfo.imageView = DepthTextureData.imageView;
+		DepthAttachInfo.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+		DepthAttachInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+		DepthAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+
+		vk::RenderingInfo SkyBoxRenderInfo{};
+		SkyBoxRenderInfo.layerCount = 1;
+		SkyBoxRenderInfo.colorAttachmentCount = 1;
+		SkyBoxRenderInfo.pColorAttachments = &SkyBoxRenderAttachInfo;
+		SkyBoxRenderInfo.pDepthAttachment = &DepthAttachInfo;
+		SkyBoxRenderInfo.renderArea.extent = vulkanContext.swapchainExtent;
+
+		commandBuffer.beginRendering(SkyBoxRenderInfo);
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SkyBoxgraphicsPipeline);
+		skyBox->Draw(commandBuffer, SkyBoxpipelineLayout, currentFrame);
+		commandBuffer.endRendering();
 
 		{
-			vk::ImageMemoryBarrier barrier{};
-			barrier.oldLayout = vk::ImageLayout::eUndefined;
-			barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
-			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.image = Combined_FullScreenQuad->Combined_Lighting_Image.image;
-			barrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
-
-			barrier.srcAccessMask = vk::AccessFlagBits::eNone;
-			barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-
-			commandBuffer.pipelineBarrier(
-				vk::PipelineStageFlagBits::eTopOfPipe,
-				vk::PipelineStageFlagBits::eColorAttachmentOutput,
-				{},
-				0, nullptr,
-				0, nullptr,
-				1, &barrier
-			);
-		}
-
-
-		{
-			vk::RenderingAttachmentInfo CombinedImageAttachInfo;
-			CombinedImageAttachInfo.clearValue = clearColor;
-			CombinedImageAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-			CombinedImageAttachInfo.imageView = Combined_FullScreenQuad->Combined_Lighting_Image.imageView;
-			CombinedImageAttachInfo.loadOp = vk::AttachmentLoadOp::eClear;
-			CombinedImageAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
-
-			vk::RenderingInfo CombinedImageInfo{};
-			CombinedImageInfo.layerCount = 1;
-			CombinedImageInfo.colorAttachmentCount = 1;
-			CombinedImageInfo.pColorAttachments = &CombinedImageAttachInfo;
-			CombinedImageInfo.renderArea.extent.width = vulkanContext.swapchainExtent.width;
-			CombinedImageInfo.renderArea.extent.height = vulkanContext.swapchainExtent.height;
-
-			commandBuffer.setViewport(0, 1, &viewport);
-			commandBuffer.setScissor(0, 1, &scissor);
-			commandBuffer.beginRendering(CombinedImageInfo);
-			commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, CombinedImagePassPipeline);
-			Combined_FullScreenQuad->Draw(commandBuffer, CombinedImagePipelineLayout, currentFrame);
-			commandBuffer.endRendering();
-		}
-
-
-		{
-
 			vk::RenderingAttachmentInfo LightPassColorAttachmentInfo{};
-			LightPassColorAttachmentInfo.imageView = Combined_FullScreenQuad->Combined_Lighting_Image.imageView;;
+			LightPassColorAttachmentInfo.imageView = CombinedImageRef->imageView;
 			LightPassColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 			LightPassColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eLoad;
 			LightPassColorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
@@ -3123,11 +3124,9 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			commandBuffer.endRendering();
 		}
 
-
 		{
-
 			vk::RenderingAttachmentInfo ProbeDrawColorAttachmentInfo{};
-			ProbeDrawColorAttachmentInfo.imageView = Combined_FullScreenQuad->Combined_Lighting_Image.imageView;;
+			ProbeDrawColorAttachmentInfo.imageView = Combined_FullScreenQuad->Final_Denoised_Image.imageView;;
 			ProbeDrawColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 			ProbeDrawColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eLoad;
 			ProbeDrawColorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
@@ -3168,56 +3167,7 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			commandBuffer.endRendering();
 		}
 
-		{
-			vk::ImageMemoryBarrier barrier{};
-			barrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
-			barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-			barrier.oldLayout = vk::ImageLayout::eColorAttachmentOptimal; 
-			barrier.newLayout = vk::ImageLayout::eGeneral; 
-			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.image = Combined_FullScreenQuad->Combined_Lighting_Image.image;
-			barrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
-
-			commandBuffer.pipelineBarrier(
-				vk::PipelineStageFlagBits::eColorAttachmentOutput,
-				vk::PipelineStageFlagBits::eComputeShader, 
-				{},
-				0, nullptr,
-				0, nullptr,
-				1, &barrier
-			);
-		}
-
-		{
-			
-			vulkanContext.DLSS_IntergrationRef->render(commandBuffer,
-				Combined_FullScreenQuad->Combined_Lighting_Image,
-				gbuffer,
-				DepthTextureData,
-				Combined_FullScreenQuad->Final_Denoised_Image, (VkFormat)vulkanContext.FindCompatableDepthFormat());
-			
-			vk::ImageMemoryBarrier dlssBarrier{};
-			dlssBarrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite; 
-			dlssBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;  
-			dlssBarrier.oldLayout = vk::ImageLayout::eGeneral;            
-			dlssBarrier.newLayout = vk::ImageLayout::eGeneral;
-			dlssBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			dlssBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			dlssBarrier.image = Combined_FullScreenQuad->Final_Denoised_Image.image;
-			dlssBarrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
-		
-			commandBuffer.pipelineBarrier(
-				vk::PipelineStageFlagBits::eComputeShader | vk::PipelineStageFlagBits::eRayTracingShaderKHR,
-				vk::PipelineStageFlagBits::eAllCommands | vk::PipelineStageFlagBits::eAllGraphics,
-				{},
-				0, nullptr,
-				0, nullptr,
-				1, & dlssBarrier
-			);
-		
-		}
-
+	}
 		/////////////////// FORWARD PASS END ///////////////////////// 
 		vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
 
