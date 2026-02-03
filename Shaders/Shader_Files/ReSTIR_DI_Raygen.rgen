@@ -512,7 +512,19 @@ vec3 IndirectRadiance = vec3(0.0);
             float p_hat_final = length(radiance);
 
             if(p_hat_final > 0.0){
-               Hit = TraceShadow(rayOrigin, RayDirection, tMax);
+               
+                vec3 softLightDir;
+               float radius = 0.25; 
+
+                  if(light.positionAndLightType.w < 0.5){
+                     radius = 0.009;
+                     softLightDir = DirectionalSoftShadow(normalize(-light.positionAndLightType.xyz), radius, r1, r2);
+                 } else if (light.positionAndLightType.w > 0.5){
+                     
+                     softLightDir = SoftShadow(light.positionAndLightType.xyz, surfaceData.worldPos, radius, r1, r2);
+                 }
+
+               Hit = TraceShadow(rayOrigin, softLightDir, tMax);
               }
 
             if (Hit && p_hat_final > 0.0) {

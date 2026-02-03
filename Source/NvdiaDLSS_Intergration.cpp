@@ -67,6 +67,11 @@ void NvdiaDLSS_Intergration::init(vk::CommandPool commandPool) {
 
     NVSDK_NGX_PerfQuality_Value dlssQuality = NVSDK_NGX_PerfQuality_Value_Balanced;
 
+    paramsDLSS_->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, NVSDK_NGX_RayReconstruction_Hint_Render_Preset_E);
+
+    paramsDLSS_->Set(NVSDK_NGX_Parameter_RTXValue, NVSDK_NGX_RTX_Value_On);
+
+
     int dlssCreateFeatureFlags = NVSDK_NGX_DLSS_Feature_Flags_IsHDR |
         NVSDK_NGX_DLSS_Feature_Flags_MVJittered | NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
 

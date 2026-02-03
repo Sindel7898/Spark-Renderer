@@ -72,6 +72,8 @@ vec3 GetHemisphereSample(vec2 randVal, vec3 HitNormal) {
     return tangent * (r * cos(phi)) + bitangent * (r * sin(phi)) + HitNormal.xyz * sqrt(max(0.0, 1.0 - randVal.x));
 }
 
+
+
 vec3 PathTraceGI(vec3 origin, vec3 normal) {
 
     vec3 accumulatedIndirect = vec3(0.0);
@@ -181,6 +183,21 @@ void main() {
 
         Lo += (diffuse + specular) * radiance * NdotL;
 
+        float r1 = rand_pcg(seed);
+        float r2 = rand_pcg(seed);
+        float radius = 0.25; 
+
+        vec3 softLightDir;
+
+
+       if(light.positionAndLightType.w < 0.5) {
+          radius = 0.009; 
+          softLightDir = DirectionalSoftShadow(LightDir, radius, r1, r2);
+         } else {
+             softLightDir = SoftShadow(light.positionAndLightType.xyz, WorldPos, radius, r1, r2);
+         }
+
+
         shadowPayload.visibility = 0; 
 
             traceRayEXT(
@@ -190,7 +207,7 @@ void main() {
                0, 0, 0, 
                shadowOrigin, 
                0.001, 
-               LightDir, 
+               softLightDir, 
                tMax, 
                0 
             );
