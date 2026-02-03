@@ -104,7 +104,7 @@ void main()
     vec3  Emissive    = vec3(0);
      if (gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT) {
         Distance = gl_RayTminEXT + gl_HitTEXT;
-        Distance *= -0.2;        
+        Distance *= -0.1;        
     }
 
     else{

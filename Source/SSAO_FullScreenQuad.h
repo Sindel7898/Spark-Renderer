@@ -40,10 +40,10 @@ public:
 
     ImageData NoiseTexture;
 
-    int KernelSize = 23;
+    int KernelSize = 32;
     int bShouldSSAO = 1;
-    float Radius = 1.5f;
-    float Bias = 0.900;
+    float Radius = 0.800;
+    float Bias = 0.050;
 
     vk::DescriptorSetLayout SSAOBlurDescriptorSetLayout;
     std::vector<vk::DescriptorSet> SSAOBlurDescriptorSet;

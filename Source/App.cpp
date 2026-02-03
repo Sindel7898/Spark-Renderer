@@ -367,7 +367,7 @@ void App::SwitchScene(int index)
 			dynamicDiffuse_RTGI->NumOfProbesZ = 13;
 			dynamicDiffuse_RTGI->RaysPerProbe = 188;
 			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-55.011, 1.000, -23.000);
-			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(11.000, 4.000, 5.000);
+			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(11.000, 4.000, 3.900);
 
 		}
 
@@ -2512,6 +2512,16 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 
 		ssao_FullScreenQuad->Draw(commandBuffer, SSAOPipelineLayout, currentFrame);
 		commandBuffer.endRendering();
+
+		vk::ImageMemoryBarrier barrier{};
+		barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+		barrier.oldLayout = vk::ImageLayout::eGeneral;
+		barrier.newLayout = vk::ImageLayout::eGeneral;
+		barrier.image = ssao_FullScreenQuad->SSAOImage.image;
+		barrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
+
+		commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eFragmentShader, vk::PipelineStageFlagBits::eFragmentShader, {}, 0, nullptr, 0, nullptr, 1, & barrier);
 	}
 
 	{
@@ -2978,6 +2988,50 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			}
 
 			commandBuffer.endRendering();
+
+
+			{
+				vk::RenderingAttachmentInfo ProbeDrawColorAttachmentInfo{};
+				ProbeDrawColorAttachmentInfo.imageView = ReSTIR_Image->imageView;
+				ProbeDrawColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+				ProbeDrawColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eLoad;
+				ProbeDrawColorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
+				ProbeDrawColorAttachmentInfo.clearValue = clearColor;
+
+				vk::RenderingAttachmentInfo depthStencilAttachment;
+				depthStencilAttachment.imageView = DepthTextureData.imageView;
+				depthStencilAttachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+				depthStencilAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
+				depthStencilAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+				depthStencilAttachment.clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+
+				vk::RenderingInfo renderingInfo{};
+				renderingInfo.renderArea.offset = imageoffset;
+				renderingInfo.renderArea.extent.height = vulkanContext.swapchainExtent.height;
+				renderingInfo.renderArea.extent.width = vulkanContext.swapchainExtent.width;
+				renderingInfo.layerCount = 1;
+				renderingInfo.colorAttachmentCount = 1;
+				renderingInfo.pColorAttachments = &ProbeDrawColorAttachmentInfo;
+				renderingInfo.pDepthAttachment = &depthStencilAttachment;
+
+				if (bWireFrame)
+				{
+					vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_LINE);
+				}
+				else
+				{
+					vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
+				}
+
+				commandBuffer.setViewport(0, 1, &viewport);
+				commandBuffer.setScissor(0, 1, &scissor);
+				commandBuffer.beginRendering(renderingInfo);
+
+				commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, DDGIProbePipeline);
+
+				dynamicDiffuse_RTGI->Draw(commandBuffer, DDGIProbepipelineLayout, currentFrame);
+				commandBuffer.endRendering();
+			}
 		}
 	}
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
@@ -3127,7 +3181,7 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 
 		{
 			vk::RenderingAttachmentInfo ProbeDrawColorAttachmentInfo{};
-			ProbeDrawColorAttachmentInfo.imageView = Combined_FullScreenQuad->Final_Denoised_Image.imageView;;
+			ProbeDrawColorAttachmentInfo.imageView = CombinedImageRef->imageView;
 			ProbeDrawColorAttachmentInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 			ProbeDrawColorAttachmentInfo.loadOp = vk::AttachmentLoadOp::eLoad;
 			ProbeDrawColorAttachmentInfo.storeOp = vk::AttachmentStoreOp::eStore;
@@ -3167,7 +3221,6 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			dynamicDiffuse_RTGI->Draw(commandBuffer, DDGIProbepipelineLayout, currentFrame);
 			commandBuffer.endRendering();
 		}
-
 	}
 		/////////////////// FORWARD PASS END ///////////////////////// 
 		vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
