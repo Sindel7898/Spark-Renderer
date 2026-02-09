@@ -101,7 +101,7 @@ void NvdiaDLSS_Intergration::init(vk::CommandPool commandPool) {
 
 void NvdiaDLSS_Intergration::render(VkCommandBuffer commandBuffer, ImageData InImage,
     GBuffer inColorTexture, ImageData inDepthTexture,
-    ImageData OutImage, VkFormat depthFormat)
+    ImageData OutImage, VkFormat depthFormat,float deltaTime)
 {
 
     NVSDK_NGX_Resource_VK inColorResource = NVSDK_NGX_Create_ImageView_Resource_VK(
@@ -161,9 +161,11 @@ void NvdiaDLSS_Intergration::render(VkCommandBuffer commandBuffer, ImageData InI
     evalParams.InRenderSubrectDimensions = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
     evalParams.InMVScaleX = width;
     evalParams.InMVScaleY = height;
-    evalParams.InReset = 0;
+    evalParams.InReset = SceneChangeNotifer;
+    evalParams.InFrameTimeDeltaInMsec = deltaTime * 1000.0f;
 
-    //evalParams.pInSpecularHitDistance = &inColorResource;
+
+	SceneChangeNotifer = 0;
 
     NVSDK_NGX_Result result = NGX_VULKAN_EVALUATE_DLSSD_EXT(
         commandBuffer,

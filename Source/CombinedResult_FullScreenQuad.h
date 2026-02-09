@@ -22,7 +22,7 @@ public:
 
     void createDescriptorSetLayout() override;
     void UpdataeUniformBufferData();
-    void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData SSGIImage, ImageData SSAOIImage, ImageData MaterialImage, ImageData AlbedoImage, ImageData DDGIImaGE);
+    void createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData SSGIImage, ImageData SSAOIImage, ImageData MaterialImage, ImageData AlbedoImage, ImageData DDGIImaGE, ImageData PTGiIMAGE, ImageData TA_PTGiIMAGE, ImageData MotionVector);
     void Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinelayout, uint32_t imageIndex) override;
     void DrawGammaCorrection(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
 

@@ -98,16 +98,35 @@ void CombinedResult_FullScreenQuad::createDescriptorSetLayout()
 		AlbedoDescriptorBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		AlbedoDescriptorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-
 		vk::DescriptorSetLayoutBinding DDGIDescriptorBinding{};
 		DDGIDescriptorBinding.binding = 5;
 		DDGIDescriptorBinding.descriptorCount = 1;
 		DDGIDescriptorBinding.descriptorType = vk::DescriptorType::eStorageImage;
 		DDGIDescriptorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
-		std::array<vk::DescriptorSetLayoutBinding, 6> ImageResultPassBinding = { LightingResultDescriptorBinding,
+		vk::DescriptorSetLayoutBinding PTGI_DescriptorBinding{};
+		PTGI_DescriptorBinding.binding = 6;
+		PTGI_DescriptorBinding.descriptorCount = 1;
+		PTGI_DescriptorBinding.descriptorType = vk::DescriptorType::eStorageImage;
+		PTGI_DescriptorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+		vk::DescriptorSetLayoutBinding Last_Frame_PTGI_DescriptorBinding{};
+		Last_Frame_PTGI_DescriptorBinding.binding = 7;
+		Last_Frame_PTGI_DescriptorBinding.descriptorCount = 1;
+		Last_Frame_PTGI_DescriptorBinding.descriptorType = vk::DescriptorType::eStorageImage;
+		Last_Frame_PTGI_DescriptorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+		vk::DescriptorSetLayoutBinding MotionVectorDescriptorBinding{};
+		MotionVectorDescriptorBinding.binding = 8;
+		MotionVectorDescriptorBinding.descriptorCount = 1;
+		MotionVectorDescriptorBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		MotionVectorDescriptorBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+		std::array<vk::DescriptorSetLayoutBinding, 9> ImageResultPassBinding = { LightingResultDescriptorBinding,
 			                                                                     SSGIDescriptorBinding,SSAODescriptorBinding,
-			                                                                     MaterialsDescriptorBinding,AlbedoDescriptorBinding,DDGIDescriptorBinding };
+			                                                                     MaterialsDescriptorBinding,AlbedoDescriptorBinding,
+			                                                                     DDGIDescriptorBinding,PTGI_DescriptorBinding,Last_Frame_PTGI_DescriptorBinding,
+			                                                                     MotionVectorDescriptorBinding };
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.bindingCount = static_cast<uint32_t>(ImageResultPassBinding.size());
@@ -140,10 +159,11 @@ void CombinedResult_FullScreenQuad::createDescriptorSetLayout()
 
 void CombinedResult_FullScreenQuad::UpdataeUniformBufferData()
 {
+	vulkanContext->AccumilationCount++;
 }
 
 
-void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData SSGIImage, ImageData SSAOIImage, ImageData MaterialImage, ImageData AlbedoImage,ImageData DDGIImaGE)
+void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::DescriptorPool descriptorpool, ImageData LightingResultImage, ImageData SSGIImage, ImageData SSAOIImage, ImageData MaterialImage, ImageData AlbedoImage,ImageData DDGIImaGE, ImageData PTGiIMAGE, ImageData TA_PTGiIMAGE, ImageData MotionVector)
 {
 	// create sets from the pool based on the layout
 	std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
@@ -218,7 +238,6 @@ void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::Descr
 		MaterialsSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		MaterialsSamplerdescriptorWrite.pImageInfo = &MaterialsImageResultimageInfo;
 
-
 		vk::DescriptorImageInfo AlbedoImageResultimageInfo{};
 		AlbedoImageResultimageInfo.imageLayout = vk::ImageLayout::eGeneral;
 		AlbedoImageResultimageInfo.imageView = AlbedoImage.imageView;
@@ -245,9 +264,49 @@ void CombinedResult_FullScreenQuad::createDescriptorSetsBasedOnGBuffer(vk::Descr
 		DDGISamplerdescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
 		DDGISamplerdescriptorWrite.pImageInfo = &DDGIImageResultimageInfo;
 
-		std::array<vk::WriteDescriptorSet, 6> descriptorWrites = { LightingResultSamplerdescriptorWrite,SSGISamplerdescriptorWrite,
+		vk::DescriptorImageInfo  PTGIImageResultimageInfo{};
+		PTGIImageResultimageInfo.imageLayout = vk::ImageLayout::eGeneral;
+		PTGIImageResultimageInfo.imageView = PTGiIMAGE.imageView;
+		PTGIImageResultimageInfo.sampler = PTGiIMAGE.imageSampler;
+
+		vk::WriteDescriptorSet  PTGI_SamplerdescriptorWrite{};
+		PTGI_SamplerdescriptorWrite.dstSet = DescriptorSets[i];
+		PTGI_SamplerdescriptorWrite.dstBinding = 6;
+		PTGI_SamplerdescriptorWrite.descriptorCount = 1;
+		PTGI_SamplerdescriptorWrite.dstArrayElement = 0;
+		PTGI_SamplerdescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
+		PTGI_SamplerdescriptorWrite.pImageInfo = &PTGIImageResultimageInfo;
+
+		vk::DescriptorImageInfo  TA_PTGIImageResultimageInfo{};
+		TA_PTGIImageResultimageInfo.imageLayout = vk::ImageLayout::eGeneral;
+		TA_PTGIImageResultimageInfo.imageView = TA_PTGiIMAGE.imageView;
+		TA_PTGIImageResultimageInfo.sampler = TA_PTGiIMAGE.imageSampler;
+
+		vk::WriteDescriptorSet  Last_Frame_PTGI_SamplerdescriptorWrite{};
+		Last_Frame_PTGI_SamplerdescriptorWrite.dstSet = DescriptorSets[i];
+		Last_Frame_PTGI_SamplerdescriptorWrite.dstBinding = 7;
+		Last_Frame_PTGI_SamplerdescriptorWrite.descriptorCount = 1;
+		Last_Frame_PTGI_SamplerdescriptorWrite.dstArrayElement = 0;
+		Last_Frame_PTGI_SamplerdescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
+		Last_Frame_PTGI_SamplerdescriptorWrite.pImageInfo = &TA_PTGIImageResultimageInfo;
+
+		vk::DescriptorImageInfo MotionVectorImageResultimageInfo{};
+		MotionVectorImageResultimageInfo.imageLayout = vk::ImageLayout::eGeneral;
+		MotionVectorImageResultimageInfo.imageView = MotionVector.imageView;
+		MotionVectorImageResultimageInfo.sampler = MotionVector.imageSampler;
+
+		vk::WriteDescriptorSet MotionVectorSamplerdescriptorWrite{};
+		MotionVectorSamplerdescriptorWrite.dstSet = DescriptorSets[i];
+		MotionVectorSamplerdescriptorWrite.dstBinding = 8;
+		MotionVectorSamplerdescriptorWrite.descriptorCount = 1;
+		MotionVectorSamplerdescriptorWrite.dstArrayElement = 0;
+		MotionVectorSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		MotionVectorSamplerdescriptorWrite.pImageInfo = &MotionVectorImageResultimageInfo;
+
+		std::array<vk::WriteDescriptorSet, 9> descriptorWrites = { LightingResultSamplerdescriptorWrite,SSGISamplerdescriptorWrite,
 			                                                       SSAOSamplerdescriptorWrite,MaterialsSamplerdescriptorWrite,
-			                                                       AlbedoSamplerdescriptorWrite,DDGISamplerdescriptorWrite };
+			                                                       AlbedoSamplerdescriptorWrite,DDGISamplerdescriptorWrite,
+																   PTGI_SamplerdescriptorWrite,Last_Frame_PTGI_SamplerdescriptorWrite,MotionVectorSamplerdescriptorWrite };
 
 		vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
 	}
@@ -296,7 +355,7 @@ void CombinedResult_FullScreenQuad::Draw(vk::CommandBuffer commandbuffer, vk::Pi
 
 	PostProcessSettings PPS;
 	PPS.Brightness_Saturation_Concentration_GIboost = glm::vec4(Brightness, Saturation, Concentration, GIBoost);
-	PPS.MaxGamma_MinGamma_Padding = glm::vec4(MaxGamma, MinGamma, lightingref->GISolutionIndex, 0);
+	PPS.MaxGamma_MinGamma_Padding = glm::vec4(MaxGamma, MinGamma, lightingref->GISolutionIndex, (float)vulkanContext->AccumilationCount);
 
 	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(PostProcessSettings), &PPS);
 

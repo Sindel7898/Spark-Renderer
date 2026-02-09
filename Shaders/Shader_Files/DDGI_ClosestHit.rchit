@@ -232,12 +232,15 @@ void main()
 
             int UseInfiniteBounce = int(pc.UseInfiniteBounce_infinite_bounces_multiplier_LightCount.x);
         
+              float biasAmount = 0.05; 
+              vec3 BiasedPos = HitPosition + (WorldN * biasAmount);
+
               if(UseInfiniteBounce > 0.5) {
               
                     vec3 GI  = SampleIrradiance(
                                           IrradianceStorageImage,
                                           VisibilityStorageImage,
-                                          HitPosition,
+                                          BiasedPos,
                                           WorldN,
                                           pc.GridBaseLocation_ScreenSizeWidth.xyz,
                                           pc.ProbeSpacing_ScreenSizeHeight.xyz,
@@ -252,7 +255,7 @@ void main()
                                           pc.AtlasWidthSize,CameraPosition) * pc.UseInfiniteBounce_infinite_bounces_multiplier_LightCount.y;
 
              if (any(greaterThan(GI, vec3(0)))) {
-                 Radiance += GI * Albedo / PI;
+                 Radiance += GI * Albedo / PI  + Emissive;
              }
         }
 

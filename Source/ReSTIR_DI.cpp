@@ -228,7 +228,13 @@ void ReSTIR_DI::createDescriptorSetLayout()
 		PrevNormalImageLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		PrevNormalImageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
-		std::array<vk::DescriptorSetLayoutBinding, 20> bindings = {
+		vk::DescriptorSetLayoutBinding EmmiveImageLayout{};
+		EmmiveImageLayout.binding = 20;
+		EmmiveImageLayout.descriptorCount = 1;
+		EmmiveImageLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		EmmiveImageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+
+		std::array<vk::DescriptorSetLayoutBinding, 21> bindings = {
 					LightUniformBufferLayout, ResevoirStorageImageLayout,
 					WorldPositionImageLayout, NormalImageLayout,
 					AlbedoImageLayout, MaterialImageLayout,
@@ -237,7 +243,7 @@ void ReSTIR_DI::createDescriptorSetLayout()
 					MetalicRoughnessAssetTexturesSamplerLayout,EmmisiveAssetTexturesSamplerLayout,
 					IndexStorageBuffersLayout,VertexStorageBuffersLayout,offsetStorageBuffersLayout,
 					trasnformationUniformBuffersLayout,PrevResevoirStorageImageLayout,MotionVectorImageLayout,
-					ReSTIRDIImageLayout,PrevNormalImageLayout
+					ReSTIRDIImageLayout,PrevNormalImageLayout,EmmiveImageLayout
 		};
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
@@ -676,8 +682,22 @@ void ReSTIR_DI::UpdateDescrptorSets()
 			PrevNormalmagedescriptorWrite.descriptorCount = 1;
 			PrevNormalmagedescriptorWrite.pImageInfo = &PrevNormalImageInfo;
 
+			vk::DescriptorImageInfo EmmisiveimageInfo{};
+			EmmisiveimageInfo.imageLayout = vk::ImageLayout::eGeneral;
+			EmmisiveimageInfo.imageView = LightingPass->GbufferRef->Emissive.imageView;
+			EmmisiveimageInfo.sampler = LightingPass->GbufferRef->Emissive.imageSampler;
 
-			std::array<vk::WriteDescriptorSet, 20> descriptorWrites = {
+			vk::WriteDescriptorSet EmmisiveSamplerdescriptorWrite{};
+			EmmisiveSamplerdescriptorWrite.dstSet = RaytracingDescriptorSets[i];
+			EmmisiveSamplerdescriptorWrite.dstBinding = 20;
+			EmmisiveSamplerdescriptorWrite.dstArrayElement = 0;
+			EmmisiveSamplerdescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+			EmmisiveSamplerdescriptorWrite.descriptorCount = 1;
+			EmmisiveSamplerdescriptorWrite.pImageInfo = &EmmisiveimageInfo;
+
+
+
+			std::array<vk::WriteDescriptorSet, 21> descriptorWrites = {
 							LightUniformBufferDescriptorWrite,
 							ResevoirImagedescriptorWrite,
 							PositionSamplerdescriptorWrite,
@@ -689,7 +709,7 @@ void ReSTIR_DI::UpdateDescrptorSets()
 							MetalicRoughnessAssetImagSamplerdescriptorWrite,EmmisiveAssetImagSamplerdescriptorWrite,
 							IndexStorageBufferdescriptorWrite,VertexStorageBufferdescriptorWrite,
 							OffsetStorageBufferdescriptorWrite,TransformUniformBufferdescriptorWrite,PrevResevoirImagedescriptorWrite,
-							MotionVectorImagedescriptorWrite,ReSTIRImagedescriptorWrite,PrevNormalmagedescriptorWrite
+							MotionVectorImagedescriptorWrite,ReSTIRImagedescriptorWrite,PrevNormalmagedescriptorWrite,EmmisiveSamplerdescriptorWrite
 
 			};
 

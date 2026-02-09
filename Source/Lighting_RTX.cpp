@@ -46,10 +46,22 @@ void Lighting_RTX::CreateStorageImage() {
     bufferManager->CreateImage(&ResultingStorageImage, swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc, false);
     ResultingStorageImage.imageView = bufferManager->CreateImageView(&ResultingStorageImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
     ResultingStorageImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+
+    PTGI_StorageImage.ImageID = "PTGI Pass Image";
+    bufferManager->CreateImage(&PTGI_StorageImage, swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc, false);
+    PTGI_StorageImage.imageView = bufferManager->CreateImageView(&PTGI_StorageImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+    PTGI_StorageImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
+
+    Prev_Frame_PTGI_StorageImage.ImageID = "Last Frame Pass Image";
+    bufferManager->CreateImage(&Prev_Frame_PTGI_StorageImage, swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc, false);
+    Prev_Frame_PTGI_StorageImage.imageView = bufferManager->CreateImageView(&Prev_Frame_PTGI_StorageImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+    Prev_Frame_PTGI_StorageImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 }
 
 void Lighting_RTX::DestroyStorageImage() {
     bufferManager->DestroyImage(ResultingStorageImage);
+    bufferManager->DestroyImage(PTGI_StorageImage);
+    bufferManager->DestroyImage(Prev_Frame_PTGI_StorageImage);
 }
 
 void Lighting_RTX::createDescriptorSetLayout()
@@ -108,28 +120,28 @@ void Lighting_RTX::createDescriptorSetLayout()
     TLASLayout.descriptorType = vk::DescriptorType::eAccelerationStructureKHR;
     TLASLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR;
 
-    uint32_t albedoCount = std::max(1u, (uint32_t)bufferManager->AllScene_Albedo_Images.size());
+    uint32_t albedoCount = bufferManager->AllScene_Albedo_Images.size();
     vk::DescriptorSetLayoutBinding Scene_AlbedoSamplerLayout{};
     Scene_AlbedoSamplerLayout.binding = 9;
     Scene_AlbedoSamplerLayout.descriptorCount = albedoCount;
     Scene_AlbedoSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
     Scene_AlbedoSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
 
-    uint32_t normalCount = std::max(1u, (uint32_t)bufferManager->AllScene_Normal_Images.size());
+    uint32_t normalCount = bufferManager->AllScene_Normal_Images.size();
     vk::DescriptorSetLayoutBinding Scene_NormalSamplerLayout{};
     Scene_NormalSamplerLayout.binding = 10;
     Scene_NormalSamplerLayout.descriptorCount = normalCount;
     Scene_NormalSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
     Scene_NormalSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
 
-    uint32_t roughCount = std::max(1u, (uint32_t)bufferManager->AllScene_MetalicRoughness_Images.size());
+    uint32_t roughCount = bufferManager->AllScene_MetalicRoughness_Images.size();
     vk::DescriptorSetLayoutBinding Scene_MetalicRoughnessSamplerLayout{};
     Scene_MetalicRoughnessSamplerLayout.binding = 11;
     Scene_MetalicRoughnessSamplerLayout.descriptorCount = roughCount;
     Scene_MetalicRoughnessSamplerLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
     Scene_MetalicRoughnessSamplerLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR;
 
-    uint32_t emissiveCount = std::max(1u, (uint32_t)bufferManager->AllScene_Emissive_Images.size());
+    uint32_t emissiveCount = bufferManager->AllScene_Emissive_Images.size();
     vk::DescriptorSetLayoutBinding Scene_EmmisiveSamplerLayout{};
     Scene_EmmisiveSamplerLayout.binding = 12;
     Scene_EmmisiveSamplerLayout.descriptorCount = emissiveCount;
@@ -160,13 +172,19 @@ void Lighting_RTX::createDescriptorSetLayout()
     Scene_trasnformation_BuffersLayout.descriptorType = vk::DescriptorType::eUniformBuffer;
     Scene_trasnformation_BuffersLayout.stageFlags = vk::ShaderStageFlagBits::eClosestHitKHR | vk::ShaderStageFlagBits::eAnyHitKHR;
 
-    std::array<vk::DescriptorSetLayoutBinding, 17> bindings = {
+    vk::DescriptorSetLayoutBinding PT_ResultingImageLayout{};
+    PT_ResultingImageLayout.binding = 17;
+    PT_ResultingImageLayout.descriptorCount = 1;
+    PT_ResultingImageLayout.descriptorType = vk::DescriptorType::eStorageImage;
+    PT_ResultingImageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+
+    std::array<vk::DescriptorSetLayoutBinding, 18> bindings = {
         PositionSamplerLayout, NormalSamplerLayout, AlbedoSamplerLayout, MaterialsSamplerLayout,
         ReflectiveCubeSamplerLayout, EmisiveSamplerLayout, ResultingImageLayout,
         LightUniformBufferLayout, TLASLayout, Scene_AlbedoSamplerLayout, Scene_NormalSamplerLayout,
         Scene_MetalicRoughnessSamplerLayout, Scene_EmmisiveSamplerLayout,
         Scene_IndexStorage_BuffersLayout, Scene_VertexStorage_BuffersLayout,
-        Scene_offsetStorage_BuffersLayout, Scene_trasnformation_BuffersLayout
+		Scene_offsetStorage_BuffersLayout, Scene_trasnformation_BuffersLayout,PT_ResultingImageLayout
     };
 
     vk::DescriptorSetLayoutCreateInfo layoutInfo{};
@@ -459,14 +477,27 @@ void Lighting_RTX::UpdateDescrptorSets()
         TransformUniformBufferdescriptorWrite.descriptorCount = 1;
         TransformUniformBufferdescriptorWrite.pBufferInfo = &TransformUniformBuffersInfo;
 
-        std::array<vk::WriteDescriptorSet, 17> descriptorWrites = {
+        vk::DescriptorImageInfo PTGI_ResultingimageInfo{};
+        PTGI_ResultingimageInfo.imageLayout = vk::ImageLayout::eGeneral;
+        PTGI_ResultingimageInfo.imageView = PTGI_StorageImage.imageView;
+        PTGI_ResultingimageInfo.sampler = PTGI_StorageImage.imageSampler;
+
+        vk::WriteDescriptorSet PTGI_ResultingdescriptorWrite{};
+        PTGI_ResultingdescriptorWrite.dstSet = DescriptorSets[i];
+        PTGI_ResultingdescriptorWrite.dstBinding = 17;
+        PTGI_ResultingdescriptorWrite.dstArrayElement = 0;
+        PTGI_ResultingdescriptorWrite.descriptorType = vk::DescriptorType::eStorageImage;
+        PTGI_ResultingdescriptorWrite.descriptorCount = 1;
+        PTGI_ResultingdescriptorWrite.pImageInfo = &PTGI_ResultingimageInfo;
+
+        std::array<vk::WriteDescriptorSet, 18> descriptorWrites = {
             PositionSamplerdescriptorWrite, NormalSamplerdescriptorWrite, AlbedoSamplerdescriptorWrite,
             MaterialsSamplerdescriptorWrite, ReflectiveCubeSamplerdescriptorWrite, EmisiveSamplerdescriptorWrite,
             ResultingdescriptorWrite, LightUniformBufferDescriptorWrite, TLAS_descriptorWrite,
             AssetImagSamplerdescriptorWrite, NormalAssetImagSamplerdescriptorWrite,
             MetalicRoughnessAssetImagSamplerdescriptorWrite, EmmisiveAssetImagSamplerdescriptorWrite,
             IndexStorageBufferdescriptorWrite, VertexStorageBufferdescriptorWrite,
-            OffsetStorageBufferdescriptorWrite, TransformUniformBufferdescriptorWrite
+			OffsetStorageBufferdescriptorWrite, TransformUniformBufferdescriptorWrite,PTGI_ResultingdescriptorWrite
         };
 
         vulkanContext->LogicalDevice.updateDescriptorSets(descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);

@@ -30,11 +30,12 @@ public:
 
     void init(vk::CommandPool commandPool);
 
-    void render(VkCommandBuffer commandBuffer, ImageData InImage, GBuffer inColorTexture, ImageData inDepthTexture, ImageData OutImage, VkFormat depthFormat);
+    void render(VkCommandBuffer commandBuffer, ImageData InImage, GBuffer inColorTexture, ImageData inDepthTexture, ImageData OutImage, VkFormat depthFormat, float deltaTime);
     void requiredExtensions(std::vector<const char*>& instanceExtensions, std::vector<const char*>& deviceExtensions);
 
     void CleanUp();
 
+	int SceneChangeNotifer = 1;
 private:
     float UpScaleFactor = 1;
 	BufferManager* m_bufferManager = nullptr;

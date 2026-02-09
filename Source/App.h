@@ -143,8 +143,8 @@ public:
 	std::vector<std::unique_ptr<Light>> lights;
 	std::vector<Drawable*> UserInterfaceItems;
 
-private:
 	NvdiaDLSS_Intergration DLSS_Intergration;
+private:
 	Window          window;
 	VulkanContext   vulkanContext;
 	BufferManager   bufferManger;

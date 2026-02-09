@@ -3,30 +3,20 @@
 
 
 struct UnifiedPayload {
-    int  rayType; 
-    vec3 data;    
-    vec3 Emmisive;   
-    vec3 Position;
-    vec3 Normal;
-    vec3 Albedo;
+    vec4 data;  
+    vec4 Emissive;  
+    vec4 Position;
+    vec4 Normal;
+    vec4 Albedo;
 };
 
 layout(location = 0) rayPayloadInEXT UnifiedPayload payload;
 
 void main() {
 
-   if (payload.rayType == 0)
-    {
-        
-    }
-    else
-    {
-        payload.data = vec3(0.0);
-        payload.Emmisive = vec3(0.0);
-        payload.Position = vec3(0.0);
-        payload.Normal = vec3(0.0);
-        payload.Albedo = vec3(0.0);
-
-    }
-
+     payload.data     =  vec4(0);
+     payload.Emissive =  vec4(0);
+     payload.Position =  vec4(0);
+     payload.Normal   =  vec4(0);
+     payload.Albedo   =  vec4(0);
 }

@@ -1479,13 +1479,18 @@ void DynamicDiffuse_RTGI::DrawNode(vk::CommandBuffer commandBuffer, vk::Pipeline
 	}
 }
 
-glm::mat4 GetRandomRotationMatrix() {
-	static std::default_random_engine generator;
-	static std::uniform_real_distribution<float> distribution(0.0f, 360.0f);
+glm::mat4 GetContinuousRotationMatrix(float deltaTime) {
+	static float accumulatedTime = 0.0f;
 
-	float pitch = glm::radians(distribution(generator));
-	float yaw = glm::radians(distribution(generator));
-	float roll = glm::radians(distribution(generator));
+	accumulatedTime += deltaTime;
+
+	float yawSpeed = 0.8f;
+	float pitchSpeed = 0.8f;
+	float rollSpeed = 0.8f;
+
+	float yaw = accumulatedTime * yawSpeed;
+	float pitch = accumulatedTime * pitchSpeed;
+	float roll = accumulatedTime * rollSpeed;
 
 	return glm::yawPitchRoll(yaw, pitch, roll);
 }
@@ -1526,7 +1531,7 @@ void DynamicDiffuse_RTGI::DispatchDirectionsCompute(vk::CommandBuffer commandBuf
 		gridData.probeCount = glm::vec4(NumOfProbesX, NumOfProbesY, NumOfProbesZ, RaysPerProbe);
 		gridData.probeOffset = glm::vec4(ProbeOffset, 1);
 		gridData.probeBaseLocation = glm::vec4(GridLocation, 1);
-		gridData.RotationMatrix = GetRandomRotationMatrix();
+		gridData.RotationMatrix = GetContinuousRotationMatrix(deltaTime);
 
 		commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(GridData), &gridData);
 		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, 0, 1, &GridDescriptorSets[imageIndex], 0, nullptr);

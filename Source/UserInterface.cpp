@@ -388,6 +388,7 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
                         {
                             if (appref->currentSceneIndex != i) {
                                  appref->SwitchScene(i);
+								 appref->DLSS_Intergration.SceneChangeNotifer = 1; // Notify DLSS integration of scene change
                             }
                         }
                         if (is_selected) {
@@ -418,7 +419,7 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 
                             currentPass = Passes[i];
                             appref->DefferedDecider = i;
-
+                            appref->DLSS_Intergration.SceneChangeNotifer = 1; // Notify DLSS integration of scene change
                         }
                     }
 

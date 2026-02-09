@@ -24,9 +24,10 @@ layout(binding  = 3 ) uniform sampler2D   MaterialImage;
 layout(binding  = 4 ) uniform samplerCube SamplerCubeMap;
 layout(binding  = 5 ) uniform sampler2D   EmisiveImage;
 layout(binding  = 6, rgba16f) uniform image2D OutputImage;
+layout(binding  = 17, rgba16f) uniform image2D PTGI_OutputImage;
 
 layout(set = 0, binding = 7) uniform LightUniformBuffer {
-         LightData lights[4];
+         LightData lights[1000];
 };
 
 layout(binding  = 8) uniform accelerationStructureEXT topLevelAS;
@@ -82,7 +83,7 @@ vec3 PathTraceGI(vec3 origin, vec3 normal) {
     vec3 currentOrigin = origin + normal * 0.001; 
     vec3 currentNormal = normal;
 
-    for (int bounce = 0; bounce < 10; bounce++) { 
+    for (int bounce = 0; bounce < 5; bounce++) { 
         float rx = rand_pcg(seed);
         float ry = rand_pcg(seed);
         
@@ -221,7 +222,8 @@ void main() {
         indirectLighting = PathTraceGI(WorldPos, Normal) * Albedo;    
     }
 
-    imageStore(OutputImage, fullCoord, vec4(directLighting + Emmisive + indirectLighting, 1.0));
+    imageStore(OutputImage     , fullCoord, vec4(directLighting + Emmisive, 1.0));
+    imageStore(PTGI_OutputImage, fullCoord, vec4(indirectLighting, 1.0));
 }
 
 //

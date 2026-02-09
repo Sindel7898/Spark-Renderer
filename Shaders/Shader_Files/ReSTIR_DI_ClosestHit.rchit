@@ -45,16 +45,15 @@ layout(set = 0, binding = 15) uniform Transformation {
     Transformations transformations[100];
 };
 
-
 struct UnifiedPayload {
-    int  rayType; 
-    vec3 data;
-    vec3 Emissive;  
-    
-    vec3 Position;
-    vec3 Normal;
-    vec3 Albedo;
+    vec4 data;  
+    vec4 Emissive;  
+    vec4 Position;
+    vec4 Normal;
+    vec4 Albedo;
 };
+
+
 
 layout(location = 0) rayPayloadInEXT UnifiedPayload payload;
 
@@ -133,10 +132,10 @@ void main()
      HitPosition   =  WorldPos.xyz;
 
 
-       payload.data = vec3(0.0);
-       payload.Emissive =  Emissive;
-       payload.Position =  HitPosition.xyz;
-       payload.Normal   =  HitNormal;
-       payload.Albedo   =  Albedo;
+       payload.data     =  vec4(1.0);
+       payload.Emissive =  vec4(Emissive,1);
+       payload.Position =  vec4(HitPosition.xyz,1);
+       payload.Normal   =  vec4(HitNormal,1);
+       payload.Albedo   =  vec4(Albedo,1);
 
  }

@@ -40,6 +40,9 @@ public:
     std::vector<BufferData> UniformBuffers;
     std::vector<void*>      UniformBuffersMappedMem;
 
+
+    ImageData PTGI_StorageImage;
+    ImageData Prev_Frame_PTGI_StorageImage;
     ImageData ResultingStorageImage;
 
     GBuffer* GbufferRef = nullptr;

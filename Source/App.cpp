@@ -838,7 +838,7 @@ void App::createGBuffer()
 
 	lighting_RTX->createDescriptorSetsBasedOnGBuffer(DescriptorPool, &gbuffer,&TLAS);
 	ssao_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, gbuffer);
-	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, lighting_RTX->ResultingStorageImage, SSGI_FullScreenQuad->SSGIPassImage, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo, dynamicDiffuse_RTGI->Probe_Sampled_GI_Image);
+	Combined_FullScreenQuad->createDescriptorSetsBasedOnGBuffer(DescriptorPool, lighting_RTX->ResultingStorageImage, SSGI_FullScreenQuad->SSGIPassImage, ssao_FullScreenQuad->BluredSSAOImage, gbuffer.Materials,gbuffer.Albedo, dynamicDiffuse_RTGI->Probe_Sampled_GI_Image, lighting_RTX->PTGI_StorageImage, lighting_RTX->Prev_Frame_PTGI_StorageImage, gbuffer.MotionVector);
 	fxaa_FullScreenQuad->createDescriptorSets(DescriptorPool, Combined_FullScreenQuad->Combined_Lighting_Image);
 	SSGI_FullScreenQuad->createDescriptorSets(DescriptorPool,gbuffer, lighting_RTX->ResultingStorageImage,DepthTextureData);
 	dynamicDiffuse_RTGI->createDescriptorSets(DescriptorPool, gbuffer);
@@ -2251,6 +2251,7 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 	lighting_RTX->UpdateUniformBuffer(currentImage, lights);
 	ssao_FullScreenQuad->UpdataeUniformBufferData();
     SSGI_FullScreenQuad->UpdateUniformBuffer(currentImage,deltaTime);
+	Combined_FullScreenQuad->UpdataeUniformBufferData();
 
 	bool ddgiRecreated = dynamicDiffuse_RTGI->UpdateUniformBuffer(DescriptorPool, TLAS, lighting_RTX->UniformBuffers,gbuffer,false, lights.size());
 
@@ -2799,7 +2800,6 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 					ImageSize, vulkanContext.graphicsQueue);
 			}
 
-
 		}
 
 		vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DDGI_Sample_From_PorbeLabel);
@@ -2902,7 +2902,7 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 
 				vulkanContext.DLSS_IntergrationRef->render(commandBuffer, Restir_DI->ReSTIRDI_Results, gbuffer,
 					DepthTextureData, Restir_DI->ReSTIRDI_Denoised_Results,
-					(VkFormat)vulkanContext.FindCompatableDepthFormat());
+					(VkFormat)vulkanContext.FindCompatableDepthFormat(), deltaTime);
 
 				ReSTIR_Image = &Restir_DI->ReSTIRDI_Denoised_Results;
 			}
@@ -3099,7 +3099,7 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eComputeShader, {}, 0, nullptr, 0, nullptr, 1, & dlssReadBarrier);
 
 			vulkanContext.DLSS_IntergrationRef->render(commandBuffer, Combined_FullScreenQuad->Combined_Lighting_Image, gbuffer,
-				DepthTextureData, Combined_FullScreenQuad->Final_Denoised_Image, (VkFormat)vulkanContext.FindCompatableDepthFormat());
+				DepthTextureData, Combined_FullScreenQuad->Final_Denoised_Image, (VkFormat)vulkanContext.FindCompatableDepthFormat(), deltaTime);
 		  
 			CombinedImageRef = &Combined_FullScreenQuad->Final_Denoised_Image;
 		}
