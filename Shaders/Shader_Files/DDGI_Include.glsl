@@ -118,7 +118,7 @@ vec3 SampleIrradiance(sampler2D IrradianceTexture,
                       int VisAtlasWidth, 
                       vec3 Camera_Position)
 {
-   vec3 SamplePosition = Position + (Normal);
+   vec3 SamplePosition = Position + (Normal * 1.3);
 
     vec3 GridIndexF = (SamplePosition - GridBaseLocation) / ProbeSpacing;
     vec3 Alpha = fract(GridIndexF);

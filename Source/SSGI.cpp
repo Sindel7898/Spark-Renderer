@@ -374,12 +374,10 @@ void SSGI::UpdateUniformBuffer(uint32_t currentImage, float DeltaTime)
 
 	if (LastCameraMatrix != camera->GetViewMatrix())
 	{
-		vulkanContext->ResetTemporalAccumilation();
+		vulkanContext->ResetFrameCount();
 
 		LastCameraMatrix = camera->GetViewMatrix();
 	}
-
-	vulkanContext->AccumilationCount++;
 }
 
 void SSGI::ComputeSSGI(vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex)
