@@ -64,5 +64,4 @@ private:
     vk::AccelerationStructureKHR* TLASr = nullptr;
 
     SkyBox* SkyBoxRef = nullptr;
-    int frameIndex = 0;
 };

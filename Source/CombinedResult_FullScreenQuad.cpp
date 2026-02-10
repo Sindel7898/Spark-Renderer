@@ -159,7 +159,6 @@ void CombinedResult_FullScreenQuad::createDescriptorSetLayout()
 
 void CombinedResult_FullScreenQuad::UpdataeUniformBufferData()
 {
-	vulkanContext->AccumilationCount++;
 }
 
 
@@ -355,7 +354,7 @@ void CombinedResult_FullScreenQuad::Draw(vk::CommandBuffer commandbuffer, vk::Pi
 
 	PostProcessSettings PPS;
 	PPS.Brightness_Saturation_Concentration_GIboost = glm::vec4(Brightness, Saturation, Concentration, GIBoost);
-	PPS.MaxGamma_MinGamma_Padding = glm::vec4(MaxGamma, MinGamma, lightingref->GISolutionIndex, (float)vulkanContext->AccumilationCount);
+	PPS.MaxGamma_MinGamma_Padding = glm::vec4(MaxGamma, MinGamma, lightingref->GISolutionIndex, (float)vulkanContext->frameIndex);
 
 	commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eFragment, 0, sizeof(PostProcessSettings), &PPS);
 

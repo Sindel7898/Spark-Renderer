@@ -71,6 +71,11 @@ App::App() : window(1920, 1080, "Spark Renderer")
 	recreateSwapChain();
 	CreateDebugUtils();
 
+	vk::CommandBuffer cmd =  bufferManger.CreateSingleUseCommandBuffer(commandPool);
+
+	//tracyVkContext = TracyVkContext(vulkanContext.PhysicalDevice, vulkanContext.LogicalDevice, vulkanContext.graphicsQueue, cmd);
+
+	bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd, vulkanContext.graphicsQueue);
 }
 
 void App::LoadAllObjects()
@@ -252,7 +257,7 @@ void App::SpawnLights(int NumOfLights)
 
 	UpdateRayTracingDescriptors();
 	userinterface.SetLightCount(static_cast<int>(lights.size()));
-	vulkanContext.ResetTemporalAccumilation();
+	vulkanContext.ResetFrameCount();
 }
 
 
@@ -312,7 +317,7 @@ void App::SwitchScene(int index)
 			dynamicDiffuse_RTGI->NumOfProbesY = 10;
 			dynamicDiffuse_RTGI->NumOfProbesZ = 10;
 			dynamicDiffuse_RTGI->RaysPerProbe = 128;
-			dynamicDiffuse_RTGI->ProbeOffset  = glm::vec3(3.000, 3.000, 5.000);
+			dynamicDiffuse_RTGI->ProbeOffset  = glm::vec3(3.000, 3.000, 4.000);
 			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-13.000, -4.000, -20.000);
 		}
 
@@ -442,7 +447,7 @@ void App::SwitchScene(int index)
 
 	if (RT_ShadowsPassPipeline) {
 		updateUniformBuffer(currentFrame); 
-		vulkanContext.ResetTemporalAccumilation();
+		vulkanContext.ResetFrameCount();
 	}
 
 }
@@ -774,7 +779,7 @@ void App::createDepthTextureImage()
 
 void App::createGBuffer()
 {
-	vulkanContext.ResetTemporalAccumilation();
+	vulkanContext.ResetFrameCount();
 
 	vk::Extent3D swapchainextent = vk::Extent3D(vulkanContext.swapchainExtent.width, vulkanContext.swapchainExtent.height, 1);
 
@@ -855,7 +860,7 @@ void App::createGBuffer()
 	TransitionToGeneral.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
 	TransitionToGeneral.DestinationOnThePipeline = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eFragmentShader;
 
-	vulkanContext.ResetTemporalAccumilation();
+	vulkanContext.ResetFrameCount();
 
 	bufferManger.TransitionImage(cmd, &gbuffer.Position, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &gbuffer.Normal, TransitionToGeneral);
@@ -2139,8 +2144,9 @@ void App::Run()
 		camera.OnFrameStart();
 		camera.Update(deltaTime); 
 
-		userinterface.DrawUi(this, skyBox.get());
+		userinterface.DrawUi(this, skyBox.get(),&vulkanContext);
 
+		vulkanContext.UpdateFrameCount();
 		Draw();
 	}
 
@@ -2434,6 +2440,7 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 		renderingInfo.pDepthAttachment = &depthStencilAttachment;
 
 
+		//TracyVkZone(tracyVkContext, commandBuffer, "G-Buffer Pass");
 		commandBuffer.beginRendering(renderingInfo);
 		commandBuffer.setViewport(0, 1, &viewport);
 		commandBuffer.setScissor(0, 1, &scissor);
@@ -2464,6 +2471,8 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 	vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
 
 
+	{
+		//TracyVkZone(tracyVkContext, commandBuffer, "SSAO Pass");
 	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, SSAO_Label);
 	{
 		ImageTransitionData GBufferDepthToSample{};
@@ -2589,77 +2598,84 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			commandBuffer.endRendering();
 		}
 	}
-
+}
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
-
+{
+		//TracyVkZone(tracyVkContext, commandBuffer, "DDGI Update Loop");
 	{
-		vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DDGI_Grid_Generation_Label);
-
-		ImageTransitionData TransitiontoGeneralRT{};
-		TransitiontoGeneralRT.oldlayout = vk::ImageLayout::eUndefined;
-		TransitiontoGeneralRT.newlayout = vk::ImageLayout::eGeneral;
-		TransitiontoGeneralRT.AspectFlag = vk::ImageAspectFlagBits::eColor;
-		TransitiontoGeneralRT.SourceAccessflag = vk::AccessFlagBits::eNone;
-		TransitiontoGeneralRT.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
-		TransitiontoGeneralRT.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
-		TransitiontoGeneralRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
-
-		bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->RadianceImageAtlasImage, TransitiontoGeneralRT);
-		bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->IradianceImageAtlasImage, TransitiontoGeneralRT);
-		bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->VisibilityImageAtlasImage, TransitiontoGeneralRT);
-		bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->Prev_IradianceImageAtlasImage, TransitiontoGeneralRT);
-		bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->Prev_VisibilityImageAtlasImage, TransitiontoGeneralRT);
-
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, GridComputePassPipeline);
-
-		dynamicDiffuse_RTGI->DispatchGridCompute(commandBuffer, GridComputePipelineLayout, currentFrame);
-
+     
+		{
+		   //TracyVkZone(tracyVkContext, commandBuffer, "DDGI Grid Generation"); 
+		   vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DDGI_Grid_Generation_Label);
+		   
+		   ImageTransitionData TransitiontoGeneralRT{};
+		   TransitiontoGeneralRT.oldlayout = vk::ImageLayout::eUndefined;
+		   TransitiontoGeneralRT.newlayout = vk::ImageLayout::eGeneral;
+		   TransitiontoGeneralRT.AspectFlag = vk::ImageAspectFlagBits::eColor;
+		   TransitiontoGeneralRT.SourceAccessflag = vk::AccessFlagBits::eNone;
+		   TransitiontoGeneralRT.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
+		   TransitiontoGeneralRT.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
+		   TransitiontoGeneralRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
+		   
+		   bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->RadianceImageAtlasImage, TransitiontoGeneralRT);
+		   bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->IradianceImageAtlasImage, TransitiontoGeneralRT);
+		   bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->VisibilityImageAtlasImage, TransitiontoGeneralRT);
+		   bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->Prev_IradianceImageAtlasImage, TransitiontoGeneralRT);
+		   bufferManger.TransitionImage(commandBuffer, &dynamicDiffuse_RTGI->Prev_VisibilityImageAtlasImage, TransitiontoGeneralRT);
+		   
+		   commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, GridComputePassPipeline);
+		   
+		   dynamicDiffuse_RTGI->DispatchGridCompute(commandBuffer, GridComputePipelineLayout, currentFrame);
+		}
 		vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
+		{
+			//TracyVkZone(tracyVkContext, commandBuffer, "DDGI Directions");
+			vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DDGI_Directions_Generation_Label);
+			dynamicDiffuse_RTGI->DispatchDirectionsCompute(commandBuffer, GridComputePipelineLayout, currentFrame, deltaTime);
+			vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
-		vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DDGI_Directions_Generation_Label);
-		dynamicDiffuse_RTGI->DispatchDirectionsCompute(commandBuffer, GridComputePipelineLayout, currentFrame, deltaTime);
-		vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
+			vk::BufferMemoryBarrier barrier{};
+			barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+			barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+			barrier.buffer = dynamicDiffuse_RTGI->ProbeDataStorageBuffers[0].buffer;
+			barrier.offset = 0;
+			barrier.size = VK_WHOLE_SIZE;
 
-		vk::BufferMemoryBarrier barrier{};
-		barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
-		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-		barrier.buffer = dynamicDiffuse_RTGI->ProbeDataStorageBuffers[0].buffer;
-		barrier.offset = 0;
-		barrier.size = VK_WHOLE_SIZE;
+			commandBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eComputeShader,
+				vk::PipelineStageFlagBits::eRayTracingShaderKHR,
+				{},
+				0, nullptr,
+				1, & barrier,
+				0, nullptr
+			);
 
-		commandBuffer.pipelineBarrier(
-			vk::PipelineStageFlagBits::eComputeShader,
-			vk::PipelineStageFlagBits::eRayTracingShaderKHR,
-			{},
-			0, nullptr,
-			1, &barrier,
-			0, nullptr
-		);
+			vk::BufferMemoryBarrier barrier2{};
+			barrier2.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+			barrier2.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+			barrier2.buffer = dynamicDiffuse_RTGI->ProbeFibonacciDirectionsStorageBuffers[0].buffer;
+			barrier2.offset = 0;
+			barrier2.size = VK_WHOLE_SIZE;
 
-		vk::BufferMemoryBarrier barrier2{};
-		barrier2.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
-		barrier2.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-		barrier2.buffer = dynamicDiffuse_RTGI->ProbeFibonacciDirectionsStorageBuffers[0].buffer;
-		barrier2.offset = 0;
-		barrier2.size = VK_WHOLE_SIZE;
+			commandBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eComputeShader,
+				vk::PipelineStageFlagBits::eRayTracingShaderKHR,
+				{},
+				0, nullptr,
+				1, & barrier2,
+				0, nullptr
+			);
 
-		commandBuffer.pipelineBarrier(
-			vk::PipelineStageFlagBits::eComputeShader,
-			vk::PipelineStageFlagBits::eRayTracingShaderKHR,
-			{},
-			0, nullptr,
-			1, &barrier2,
-			0, nullptr
-		);
-
+		}
 
 	}
 
 	{
 		vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DDGI_Trace_Ray_Label);
 		{
+			//TracyVkZone(tracyVkContext, commandBuffer, "DDGI Ray Trace");
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, RT_DDGIPassPipeline);
 
 			dynamicDiffuse_RTGI->Draw(
@@ -2698,6 +2714,7 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 		vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 		{
+			//TracyVkZone(tracyVkContext, commandBuffer, "DDGI Irradiance Compute");
 			vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DDGI_Calculate_Irradiance_Label);
 
 			{
@@ -2805,6 +2822,7 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 		vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, DDGI_Sample_From_PorbeLabel);
 
 		{
+			//TracyVkZone(tracyVkContext, commandBuffer, "DDGI Sample GI");
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, SampleDDGIComputePassPipeline);
 
 			dynamicDiffuse_RTGI->DispatchSampleGIFromProbeDataCompute(commandBuffer, SampleDDGIComputePipelineLayout, currentFrame);
@@ -2834,13 +2852,13 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			);
 		}
 		vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
-
-
 	}
-
+}
 	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, ReSTIR_Label);
 	{
 		if (DefferedDecider == 2) { /// if we are not looking at ReSTIR stop tracing
+
+			//TracyVkZone(tracyVkContext, commandBuffer, "ReSTIR DI");
 
 			ImageTransitionData TransitiontoGeneraRT{};
 			TransitiontoGeneraRT.oldlayout = vk::ImageLayout::eUndefined;
@@ -3041,6 +3059,8 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 	{
 		if (DefferedDecider == 3 || DefferedDecider == 0) {
 
+			//TracyVkZone(tracyVkContext, commandBuffer, "RTX Lighting");
+
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, DeferedLightingPassPipeline);
 
 			lighting_RTX->Draw(
@@ -3063,27 +3083,31 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 		}
 
 
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, SSGIPipeline);
-		SSGI_FullScreenQuad->ComputeSSGI(commandBuffer, SSGIPipelineLayout, currentFrame);
+		{
+			//TracyVkZone(tracyVkContext, commandBuffer, "SSGI");
 
-		vk::RenderingAttachmentInfo CombinedImageAttachInfo{};
-		CombinedImageAttachInfo.imageView = Combined_FullScreenQuad->Combined_Lighting_Image.imageView;
-		CombinedImageAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		CombinedImageAttachInfo.loadOp = vk::AttachmentLoadOp::eClear;
-		CombinedImageAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
-		CombinedImageAttachInfo.clearValue = clearColor;
+			commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, SSGIPipeline);
+			SSGI_FullScreenQuad->ComputeSSGI(commandBuffer, SSGIPipelineLayout, currentFrame);
 
-		vk::RenderingInfo CombinedImageInfo{};
-		CombinedImageInfo.layerCount = 1;
-		CombinedImageInfo.colorAttachmentCount = 1;
-		CombinedImageInfo.pColorAttachments = &CombinedImageAttachInfo;
-		CombinedImageInfo.renderArea.extent = vulkanContext.swapchainExtent;
+			vk::RenderingAttachmentInfo CombinedImageAttachInfo{};
+			CombinedImageAttachInfo.imageView = Combined_FullScreenQuad->Combined_Lighting_Image.imageView;
+			CombinedImageAttachInfo.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			CombinedImageAttachInfo.loadOp = vk::AttachmentLoadOp::eClear;
+			CombinedImageAttachInfo.storeOp = vk::AttachmentStoreOp::eStore;
+			CombinedImageAttachInfo.clearValue = clearColor;
 
-		commandBuffer.beginRendering(CombinedImageInfo);
-		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, CombinedImagePassPipeline);
-		Combined_FullScreenQuad->Draw(commandBuffer, CombinedImagePipelineLayout, currentFrame);
-		commandBuffer.endRendering();
+			vk::RenderingInfo CombinedImageInfo{};
+			CombinedImageInfo.layerCount = 1;
+			CombinedImageInfo.colorAttachmentCount = 1;
+			CombinedImageInfo.pColorAttachments = &CombinedImageAttachInfo;
+			CombinedImageInfo.renderArea.extent = vulkanContext.swapchainExtent;
 
+			commandBuffer.beginRendering(CombinedImageInfo);
+			commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, CombinedImagePassPipeline);
+			Combined_FullScreenQuad->Draw(commandBuffer, CombinedImagePipelineLayout, currentFrame);
+			commandBuffer.endRendering();
+
+		}
 
 		ImageData* CombinedImageRef = nullptr;
 
@@ -3301,7 +3325,9 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			);
 		}
 
+		//TracyVkCollect(tracyVkContext, commandBuffer);
 		commandBuffer.end();
+		FrameMark;
 }
 
 
@@ -3497,6 +3523,11 @@ void App::destroyPipeline()
 
 	vulkanContext.LogicalDevice.waitIdle();
 	
+	//if (tracyVkContext) {
+	//	TracyVkDestroy(tracyVkContext);
+	//	tracyVkContext = nullptr;
+	//}
+
 	DestroyBuffers();
 
 	if (!commandBuffers.empty()) {

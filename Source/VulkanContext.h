@@ -50,8 +50,10 @@ public:
 	vk::Extent2D               swapchainExtent = { 0, 0 };
 	vk::SwapchainKHR           swapChain = nullptr;
 
-	void ResetTemporalAccumilation();
-	int AccumilationCount = 1;
+	void UpdateFrameCount();
+	void ResetFrameCount();
+
+	int frameIndex = 0;
 
 	std::vector<ImageData>   swapchainImageData = {};
 

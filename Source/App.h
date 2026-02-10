@@ -24,6 +24,8 @@
 #include "DynamicDiffuse_RTGI.h"
 #include "ReSTIR_DI.h"
 
+//#define TRACY_ENABLE
+//#include "TracyVulkan.hpp"
 
 class MeshLoader;
 class FramesPerSecondCounter;

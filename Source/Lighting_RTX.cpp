@@ -596,7 +596,7 @@ void Lighting_RTX::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, Buffer
     Lightin_RTX_PC pc;
     pc.LightCount = LightCount;
     pc.ScreenSize = glm::vec2(width, height);
-    pc.FrameIndex = frameIndex;
+    pc.FrameIndex = vulkanContext->frameIndex;
     pc.GI_Solution_Index_Padding = glm::vec4(GISolutionIndex, 0, 0, 0);
     commandbuffer.pushConstants(pipelinelayout, vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eClosestHitKHR, 0, sizeof(Lightin_RTX_PC), &pc);
     commandbuffer.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, pipelinelayout, 0, 1, &DescriptorSets[imageIndex], 0, nullptr);
@@ -610,8 +610,6 @@ void Lighting_RTX::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, Buffer
         width,
         height,
         depth);
-
-    frameIndex++;
 }
 
 void Lighting_RTX::CleanUp()

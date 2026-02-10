@@ -342,7 +342,7 @@ void Model::CreateUniformBuffer()
 
 void Model::Instantiate()
 {
-	vulkanContext->ResetTemporalAccumilation();
+	vulkanContext->ResetFrameCount();
 
 	if (!Instances.empty())
 	{
@@ -365,7 +365,7 @@ void Model::Instantiate()
 
 void Model::Destroy(int instanceIndex)
 {
-	vulkanContext->ResetTemporalAccumilation();
+	vulkanContext->ResetFrameCount();
 
 	if (!Instances.empty() && Instances[instanceIndex] && GPU_InstancesData[instanceIndex])
 	{

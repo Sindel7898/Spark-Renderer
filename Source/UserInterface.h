@@ -27,7 +27,8 @@ public:
 
     void RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex, ImageData& DrawingImage);
 
-    void DrawUi(App* appref, SkyBox* skyBox);
+    void DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanContext);
+
     float CalculateDistanceInScreenSpace(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position);
     void SetLightCount(int count) { NumberOfLights = count; }
 

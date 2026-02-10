@@ -25,11 +25,11 @@ void AccumulateRay(inout vec3 irradiance, inout vec4 visibility, inout float tot
 {
     float ray_dist = ray_data.a;
 
-    if (ray_dist > - 10) { 
+    if (ray_dist > -10.0) { 
         
-        //Irradiance Accumulation
+        // Irradiance Accumulation
         if (w_irrad > 0.0001) {
-            vec3 ray_radiance = ray_data.rgb * 0.95; // Energy conservation
+            vec3 ray_radiance = ray_data.rgb * 0.95; 
             irradiance += ray_radiance * w_irrad;
             total_weight_irrad += w_irrad;
         }
@@ -37,10 +37,9 @@ void AccumulateRay(inout vec3 irradiance, inout vec4 visibility, inout float tot
         // Visibility Accumulation
         if (w_vis > 0.0001) {
             float d = min(abs(ray_dist), 100.0);
-            // Mean and Mean^2
             visibility.x += d * w_vis;
             visibility.y += (d * d) * w_vis;
-            visibility.z += w_vis; // Weight Sum for visibility
+            visibility.z += w_vis; 
         }
     }
 }
@@ -71,46 +70,56 @@ void main()
         
         vec3 texel_dir = oct_decode(get_normalized_probe_texel_coord(fragCoord, pc.ProbeSideLength, pc.GutterSize));
         
-
-        float dist_exponent = 10.0; 
+        float dist_exponent = 50.0; 
 
         for (int i = 0; i < pc.NumRays; i++) {
             vec4 ray_data = imageLoad(Radiance_Visibility, ivec2(i, ProbeIndex));
             vec3 ray_dir = RayDirections[i];
             
             float w_irrad = max(dot(texel_dir, ray_dir), 0.0);
-            
             float w_vis = pow(w_irrad, dist_exponent);
             
             AccumulateRay(irradiance, visibility, total_weight_irrad, ray_data, w_irrad, w_vis);
         }
 
-        if (total_weight_irrad > 0.001) {
-            irradiance *= 1.0 / (2.0 * max(total_weight_irrad, 0.00001)); 
-            
-            vec3 prev_irrad = imageLoad(Prev_Iradiance, fragCoord).rgb;
+
+        vec3 history_irradiance = imageLoad(Prev_Iradiance, fragCoord).rgb;
+        vec2 history_visibility = imageLoad(Prev_Visibility, fragCoord).rg;
+
+        vec3 result_irradiance = history_irradiance;
+        vec2 result_visibility = history_visibility;
+
+        if (total_weight_irrad > 0.00001) {
+
+            vec3 new_irradiance = irradiance * (1.0 / (2.0 * total_weight_irrad)); 
             
             float hysteresis = 0.95;
-            vec3 delta = abs(irradiance - prev_irrad);
+            vec3 delta = abs(new_irradiance - history_irradiance);
+            
             if (max(max(delta.r, delta.g), delta.b) > 0.2) hysteresis = 0.75; 
             
-            imageStore(Iradiance, fragCoord, vec4(mix(irradiance, prev_irrad, hysteresis), 1.0));
+            result_irradiance = mix(new_irradiance, history_irradiance, hysteresis);
         }
 
-        if (visibility.z > 0.001) {
+        if (visibility.z > 0.00001) {
             float mean = visibility.x / visibility.z;
             float mean_sq = visibility.y / visibility.z;
+            vec2 new_visibility = vec2(mean, mean_sq);
             
-            vec2 result = vec2(mean, mean_sq);
-            vec2 prev_vis = imageLoad(Prev_Visibility, fragCoord).rg;
-            
-            imageStore(Visibility, fragCoord, vec4(mix(result, prev_vis, 0.95), 1.0, 1.0));
+            float vis_hysteresis = 0.95;
+            if (abs(mean - history_visibility.x) > 0.2) vis_hysteresis = 0.75;
+
+            result_visibility = mix(new_visibility, history_visibility, vis_hysteresis);
         }
+
+        imageStore(Iradiance, fragCoord, vec4(result_irradiance, 1.0));
+        imageStore(Visibility, fragCoord, vec4(result_visibility, 1.0, 1.0));
     }
 
     memoryBarrierImage();
     barrier();
 
+    // Border Pixel Copy
     if (border_pixel) {
         ivec2 sourceCoord = fragCoord;
         

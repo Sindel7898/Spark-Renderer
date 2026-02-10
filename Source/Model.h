@@ -126,7 +126,7 @@ struct InstanceData {
         TransformationMatrix = glm::rotate(TransformationMatrix, glm::radians(Rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
         TransformationMatrix = glm::scale(TransformationMatrix, Scale);
 
-        vulkanContext->ResetTemporalAccumilation();
+        vulkanContext->ResetFrameCount();
     }
 
     void BreakDownAndUpdateModelMatrix()
@@ -145,7 +145,7 @@ struct InstanceData {
         Rotation = glm::degrees(glm::eulerAngles(Newrotation));
 
         Scale = Newscale;
-        vulkanContext->ResetTemporalAccumilation();
+        vulkanContext->ResetFrameCount();
     }
 
     private:

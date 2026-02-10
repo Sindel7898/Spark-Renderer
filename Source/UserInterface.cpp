@@ -294,7 +294,7 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex,Im
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 
-void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
+void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanContext)
 {
     SetupDockingEnvironment();
 
@@ -420,6 +420,8 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
                             currentPass = Passes[i];
                             appref->DefferedDecider = i;
                             appref->DLSS_Intergration.SceneChangeNotifer = 1; // Notify DLSS integration of scene change
+                            vulkanContext->ResetFrameCount();
+
                         }
                     }
 
@@ -436,6 +438,7 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 
                             currentSkyBox = SkyBoxs[i];
                             skyBox->SkyBoxIndex = i;
+                            vulkanContext->ResetFrameCount();
 
                         }
                     }
@@ -547,7 +550,7 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox)
 
                             currentGI_Solution = GlobalIllumination_Solution[i];
                             appref->lighting_RTX->GISolutionIndex = i;
-
+                            vulkanContext->ResetFrameCount();
                         }
                     }
                     ImGui::EndCombo();

@@ -288,11 +288,16 @@ vk::Format VulkanContext::FindCompatableDepthFormat()
     return vk::Format::eD32Sfloat; // Default fallback
 }
 
-void VulkanContext::ResetTemporalAccumilation()
+
+void VulkanContext::UpdateFrameCount()
 {
-    AccumilationCount = 0;
+    frameIndex++;
 }
 
+void VulkanContext::ResetFrameCount()
+{
+    frameIndex = 0;
+}
 void VulkanContext::destroy_swapchain()
 {
     for (size_t i = 0; i < swapchainImageData.size(); i++)
