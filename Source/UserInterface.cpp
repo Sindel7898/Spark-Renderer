@@ -504,8 +504,6 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
                     ImGui::Checkbox("Use Infinite Bounces", (bool*)&appref->dynamicDiffuse_RTGI->UseinfiniteBounce);
                     ImGui::SliderFloat("Bounce Multiplier", &appref->dynamicDiffuse_RTGI->infiniteBounceMultiplyer, 0, 1, "%.1f");
                     ImGui::SliderInt("Rays Per Probe", &appref->dynamicDiffuse_RTGI->RaysPerProbe, 1, 300, "%d");
-                    ImGui::SliderInt("Sample Count", &appref->dynamicDiffuse_RTGI->SampleCount, 0, 10, "%d");
-
 
                     ImGui::SeparatorText("Probe Grid");
                     ImGui::SliderInt("X Count", &appref->dynamicDiffuse_RTGI->NumOfProbesX, 1, 22, "%d");
@@ -533,7 +531,7 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
                         if (ImGui::Selectable(DDGI_Vertex_Options[i].c_str(), is_selected)) {
 
                             currentDDGIVertex = DDGI_Vertex_Options[i];
-                            appref->Restir_DI->DDGIVertex = i;
+                            appref->dynamicDiffuse_RTGI->DDGIVertex = i;
 
                         }
                     }

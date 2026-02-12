@@ -126,9 +126,8 @@ public:
 
     float infiniteBounceMultiplyer = 0.75f;
     int UseinfiniteBounce = 1;
-    int SampleCount = 2;
-    int FrameCount = 0;
     int LightCount;
+    int  DDGIVertex = 0;
 
 	Lighting_RTX* lighting_RTX = nullptr;
 private:

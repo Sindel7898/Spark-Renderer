@@ -48,8 +48,6 @@ public:
     bool bTemporalReuse = true;
 	bool bSpatialReuse = true;
     bool bDDGI = true;
-	int  DDGIVertex = 0;
-
 private:
 
     VulkanContext* vulkanContext = nullptr;

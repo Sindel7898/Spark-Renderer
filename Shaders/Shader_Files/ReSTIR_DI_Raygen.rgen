@@ -105,8 +105,8 @@ bool TraceShadow(vec3 origin, vec3 direction, float MaxDistance) {
     return payload.data.x < 0.5;
 }
 
-vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal) {
-    return ViewPosition + 0.06 * normal;
+vec3 offsetPositionAlongNormal(vec3 WorldPosition, vec3 normal) {
+    return WorldPosition + 0.16 * normal;
 }
 
 struct Reservoir {
@@ -309,6 +309,7 @@ void main() {
         payload.Albedo   = vec4(0);
         
 
+        //CONFIRM DATA COMMING FROM CLOSESS HIT SHADER IS CORRECT DO LATER!!
         traceRayEXT(topLevelAS, 
             gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsCullBackFacingTrianglesEXT, 
             0xFF, 0, 0, 0, 
@@ -475,6 +476,15 @@ void main() {
    vec3 Emissive  = texelFetch(EmmisiveImage, TextCoord, 0).xyz;
 
     vec4 Res = vec4(spatialReservoir.Light_Index, spatialReservoir.Light_Weight, spatialReservoir.Sum_Of_All_Weights, spatialReservoir.Num_OF_Lights_In_Resevoir);
-    imageStore(ResevoirImage, TextCoord, Res);             
+    imageStore(ResevoirImage, TextCoord, Res);
+    
+
+     if (DDGISamplingVertex == 0 && bDDGI) {
+         vec3 OutGoing = FinalRadiance + GetGIRadiance(surfaceData.worldPos, surfaceData.normal, surfaceData.albedo).xyz;
+         imageStore(ReSTIR_DIImage, TextCoord, vec4(OutGoing, 1));             
+      return;
+    }
+
+
     imageStore(ReSTIR_DIImage, TextCoord, vec4(FinalRadiance + Emissive, 1));             
 }

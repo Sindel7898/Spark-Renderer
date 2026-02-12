@@ -797,7 +797,7 @@ void ReSTIR_DI::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferDat
 	pushConstant.sampleGridInfo.generalAtlasInfo.ProbeSideLength = DDGIRef->ProbeSideLength;
 	pushConstant.sampleGridInfo.generalAtlasInfo.GutterSize = DDGIRef->GutterSize;
 	pushConstant.sampleGridInfo.generalAtlasInfo.RaysPerProbe = DDGIRef->RaysPerProbe;
-	pushConstant.Temporal_Spatial_Reuse_EnableDDGI_DDGI_Vertex_Flags = glm::vec4(bTemporalReuse, bSpatialReuse,bDDGI, DDGIVertex);
+	pushConstant.Temporal_Spatial_Reuse_EnableDDGI_DDGI_Vertex_Flags = glm::vec4(bTemporalReuse, bSpatialReuse,bDDGI, DDGIRef->DDGIVertex);
 
 	glm::mat  ProjectionMatrix = camera->GetPrevProjectionMatrix();
 	ProjectionMatrix[1][1] *= -1;
