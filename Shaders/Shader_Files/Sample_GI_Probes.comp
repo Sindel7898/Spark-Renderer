@@ -34,19 +34,20 @@ void main()
 
    ivec2 TextlCord        = ivec2(gl_GlobalInvocationID.xy);
 
-   vec2 UV = (vec2(TextlCord) + 0.5) / vec2(Width,Height); // + 0.5 gives us the middle of the TEXEL not the edge
+   vec2 UV = (vec2(TextlCord) + 0.) / vec2(Width,Height); // + 0.5 gives us the middle of the TEXEL not the edge
 
    vec3 Position = texture(PositionImage,UV).rgb;
    vec3 Normal   = texture(NormalImage,  UV).rgb;
   
    vec3 Irradiance = vec3(0);
 
-   
+   vec3 SamplePosition = Position + (Normal * 1.2);
+
          if(dot(Normal, Normal) > 0.001){
           Irradiance = SampleIrradiance(
               IrradianceStorageImage,
               VisibilityStorageImage,
-              Position,
+              SamplePosition,
               Normal,
               pc.GridBaseLocation_ScreenSizeWidth.xyz,
               pc.ProbeSpacing_ScreenSizeHeight.xyz,

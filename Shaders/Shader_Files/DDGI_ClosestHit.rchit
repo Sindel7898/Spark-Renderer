@@ -141,7 +141,7 @@ void main()
         
         int UseInfiniteBounce = int(pc.UseInfiniteBounce_infinite_bounces_multiplier_DDGIMODE_LightCount.x);
         if(UseInfiniteBounce > 0.5) {
-             vec3 BiasedPos = HitPosition + (WorldN * 0.05);
+             vec3 BiasedPos = HitPosition + (WorldN * 0.5);
              vec3 CameraPos = lights[0].CameraPositionAndLightIntensity.xyz;
 
              vec3 Irradiance = SampleIrradiance(

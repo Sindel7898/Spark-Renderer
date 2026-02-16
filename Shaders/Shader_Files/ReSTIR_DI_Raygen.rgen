@@ -170,13 +170,9 @@ vec3 GetHemisphereSample(vec2 randVal, vec3 HitNormal) {
 
 vec3 GetGIRadiance(vec3 worldPos, vec3 normal) {
 
-    vec3 ViewVec = normalize(pc.CameraPosition.xyz - worldPos);
-    float biasAmount = pc.ProbeSpacing_ScreenSizeHeight.x * 0.2; 
-    vec3 BiasedPos = worldPos + (normal * biasAmount); 
-
     vec3 Irradiance = SampleIrradiance(
         IrradianceStorageImage, VisibilityStorageImage,
-        BiasedPos,          
+        worldPos,          
         normal,             
         pc.GridBaseLocation_ScreenSizeWidth.xyz, 
         pc.ProbeSpacing_ScreenSizeHeight.xyz,
@@ -225,10 +221,16 @@ vec3 GetRadiance(uint lightIndex, vec3 cameraPos, SurfaceData surface, vec3 View
 vec3 EvaluateCandidateRadiance(uint lightIndex, vec3 samplePos, vec3 sampleFlux, vec3 cameraPos, SurfaceData surface, vec3 ViewDir, vec3 F, vec3 diffuse) {
    
    if (lightIndex == GIIndex) {
-        vec3 lightVec = normalize(samplePos - surface.worldPos);
-        float NdotL = max(dot(surface.normal, lightVec), 0.0);
+        vec3  lightVec   = normalize(samplePos - surface.worldPos);
+        float Distance   = distance(samplePos, surface.worldPos); 
+        float Distance2  = Distance * Distance;
+
+        float Cos = max(dot(surface.normal, lightVec), 0.0);
+
+        float G_Term = min(Cos / max(Distance2, 0.001), 1.0);
+
         vec3 bsdf = EvaluateBSDF(surface, ViewDir, lightVec);
-        return sampleFlux * NdotL * bsdf;
+        return sampleFlux * bsdf * G_Term;
     }
 
     return GetLightRadiance(lights[lightIndex], cameraPos, surface, ViewDir, F, diffuse);
@@ -339,7 +341,10 @@ if (DDGISamplingVertex > 0 && bDDGI) {
      vec3 y_albedo = payload.Albedo.xyz;
      vec3 y_emissive = payload.Emissive.xyz;
     
-     vec3 y_irradiance = GetGIRadiance(y_pos, y_norm);
+    vec3 ViewVec = normalize(pc.CameraPosition.xyz - y_pos);
+    vec3 BiasedPos = y_pos + (ViewVec * 1.9);
+
+     vec3 y_irradiance = GetGIRadiance(BiasedPos, y_norm);
      vec3 y_radiance   = y_emissive + (y_irradiance * y_albedo / 3.14159265);
      
      float GI_p_hat = length(y_radiance);
@@ -531,7 +536,10 @@ if (DDGISamplingVertex > 0 && bDDGI) {
    
      if (DDGISamplingVertex == 0 && bDDGI) {
 
-         vec3 irr = GetGIRadiance(surfaceData.worldPos, surfaceData.normal);
+         float biasAmount = pc.ProbeSpacing_ScreenSizeHeight.x * 0.2; 
+         vec3 BiasedPos = surfaceData.worldPos + (surfaceData.normal * biasAmount); 
+
+         vec3 irr = GetGIRadiance(BiasedPos, surfaceData.normal);
          vec3 OutGoing = FinalRadiance + irr * surfaceData.albedo / 3.14159265;
          imageStore(ReSTIR_DIImage, TextCoord, vec4(OutGoing, 1));              
       return;
