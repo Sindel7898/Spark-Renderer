@@ -30,6 +30,11 @@ layout(set = 1, binding = 0) uniform sampler2D  IrradianceStorageImage;
 layout(set = 1, binding = 1) uniform sampler2D  VisibilityStorageImage;
 layout (binding = 20) uniform sampler2D EmmisiveImage;
 
+layout (binding = 21, rgba16f) uniform image2D GI_SamplePosImage;
+layout (binding = 22, rgba16f) uniform image2D GI_SampleFluxImage;
+layout (binding = 23, rgba16f) uniform image2D PrevGI_SamplePosImage;
+layout (binding = 24, rgba16f) uniform image2D PrevGI_SampleFluxImage;
+
 layout(push_constant) uniform PushConstant{
     vec4 CameraPosition;
     vec4 ScreenSize_Padding_FrameIndex_LightCount;
@@ -96,7 +101,7 @@ bool TraceShadow(vec3 origin, vec3 direction, float MaxDistance) {
         0xFF,
         0, 0, 0,
         origin,
-        0.1,
+        0.3,
         direction,
         MaxDistance,
         0
@@ -136,13 +141,12 @@ vec3 GetPerpendicularVector(vec3 v) {
 }
 
 vec3 EvaluateBSDF(SurfaceData surface, vec3 ViewDir, vec3 LightDir) {
-    // 1. Diffuse (Lambertian)
+
     vec3 F0 = mix(vec3(0.04), surface.albedo, surface.metallic);
     vec3 F = fresnelSchlick(max(dot(surface.normal, ViewDir), 0.0), F0);
     vec3 kD = (vec3(1.0) - F) * (1.0 - surface.metallic);
     vec3 diffuse = kD * (surface.albedo / 3.14159265359);
 
-    // 2. Specular (GGX)
     vec3 halfwayDir = normalize(LightDir + ViewDir);
     float NDF = DistributionGGX(surface.normal, halfwayDir, surface.roughness);      
     float G_spec = GeometrySmith(surface.normal, ViewDir, LightDir, surface.roughness);
@@ -154,6 +158,7 @@ vec3 EvaluateBSDF(SurfaceData surface, vec3 ViewDir, vec3 LightDir) {
 
     return diffuse + specular;
 }
+
 vec3 GetHemisphereSample(vec2 randVal, vec3 HitNormal) {
     vec3 bitangent = GetPerpendicularVector(HitNormal);
     vec3 tangent = cross(bitangent, HitNormal);
@@ -163,7 +168,7 @@ vec3 GetHemisphereSample(vec2 randVal, vec3 HitNormal) {
     return tangent * (r * cos(phi)) + bitangent * (r * sin(phi)) + HitNormal.xyz * sqrt(max(0.0, 1.0 - randVal.x));
 }
 
-vec3 GetGIRadiance(vec3 worldPos, vec3 normal, vec3 albedo) {
+vec3 GetGIRadiance(vec3 worldPos, vec3 normal) {
 
     vec3 ViewVec = normalize(pc.CameraPosition.xyz - worldPos);
     float biasAmount = pc.ProbeSpacing_ScreenSizeHeight.x * 0.2; 
@@ -181,16 +186,7 @@ vec3 GetGIRadiance(vec3 worldPos, vec3 normal, vec3 albedo) {
         pc.CameraPosition.xyz
     );
 
-    return Irradiance * (albedo / 3.14159265359);
-}
-
-vec3 GetLightRadiance(LightData light, vec3 cameraPos, SurfaceData surface, vec3 ViewDir, vec3 F, vec3 diffuse);
-
-vec3 GetRadiance(uint lightIndex, vec3 cameraPos, SurfaceData surface, vec3 ViewDir, vec3 F, vec3 diffuse) {
-    if (lightIndex == GIIndex) {
-        return GetGIRadiance(surface.worldPos, surface.normal, surface.albedo);
-    }
-    return GetLightRadiance(lights[lightIndex], cameraPos, surface, ViewDir, F, diffuse);
+    return Irradiance;
 }
 
 vec3 GetLightRadiance(LightData light, vec3 cameraPos, SurfaceData surface, vec3 ViewDir, vec3 F, vec3 diffuse) {
@@ -219,6 +215,26 @@ vec3 GetLightRadiance(LightData light, vec3 cameraPos, SurfaceData surface, vec3
     return (diffuse + specular) * radiance * NdotL * light.CameraPositionAndLightIntensity.a;
 }
 
+vec3 GetRadiance(uint lightIndex, vec3 cameraPos, SurfaceData surface, vec3 ViewDir, vec3 F, vec3 diffuse) {
+    if (lightIndex == GIIndex) {
+        return GetGIRadiance(surface.worldPos, surface.normal);
+    }
+    return GetLightRadiance(lights[lightIndex], cameraPos, surface, ViewDir, F, diffuse);
+}
+
+vec3 EvaluateCandidateRadiance(uint lightIndex, vec3 samplePos, vec3 sampleFlux, vec3 cameraPos, SurfaceData surface, vec3 ViewDir, vec3 F, vec3 diffuse) {
+   
+   if (lightIndex == GIIndex) {
+        vec3 lightVec = normalize(samplePos - surface.worldPos);
+        float NdotL = max(dot(surface.normal, lightVec), 0.0);
+        vec3 bsdf = EvaluateBSDF(surface, ViewDir, lightVec);
+        return sampleFlux * NdotL * bsdf;
+    }
+
+    return GetLightRadiance(lights[lightIndex], cameraPos, surface, ViewDir, F, diffuse);
+}
+
+
 // Gold Noise
 float PHI = 1.61803398874989484820459;    
 float gold_noise(vec2 xy, float seed){
@@ -226,208 +242,251 @@ float gold_noise(vec2 xy, float seed){
 }
 
 void main() {
-    bool bTemporalReuse = (pc.Temporal_Spatial_Reuse_EnableDDGI_DDGI_Vertex_Flags).x > 0.5;
-    bool bSpatialReuse  = (pc.Temporal_Spatial_Reuse_EnableDDGI_DDGI_Vertex_Flags).y > 0.5;
-    bool bDDGI          = (pc.Temporal_Spatial_Reuse_EnableDDGI_DDGI_Vertex_Flags).z > 0.5;
-    int  DDGISamplingVertex = int(pc.Temporal_Spatial_Reuse_EnableDDGI_DDGI_Vertex_Flags.w);
+ bool bTemporalReuse = (pc.Temporal_Spatial_Reuse_EnableDDGI_DDGI_Vertex_Flags).x > 0.5;
+ bool bSpatialReuse  = (pc.Temporal_Spatial_Reuse_EnableDDGI_DDGI_Vertex_Flags).y > 0.5;
+ bool bDDGI          = (pc.Temporal_Spatial_Reuse_EnableDDGI_DDGI_Vertex_Flags).z > 0.5;
+ int  DDGISamplingVertex = int(pc.Temporal_Spatial_Reuse_EnableDDGI_DDGI_Vertex_Flags.w);
+
+
+ ivec2 TextCoord = ivec2(gl_LaunchIDEXT.xy + 0.5);
+ uint rngState = initRNG(gl_LaunchIDEXT.xy, gl_LaunchSizeEXT.xy, uint(pc.ScreenSize_Padding_FrameIndex_LightCount.z));
+ float r1 = rand01(rngState);
+ float r2 = rand01(rngState);
+
+ SurfaceData surfaceData;
+ surfaceData.worldPos = texelFetch(WorldPositionImage, TextCoord, 0).xyz;
+
+ if (surfaceData.worldPos == vec3(0.0)) {
+     imageStore(ResevoirImage, TextCoord, vec4(0.0));
+     imageStore(ReSTIR_DIImage, TextCoord, vec4(0.0));
+     imageStore(GI_SamplePosImage, TextCoord, vec4(0.0));
+     imageStore(GI_SampleFluxImage, TextCoord, vec4(0.0));
+     return; 
+ }
+
+ surfaceData.normal    = texelFetch(NormalImage, TextCoord, 0).xyz;
+ surfaceData.albedo    = texelFetch(AlbedoImage, TextCoord, 0).xyz;
+ vec2 material         = texelFetch(MaterialImage, TextCoord, 0).xy;
+ surfaceData.metallic  = material.x;
+ surfaceData.roughness = material.y; 
+
+ vec3 CameraPos = pc.CameraPosition.xyz;
+ vec3 ViewDir   = normalize(CameraPos - surfaceData.worldPos);
+ vec3 F0        = mix(vec3(0.04), surfaceData.albedo, surfaceData.metallic);
+ vec3 F         = fresnelSchlick(max(dot(surfaceData.normal, ViewDir), 0.0), F0);
+ vec3 diffuse   = (vec3(1.0) - F) * (1.0 - surfaceData.metallic) * (surfaceData.albedo / 3.14159265359);
+ vec3 rayOrigin = offsetPositionAlongNormal(surfaceData.worldPos, surfaceData.normal);
+
+ vec2 uv = (vec2(TextCoord) + 0.5) / vec2(128,128);
+ int DiffuseRandIndex = int(pc.ScreenSize_Padding_FrameIndex_LightCount.z - 3) % 63;
+ vec3 DiffuseDirection = GetHemisphereSample(textureLod(BlueNoise[DiffuseRandIndex], uv, 0).rg, surfaceData.normal);
+
+ vec2 velocityUV = texelFetch(MotionVectorImage, TextCoord, 0).rg;
+ vec2 screenPosPrevious = TextCoord - (velocityUV * pc.ScreenSize_Padding_FrameIndex_LightCount.xy);
+ ivec2 prevCoord = ivec2(screenPosPrevious);      
+ bool validHistory = all(greaterThanEqual(screenPosPrevious, vec2(0.0))) && all(lessThan(screenPosPrevious, pc.ScreenSize_Padding_FrameIndex_LightCount.xy));
+
+ if (validHistory) {
+   vec3 prevNormal = texelFetch(PrevNormalImage, prevCoord, 0).rgb;
+   validHistory = dot(prevNormal, surfaceData.normal) >= 0.9;
+ }
+
+ uint initial_sample_count = validHistory ? 20 : 35;
+
+ Reservoir currentReservoir;
+ currentReservoir.Light_Index = 0;
+ currentReservoir.Light_Weight = 0.0;
+ currentReservoir.Sum_Of_All_Weights = 0.0;
+ currentReservoir.Num_OF_Lights_In_Resevoir = 0.0;
+ currentReservoir.Sample_Pos = vec3(0.0); 
+ currentReservoir.Sample_Flux = vec3(0.0);
+
+ int TotalNumOfLights = int(pc.ScreenSize_Padding_FrameIndex_LightCount.w);
+ float pdf = 1.0 / float(TotalNumOfLights); 
+ float p_hat_current = 0.0; 
+
+ //Initial Candidates Lights
+ for (uint i = 0; i < initial_sample_count; i++) {  
+     uint lightIndex = min(uint(rand01(rngState) * float(TotalNumOfLights)), uint(TotalNumOfLights - 1)); 
+     vec3 RadianceCandidate = GetLightRadiance(lights[lightIndex], CameraPos, surfaceData, ViewDir, F, diffuse);  
+     float p_hat = length(RadianceCandidate);
+     float WeightOfLight = p_hat / pdf; 
+
+     if(UpdateReservoir(currentReservoir, lightIndex, WeightOfLight, 1.0, rngState)){
+         p_hat_current = p_hat;
+     }
+ }
+
+ //Initial Candidate GI 
+if (DDGISamplingVertex > 0 && bDDGI) {
+     
+     payload.data     = vec4(0);
+     payload.Emissive = vec4(0);
+     payload.Position = vec4(0);
+     payload.Normal   = vec4(0);
+     payload.Albedo   = vec4(0);
+     
+      vec3 rayOrigin = offsetPositionAlongNormal(surfaceData.worldPos, surfaceData.normal);
+
+     traceRayEXT(topLevelAS, 
+         gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsCullBackFacingTrianglesEXT, 
+         0xFF, 0, 0, 0, 
+         rayOrigin, 0, DiffuseDirection, 1000.0, 0);
+
+     
+     vec3 y_pos = payload.Position.xyz;
+     vec3 y_norm = normalize(payload.Normal.xyz);
+     vec3 y_albedo = payload.Albedo.xyz;
+     vec3 y_emissive = payload.Emissive.xyz;
+    
+     vec3 y_irradiance = GetGIRadiance(y_pos, y_norm);
+     vec3 y_radiance   = y_emissive + (y_irradiance * y_albedo / 3.14159265);
+     
+     float GI_p_hat = length(y_radiance);
+     float WeightOfLight = GI_p_hat * currentReservoir.Num_OF_Lights_In_Resevoir;
+     
+     if (GI_p_hat > 0.0) {
+
+         if(UpdateReservoir(currentReservoir, GIIndex, WeightOfLight, 1.0, rngState)){
+
+             p_hat_current = GI_p_hat;
+             
+             currentReservoir.Sample_Pos = y_pos;
+             currentReservoir.Sample_Flux = y_radiance;
+         }
+     }
+ }
+
+ if (p_hat_current > 0.0) {    
+     currentReservoir.Light_Weight = (1.0 / p_hat_current) * (currentReservoir.Sum_Of_All_Weights / currentReservoir.Num_OF_Lights_In_Resevoir);
+ } 
+ else {
+     currentReservoir.Light_Weight = 0.0;
+ }
+
+    //Temporal Reuse
+    Reservoir temporalReservoir;
+    temporalReservoir.Light_Index = 0;
+    temporalReservoir.Light_Weight = 0.0;
+    temporalReservoir.Sum_Of_All_Weights = 0.0;
+    temporalReservoir.Num_OF_Lights_In_Resevoir = 0.0;
+    temporalReservoir.Sample_Pos = currentReservoir.Sample_Pos;
+    temporalReservoir.Sample_Flux = currentReservoir.Sample_Flux;
+   
+    if(UpdateReservoir(temporalReservoir, currentReservoir.Light_Index, p_hat_current * currentReservoir.Light_Weight * currentReservoir.Num_OF_Lights_In_Resevoir, currentReservoir.Num_OF_Lights_In_Resevoir, rngState)){
+        temporalReservoir.Sample_Pos = currentReservoir.Sample_Pos;
+        temporalReservoir.Sample_Flux = currentReservoir.Sample_Flux;
+    }
+   
+    if (bTemporalReuse && validHistory) {
+
+        vec3 prevNormal = texelFetch(PrevNormalImage, prevCoord, 0).rgb;
+
+        if (dot(prevNormal, surfaceData.normal) >= 0.9) {
+
+            vec4 PrevResData = imageLoad(PrevResevoirImage, prevCoord);
+            Reservoir historyReservoir;
+            historyReservoir.Light_Index = uint(PrevResData.x);
+            historyReservoir.Light_Weight = PrevResData.y;
+            historyReservoir.Sum_Of_All_Weights = PrevResData.z;
+            historyReservoir.Num_OF_Lights_In_Resevoir = min(PrevResData.w, MaxResevoirVolume);
+
+            if (historyReservoir.Light_Index == GIIndex) {
+
+                 historyReservoir.Sample_Pos  = imageLoad(PrevGI_SamplePosImage, prevCoord).xyz;
+                 historyReservoir.Sample_Flux = imageLoad(PrevGI_SampleFluxImage, prevCoord).xyz;
+
+            } else {
+
+                 historyReservoir.Sample_Pos = vec3(0.0);
+                 historyReservoir.Sample_Flux = vec3(0.0);
+
+            }
    
 
-    ivec2 TextCoord = ivec2(gl_LaunchIDEXT.xy + 0.5);
-    uint rngState = initRNG(gl_LaunchIDEXT.xy, gl_LaunchSizeEXT.xy, uint(pc.ScreenSize_Padding_FrameIndex_LightCount.z));
-    float r1 = rand01(rngState);
-    float r2 = rand01(rngState);
+            vec3 historyRadiance = EvaluateCandidateRadiance(historyReservoir.Light_Index, historyReservoir.Sample_Pos, historyReservoir.Sample_Flux, CameraPos, surfaceData, ViewDir, F, diffuse);
+            float p_hat_history = length(historyRadiance);
+        
+            if(UpdateReservoir(temporalReservoir, historyReservoir.Light_Index, p_hat_history * historyReservoir.Light_Weight * historyReservoir.Num_OF_Lights_In_Resevoir, historyReservoir.Num_OF_Lights_In_Resevoir, rngState)) {
 
-    SurfaceData surfaceData;
-    surfaceData.worldPos = texelFetch(WorldPositionImage, TextCoord, 0).xyz;
+                 temporalReservoir.Sample_Pos = historyReservoir.Sample_Pos;
+                 temporalReservoir.Sample_Flux = historyReservoir.Sample_Flux;
 
-    if (surfaceData.worldPos == vec3(0.0)) {
-        imageStore(ResevoirImage, TextCoord, vec4(0.0));
-        imageStore(ReSTIR_DIImage, TextCoord, vec4(0.0));
-        return; 
-    }
-
-    surfaceData.normal    = texelFetch(NormalImage, TextCoord, 0).xyz;
-    surfaceData.albedo    = texelFetch(AlbedoImage, TextCoord, 0).xyz;
-    vec2 material         = texelFetch(MaterialImage, TextCoord, 0).xy;
-    surfaceData.metallic  = material.x;
-    surfaceData.roughness = material.y; 
-   
-    vec3 CameraPos = pc.CameraPosition.xyz;
-    vec3 ViewDir   = normalize(CameraPos - surfaceData.worldPos);
-    vec3 F0        = mix(vec3(0.04), surfaceData.albedo, surfaceData.metallic);
-    vec3 F         = fresnelSchlick(max(dot(surfaceData.normal, ViewDir), 0.0), F0);
-    vec3 diffuse   = (vec3(1.0) - F) * (1.0 - surfaceData.metallic) * (surfaceData.albedo / 3.14159265359);
-    vec3 rayOrigin = offsetPositionAlongNormal(surfaceData.worldPos, surfaceData.normal);
-
-    vec2 uv = (vec2(TextCoord) + 0.5) / vec2(128,128);
-    int DiffuseRandIndex = int(pc.ScreenSize_Padding_FrameIndex_LightCount.z - 3) % 63;
-    vec3 DiffuseDirection = GetHemisphereSample(textureLod(BlueNoise[DiffuseRandIndex], uv, 0).rg, surfaceData.normal);
-
-    vec2 velocityUV = texelFetch(MotionVectorImage, TextCoord, 0).rg;
-    vec2 screenPosPrevious = TextCoord - (velocityUV * pc.ScreenSize_Padding_FrameIndex_LightCount.xy);
-    ivec2 prevCoord = ivec2(screenPosPrevious);      
-    bool validHistory = all(greaterThanEqual(screenPosPrevious, vec2(0.0))) && all(lessThan(screenPosPrevious, pc.ScreenSize_Padding_FrameIndex_LightCount.xy));
-
-    if (validHistory) {
-      vec3 prevNormal = texelFetch(PrevNormalImage, prevCoord, 0).rgb;
-      validHistory = dot(prevNormal, surfaceData.normal) >= 0.9;
-    }
-
-    uint initial_sample_count = validHistory ? 20 : 35;
-
-    Reservoir currentReservoir;
-    currentReservoir.Light_Index = 0;
-    currentReservoir.Light_Weight = 0.0;
-    currentReservoir.Sum_Of_All_Weights = 0.0;
-    currentReservoir.Num_OF_Lights_In_Resevoir = 0.0;
-    currentReservoir.Sample_Pos = vec3(0.0); 
-    currentReservoir.Sample_Flux = vec3(0.0);
-
-    int TotalNumOfLights = int(pc.ScreenSize_Padding_FrameIndex_LightCount.w);
-    float pdf = 1.0 / float(TotalNumOfLights); 
-    float p_hat_current = 0.0; 
-
-    //Initial Candidates Lights
-    for (uint i = 0; i < initial_sample_count; i++) {  
-        uint lightIndex = min(uint(rand01(rngState) * float(TotalNumOfLights)), uint(TotalNumOfLights - 1)); 
-        vec3 RadianceCandidate = GetLightRadiance(lights[lightIndex], CameraPos, surfaceData, ViewDir, F, diffuse);  
-        float p_hat = length(RadianceCandidate);
-        float WeightOfLight = p_hat / pdf; 
-
-        if(UpdateReservoir(currentReservoir, lightIndex, WeightOfLight, 1.0, rngState)){
-            p_hat_current = p_hat;
+            }
         }
     }
+   
+    vec3 tempRadiance = EvaluateCandidateRadiance(temporalReservoir.Light_Index, temporalReservoir.Sample_Pos, temporalReservoir.Sample_Flux, CameraPos, surfaceData, ViewDir, F, diffuse);
+    float p_hat_temporal = length(tempRadiance);
+    temporalReservoir.Light_Weight = (p_hat_temporal > 0.0) ? (1.0 / p_hat_temporal) * (temporalReservoir.Sum_Of_All_Weights / temporalReservoir.Num_OF_Lights_In_Resevoir) : 0.0;
+   
+   
+    //Spatial Reuse
+    Reservoir spatialReservoir;
+    spatialReservoir.Light_Index = 0;
+    spatialReservoir.Light_Weight = 0.0;
+    spatialReservoir.Sum_Of_All_Weights = 0.0;
+    spatialReservoir.Num_OF_Lights_In_Resevoir = 0.0;
 
-    //Initial Candidate GI 
- if (DDGISamplingVertex > 0 && bDDGI) {
-        
-        payload.data     = vec4(0);
-        payload.Emissive = vec4(0);
-        payload.Position = vec4(0);
-        payload.Normal   = vec4(0);
-        payload.Albedo   = vec4(0);
-        
+    spatialReservoir.Sample_Pos = temporalReservoir.Sample_Pos;
+    spatialReservoir.Sample_Flux = temporalReservoir.Sample_Flux;
+   
+    if(UpdateReservoir(spatialReservoir, temporalReservoir.Light_Index, p_hat_temporal * temporalReservoir.Light_Weight * temporalReservoir.Num_OF_Lights_In_Resevoir, temporalReservoir.Num_OF_Lights_In_Resevoir, rngState)) {
+         spatialReservoir.Sample_Pos = temporalReservoir.Sample_Pos;
+         spatialReservoir.Sample_Flux = temporalReservoir.Sample_Flux;
+    }
+   
+    if (bSpatialReuse) {
+        int radius = 15; 
+        for(int i = 0; i < 5; i++){
+            vec2 offset = 2.0 * vec2(rand01(rngState), rand01(rngState)) - 1; 
+            ivec2 neighborCoord = clamp(ivec2(TextCoord + offset * float(radius)), ivec2(0), ivec2(pc.ScreenSize_Padding_FrameIndex_LightCount.xy - 1));
+   
+            vec3 neighborPos    = texelFetch(WorldPositionImage, neighborCoord, 0).xyz;
+            vec3 neighborNormal = texelFetch(NormalImage, neighborCoord, 0).xyz;
+   
+            if (dot(neighborNormal, surfaceData.normal) < 0.9) continue;
+            float planeDist = dot(neighborPos - surfaceData.worldPos, surfaceData.normal);
+            if (abs(planeDist) > 0.05 * length(neighborPos - surfaceData.worldPos) + 0.01) continue;
+   
+            vec4 NeighbourResData = imageLoad(PrevResevoirImage, neighborCoord);
+            Reservoir neighbourReservoir;
+            neighbourReservoir.Light_Index = uint(NeighbourResData.x);
+            neighbourReservoir.Light_Weight = NeighbourResData.y;
+            neighbourReservoir.Num_OF_Lights_In_Resevoir = NeighbourResData.w;
 
-        //CONFIRM DATA COMMING FROM CLOSESS HIT SHADER IS CORRECT DO LATER!!
-        traceRayEXT(topLevelAS, 
-            gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsCullBackFacingTrianglesEXT, 
-            0xFF, 0, 0, 0, 
-            rayOrigin, 0.01, DiffuseDirection, 1000.0, 0);
-
-        
-        vec3 y_pos = payload.Position.xyz;
-        vec3 y_norm = normalize(payload.Normal.xyz);
-        vec3 y_albedo = payload.Albedo.xyz;
-        vec3 y_emissive = payload.Emissive.xyz;
-       
-        vec3 y_radiance = y_emissive + GetGIRadiance(y_pos, y_norm, y_albedo);
-
-        float GI_p_hat = length(y_radiance); 
-        float WeightOfLight = GI_p_hat / pdf; 
-        
-        if (GI_p_hat > 0.0) {
-
-            if(UpdateReservoir(currentReservoir, GIIndex, WeightOfLight, 1.0, rngState)){
-
-                p_hat_current = GI_p_hat;
-                
-                currentReservoir.Sample_Pos = y_pos;
-                currentReservoir.Sample_Flux = y_radiance;
+            if(neighbourReservoir.Light_Index == GIIndex) {
+                neighbourReservoir.Sample_Pos = imageLoad(PrevGI_SamplePosImage, neighborCoord).xyz;
+                neighbourReservoir.Sample_Flux = imageLoad(PrevGI_SampleFluxImage, neighborCoord).xyz;
+            } else {
+                 neighbourReservoir.Sample_Pos = vec3(0.0);
+                 neighbourReservoir.Sample_Flux = vec3(0.0);
+            }
+   
+            // Re-evaluate neighbor sample at current pixel
+            vec3 neighbourRadiance = EvaluateCandidateRadiance(neighbourReservoir.Light_Index, neighbourReservoir.Sample_Pos, neighbourReservoir.Sample_Flux, CameraPos, surfaceData, ViewDir, F, diffuse);
+            float p_hat_neighbour = length(neighbourRadiance);
+   
+            if(UpdateReservoir(spatialReservoir, neighbourReservoir.Light_Index, p_hat_neighbour * neighbourReservoir.Light_Weight * neighbourReservoir.Num_OF_Lights_In_Resevoir, neighbourReservoir.Num_OF_Lights_In_Resevoir, rngState)) {
+                spatialReservoir.Sample_Pos = neighbourReservoir.Sample_Pos;
+                spatialReservoir.Sample_Flux = neighbourReservoir.Sample_Flux;
             }
         }
     }
 
-    if (p_hat_current > 0.0) {    
-        currentReservoir.Light_Weight = (1.0 / p_hat_current) * (currentReservoir.Sum_Of_All_Weights / currentReservoir.Num_OF_Lights_In_Resevoir);
-    } 
-    else {
-        currentReservoir.Light_Weight = 0.0;
-    }
-
-    Reservoir spatialReservoir = currentReservoir;
-
-   // //Temporal Reuse
-   // Reservoir temporalReservoir;
-   // temporalReservoir.Light_Index = 0;
-   // temporalReservoir.Light_Weight = 0.0;
-   // temporalReservoir.Sum_Of_All_Weights = 0.0;
-   // temporalReservoir.Num_OF_Lights_In_Resevoir = 0.0;
-   //
-   // UpdateReservoir(temporalReservoir, currentReservoir.Light_Index, p_hat_current * currentReservoir.Light_Weight * currentReservoir.Num_OF_Lights_In_Resevoir, currentReservoir.Num_OF_Lights_In_Resevoir, rngState);
-   //
-   // if (bTemporalReuse && validHistory) {
-   //     vec3 prevNormal = texelFetch(PrevNormalImage, prevCoord, 0).rgb;
-   //     if (dot(prevNormal, surfaceData.normal) >= 0.9) {
-   //         vec4 PrevResData = imageLoad(PrevResevoirImage, prevCoord);
-   //         Reservoir historyReservoir;
-   //         historyReservoir.Light_Index = uint(PrevResData.x);
-   //         historyReservoir.Light_Weight = PrevResData.y;
-   //         historyReservoir.Sum_Of_All_Weights = PrevResData.z;
-   //         historyReservoir.Num_OF_Lights_In_Resevoir = min(PrevResData.w, MaxResevoirVolume);
-   //
-   //         // Re-evaluate history sample at current pixel
-   //         vec3 historyRadiance = GetRadiance(historyReservoir.Light_Index, CameraPos, surfaceData, ViewDir, F, diffuse);
-   //         float p_hat_history = length(historyRadiance);
-   //     
-   //         UpdateReservoir(temporalReservoir, historyReservoir.Light_Index, p_hat_history * historyReservoir.Light_Weight * historyReservoir.Num_OF_Lights_In_Resevoir, historyReservoir.Num_OF_Lights_In_Resevoir, rngState);
-   //     }
-   // }
-   //
-   // vec3 tempRadiance = GetRadiance(temporalReservoir.Light_Index, CameraPos, surfaceData, ViewDir, F, diffuse);
-   // float p_hat_temporal = length(tempRadiance);
-   // temporalReservoir.Light_Weight = (p_hat_temporal > 0.0) ? (1.0 / p_hat_temporal) * (temporalReservoir.Sum_Of_All_Weights / temporalReservoir.Num_OF_Lights_In_Resevoir) : 0.0;
-   //
-   //
-   // //Spatial Reuse
-   // Reservoir spatialReservoir;
-   // spatialReservoir.Light_Index = 0;
-   // spatialReservoir.Light_Weight = 0.0;
-   // spatialReservoir.Sum_Of_All_Weights = 0.0;
-   // spatialReservoir.Num_OF_Lights_In_Resevoir = 0.0;
-   //
-   // UpdateReservoir(spatialReservoir, temporalReservoir.Light_Index, p_hat_temporal * temporalReservoir.Light_Weight * temporalReservoir.Num_OF_Lights_In_Resevoir, temporalReservoir.Num_OF_Lights_In_Resevoir, rngState);
-   //
-   // if (bSpatialReuse) {
-   //     int radius = 15; 
-   //     for(int i = 0; i < 5; i++){
-   //         vec2 offset = 2.0 * vec2(rand01(rngState), rand01(rngState)) - 1; 
-   //         ivec2 neighborCoord = clamp(ivec2(TextCoord + offset * float(radius)), ivec2(0), ivec2(pc.ScreenSize_Padding_FrameIndex_LightCount.xy - 1));
-   //
-   //         vec3 neighborPos    = texelFetch(WorldPositionImage, neighborCoord, 0).xyz;
-   //         vec3 neighborNormal = texelFetch(NormalImage, neighborCoord, 0).xyz;
-   //
-   //         if (dot(neighborNormal, surfaceData.normal) < 0.9) continue;
-   //         float planeDist = dot(neighborPos - surfaceData.worldPos, surfaceData.normal);
-   //         if (abs(planeDist) > 0.05 * length(neighborPos - surfaceData.worldPos) + 0.01) continue;
-   //
-   //         vec4 NeighbourResData = imageLoad(ResevoirImage, neighborCoord);
-   //         Reservoir neighbourReservoir;
-   //         neighbourReservoir.Light_Index = uint(NeighbourResData.x);
-   //         neighbourReservoir.Light_Weight = NeighbourResData.y;
-   //         neighbourReservoir.Num_OF_Lights_In_Resevoir = NeighbourResData.w;
-   //
-   //         // Re-evaluate neighbor sample at current pixel
-   //         vec3 neighbourRadiance = GetRadiance(neighbourReservoir.Light_Index, CameraPos, surfaceData, ViewDir, F, diffuse);
-   //         float p_hat_neighbour = length(neighbourRadiance);
-   //
-   //         UpdateReservoir(spatialReservoir, neighbourReservoir.Light_Index, p_hat_neighbour * neighbourReservoir.Light_Weight * neighbourReservoir.Num_OF_Lights_In_Resevoir, neighbourReservoir.Num_OF_Lights_In_Resevoir, rngState);
-   //     }
-   // }
-
     //Final Shading
-    vec3 FinalRadiance = vec3(0.0);
-
+   vec3 FinalRadiance = vec3(0.0);
+   
     if (spatialReservoir.Sum_Of_All_Weights > 0.0) {
-        vec3 radiance = GetRadiance(spatialReservoir.Light_Index, CameraPos, surfaceData, ViewDir, F, diffuse);
+        vec3 radiance = EvaluateCandidateRadiance(spatialReservoir.Light_Index, spatialReservoir.Sample_Pos, spatialReservoir.Sample_Flux, CameraPos, surfaceData, ViewDir, F, diffuse);
         float p_hat_final = length(radiance);
         bool isVisible = true;
-
+   
         if (spatialReservoir.Light_Index != GIIndex && p_hat_final > 0.0) {
             LightData light = lights[spatialReservoir.Light_Index];
             vec3 shadowDir;
             float tMax;
-
+   
             if (light.positionAndLightType.w > 0.5) { 
                 tMax = length(light.positionAndLightType.xyz - surfaceData.worldPos);
                 shadowDir = SoftShadow(light.positionAndLightType.xyz, surfaceData.worldPos, 0.25, r1, r2);
@@ -435,29 +494,16 @@ void main() {
                 tMax = 10000.0;
                 shadowDir = DirectionalSoftShadow(normalize(-light.positionAndLightType.xyz), 0.009, r1, r2);
             }
-
+   
             isVisible = TraceShadow(rayOrigin, shadowDir, tMax);
         }
-
-        if (spatialReservoir.Light_Index == GIIndex) {
-
-             vec3 lightVec = normalize(spatialReservoir.Sample_Pos - surfaceData.worldPos);
-               float  tMax = length(spatialReservoir.Sample_Pos - surfaceData.worldPos);
-
-                  isVisible = TraceShadow(rayOrigin, lightVec, tMax);
-                  
-              if (isVisible) {
-              
-                  vec3 bsdf = EvaluateBSDF(surfaceData, ViewDir, lightVec);
-                  
-                  radiance = spatialReservoir.Sample_Flux * bsdf; 
-                  
-                  p_hat_final = length(spatialReservoir.Sample_Flux); 
-              }
-            
+   
+       if (spatialReservoir.Light_Index == GIIndex) {
+           vec3 lightVec = normalize(spatialReservoir.Sample_Pos - surfaceData.worldPos);
+           float tMax = length(spatialReservoir.Sample_Pos - surfaceData.worldPos);
+            isVisible = TraceShadow(rayOrigin, lightVec, tMax - 0.01); 
        }
-
-
+   
         if (isVisible && p_hat_final > 0.0) {
             float avgWeight = spatialReservoir.Sum_Of_All_Weights / spatialReservoir.Num_OF_Lights_In_Resevoir;
             spatialReservoir.Light_Weight = (1.0 / p_hat_final) * avgWeight;
@@ -466,6 +512,9 @@ void main() {
             spatialReservoir.Light_Weight = 0.0;
         }
     }
+   
+
+
 
     if (spatialReservoir.Num_OF_Lights_In_Resevoir > MaxResevoirVolume) {
         float scale = MaxResevoirVolume / spatialReservoir.Num_OF_Lights_In_Resevoir;
@@ -473,18 +522,22 @@ void main() {
         spatialReservoir.Num_OF_Lights_In_Resevoir = MaxResevoirVolume;
     }
      
-   vec3 Emissive  = texelFetch(EmmisiveImage, TextCoord, 0).xyz;
-
+   
     vec4 Res = vec4(spatialReservoir.Light_Index, spatialReservoir.Light_Weight, spatialReservoir.Sum_Of_All_Weights, spatialReservoir.Num_OF_Lights_In_Resevoir);
     imageStore(ResevoirImage, TextCoord, Res);
     
-
+    imageStore(GI_SamplePosImage, TextCoord, vec4(spatialReservoir.Sample_Pos, 1.0));
+    imageStore(GI_SampleFluxImage, TextCoord, vec4(spatialReservoir.Sample_Flux, 1.0));
+   
      if (DDGISamplingVertex == 0 && bDDGI) {
-         vec3 OutGoing = FinalRadiance + GetGIRadiance(surfaceData.worldPos, surfaceData.normal, surfaceData.albedo).xyz;
-         imageStore(ReSTIR_DIImage, TextCoord, vec4(OutGoing, 1));             
+
+         vec3 irr = GetGIRadiance(surfaceData.worldPos, surfaceData.normal);
+         vec3 OutGoing = FinalRadiance + irr * surfaceData.albedo / 3.14159265;
+         imageStore(ReSTIR_DIImage, TextCoord, vec4(OutGoing, 1));              
       return;
     }
+   
+       vec3 Emissive  = texelFetch(EmmisiveImage, TextCoord, 0).xyz;
 
-
-    imageStore(ReSTIR_DIImage, TextCoord, vec4(FinalRadiance + Emissive, 1));             
-}
+    imageStore(ReSTIR_DIImage, TextCoord, vec4(FinalRadiance + Emissive, 1));              
+   }

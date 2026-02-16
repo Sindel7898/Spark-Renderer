@@ -45,6 +45,11 @@ public:
     ImageData ReSTIRDI_Results;
     ImageData ReSTIRDI_Denoised_Results;
 
+    ImageData GI_SamplePosImage;     
+    ImageData GI_SampleFluxImage;    
+    ImageData PrevGI_SamplePosImage; 
+    ImageData PrevGI_SampleFluxImage;
+
     bool bTemporalReuse = true;
 	bool bSpatialReuse = true;
     bool bDDGI = true;

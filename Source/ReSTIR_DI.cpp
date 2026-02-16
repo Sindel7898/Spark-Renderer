@@ -47,6 +47,27 @@ void ReSTIR_DI::CreateImage() {
 	ReSTIRDI_Denoised_Results.imageView = bufferManager->CreateImageView(&ReSTIRDI_Denoised_Results, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	ReSTIRDI_Denoised_Results.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
 
+	GI_SamplePosImage.ImageID = "GI Sample Pos Image";
+	bufferManager->CreateImage(&GI_SamplePosImage, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
+	GI_SamplePosImage.imageView = bufferManager->CreateImageView(&GI_SamplePosImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	GI_SamplePosImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
+
+	GI_SampleFluxImage.ImageID = "GI Sample Flux Image";
+	bufferManager->CreateImage(&GI_SampleFluxImage, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
+	GI_SampleFluxImage.imageView = bufferManager->CreateImageView(&GI_SampleFluxImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	GI_SampleFluxImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
+
+	PrevGI_SamplePosImage.ImageID = "Prev GI Sample Pos Image";
+	bufferManager->CreateImage(&PrevGI_SamplePosImage, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
+	PrevGI_SamplePosImage.imageView = bufferManager->CreateImageView(&PrevGI_SamplePosImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	PrevGI_SamplePosImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
+
+	PrevGI_SampleFluxImage.ImageID = "Prev GI Sample Flux Image";
+	bufferManager->CreateImage(&PrevGI_SampleFluxImage, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
+	PrevGI_SampleFluxImage.imageView = bufferManager->CreateImageView(&PrevGI_SampleFluxImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+	PrevGI_SampleFluxImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
+
+
 
 
 	vk::CommandBuffer cmd = bufferManager->CreateSingleUseCommandBuffer(commandPool);
@@ -76,6 +97,26 @@ void ReSTIR_DI::CreateImage() {
 	cmd.clearColorImage(ResevoirImage.image, vk::ImageLayout::eTransferDstOptimal, clearColor, range);
 	bufferManager->TransitionImage(cmd, &ResevoirImage, toGeneral);
 
+	bufferManager->TransitionImage(cmd, &PrevResevoirImage, toClear);
+	cmd.clearColorImage(PrevResevoirImage.image, vk::ImageLayout::eTransferDstOptimal, clearColor, range);
+	bufferManager->TransitionImage(cmd, &PrevResevoirImage, toGeneral);
+
+	bufferManager->TransitionImage(cmd, &GI_SamplePosImage, toClear);
+	cmd.clearColorImage(GI_SamplePosImage.image, vk::ImageLayout::eTransferDstOptimal, clearColor, range);
+	bufferManager->TransitionImage(cmd, &GI_SamplePosImage, toGeneral);
+
+	bufferManager->TransitionImage(cmd, &GI_SampleFluxImage, toClear);
+	cmd.clearColorImage(GI_SampleFluxImage.image, vk::ImageLayout::eTransferDstOptimal, clearColor, range);
+	bufferManager->TransitionImage(cmd, &GI_SampleFluxImage, toGeneral);
+
+	bufferManager->TransitionImage(cmd, &PrevGI_SamplePosImage, toClear);
+	cmd.clearColorImage(PrevGI_SamplePosImage.image, vk::ImageLayout::eTransferDstOptimal, clearColor, range);
+	bufferManager->TransitionImage(cmd, &PrevGI_SamplePosImage, toGeneral);
+
+	bufferManager->TransitionImage(cmd, &PrevGI_SampleFluxImage, toClear);
+	cmd.clearColorImage(PrevGI_SampleFluxImage.image, vk::ImageLayout::eTransferDstOptimal, clearColor, range);
+	bufferManager->TransitionImage(cmd, &PrevGI_SampleFluxImage, toGeneral);
+
 	bufferManager->SubmitAndDestoyCommandBuffer(commandPool, cmd, vulkanContext->graphicsQueue);
 }
 
@@ -101,6 +142,12 @@ void ReSTIR_DI::DestroyImage() {
 	{
 		bufferManager->DestroyImage(ReSTIRDI_Denoised_Results);
 	}
+
+	if (GI_SamplePosImage.image) bufferManager->DestroyImage(GI_SamplePosImage);
+	if (GI_SampleFluxImage.image) bufferManager->DestroyImage(GI_SampleFluxImage);
+	if (PrevGI_SamplePosImage.image) bufferManager->DestroyImage(PrevGI_SamplePosImage);
+	if (PrevGI_SampleFluxImage.image) bufferManager->DestroyImage(PrevGI_SampleFluxImage);
+
 }
 
 
@@ -234,7 +281,31 @@ void ReSTIR_DI::createDescriptorSetLayout()
 		EmmiveImageLayout.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 		EmmiveImageLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
 
-		std::array<vk::DescriptorSetLayoutBinding, 21> bindings = {
+		vk::DescriptorSetLayoutBinding GIPosLayout{};
+		GIPosLayout.binding = 21;
+		GIPosLayout.descriptorCount = 1;
+		GIPosLayout.descriptorType = vk::DescriptorType::eStorageImage;
+		GIPosLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+
+		vk::DescriptorSetLayoutBinding GIFluxLayout{};
+		GIFluxLayout.binding = 22;
+		GIFluxLayout.descriptorCount = 1;
+		GIFluxLayout.descriptorType = vk::DescriptorType::eStorageImage;
+		GIFluxLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+
+		vk::DescriptorSetLayoutBinding PrevGIPosLayout{};
+		PrevGIPosLayout.binding = 23;
+		PrevGIPosLayout.descriptorCount = 1;
+		PrevGIPosLayout.descriptorType = vk::DescriptorType::eStorageImage;
+		PrevGIPosLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+
+		vk::DescriptorSetLayoutBinding PrevGIFluxLayout{};
+		PrevGIFluxLayout.binding = 24;
+		PrevGIFluxLayout.descriptorCount = 1;
+		PrevGIFluxLayout.descriptorType = vk::DescriptorType::eStorageImage;
+		PrevGIFluxLayout.stageFlags = vk::ShaderStageFlagBits::eRaygenKHR;
+
+		std::array<vk::DescriptorSetLayoutBinding, 25> bindings = {
 					LightUniformBufferLayout, ResevoirStorageImageLayout,
 					WorldPositionImageLayout, NormalImageLayout,
 					AlbedoImageLayout, MaterialImageLayout,
@@ -243,7 +314,7 @@ void ReSTIR_DI::createDescriptorSetLayout()
 					MetalicRoughnessAssetTexturesSamplerLayout,EmmisiveAssetTexturesSamplerLayout,
 					IndexStorageBuffersLayout,VertexStorageBuffersLayout,offsetStorageBuffersLayout,
 					trasnformationUniformBuffersLayout,PrevResevoirStorageImageLayout,MotionVectorImageLayout,
-					ReSTIRDIImageLayout,PrevNormalImageLayout,EmmiveImageLayout
+					ReSTIRDIImageLayout,PrevNormalImageLayout,EmmiveImageLayout,GIPosLayout, GIFluxLayout, PrevGIPosLayout, PrevGIFluxLayout
 		};
 
 		vk::DescriptorSetLayoutCreateInfo layoutInfo{};
@@ -695,9 +766,60 @@ void ReSTIR_DI::UpdateDescrptorSets()
 			EmmisiveSamplerdescriptorWrite.descriptorCount = 1;
 			EmmisiveSamplerdescriptorWrite.pImageInfo = &EmmisiveimageInfo;
 
+			vk::DescriptorImageInfo GIPosInfo{};
+			GIPosInfo.imageLayout = vk::ImageLayout::eGeneral;
+			GIPosInfo.imageView = GI_SamplePosImage.imageView;
+			GIPosInfo.sampler = GI_SamplePosImage.imageSampler;
+
+			vk::WriteDescriptorSet GIPosWrite{};
+			GIPosWrite.dstSet = RaytracingDescriptorSets[i];
+			GIPosWrite.dstBinding = 21;
+			GIPosWrite.dstArrayElement = 0;
+			GIPosWrite.descriptorType = vk::DescriptorType::eStorageImage;
+			GIPosWrite.descriptorCount = 1;
+			GIPosWrite.pImageInfo = &GIPosInfo;
+
+			vk::DescriptorImageInfo GIFluxInfo{};
+			GIFluxInfo.imageLayout = vk::ImageLayout::eGeneral;
+			GIFluxInfo.imageView = GI_SampleFluxImage.imageView;
+			GIFluxInfo.sampler = GI_SampleFluxImage.imageSampler;
+
+			vk::WriteDescriptorSet GIFluxWrite{};
+			GIFluxWrite.dstSet = RaytracingDescriptorSets[i];
+			GIFluxWrite.dstBinding = 22;
+			GIFluxWrite.dstArrayElement = 0;
+			GIFluxWrite.descriptorType = vk::DescriptorType::eStorageImage;
+			GIFluxWrite.descriptorCount = 1;
+			GIFluxWrite.pImageInfo = &GIFluxInfo;
+
+			vk::DescriptorImageInfo PrevGIPosInfo{};
+			PrevGIPosInfo.imageLayout = vk::ImageLayout::eGeneral;
+			PrevGIPosInfo.imageView = PrevGI_SamplePosImage.imageView;
+			PrevGIPosInfo.sampler = PrevGI_SamplePosImage.imageSampler;
+
+			vk::WriteDescriptorSet PrevGIPosWrite{};
+			PrevGIPosWrite.dstSet = RaytracingDescriptorSets[i];
+			PrevGIPosWrite.dstBinding = 23;
+			PrevGIPosWrite.dstArrayElement = 0;
+			PrevGIPosWrite.descriptorType = vk::DescriptorType::eStorageImage;
+			PrevGIPosWrite.descriptorCount = 1;
+			PrevGIPosWrite.pImageInfo = &PrevGIPosInfo;
+
+			vk::DescriptorImageInfo PrevGIFluxInfo{};
+			PrevGIFluxInfo.imageLayout = vk::ImageLayout::eGeneral;
+			PrevGIFluxInfo.imageView = PrevGI_SampleFluxImage.imageView;
+			PrevGIFluxInfo.sampler = PrevGI_SampleFluxImage.imageSampler;
+
+			vk::WriteDescriptorSet PrevGIFluxWrite{};
+			PrevGIFluxWrite.dstSet = RaytracingDescriptorSets[i];
+			PrevGIFluxWrite.dstBinding = 24;
+			PrevGIFluxWrite.dstArrayElement = 0;
+			PrevGIFluxWrite.descriptorType = vk::DescriptorType::eStorageImage;
+			PrevGIFluxWrite.descriptorCount = 1;
+			PrevGIFluxWrite.pImageInfo = &PrevGIFluxInfo;
 
 
-			std::array<vk::WriteDescriptorSet, 21> descriptorWrites = {
+			std::array<vk::WriteDescriptorSet, 25> descriptorWrites = {
 							LightUniformBufferDescriptorWrite,
 							ResevoirImagedescriptorWrite,
 							PositionSamplerdescriptorWrite,
@@ -709,7 +831,7 @@ void ReSTIR_DI::UpdateDescrptorSets()
 							MetalicRoughnessAssetImagSamplerdescriptorWrite,EmmisiveAssetImagSamplerdescriptorWrite,
 							IndexStorageBufferdescriptorWrite,VertexStorageBufferdescriptorWrite,
 							OffsetStorageBufferdescriptorWrite,TransformUniformBufferdescriptorWrite,PrevResevoirImagedescriptorWrite,
-							MotionVectorImagedescriptorWrite,ReSTIRImagedescriptorWrite,PrevNormalmagedescriptorWrite,EmmisiveSamplerdescriptorWrite
+							MotionVectorImagedescriptorWrite,ReSTIRImagedescriptorWrite,PrevNormalmagedescriptorWrite,EmmisiveSamplerdescriptorWrite,GIPosWrite, GIFluxWrite, PrevGIPosWrite, PrevGIFluxWrite
 
 			};
 

@@ -880,6 +880,12 @@ void App::createGBuffer()
 	bufferManger.TransitionImage(cmd, &Restir_DI->ReSTIRDI_Results, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &Restir_DI->ReSTIRDI_Denoised_Results, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &lighting_RTX->ResultingStorageImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &lighting_RTX->PTGI_StorageImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &lighting_RTX->Prev_Frame_PTGI_StorageImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &Restir_DI->GI_SamplePosImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &Restir_DI->GI_SampleFluxImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &Restir_DI->PrevGI_SamplePosImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &Restir_DI->PrevGI_SampleFluxImage, TransitionToGeneral);
 
 	bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd,vulkanContext.graphicsQueue);
 
@@ -2872,6 +2878,12 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			bufferManger.TransitionImage(commandBuffer, &Restir_DI->ResevoirImage, TransitiontoGeneraRT);
 			bufferManger.TransitionImage(commandBuffer, &Restir_DI->PrevResevoirImage, TransitiontoGeneraRT);
 
+			bufferManger.TransitionImage(commandBuffer, &Restir_DI->GI_SamplePosImage, TransitiontoGeneraRT);
+			bufferManger.TransitionImage(commandBuffer, &Restir_DI->GI_SampleFluxImage, TransitiontoGeneraRT);
+			bufferManger.TransitionImage(commandBuffer, &Restir_DI->PrevGI_SamplePosImage, TransitiontoGeneraRT);
+			bufferManger.TransitionImage(commandBuffer, &Restir_DI->PrevGI_SampleFluxImage, TransitiontoGeneraRT);
+			// -----------------------------
+
 			vk::ImageSubresourceLayers SrcSubresourceLayers;
 			SrcSubresourceLayers.mipLevel = 0;
 			SrcSubresourceLayers.baseArrayLayer = 0;
@@ -2893,6 +2905,16 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			bufferManger.CopyImageToAnotherImage(commandBuffer,
 				Restir_DI->ResevoirImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
 				Restir_DI->PrevResevoirImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
+				ImageSize, vulkanContext.graphicsQueue);
+
+			bufferManger.CopyImageToAnotherImage(commandBuffer,
+				Restir_DI->GI_SamplePosImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
+				Restir_DI->PrevGI_SamplePosImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
+				ImageSize, vulkanContext.graphicsQueue);
+
+			bufferManger.CopyImageToAnotherImage(commandBuffer,
+				Restir_DI->GI_SampleFluxImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
+				Restir_DI->PrevGI_SampleFluxImage, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
 				ImageSize, vulkanContext.graphicsQueue);
 
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, ReSTIR_RTPassPipeline);
