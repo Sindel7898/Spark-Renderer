@@ -94,7 +94,7 @@ vec3 PathTraceGI(vec3 origin, vec3 normal) {
         RTGIpayload.normal     = vec4(0.0); 
         RTGIpayload.position   = vec4(0.0);
 
-        traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, currentOrigin, 0.001, direction, 1000.0, 1);
+        traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, currentOrigin, 0.1, direction, 1000.0, 1);
         
         if (length(RTGIpayload.normal.xyz) < 0.1) {
              vec3 skyColor = texture(SamplerCubeMap, direction).rgb;

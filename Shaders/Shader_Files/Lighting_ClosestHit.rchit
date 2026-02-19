@@ -198,7 +198,7 @@ vec3 directLighting = vec3(0.0);
             0xFF, 
             0, 0, 0, 
             shadowOrigin, 
-            0.001, 
+            0.1, 
             LightDir, 
             tMax, 
             0 

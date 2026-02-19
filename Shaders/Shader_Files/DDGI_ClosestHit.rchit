@@ -133,7 +133,7 @@ void main()
                 if(int(pc.UseInfiniteBounce_infinite_bounces_multiplier_DDGIMODE_LightCount.z) == 0){
                   L_Direct += (Albedo / PI)  * NdotL * shadow_Payload.Shadow * radiance *  light.CameraPositionAndLightIntensity.a;
                 }else{
-                  L_Direct += radiance * light.CameraPositionAndLightIntensity.a * shadow_Payload.Shadow ;
+                  L_Direct += radiance * light.CameraPositionAndLightIntensity.a * NdotL *  shadow_Payload.Shadow ;
                 }                
             }
         }
@@ -151,7 +151,7 @@ void main()
                  pc.ProbeSideLength, pc.GutterSize, pc.AtlasWidthSize, CameraPos
              );
 
-             L_Indirect = Irradiance * (Albedo / PI) * pc.UseInfiniteBounce_infinite_bounces_multiplier_DDGIMODE_LightCount.y;
+             L_Indirect = (Albedo / PI) * Irradiance  * pc.UseInfiniteBounce_infinite_bounces_multiplier_DDGIMODE_LightCount.y;
         }
 
         Distance = gl_RayTminEXT + gl_HitTEXT;
