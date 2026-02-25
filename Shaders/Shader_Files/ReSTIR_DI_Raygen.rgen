@@ -51,7 +51,7 @@ layout(push_constant) uniform PushConstant{
 
 const int GIIndex = 900;
 
- const float MaxResevoirVolume = 30.0; 
+ const float MaxResevoirVolume = 40.0; 
 
 uint pcg_hash(uint seed) {
     uint state = seed * 747796405u + 2891336453u;
@@ -237,7 +237,7 @@ vec3 EvaluateCandidateRadiance(uint lightIndex, vec3 samplePos, vec3 sampleFlux,
         float G_Term   = min(Cos / max(Distance2, 0.001), a0);
 
         vec3 bsdf = EvaluateBSDF(surface, ViewDir, lightVec);
-        return sampleFlux * G_Term * bsdf ;
+        return sampleFlux + G_Term * (sampleFlux +  bsdf) ;
     }
 
     return GetLightRadiance(lights[lightIndex], cameraPos, surface, ViewDir, F, diffuse);
@@ -292,15 +292,11 @@ void main() {
 
  vec2 velocityUV = texelFetch(MotionVectorImage, TextCoord, 0).rg;
  vec2 screenPosPrevious = TextCoord - (velocityUV * pc.ScreenSize_Padding_FrameIndex_LightCount.xy);
- ivec2 prevCoord = ivec2(screenPosPrevious);      
+ ivec2 prevCoord = ivec2(TextCoord - velocityUV);
+ // make sure we do not go offscreen
  bool validHistory = all(greaterThanEqual(screenPosPrevious, vec2(0.0))) && all(lessThan(screenPosPrevious, pc.ScreenSize_Padding_FrameIndex_LightCount.xy));
 
- if (validHistory) {
-   vec3 prevNormal = texelFetch(PrevNormalImage, prevCoord, 0).rgb;
-   validHistory = dot(prevNormal, surfaceData.normal) >= 0.9;
- }
-
- uint initial_sample_count = validHistory ? 20 : 35;
+ uint initial_sample_count = 35;
 
  Reservoir currentReservoir;
  currentReservoir.Light_Index = 0;
@@ -348,7 +344,7 @@ if (DDGISamplingVertex > 0 && bDDGI) {
      vec3 y_albedo = payload.Albedo.xyz;
      vec3 y_emissive = payload.Emissive.xyz;
     
-     vec3 newPos = y_pos - (DiffuseDirection * 2);
+     vec3 newPos = y_pos - (DiffuseDirection * 1.8);
 
      vec3 y_irradiance = GetGIRadiance(newPos, y_norm);
      vec3 y_radiance   = y_emissive + (y_irradiance * y_albedo / 3.14159265);
@@ -392,6 +388,7 @@ if (DDGISamplingVertex > 0 && bDDGI) {
 
         vec3 prevNormal = texelFetch(PrevNormalImage, prevCoord, 0).rgb;
 
+            //Make sure we will be evaluating ont he same object surface
         if (dot(prevNormal, surfaceData.normal) >= 0.9) {
 
             vec4 PrevResData = imageLoad(PrevResevoirImage, prevCoord);
@@ -447,9 +444,9 @@ if (DDGISamplingVertex > 0 && bDDGI) {
     }
    
     if (bSpatialReuse) {
-        int radius = 30; 
+        int radius = 15; 
 
-        for(int i = 0; i < 5; i++){
+        for(int i = 0; i < 10; i++){
             vec2 offset = 2.0 * vec2(rand01(rngState), rand01(rngState)) - 1; 
             ivec2 neighborCoord = clamp(ivec2(TextCoord + offset * float(radius)), ivec2(0), ivec2(pc.ScreenSize_Padding_FrameIndex_LightCount.xy - 1));
    
@@ -516,6 +513,8 @@ if (DDGISamplingVertex > 0 && bDDGI) {
            vec3 lightVec = normalize(spatialReservoir.Sample_Pos - surfaceData.worldPos);
            float tMax = length(spatialReservoir.Sample_Pos - surfaceData.worldPos);
            isVisible = TraceShadow(rayOrigin, lightVec, tMax); 
+
+           radiance *= surfaceData.albedo;
        }
    
        ////////////////////////////////////////////
