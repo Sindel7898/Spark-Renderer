@@ -65,20 +65,19 @@ void NvdiaDLSS_Intergration::init(vk::CommandPool commandPool) {
     uint32_t displayWidth = m_vulkanContext->swapchainExtent.width;
     uint32_t displayHeight = m_vulkanContext->swapchainExtent.height;
 
-    NVSDK_NGX_PerfQuality_Value dlssQuality = NVSDK_NGX_PerfQuality_Value_Balanced;
+    NVSDK_NGX_PerfQuality_Value dlssQuality = NVSDK_NGX_PerfQuality_Value_DLAA;
 
-    paramsDLSS_->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_Balanced, NVSDK_NGX_RayReconstruction_Hint_Render_Preset_E);
+    paramsDLSS_->Set(NVSDK_NGX_Parameter_DLSS_Hint_Render_Preset_DLAA, NVSDK_NGX_DLSS_Hint_Render_Preset_K);
 
     paramsDLSS_->Set(NVSDK_NGX_Parameter_RTXValue, NVSDK_NGX_RTX_Value_On);
 
 
-    int dlssCreateFeatureFlags = NVSDK_NGX_DLSS_Feature_Flags_IsHDR |
-        NVSDK_NGX_DLSS_Feature_Flags_MVJittered | NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
+    int dlssCreateFeatureFlags = NVSDK_NGX_DLSS_Feature_Flags_IsHDR | NVSDK_NGX_DLSS_Feature_Flags_MVLowRes;
 
     NVSDK_NGX_DLSSD_Create_Params dlssdCreateParams = {};
     dlssdCreateParams.InDenoiseMode = NVSDK_NGX_DLSS_Denoise_Mode_DLUnified; 
     dlssdCreateParams.InRoughnessMode = NVSDK_NGX_DLSS_Roughness_Mode_Unpacked; 
-    dlssdCreateParams.InUseHWDepth = NVSDK_NGX_DLSS_Depth_Type_Linear;
+    dlssdCreateParams.InUseHWDepth = NVSDK_NGX_DLSS_Depth_Type_HW;
     dlssdCreateParams.InWidth = displayWidth;
     dlssdCreateParams.InHeight = displayHeight;
     dlssdCreateParams.InTargetWidth = displayWidth;
@@ -156,14 +155,20 @@ void NvdiaDLSS_Intergration::render(VkCommandBuffer commandBuffer, ImageData InI
     evalParams.pInNormals = &normalsResource;
     evalParams.pInRoughness = &roughnessResource;
     evalParams.pInSpecularAlbedo = &specularAlbedoResource;
-    evalParams.InJitterOffsetX = m_camera->GetjitterInPixelSpace().x;
-    evalParams.InJitterOffsetY = m_camera->GetjitterInPixelSpace().y;
+    //evalParams.InJitterOffsetX = m_camera->GetjitterInPixelSpace().x;
+    //evalParams.InJitterOffsetY = m_camera->GetjitterInPixelSpace().y;
     evalParams.InRenderSubrectDimensions = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
     evalParams.InMVScaleX = width;
     evalParams.InMVScaleY = height;
     evalParams.InReset = SceneChangeNotifer;
     evalParams.InFrameTimeDeltaInMsec = deltaTime * 1000.0f;
+    evalParams.InPreExposure = 1.0f;
 
+    glm::mat4 viewMatrixRowMajor = glm::transpose(m_camera->GetViewMatrix());
+    glm::mat4 projectionMatrixRowMajor = glm::transpose(m_camera->GetProjectionMatrix());
+
+    evalParams.pInWorldToViewMatrix = (float*)&viewMatrixRowMajor[0][0];
+    evalParams.pInViewToClipMatrix = (float*)&projectionMatrixRowMajor[0][0];
 
 	SceneChangeNotifer = 0;
 

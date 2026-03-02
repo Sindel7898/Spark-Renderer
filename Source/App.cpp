@@ -2143,7 +2143,6 @@ void App::Run()
 			model->UpdateHistory();
 		}
 
-		// 2. INPUT & LOGIC
 		glfwPollEvents();
 		CalculateFps(fpsCounter);
 

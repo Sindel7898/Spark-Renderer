@@ -45,6 +45,7 @@ public:
 
     ~UserInterface();
 
+
 private:
     void InitImgui();
     void SetupDockingEnvironment();
@@ -84,6 +85,9 @@ private:
     glm::mat4 LastModelMatrix;
 
 	int NumberOfLights = 0;
+
+    int DLSSFRAMELIMIT = 10;
+
 };
 
 static inline void UserInterfaceDeleter(UserInterface* userInterface) {

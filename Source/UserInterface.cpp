@@ -9,6 +9,8 @@
 #include "FXAA_FullScreenQuad.h"
 #include "CombinedResult_FullScreenQuad.h"
 
+
+
 UserInterface::UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef, BufferManager* Buffermanager)
 {
 	vulkancontext = vulkancontextRef;
@@ -370,6 +372,14 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
     }
 
 
+
+    (DLSSFRAMELIMIT + 1) % 25;
+
+    if (DLSSFRAMELIMIT == 25)
+    {
+        appref->DLSS_Intergration.SceneChangeNotifer = 1;
+    }
+
     {
         ImGui::Begin("Settings");
 
@@ -428,22 +438,22 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
                     ImGui::EndCombo();
                 }
 
-                if (ImGui::BeginCombo("SkyBox", currentSkyBox.c_str())) {
-
-                    for (int i = 0; i < SkyBoxs.size(); i++) {
-
-                        bool is_selected = (currentSkyBox == SkyBoxs[i]);
-
-                        if (ImGui::Selectable(SkyBoxs[i].c_str(), is_selected)) {
-
-                            currentSkyBox = SkyBoxs[i];
-                            skyBox->SkyBoxIndex = i;
-                            vulkanContext->ResetFrameCount();
-
-                        }
-                    }
-                    ImGui::EndCombo();
-                }
+               // if (ImGui::BeginCombo("SkyBox", currentSkyBox.c_str())) {
+               //
+               //     for (int i = 0; i < SkyBoxs.size(); i++) {
+               //
+               //         bool is_selected = (currentSkyBox == SkyBoxs[i]);
+               //
+               //         if (ImGui::Selectable(SkyBoxs[i].c_str(), is_selected)) {
+               //
+               //             currentSkyBox = SkyBoxs[i];
+               //             skyBox->SkyBoxIndex = i;
+               //             vulkanContext->ResetFrameCount();
+               //
+               //         }
+               //     }
+               //     ImGui::EndCombo();
+               // }
 
                 ImGui::EndTabItem();
             }

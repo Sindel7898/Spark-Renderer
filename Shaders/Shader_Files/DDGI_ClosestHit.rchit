@@ -131,9 +131,9 @@ void main()
                 traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT, 0xFF, 0, 0, 1, shadowOrigin, 0.0, LightDir, lightDist, 1);
                 
                 if(int(pc.UseInfiniteBounce_infinite_bounces_multiplier_DDGIMODE_LightCount.z) == 0){
-                  L_Direct += (Albedo / PI)  * NdotL * shadow_Payload.Shadow * radiance *  light.CameraPositionAndLightIntensity.a;
+                  L_Direct  += (Albedo / PI)  * NdotL * shadow_Payload.Shadow * radiance *  light.CameraPositionAndLightIntensity.a;
                 }else{
-                  L_Direct += radiance * light.CameraPositionAndLightIntensity.a * NdotL *  shadow_Payload.Shadow ;
+                   L_Direct += NdotL * shadow_Payload.Shadow * radiance *  light.CameraPositionAndLightIntensity.a;
                 }                
             }
         }

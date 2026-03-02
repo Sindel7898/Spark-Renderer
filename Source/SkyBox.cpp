@@ -9,7 +9,7 @@ SkyBox::SkyBox(VulkanContext* vulkancontext, vk::CommandPool commandpool, Camera
 	commandPool = commandpool;
 	camera = cameraref;
 	bufferManager = buffermanger;
-	SkyBoxIndex = 0;
+	SkyBoxIndex = 4;
 	LastSkyBoxIndex = 0;
 	bSkyBoxUpdate = false;
 

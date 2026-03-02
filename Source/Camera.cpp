@@ -29,9 +29,10 @@ void Camera::Initialize(float Fov, float NearClip, float FarClip) {
 
     UpdateCameraVectors();
     UpdateViewMatrix();       
-    frameIndex = (frameIndex + 1) % 8;
-    updateJitterMat(frameIndex, 8, swapchainWidth, swapchainHeight);
-    UpdateJitter(GetjitterInNDCSpace().x, GetjitterInNDCSpace().y);
+
+    updateJitterMat(frameIndex, 64, swapchainWidth, swapchainHeight);
+    UpdateJitter(jitterVal_.x, jitterVal_.y);
+   
     UpdateProjectionMatrix(); 
 
     Prev_viewMatrix = viewMatrix;
@@ -39,6 +40,12 @@ void Camera::Initialize(float Fov, float NearClip, float FarClip) {
 }
 
 void Camera::Update(float deltaTime) {
+
+    Prev_viewMatrix = viewMatrix;
+    Prev_projectionMatrix = projectionMatrix;
+
+    frameIndex = (frameIndex + 1) % 64;
+    updateJitterMat(frameIndex, 64, swapchainWidth, swapchainHeight);
 
 
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS && !mouseCaptured) {
@@ -105,7 +112,8 @@ void Camera::Update(float deltaTime) {
         UpdateViewMatrix();
     }
 
-	updateJitterMat(frameIndex, 8, swapchainWidth, swapchainHeight);
+    UpdateProjectionMatrix();
+    UpdateJitter(jitterVal_.x, jitterVal_.y);
 }
 
 void Camera::UpdateCameraVectors() {
@@ -125,7 +133,7 @@ void Camera::UpdateJitter(float jitterX, float jitterY) {
     jitteredProjectionMatrix = projectionMatrix;
 
     jitteredProjectionMatrix[2][0] += (2.0f * jitterX) / (float)swapchainWidth;
-    jitteredProjectionMatrix[2][1] += (2.0f * jitterY) / (float)swapchainHeight;
+    jitteredProjectionMatrix[2][1] -= (2.0f * jitterY) / (float)swapchainHeight;
 }
 
 

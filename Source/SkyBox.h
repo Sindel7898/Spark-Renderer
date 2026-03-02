@@ -27,7 +27,7 @@ public:
 
 
     std::vector<ImageData> SkyBoxImages;
-    int SkyBoxIndex;
+    int SkyBoxIndex = 4;
     int LastSkyBoxIndex;
     bool bSkyBoxUpdate;
     TransformMatrices  transformMatrices;
