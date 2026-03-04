@@ -8,7 +8,26 @@
 !External/DLSS/
 !External/DLSS/lib/
 !External/DLSS/lib/Windows_x86_64/
-!External/DLSS/lib/Windows_x86_64/**
+
+# Allow ONLY these specific subfolders
+!External/DLSS/lib/Windows_x86_64/khr/
+!External/DLSS/lib/Windows_x86_64/rel/
+!External/DLSS/lib/Windows_x86_64/uwp/
+!External/DLSS/lib/Windows_x86_64/vs2010/
+!External/DLSS/lib/Windows_x86_64/vs2012/
+!External/DLSS/lib/Windows_x86_64/vs2013/
+!External/DLSS/lib/Windows_x86_64/x64/
+!External/DLSS/lib/Windows_x86_64/dev/
+
+# And allow their contents
+!External/DLSS/lib/Windows_x86_64/khr/**
+!External/DLSS/lib/Windows_x86_64/rel/**
+!External/DLSS/lib/Windows_x86_64/uwp/**
+!External/DLSS/lib/Windows_x86_64/vs2010/**
+!External/DLSS/lib/Windows_x86_64/vs2012/**
+!External/DLSS/lib/Windows_x86_64/vs2013/**
+!External/DLSS/lib/Windows_x86_64/x64/**
+!External/DLSS/lib/Windows_x86_64/dev/**
 
 
 # User-specific files
