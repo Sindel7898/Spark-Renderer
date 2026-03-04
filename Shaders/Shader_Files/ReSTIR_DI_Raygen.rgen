@@ -267,9 +267,9 @@ void main() {
  surfaceData.worldPos = texelFetch(WorldPositionImage, TextCoord, 0).xyz;
 
  if (surfaceData.worldPos == vec3(0.0)) {
-     imageStore(ResevoirImage, TextCoord, vec4(0.0));
-     imageStore(ReSTIR_DIImage, TextCoord, vec4(0.0));
-     imageStore(GI_SamplePosImage, TextCoord, vec4(0.0));
+     imageStore(ResevoirImage,      TextCoord, vec4(0.0));
+     imageStore(ReSTIR_DIImage,     TextCoord, vec4(0.0));
+     imageStore(GI_SamplePosImage,  TextCoord, vec4(0.0));
      imageStore(GI_SampleFluxImage, TextCoord, vec4(0.0));
      return; 
  }
@@ -286,9 +286,6 @@ void main() {
  vec3 F         = fresnelSchlick(max(dot(surfaceData.normal, ViewDir), 0.0), F0);
  vec3 diffuse   = (vec3(1.0) - F) * (1.0 - surfaceData.metallic) * (surfaceData.albedo / 3.14159265359);
  vec3 rayOrigin = offsetPositionAlongNormal(surfaceData.worldPos, surfaceData.normal);
-
- vec2 uv = (vec2(TextCoord) + 0.5) / vec2(128,128);
- int DiffuseRandIndex = int(pc.ScreenSize_Padding_FrameIndex_LightCount.z - 3) % 63;
 
  vec3 DiffuseDirection = GetHemisphereSample(vec2(r1,r2), surfaceData.normal);
 
@@ -476,7 +473,7 @@ if (DDGISamplingVertex > 0 && bDDGI) {
             neighbourReservoir.Num_OF_Lights_In_Resevoir = NeighbourResData.w;
 
             if(neighbourReservoir.Light_Index == GIIndex) {
-                neighbourReservoir.Sample_Pos = imageLoad(PrevGI_SamplePosImage, prevNeighborCoord).xyz;
+                neighbourReservoir.Sample_Pos  = imageLoad(PrevGI_SamplePosImage, prevNeighborCoord).xyz;
                 neighbourReservoir.Sample_Flux = imageLoad(PrevGI_SampleFluxImage, prevNeighborCoord).xyz;
             } else {
                  neighbourReservoir.Sample_Pos = vec3(0.0);
