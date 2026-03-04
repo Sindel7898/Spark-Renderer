@@ -3,6 +3,14 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+# Allow DLSS Windows_x86_64 libs specifically
+!External/
+!External/DLSS/
+!External/DLSS/lib/
+!External/DLSS/lib/Windows_x86_64/
+!External/DLSS/lib/Windows_x86_64/**
+
+
 # User-specific files
 *.rsuser
 *.suo
