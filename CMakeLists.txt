@@ -10,32 +10,96 @@ if(MSVC)
     add_compile_options(/MP)
 endif()
 
-# --- 1. Define DLSS Path ---
+# ------------------------------------------------------------
+# External Library Paths
+# ------------------------------------------------------------
+
 set(DLSS_DIR ${CMAKE_SOURCE_DIR}/External/DLSS)
 
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/External/imgui)
+set(IMGUI_BACKENDS_DIR ${IMGUI_DIR}/backends)
+
 set(ImGuizmo_DIR ${CMAKE_SOURCE_DIR}/External/ImGuizmo)
+set(IMPLOT_DIR ${CMAKE_SOURCE_DIR}/External/implot)
+set(RAPIDYAML_DIR ${CMAKE_SOURCE_DIR}/External/rapidyaml)
+
+set(NVPERF_DIR ${CMAKE_SOURCE_DIR}/External/NVIDIA_Nsight_Perf)
+set(NVPERF_NVPERF_DIR ${NVPERF_DIR}/NvPerf)
+set(NVPERF_REDIST_DIR ${NVPERF_DIR}/redist)
+
+# ------------------------------------------------------------
+# NvPerf
+# ------------------------------------------------------------
+
+set(NVPERF_INCLUDE_DIRS
+    ${NVPERF_NVPERF_DIR}/include
+    ${NVPERF_REDIST_DIR}/NvPerfUtility/include
+    ${NVPERF_REDIST_DIR}/include/windows-desktop-x64
+)
+
+set(NVPERF_LIB
+    ${NVPERF_NVPERF_DIR}/bin/x64/nvperf_grfx_host.lib
+)
+
+# ------------------------------------------------------------
+# DLSS
+# ------------------------------------------------------------
+
+set(DLSS_LIB_DIR
+    ${DLSS_DIR}/lib/Windows_x86_64/x64
+)
+
+# ------------------------------------------------------------
+# ImGui
+# ------------------------------------------------------------
 
 set(IMGUI_SRC
     ${IMGUI_DIR}/imgui.cpp
     ${IMGUI_DIR}/imgui_draw.cpp
     ${IMGUI_DIR}/imgui_tables.cpp
     ${IMGUI_DIR}/imgui_widgets.cpp
+    ${IMGUI_DIR}/imgui_demo.cpp
 )
+
+set(IMGUI_BACKEND_SRC
+    ${IMGUI_BACKENDS_DIR}/imgui_impl_glfw.cpp
+    ${IMGUI_BACKENDS_DIR}/imgui_impl_vulkan.cpp
+)
+
+# ------------------------------------------------------------
+# ImGuizmo
+# ------------------------------------------------------------
+
 set(ImGuizmo_SRC
     ${ImGuizmo_DIR}/GraphEditor.cpp
     ${ImGuizmo_DIR}/ImCurveEdit.cpp
     ${ImGuizmo_DIR}/ImGradient.cpp
     ${ImGuizmo_DIR}/ImGuizmo.cpp
-    ${ImGuizmo_DIR}/ImSequencer.cpp  
+    ${ImGuizmo_DIR}/ImSequencer.cpp
 )
-set(IMGUI_BACKEND_SRC
-    ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
-    ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
-)
-set(TRACY_SOURCES ${CMAKE_SOURCE_DIR}/External/tracy/public/TracyClient.cpp)
 
-# Subdirectories
+# ------------------------------------------------------------
+# ImPlot
+# ------------------------------------------------------------
+
+set(IMPLOT_SRC
+    ${IMPLOT_DIR}/implot.cpp
+    ${IMPLOT_DIR}/implot_items.cpp
+    ${IMPLOT_DIR}/implot_demo.cpp
+)
+
+# ------------------------------------------------------------
+# Tracy
+# ------------------------------------------------------------
+
+set(TRACY_SOURCES
+    ${CMAKE_SOURCE_DIR}/External/tracy/public/TracyClient.cpp
+)
+
+# ------------------------------------------------------------
+# External Dependencies
+# ------------------------------------------------------------
+
 add_subdirectory(External/glfw)
 add_subdirectory(External/glm)
 add_subdirectory(External/vk-bootstrap)
@@ -46,8 +110,23 @@ add_subdirectory(External/meshoptimizer)
 
 find_package(Vulkan REQUIRED)
 
-file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "Source/*.cpp" "Source/*.c")
-file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS "Source/*.hpp" "Source/*.h")
+# ------------------------------------------------------------
+# Engine Source Files
+# ------------------------------------------------------------
+
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
+    "Source/*.cpp"
+    "Source/*.c"
+)
+
+file(GLOB_RECURSE HEADERS CONFIGURE_DEPENDS
+    "Source/*.hpp"
+    "Source/*.h"
+)
+
+# ------------------------------------------------------------
+# Executable
+# ------------------------------------------------------------
 
 add_executable(Spark
     ${SOURCES}
@@ -56,52 +135,81 @@ add_executable(Spark
     ${IMGUI_SRC}
     ${IMGUI_BACKEND_SRC}
     ${ImGuizmo_SRC}
+    ${IMPLOT_SRC}
 )
 
-source_group("Source Files" FILES ${SOURCES})
-source_group("Header Files" FILES ${HEADERS})
+# ------------------------------------------------------------
+# Includes
+# ------------------------------------------------------------
 
-target_include_directories(Spark PRIVATE 
+target_include_directories(Spark PRIVATE
+
     ${CMAKE_SOURCE_DIR}/src
-    External/src/VulkanMemoryAllocator
-    External/src/imgui
+
     ${IMGUI_DIR}
-    ${IMGUI_DIR}/backends
-    External/ImGuizmo
+    ${IMGUI_BACKENDS_DIR}
+
     ${ImGuizmo_DIR}
-    ${Vulkan_INCLUDE_DIRS}
+    ${IMPLOT_DIR}
+    ${RAPIDYAML_DIR}
+
     ${CMAKE_SOURCE_DIR}/External/glfw/include
     ${CMAKE_SOURCE_DIR}/External/tracy/public/tracy
+    ${CMAKE_SOURCE_DIR}/External/VulkanMemoryAllocator/include
+
     ${DLSS_DIR}/include
+    ${NVPERF_INCLUDE_DIRS}
+
+    ${Vulkan_INCLUDE_DIRS}
 )
 
-target_compile_definitions(Spark PRIVATE 
+# ------------------------------------------------------------
+# Compile Definitions
+# ------------------------------------------------------------
+
+target_compile_definitions(Spark PRIVATE
     TRACY_ENABLE
     NOMINMAX
 )
 
+# ------------------------------------------------------------
+# Link Libraries
+# ------------------------------------------------------------
 
-set(DLSS_LIB_DIR ${DLSS_DIR}/lib/Windows_x86_64/x64)
+target_link_libraries(Spark PRIVATE
 
-target_link_libraries(Spark PRIVATE 
-    glfw 
-    glm 
-    vk-bootstrap 
+    glfw
+    glm
+    vk-bootstrap
     VulkanMemoryAllocator
     fastgltf
     meshoptimizer
+
     Vulkan::Vulkan
+
+    ${NVPERF_LIB}
+
     debug     "${DLSS_LIB_DIR}/nvsdk_ngx_d_dbg.lib"
     optimized "${DLSS_LIB_DIR}/nvsdk_ngx_d.lib"
 )
 
+# ------------------------------------------------------------
+# Post Build Copy DLLs
+# ------------------------------------------------------------
 
 add_custom_command(TARGET Spark POST_BUILD
+
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     "${DLSS_DIR}/lib/Windows_x86_64/dev/nvngx_dlss.dll"
     $<TARGET_FILE_DIR:Spark>
+
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     "${DLSS_DIR}/lib/Windows_x86_64/dev/nvngx_dlssd.dll"
     $<TARGET_FILE_DIR:Spark>
-    COMMENT "Copying DLSS (SR & RR) DLLs to output directory"
+
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${NVPERF_NVPERF_DIR}/bin/x64/nvperf_grfx_host.dll"
+    $<TARGET_FILE_DIR:Spark>
+
+    COMMENT "Copying DLSS + NvPerf DLLs"
 )

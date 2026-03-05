@@ -16,6 +16,12 @@
 #include <vector>
 #include <string>
 
+#include <nvperf_host.h>
+#include <NvPerfHudDataModel.h>
+#include <NvPerfMetricConfigurationsHAL.h>
+#include <NvPerfPeriodicSamplerVulkan.h>
+#include <NvPerfMiniTraceVulkan.h>
+#include <NvPerfHudImPlotRenderer.h>
 
 uint32_t FindQueueFamily(const std::vector<VkQueueFamilyProperties>& families, VkQueueFlagBits requiredFlag) {
 
@@ -54,6 +60,8 @@ void VulkanContext::InitVulkan()
     VKB_Instance = inst_ret.value();
     VulkanInstance = VKB_Instance.instance;
     Debug_Messenger = VKB_Instance.debug_messenger;
+
+    nv::perf::VulkanLoadDriver((VkInstance)VulkanInstance);
 }
 
 void VulkanContext::SelectGPU_CreateDevice()
@@ -76,7 +84,6 @@ void VulkanContext::SelectGPU_CreateDevice()
     };
 
     std::vector<const char*> dInstanceExtensions;
-
 	DLSS_IntergrationRef->requiredExtensions(dInstanceExtensions, deviceExtensions);
 
     vkb::PhysicalDeviceSelector selector{ VKB_Instance };
@@ -124,6 +131,7 @@ void VulkanContext::SelectGPU_CreateDevice()
     features_1_2.descriptorBindingPartiallyBound = VK_TRUE;
     features_1_2.runtimeDescriptorArray = VK_TRUE;
     features_1_2.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+    features_1_2.hostQueryReset = VK_TRUE;
     features_1_2.pNext = &extendedDynamicState3Features;
 
     VkPhysicalDeviceVulkan13Features features_1_3{};
@@ -136,7 +144,7 @@ void VulkanContext::SelectGPU_CreateDevice()
     std::vector<VkQueueFamilyProperties> queueFamilies = physicalDevice.get_queue_families();
 
     graphicsQueueFamilyIndex = FindQueueFamily(queueFamilies, VK_QUEUE_GRAPHICS_BIT);
-    computeQueueFamilyIndex = FindQueueFamily(queueFamilies, VK_QUEUE_COMPUTE_BIT);
+    computeQueueFamilyIndex  = FindQueueFamily(queueFamilies, VK_QUEUE_COMPUTE_BIT);
 
     float queuePriority = 1.0f;
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -146,6 +154,7 @@ void VulkanContext::SelectGPU_CreateDevice()
     graphicsQueueInfo.queueFamilyIndex = graphicsQueueFamilyIndex;
     graphicsQueueInfo.queueCount = 1;
     graphicsQueueInfo.pQueuePriorities = &queuePriority;
+
     queueCreateInfos.push_back(graphicsQueueInfo);
 
     if (computeQueueFamilyIndex != graphicsQueueFamilyIndex) {
@@ -159,10 +168,14 @@ void VulkanContext::SelectGPU_CreateDevice()
     }
 
     std::vector<std::string> extensionStrings = physicalDevice.get_extensions();
+
     std::vector<const char*> extensionCStrings;
+
     for (const auto& ext : extensionStrings) {
         extensionCStrings.push_back(ext.c_str());
     }
+
+    nv::perf::VulkanAppendDeviceRequiredExtensions((VkInstance)VulkanInstance, (VkPhysicalDevice)PhysicalDevice, (void*)vkGetInstanceProcAddr, extensionCStrings);
 
     VkDeviceCreateInfo deviceCreateInfo{};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

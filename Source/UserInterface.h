@@ -11,6 +11,7 @@
 #include "ImGuizmo.h"
 #include <glm/gtc/type_ptr.hpp>
 
+
 class Window;
 class BufferManager;
 class Camera;
@@ -24,6 +25,8 @@ class UserInterface
 {
 public:
     UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef, BufferManager* Buffermanager);
+
+    void InitNVPerf();
 
     void RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex, ImageData& DrawingImage);
 
@@ -44,6 +47,8 @@ public:
     void CleanUp();
 
     ~UserInterface();
+
+    void NV_PERFUPDATES();
 
 
 private:

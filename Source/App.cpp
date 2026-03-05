@@ -2149,6 +2149,8 @@ void App::Run()
 		camera.OnFrameStart();
 		camera.Update(deltaTime); 
 
+		userinterface.NV_PERFUPDATES();
+
 		userinterface.DrawUi(this, skyBox.get(),&vulkanContext);
 
 		vulkanContext.UpdateFrameCount();

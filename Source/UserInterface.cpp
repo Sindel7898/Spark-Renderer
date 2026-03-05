@@ -11,6 +11,20 @@
 
 
 
+#include <nvperf_host_impl.h>
+#include <NvPerfHudDataModel.h>
+#include <NvPerfMetricConfigurationsHAL.h>
+#include <NvPerfPeriodicSamplerVulkan.h>
+#include <NvPerfMiniTraceVulkan.h>
+#include <NvPerfHudImPlotRenderer.h>
+
+#define RYML_SINGLE_HDR_DEFINE_NOW
+#include <ryml_all.hpp>
+
+nv::perf::sampler::PeriodicSamplerTimeHistoryVulkan m_sampler;
+nv::perf::hud::HudDataModel m_hudDataModel;
+nv::perf::hud::HudImPlotRenderer m_hudRenderer;
+
 UserInterface::UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef, BufferManager* Buffermanager)
 {
 	vulkancontext = vulkancontextRef;
@@ -18,9 +32,65 @@ UserInterface::UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef,
 	buffermanager = Buffermanager;
 	currentGizmoOperation = ImGuizmo::TRANSLATE;
 	currentGizmoMode = ImGuizmo::WORLD;
-	InitImgui();
+
+    InitImgui();
+    InitNVPerf();
 }
 
+void UserInterface::InitNVPerf() {
+    m_sampler.Initialize(vulkancontext->VulkanInstance, vulkancontext->PhysicalDevice, vulkancontext->LogicalDevice);
+
+    uint32_t samplingFrequencyInHz = 60;
+    uint32_t samplingIntervalInNs = 1000000000 / samplingFrequencyInHz;
+    uint32_t maxDecodeLatencyInNs = 1000000000;
+    uint32_t maxFrameLatency = 5;
+
+    m_sampler.BeginSession(vulkancontext->graphicsQueue, vulkancontext->graphicsQueueFamilyIndex,
+        samplingIntervalInNs, maxDecodeLatencyInNs, maxFrameLatency);
+
+    nv::perf::hud::HudPresets hudPresets;
+    auto deviceIdentifiers = m_sampler.GetGpuDeviceIdentifiers();
+    hudPresets.Initialize(deviceIdentifiers.pChipName);
+
+    const std::string hudConfigurationName = "Graphics General Triage";
+    m_hudDataModel.Load(hudPresets.GetPreset(hudConfigurationName));
+
+    double plotTimeWidthInSeconds = 4.0;
+    m_hudDataModel.Initialize(1.0 / samplingFrequencyInHz, plotTimeWidthInSeconds);
+
+    m_sampler.SetConfig(&m_hudDataModel.GetCounterConfiguration());
+    m_hudDataModel.PrepareSampleProcessing(m_sampler.GetCounterData());
+
+    if (!ImPlot::GetCurrentContext())
+        ImPlot::CreateContext();
+
+    nv::perf::hud::HudImPlotRenderer::SetStyle();
+    m_hudRenderer.Initialize(m_hudDataModel);
+}
+
+void UserInterface::NV_PERFUPDATES()
+{
+    m_sampler.DecodeCounters();
+
+    m_sampler.ConsumeSamples([&](const uint8_t* pCounterDataImage,
+        size_t counterDataImageSize,
+        uint32_t rangeIndex,
+        bool& stop)
+        {
+            stop = false;
+            return m_hudDataModel.AddSample(
+                pCounterDataImage,
+                counterDataImageSize,
+                rangeIndex);
+        });
+
+    for (auto& frameDelimiter : m_sampler.GetFrameDelimiters())
+    {
+        m_hudDataModel.AddFrameDelimiter(frameDelimiter.frameEndTime);
+    }
+
+    m_sampler.OnFrameEnd();  
+}
 
 void UserInterface::InitImgui()
 {
@@ -235,6 +305,10 @@ void UserInterface::SetupDockingEnvironment()
 
 void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex,ImageData& DrawingImage)
 {
+    ImGui::SetNextWindowSize(ImVec2(400, -1), ImGuiCond_Appearing);
+    ImGui::Begin("Graphics General Triage");
+    m_hudRenderer.Render();
+    ImGui::End();
 
 	ImageTransitionData TransitionSwapchainToWriteData;
 	TransitionSwapchainToWriteData.oldlayout = vk::ImageLayout::eUndefined;
@@ -870,6 +944,7 @@ void UserInterface::CleanUp()
 	vulkancontext->LogicalDevice.waitIdle();
 	ImGui_ImplVulkan_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
+    ImPlot::DestroyContext();
 	ImGui::DestroyContext();
 	vulkancontext->LogicalDevice.destroyDescriptorPool(ImGuiDescriptorPool);
 }
