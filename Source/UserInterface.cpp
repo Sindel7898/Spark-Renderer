@@ -512,22 +512,22 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
                     ImGui::EndCombo();
                 }
 
-               // if (ImGui::BeginCombo("SkyBox", currentSkyBox.c_str())) {
-               //
-               //     for (int i = 0; i < SkyBoxs.size(); i++) {
-               //
-               //         bool is_selected = (currentSkyBox == SkyBoxs[i]);
-               //
-               //         if (ImGui::Selectable(SkyBoxs[i].c_str(), is_selected)) {
-               //
-               //             currentSkyBox = SkyBoxs[i];
-               //             skyBox->SkyBoxIndex = i;
-               //             vulkanContext->ResetFrameCount();
-               //
-               //         }
-               //     }
-               //     ImGui::EndCombo();
-               // }
+                if (ImGui::BeginCombo("SkyBox", currentSkyBox.c_str())) {
+               
+                    for (int i = 0; i < SkyBoxs.size(); i++) {
+               
+                        bool is_selected = (currentSkyBox == SkyBoxs[i]);
+               
+                        if (ImGui::Selectable(SkyBoxs[i].c_str(), is_selected)) {
+               
+                            currentSkyBox = SkyBoxs[i];
+                            skyBox->SkyBoxIndex = i;
+                            vulkanContext->ResetFrameCount();
+               
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
 
                 ImGui::EndTabItem();
             }

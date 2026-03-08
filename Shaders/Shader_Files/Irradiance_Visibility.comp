@@ -22,11 +22,7 @@ shared vec3 RayDirections[256];
 
 void AccumulateRay(inout vec3 irradiance, inout vec4 visibility, inout float total_weight_irrad, 
                    vec4 ray_data, float w_irrad, float w_vis) 
-{
-    float ray_dist = ray_data.a;
-
-    if (ray_dist > -10.0) { 
-        
+{   
         // Irradiance Accumulation
         if (w_irrad > 0.0001) {
             vec3 ray_radiance = ray_data.rgb * 0.95; 
@@ -36,12 +32,12 @@ void AccumulateRay(inout vec3 irradiance, inout vec4 visibility, inout float tot
 
         // Visibility Accumulation
         if (w_vis > 0.0001) {
-            float d = min(abs(ray_dist), 100.0);
+            float d = min(abs(ray_data.a), 100.0);
             visibility.x += d * w_vis;
             visibility.y += (d * d) * w_vis;
             visibility.z += w_vis; 
         }
-    }
+  
 }
 
 void main() 
@@ -70,15 +66,24 @@ void main()
         
         vec3 texel_dir = oct_decode(get_normalized_probe_texel_coord(fragCoord, pc.ProbeSideLength, pc.GutterSize));
         
-        float dist_exponent = 50.0; 
+        float dist_exponent = 2.5; 
 
+        int backfaces = 0;
+        int max_backfaces = int(float(pc.NumRays) * 0.1);
+        
         for (int i = 0; i < pc.NumRays; i++) {
             vec4 ray_data = imageLoad(Radiance_Visibility, ivec2(i, ProbeIndex));
-            vec3 ray_dir = RayDirections[i];
             
+            if (ray_data.a < 0.0) {
+                backfaces++;
+                if (backfaces >= max_backfaces) return;
+                continue; 
+            }
+        
+            vec3 ray_dir = RayDirections[i];
             float w_irrad = max(dot(texel_dir, ray_dir), 0.0);
             float w_vis = pow(w_irrad, dist_exponent);
-            
+        
             AccumulateRay(irradiance, visibility, total_weight_irrad, ray_data, w_irrad, w_vis);
         }
 

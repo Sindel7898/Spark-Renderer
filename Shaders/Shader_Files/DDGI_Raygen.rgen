@@ -100,7 +100,7 @@ void main() {
           float Distance      = payload.Distance;
 
           if(payload.Hit_Padding.x == 0){
-              //Radiance = CubeMapIrradiance;
+              Radiance = CubeMapIrradiance;
               Distance = 10000;
              }
           imageStore(IrradianceAtlasImage, ivec2(gl_LaunchIDEXT.xy), vec4(Radiance,Distance));

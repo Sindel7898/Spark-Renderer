@@ -343,7 +343,7 @@ if (DDGISamplingVertex > 0 && bDDGI) {
      vec3 y_albedo = payload.Albedo.xyz;
      vec3 y_emissive = payload.Emissive.xyz;
     
-     vec3 newPos = y_pos - (DiffuseDirection * 2.52);
+     vec3 newPos = y_pos - (DiffuseDirection * 1.52);
 
      vec3 y_irradiance = GetGIRadiance(newPos, y_norm);
      vec3 y_radiance   = y_emissive + (y_irradiance * y_albedo / 3.14159265);

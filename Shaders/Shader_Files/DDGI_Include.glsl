@@ -119,10 +119,13 @@ vec3 SampleIrradiance(sampler2D IrradianceTexture,
                       vec3 Camera_Position)
 {
    vec3 SamplePosition = Position;
-
+   
     vec3 GridIndexF = (SamplePosition - GridBaseLocation) / ProbeSpacing;
-    vec3 Alpha = fract(GridIndexF);
     ivec3 GridIndex = ivec3(floor(GridIndexF));
+    vec3 BaseProbePos = GridBaseLocation + (vec3(GridIndex) * ProbeSpacing);
+    vec3 Alpha = clamp((SamplePosition - BaseProbePos) / ProbeSpacing, vec3(0.0), vec3(1.0));
+
+
 
     ivec3 Offsets[8] = ivec3[](
         ivec3(0,0,0), ivec3(1,0,0), ivec3(0,1,0), ivec3(1,1,0),
@@ -171,7 +174,7 @@ vec3 SampleIrradiance(sampler2D IrradianceTexture,
             chebyshev_weight = max(pow(chebyshev_weight, 3.0), 0.0);
         }
         
-        chebyshev_weight = max(0.0, chebyshev_weight);
+        chebyshev_weight = max(0.05, chebyshev_weight);
         weight *= chebyshev_weight;
 
         const float crushThreshold = 0.2;

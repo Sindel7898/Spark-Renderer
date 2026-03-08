@@ -26,7 +26,6 @@ public:
     const glm::mat4& GetJitteredProjectionMatrix() const { return jitteredProjectionMatrix; }
     const glm::mat4 GetjitterMat() const { return jitterMat_; }
     const glm::vec2 GetjitterInPixelSpace() const { return jitterVal_; }
-    const glm::vec2 GetjitterInNDCSpace() const {return glm::vec2(jitterMat_[2][0], jitterMat_[2][1]);}
 
 
     // Get camera properties

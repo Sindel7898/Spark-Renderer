@@ -41,7 +41,9 @@ void main()
   
    vec3 Irradiance = vec3(0);
 
-   vec3 SamplePosition = Position + (Normal * 1.2);
+   vec3 VeiwDirection = normalize(pc.CameraLocation.xyz - Position);
+
+   vec3 SamplePosition = Position + (VeiwDirection * 2.2);
 
          if(dot(Normal, Normal) > 0.001){
           Irradiance = SampleIrradiance(

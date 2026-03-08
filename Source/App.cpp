@@ -371,8 +371,8 @@ void App::SwitchScene(int index)
 			dynamicDiffuse_RTGI->NumOfProbesY = 13;
 			dynamicDiffuse_RTGI->NumOfProbesZ = 13;
 			dynamicDiffuse_RTGI->RaysPerProbe = 188;
-			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-55.011, 1.000, -23.000);
-			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(11.000, 4.000, 3.900);
+			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-55.011, 1.300, -23.000);
+			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(8.500, 3.000, 900);
 
 		}
 
