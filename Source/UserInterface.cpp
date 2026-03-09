@@ -942,6 +942,8 @@ vk::Extent3D UserInterface::GetRenderTextureExtent()
 void UserInterface::CleanUp()
 {
 	vulkancontext->LogicalDevice.waitIdle();
+    m_sampler.EndSession();
+    m_sampler.Reset();
 	ImGui_ImplVulkan_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
     ImPlot::DestroyContext();
