@@ -44,13 +44,23 @@ VulkanContext::VulkanContext(Window& Window, NvdiaDLSS_Intergration& _NvdiaDLSS_
 
 void VulkanContext::InitVulkan()
 {
+    nv::perf::InitializeNvPerf();
+
+    std::vector<const char*> nsightInstanceExtensions;
+    nv::perf::VulkanAppendInstanceRequiredExtensions(nsightInstanceExtensions, VK_API_VERSION_1_3);
+
     std::unique_ptr<vkb::InstanceBuilder> builderPtr = std::make_unique<vkb::InstanceBuilder>();
 
-    auto inst_ret = builderPtr->set_app_name("Vulkan Application")
+    auto builder = builderPtr->set_app_name("Vulkan Application")
         .request_validation_layers(enableValidationLayers)
         .use_default_debug_messenger()
-        .require_api_version(1, 3, 0)
-        .build();
+        .require_api_version(1, 3, 0);
+
+    for (const auto& ext : nsightInstanceExtensions) {
+        builder.enable_extension(ext);
+    }
+
+    auto inst_ret = builder.build();
 
     if (!inst_ret)
     {
@@ -89,7 +99,7 @@ void VulkanContext::SelectGPU_CreateDevice()
     vkb::PhysicalDeviceSelector selector{ VKB_Instance };
 
     auto physicalDeviceResult = selector
-        .set_minimum_version(1, 4)
+        .set_minimum_version(1, 3)
         .set_required_features(deviceFeatures)
         .add_required_extensions(deviceExtensions)
         .set_surface(surface)
@@ -102,6 +112,14 @@ void VulkanContext::SelectGPU_CreateDevice()
 
     vkb::PhysicalDevice physicalDevice = physicalDeviceResult.value();
     PhysicalDevice = physicalDevice.physical_device;
+
+    nv::perf::VulkanAppendDeviceRequiredExtensions(
+        (VkInstance)VulkanInstance,
+        (VkPhysicalDevice)PhysicalDevice,
+        (void*)vkGetInstanceProcAddr,
+        deviceExtensions
+    );
+
 
     std::cout << "GPU: " << std::string_view(PhysicalDevice.getProperties().deviceName) << std::endl;
 

@@ -21,9 +21,6 @@
 #define RYML_SINGLE_HDR_DEFINE_NOW
 #include <ryml_all.hpp>
 
-nv::perf::sampler::PeriodicSamplerTimeHistoryVulkan m_sampler;
-nv::perf::hud::HudDataModel m_hudDataModel;
-nv::perf::hud::HudImPlotRenderer m_hudRenderer;
 
 UserInterface::UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef, BufferManager* Buffermanager)
 {
@@ -37,60 +34,105 @@ UserInterface::UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef,
     InitNVPerf();
 }
 
+
+
 void UserInterface::InitNVPerf() {
-    m_sampler.Initialize(vulkancontext->VulkanInstance, vulkancontext->PhysicalDevice, vulkancontext->LogicalDevice);
 
-    uint32_t samplingFrequencyInHz = 60;
-    uint32_t samplingIntervalInNs = 1000000000 / samplingFrequencyInHz;
-    uint32_t maxDecodeLatencyInNs = 1000000000;
-    uint32_t maxFrameLatency = 5;
+    auto onStopSampling = [this](const char* outputDirectory) {
+        m_outputDirectory = outputDirectory;
+        };
 
-    m_sampler.BeginSession(vulkancontext->graphicsQueue, vulkancontext->graphicsQueueFamilyIndex,
-        samplingIntervalInNs, maxDecodeLatencyInNs, maxFrameLatency);
+    const size_t numRangesPerFrame = 15;
+    const size_t samplingIntervalInNanoSeconds = 1024 * 16;
+    const size_t maxIntervalPerFrameInNanoSeconds = 100 * 1000 * 1000; // 100ms
+    const size_t numFramesToSample = 20;
+
+    nv::perf::DeviceIdentifiers deviceIdentifiers = nv::perf::VulkanGetDeviceIdentifiers(vulkancontext->VulkanInstance, vulkancontext->PhysicalDevice, vulkancontext->LogicalDevice);
+    deviceIdentifiers.pChipName;
 
     nv::perf::hud::HudPresets hudPresets;
-    auto deviceIdentifiers = m_sampler.GetGpuDeviceIdentifiers();
     hudPresets.Initialize(deviceIdentifiers.pChipName);
+    const std::string hudConfigurationName = "Graphics High Speed Triage";
+    nv::perf::hud::HudDataModel hudDataModel;
+    hudDataModel.Load(hudPresets.GetPreset(hudConfigurationName));
 
-    const std::string hudConfigurationName = "Graphics General Triage";
-    m_hudDataModel.Load(hudPresets.GetPreset(hudConfigurationName));
+    // Load metric configuration
+    std::string metricConfigName;
+    nv::perf::MetricConfigurations::GetMetricConfigNameBasedOnHudConfigurationName(metricConfigName, deviceIdentifiers.pChipName, hudConfigurationName);
+    nv::perf::MetricConfigObject metricConfigObject;
+    nv::perf::MetricConfigurations::LoadMetricConfigObject(metricConfigObject, deviceIdentifiers.pChipName, metricConfigName);
 
-    double plotTimeWidthInSeconds = 4.0;
-    m_hudDataModel.Initialize(1.0 / samplingFrequencyInHz, plotTimeWidthInSeconds);
+    hudDataModel.Initialize(metricConfigObject);
 
-    m_sampler.SetConfig(&m_hudDataModel.GetCounterConfiguration());
-    m_hudDataModel.PrepareSampleProcessing(m_sampler.GetCounterData());
+    m_periodicSamplerOneShot.Initialize(vulkancontext->VulkanInstance, vulkancontext->PhysicalDevice, vulkancontext->LogicalDevice, samplingIntervalInNanoSeconds, maxIntervalPerFrameInNanoSeconds, numFramesToSample, onStopSampling, hudDataModel.GetCounterConfiguration());
+    m_periodicSamplerOneShot.m_outputOption.directoryName = "TEST";
 
-    if (!ImPlot::GetCurrentContext())
-        ImPlot::CreateContext();
+    m_frameLevelTraceIndice.resize(numFramesToSample, 0);
+    m_apiTracers.resize(numFramesToSample);
 
-    nv::perf::hud::HudImPlotRenderer::SetStyle();
-    m_hudRenderer.Initialize(m_hudDataModel);
-}
-
-void UserInterface::NV_PERFUPDATES()
-{
-    m_sampler.DecodeCounters();
-
-    m_sampler.ConsumeSamples([&](const uint8_t* pCounterDataImage,
-        size_t counterDataImageSize,
-        uint32_t rangeIndex,
-        bool& stop)
-        {
-            stop = false;
-            return m_hudDataModel.AddSample(
-                pCounterDataImage,
-                counterDataImageSize,
-                rangeIndex);
-        });
-
-    for (auto& frameDelimiter : m_sampler.GetFrameDelimiters())
+    for (auto& apiTracer : m_apiTracers)
     {
-        m_hudDataModel.AddFrameDelimiter(frameDelimiter.frameEndTime);
+        apiTracer.Initialize(vulkancontext->VulkanInstance, vulkancontext->PhysicalDevice, vulkancontext->LogicalDevice, numRangesPerFrame);
     }
-
-    m_sampler.OnFrameEnd();  
 }
+
+#include <map>
+
+void UserInterface::SaveNVPerf() {
+    m_periodicSamplerOneShot.OnFrameEnd();
+
+    {
+        std::vector<APITraceData> apiTraceData;
+        for (auto& apiTracer : m_apiTracers) {
+            apiTracer.ResolveQueries(apiTraceData);
+        }
+
+        struct PassStats {
+            double totalTimeMs = 0.0;
+            int count = 0;
+            int nestingLevel = 0;
+        };
+
+        std::map<std::string, PassStats> aggregatedStats;
+
+        for (const auto& trace : apiTraceData) {
+
+            double startMs = static_cast<double>(trace.startTimestamp) /  1000000.0;
+            double endMs   = static_cast<double>(trace.endTimestamp  )  / 1000000.0;
+
+            aggregatedStats[trace.name].totalTimeMs += (endMs - startMs);
+            aggregatedStats[trace.name].count++;
+            aggregatedStats[trace.name].nestingLevel = trace.nestingLevel;
+        }
+
+        std::stringstream yamlStream;
+
+        for (const auto& pair : aggregatedStats) {
+
+            double avgTimeMs = pair.second.totalTimeMs / pair.second.count;
+
+            yamlStream << "  - name: "         << pair.first               << "\n"
+                       << "    avgFrameTime: " << avgTimeMs                << "\n"
+                       << "    samples: "      << pair.second.count        << "\n"
+                       << "    nestingLevel: " << pair.second.nestingLevel << "\n";
+        }
+
+        if (Save_To_File) {
+            const std::string filename = "traces.yaml";
+            std::ofstream file(filename);
+            if (file.is_open()) {
+                file << yamlStream.str();
+            }
+            else {
+                NV_PERF_LOG_ERR(10, "Failed to open file: %s\n", filename.c_str());
+            }
+            Save_To_File = false;
+        }
+    }
+}
+
+
+
 
 void UserInterface::InitImgui()
 {
@@ -305,10 +347,6 @@ void UserInterface::SetupDockingEnvironment()
 
 void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex,ImageData& DrawingImage)
 {
-    ImGui::SetNextWindowSize(ImVec2(400, -1), ImGuiCond_Appearing);
-    ImGui::Begin("Graphics General Triage");
-    m_hudRenderer.Render();
-    ImGui::End();
 
 	ImageTransitionData TransitionSwapchainToWriteData;
 	TransitionSwapchainToWriteData.oldlayout = vk::ImageLayout::eUndefined;
@@ -378,6 +416,12 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
     if (ImGui::IsKeyPressed(ImGuiKey_1)) { currentGizmoOperation = ImGuizmo::TRANSLATE; }
     if (ImGui::IsKeyPressed(ImGuiKey_2)) { currentGizmoOperation = ImGuizmo::ROTATE; }
     if (ImGui::IsKeyPressed(ImGuiKey_3)) { currentGizmoOperation = ImGuizmo::SCALE; }
+    if (ImGui::IsKeyPressed(ImGuiKey_P)) { 
+        m_periodicSamplerOneShot.StartCollectionOnFrameEnd();
+        Save_To_File = true;
+    }
+
+
 
     bool isItemSelected = (UserInterfaceItemsIndex >= 0 && UserInterfaceItemsIndex < appref->UserInterfaceItems.size());
     glm::mat4 modelMatrix;
@@ -942,8 +986,7 @@ vk::Extent3D UserInterface::GetRenderTextureExtent()
 void UserInterface::CleanUp()
 {
 	vulkancontext->LogicalDevice.waitIdle();
-    m_sampler.EndSession();
-    m_sampler.Reset();
+    m_periodicSamplerOneShot.Reset();
 	ImGui_ImplVulkan_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
     ImPlot::DestroyContext();

@@ -24,8 +24,9 @@
 #include "DynamicDiffuse_RTGI.h"
 #include "ReSTIR_DI.h"
 
-//#define TRACY_ENABLE
-//#include "TracyVulkan.hpp"
+
+#define TRACY_ENABLE
+#include "TracyVulkan.hpp"
 
 class MeshLoader;
 class FramesPerSecondCounter;
@@ -34,7 +35,7 @@ class SkyBox;
 class Model;
 class NvdiaDLSS_Intergration;
 
-//class TracyVkCtx;
+
 
 struct GBuffer;
 
@@ -274,4 +275,6 @@ private:
 	///Tracy
 	//TracyVkCtx tracyVkContext;
 
+	float TESTTIMER = 0;
+	int   currentTestIndex = 0;
 };

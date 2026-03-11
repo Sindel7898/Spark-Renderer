@@ -411,12 +411,12 @@
     {
       "mimeType": "image/jpeg",
       "name": "Green",
-      "uri": "Green.jpg"
+      "uri": "White.jpg"
     },
     {
       "mimeType": "image/jpeg",
       "name": "Red",
-      "uri": "Red.jpg"
+      "uri": "White.jpg"
     }
   ],
   "accessors": [

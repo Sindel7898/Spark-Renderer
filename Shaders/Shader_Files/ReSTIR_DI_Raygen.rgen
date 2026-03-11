@@ -53,22 +53,31 @@ const int GIIndex = 900;
 
  const float MaxResevoirVolume = 30.0; 
 
-uint pcg_hash(uint seed) {
-    uint state = seed * 747796405u + 2891336453u;
-    uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
-    return (word >> 22u) ^ word;
+ ////////https://gist.github.com/JuanDiegoMontoya/f4226d0fa3c627bb78e82fda67057d6e
+uint pcg_hash(uint seed)
+{
+  uint state = seed * 747796405u + 2891336453u;
+  uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+  return (word >> 22u) ^ word;
 }
 
-float rand01(inout uint seed) {
-    seed = pcg_hash(seed);
-    return float(seed) * (1.0 / 4294967296.0); 
+// Used to advance the PCG state.
+uint rand_pcg(inout uint rng_state)
+{
+  uint state = rng_state;
+  rng_state = rng_state * 747796405u + 2891336453u;
+  uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+  return (word >> 22u) ^ word;
 }
 
-uint initRNG(vec2 pixel, vec2 screenSize, uint frameNumber) {
-    uint pixelIndex = uint(pixel.x) + uint(pixel.y) * uint(screenSize.x);
-    uint s = pcg_hash(pixelIndex);
-    return pcg_hash(s ^ pcg_hash(frameNumber)); 
+// Advances the prng state and returns the corresponding random float.
+float rand(inout uint state)
+{
+  uint x = rand_pcg(state);
+  state = x;
+  return float(x)*uintBitsToFloat(0x2f800000u);
 }
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct SurfaceData {
     vec3  worldPos;
@@ -133,7 +142,7 @@ bool UpdateReservoir(inout Reservoir reservoir, uint LightIndex, float Weight, f
     reservoir.Sum_Of_All_Weights += Weight;
     reservoir.Num_OF_Lights_In_Resevoir += c;
 
-    if (rand01(seed) < (Weight / reservoir.Sum_Of_All_Weights)) {
+    if (rand(seed) < (Weight / reservoir.Sum_Of_All_Weights)) {
         reservoir.Light_Index = LightIndex;
         return true;
     }
@@ -253,15 +262,15 @@ void main() {
 
  ivec2 TextCoord = ivec2(gl_LaunchIDEXT.xy);
   uint frameIndex = uint(pc.ScreenSize_Padding_FrameIndex_LightCount.z);
-  int noiseIndex = int(frameIndex % 63u);
+  int noiseIndex = int(frameIndex % 63);
   
   ivec2 noiseSize = textureSize(BlueNoise[noiseIndex], 0);
   vec2 noiseUV = vec2(TextCoord % noiseSize) / vec2(noiseSize);
   vec4 blueSample = texture(BlueNoise[noiseIndex], noiseUV);
   
-  uint rngState = initRNG(gl_LaunchIDEXT.xy, gl_LaunchSizeEXT.xy, frameIndex);
-  float r1 = fract(blueSample.r + float(frameIndex % 8u) * 0.6180339887);
-  float r2 = fract(blueSample.g + float(frameIndex % 8u) * 0.6180339887);
+  uint pixel_index = gl_LaunchIDEXT.x + gl_LaunchIDEXT.y * uint(pc.ScreenSize_Padding_FrameIndex_LightCount.y);
+  uint seed = pcg_hash(pixel_index ^ pcg_hash(frameIndex));
+
 
  SurfaceData surfaceData;
  surfaceData.worldPos = texelFetch(WorldPositionImage, TextCoord, 0).xyz;
@@ -287,7 +296,7 @@ void main() {
  vec3 diffuse   = (vec3(1.0) - F) * (1.0 - surfaceData.metallic) * (surfaceData.albedo / 3.14159265359);
  vec3 rayOrigin = offsetPositionAlongNormal(surfaceData.worldPos, surfaceData.normal);
 
- vec3 DiffuseDirection = GetHemisphereSample(vec2(r1,r2), surfaceData.normal);
+ vec3 DiffuseDirection = GetHemisphereSample(vec2(blueSample.x,blueSample.y), surfaceData.normal);
 
  vec2 velocityUV = texelFetch(MotionVectorImage, TextCoord, 0).rg;
  vec2 screenPosPrevious = TextCoord - (velocityUV * pc.ScreenSize_Padding_FrameIndex_LightCount.xy);
@@ -295,7 +304,7 @@ void main() {
  // make sure we do not go offscreen
  bool validHistory = all(greaterThanEqual(screenPosPrevious, vec2(0.0))) && all(lessThan(screenPosPrevious, pc.ScreenSize_Padding_FrameIndex_LightCount.xy));
 
- uint initial_sample_count = 25;
+ uint initial_sample_count = 35;
 
  Reservoir currentReservoir;
  currentReservoir.Light_Index = 0;
@@ -311,12 +320,12 @@ void main() {
 
  //Initial Candidates Lights
  for (uint i = 0; i < initial_sample_count; i++) {  
-     uint lightIndex = min(uint(rand01(rngState) * float(TotalNumOfLights)), uint(TotalNumOfLights - 1)); 
+     uint lightIndex = min(uint(rand(seed) * float(TotalNumOfLights)), uint(TotalNumOfLights - 1)); 
      vec3 RadianceCandidate = GetLightRadiance(lights[lightIndex], CameraPos, surfaceData, ViewDir, F, diffuse);  
      float p_hat = length(RadianceCandidate);
      float WeightOfLight = p_hat / pdf; 
 
-     if(UpdateReservoir(currentReservoir, lightIndex, WeightOfLight, 1.0, rngState)){
+     if(UpdateReservoir(currentReservoir, lightIndex, WeightOfLight, 1.0, seed)){
          p_hat_current = p_hat;
      }
  }
@@ -352,7 +361,7 @@ if (DDGISamplingVertex > 0 && bDDGI) {
      
      if (WeightOfLight > 0.0) {
 
-         if(UpdateReservoir(currentReservoir, GIIndex, WeightOfLight, 1.0, rngState)){
+         if(UpdateReservoir(currentReservoir, GIIndex, WeightOfLight, 1.0, seed)){
 
              p_hat_current = WeightOfLight;
              
@@ -378,7 +387,7 @@ if (DDGISamplingVertex > 0 && bDDGI) {
     temporalReservoir.Sample_Pos = currentReservoir.Sample_Pos;
     temporalReservoir.Sample_Flux = currentReservoir.Sample_Flux;
    
-    if(UpdateReservoir(temporalReservoir, currentReservoir.Light_Index, p_hat_current * currentReservoir.Light_Weight * currentReservoir.Num_OF_Lights_In_Resevoir, currentReservoir.Num_OF_Lights_In_Resevoir, rngState)){
+    if(UpdateReservoir(temporalReservoir, currentReservoir.Light_Index, p_hat_current * currentReservoir.Light_Weight * currentReservoir.Num_OF_Lights_In_Resevoir, currentReservoir.Num_OF_Lights_In_Resevoir, seed)){
         temporalReservoir.Sample_Pos = currentReservoir.Sample_Pos;
         temporalReservoir.Sample_Flux = currentReservoir.Sample_Flux;
     }
@@ -413,7 +422,7 @@ if (DDGISamplingVertex > 0 && bDDGI) {
             vec3 historyRadiance = EvaluateCandidateRadiance(historyReservoir.Light_Index, historyReservoir.Sample_Pos, historyReservoir.Sample_Flux, CameraPos, surfaceData, ViewDir, F, diffuse);
             float p_hat_history = length(historyRadiance);
         
-            if(UpdateReservoir(temporalReservoir, historyReservoir.Light_Index, p_hat_history * historyReservoir.Light_Weight * historyReservoir.Num_OF_Lights_In_Resevoir, historyReservoir.Num_OF_Lights_In_Resevoir, rngState)) {
+            if(UpdateReservoir(temporalReservoir, historyReservoir.Light_Index, p_hat_history * historyReservoir.Light_Weight * historyReservoir.Num_OF_Lights_In_Resevoir, historyReservoir.Num_OF_Lights_In_Resevoir, seed)) {
 
                  temporalReservoir.Sample_Pos = historyReservoir.Sample_Pos;
                  temporalReservoir.Sample_Flux = historyReservoir.Sample_Flux;
@@ -437,7 +446,7 @@ if (DDGISamplingVertex > 0 && bDDGI) {
     spatialReservoir.Sample_Pos = temporalReservoir.Sample_Pos;
     spatialReservoir.Sample_Flux = temporalReservoir.Sample_Flux;
    
-    if(UpdateReservoir(spatialReservoir, temporalReservoir.Light_Index, p_hat_temporal * temporalReservoir.Light_Weight * temporalReservoir.Num_OF_Lights_In_Resevoir, temporalReservoir.Num_OF_Lights_In_Resevoir, rngState)) {
+    if(UpdateReservoir(spatialReservoir, temporalReservoir.Light_Index, p_hat_temporal * temporalReservoir.Light_Weight * temporalReservoir.Num_OF_Lights_In_Resevoir, temporalReservoir.Num_OF_Lights_In_Resevoir, seed)) {
          spatialReservoir.Sample_Pos = temporalReservoir.Sample_Pos;
          spatialReservoir.Sample_Flux = temporalReservoir.Sample_Flux;
     }
@@ -446,7 +455,7 @@ if (DDGISamplingVertex > 0 && bDDGI) {
         int radius = 15; 
 
         for(int i = 0; i < 4; i++){
-            vec2 offset = 2.0 * vec2(rand01(rngState), rand01(rngState)) - 1; 
+            vec2 offset = 2.0 * vec2(rand(seed), rand(seed)) - 1; 
             ivec2 neighborCoord = clamp(ivec2(TextCoord + offset * float(radius)), ivec2(0), ivec2(pc.ScreenSize_Padding_FrameIndex_LightCount.xy - 1));
    
             vec3 neighborPos    = texelFetch(WorldPositionImage, neighborCoord, 0).xyz;
@@ -484,7 +493,7 @@ if (DDGISamplingVertex > 0 && bDDGI) {
             vec3 neighbourRadiance = EvaluateCandidateRadiance(neighbourReservoir.Light_Index, neighbourReservoir.Sample_Pos, neighbourReservoir.Sample_Flux, CameraPos, surfaceData, ViewDir, F, diffuse);
             float p_hat_neighbour = length(neighbourRadiance);
    
-            if(UpdateReservoir(spatialReservoir, neighbourReservoir.Light_Index, p_hat_neighbour * neighbourReservoir.Light_Weight * neighbourReservoir.Num_OF_Lights_In_Resevoir, neighbourReservoir.Num_OF_Lights_In_Resevoir, rngState)) {
+            if(UpdateReservoir(spatialReservoir, neighbourReservoir.Light_Index, p_hat_neighbour * neighbourReservoir.Light_Weight * neighbourReservoir.Num_OF_Lights_In_Resevoir, neighbourReservoir.Num_OF_Lights_In_Resevoir, seed)) {
                 spatialReservoir.Sample_Pos = neighbourReservoir.Sample_Pos;
                 spatialReservoir.Sample_Flux = neighbourReservoir.Sample_Flux;
             }
@@ -508,10 +517,10 @@ if (DDGISamplingVertex > 0 && bDDGI) {
    
             if (light.positionAndLightType.w > 0.5) { 
                 tMax = length(light.positionAndLightType.xyz - surfaceData.worldPos);
-                shadowDir = SoftShadow(light.positionAndLightType.xyz, surfaceData.worldPos, 0.25, r1, r2);
+                shadowDir = SoftShadow(light.positionAndLightType.xyz, surfaceData.worldPos, 0.25, rand(seed), rand(seed));
             } else { 
                 tMax = 10000.0;
-                shadowDir = DirectionalSoftShadow(normalize(-light.positionAndLightType.xyz), 0.009, r1, r2);
+                shadowDir = DirectionalSoftShadow(normalize(-light.positionAndLightType.xyz), 0.009, rand(seed), rand(seed));
             }
    
             isVisible = TraceShadow(rayOrigin, shadowDir, tMax);

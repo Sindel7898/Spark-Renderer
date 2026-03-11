@@ -10,6 +10,7 @@
 #include "vulkanContext.h"
 #include "ImGuizmo.h"
 #include <glm/gtc/type_ptr.hpp>
+#include "NvPerfPeriodicSamplerVulkan.h"
 
 
 class Window;
@@ -21,13 +22,17 @@ class SSA0_FullScreenQuad;
 class App;
 class SkyBox;
 
+using namespace nv::perf;
+using namespace nv::perf::sampler;
+using namespace nv::perf::mini_trace;
+
 class UserInterface
 {
 public:
     UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef, BufferManager* Buffermanager);
 
     void InitNVPerf();
-
+    void SaveNVPerf();
     void RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex, ImageData& DrawingImage);
 
     void DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanContext);
@@ -48,8 +53,8 @@ public:
 
     ~UserInterface();
 
-    void NV_PERFUPDATES();
-
+    std::vector<APITracerVulkan> m_apiTracers;
+    bool Save_To_File = false;
 
 private:
     void InitImgui();
@@ -82,7 +87,7 @@ private:
     std::vector<std::string> DDGI_Vertex_Options{ "First Vertex", "Second Vertex" };
     std::string currentDDGIVertex = "First Vertex";
 
-    std::vector<std::string> GlobalIllumination_Solution{ "DDGI", "SSGI","DDGI + SSGI","PT"};
+    std::vector<std::string> GlobalIllumination_Solution{ "DDGI", "SSGI","DDGI + SSGI","PT","None"};
     std::string currentGI_Solution = "DDGI";
 
     ImVec2 viewportSize;
@@ -93,6 +98,11 @@ private:
 
     int DLSSFRAMELIMIT = 10;
 
+
+
+    PeriodicSamplerOneShotVulkan m_periodicSamplerOneShot;
+    std::vector<size_t> m_frameLevelTraceIndice;
+    std::string m_outputDirectory;
 };
 
 static inline void UserInterfaceDeleter(UserInterface* userInterface) {

@@ -71,11 +71,14 @@ App::App() : window(1920, 1080, "Spark Renderer")
 	recreateSwapChain();
 	CreateDebugUtils();
 
-	vk::CommandBuffer cmd =  bufferManger.CreateSingleUseCommandBuffer(commandPool);
-
+	//vk::CommandBuffer cmd =  bufferManger.CreateSingleUseCommandBuffer(commandPool);
+	//
 	//tracyVkContext = TracyVkContext(vulkanContext.PhysicalDevice, vulkanContext.LogicalDevice, vulkanContext.graphicsQueue, cmd);
+	//
+	//bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd, vulkanContext.graphicsQueue);
 
-	bufferManger.SubmitAndDestoyCommandBuffer(commandPool, cmd, vulkanContext.graphicsQueue);
+
+
 }
 
 void App::LoadAllObjects()
@@ -259,8 +262,6 @@ void App::SpawnLights(int NumOfLights)
 	userinterface.SetLightCount(static_cast<int>(lights.size()));
 	vulkanContext.ResetFrameCount();
 }
-
-
 
 void App::SwitchScene(int index)
 {
@@ -469,16 +470,6 @@ void App::CreateDebugUtils()
 	DDGI_Sample_From_PorbeLabel.pLabelName       = "DDGI_Sample_From_PorbeLabel";
 	DDGI_Update_Probe_Status_Label.pLabelName    = "DDGI_Update_Probe_Status_Label";
 	ReSTIR_Label.pLabelName    = "ReSTIR_Label";
-
-	VkCommandBufferAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = commandPool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = 1;
-	VkCommandBuffer initCmd;
-	//vkAllocateCommandBuffers(device, &allocInfo, &initCmd);
-
-	//tracyVkContext = TracyVkContext(physicalDevice, device, graphicsQueue, initCmd);
 
 }
 
@@ -2149,16 +2140,16 @@ void App::Run()
 		camera.OnFrameStart();
 		camera.Update(deltaTime); 
 
-		userinterface.NV_PERFUPDATES();
-
 		userinterface.DrawUi(this, skyBox.get(),&vulkanContext);
 
 		vulkanContext.UpdateFrameCount();
 		Draw();
-	}
 
+		userinterface.SaveNVPerf();
+	}
 	vulkanContext.LogicalDevice.waitIdle();
 }
+
 
 void App::CalculateFps(FramesPerSecondCounter& fpsCounter)
 {
@@ -2290,9 +2281,19 @@ void App::updateUniformBuffer(uint32_t currentImage) {
 
 void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageIndex) {
 
+	commandBuffer.reset();
+
 	vk::CommandBufferBeginInfo begininfo{};
 	begininfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 	commandBuffer.begin(begininfo);
+
+	auto& apiTracer = userinterface.m_apiTracers[currentFrame];
+
+	apiTracer.ClearData();
+	apiTracer.ResetQueries(commandBuffer);
+
+	
+	size_t passIndex = 0;
 
 	{
 		ImageTransitionData ResetDepth{};
@@ -2470,6 +2471,7 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 		commandBuffer.endRendering();
 
 	}
+		
 
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
@@ -2609,6 +2611,8 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 {
+		apiTracer.BeginRange(commandBuffer, "DDGI", 1, passIndex);
+
 		//TracyVkZone(tracyVkContext, commandBuffer, "DDGI Update Loop");
 	{
      
@@ -2860,10 +2864,15 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 		}
 		vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 	}
+
+	apiTracer.EndRange(commandBuffer, passIndex);
+
 }
 	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, ReSTIR_Label);
 	{
 		if (DefferedDecider == 2) { /// if we are not looking at ReSTIR stop tracing
+
+			apiTracer.BeginRange(commandBuffer, "ReSTIR DI", 3, passIndex);
 
 			//TracyVkZone(tracyVkContext, commandBuffer, "ReSTIR DI");
 
@@ -2951,6 +2960,8 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			{
 				ReSTIR_Image = &Restir_DI->ReSTIRDI_Results;
 			}
+
+			apiTracer.EndRange(commandBuffer, passIndex);
 
 			////////////////////////////////////////////////////////////////////
 			vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
@@ -3082,6 +3093,8 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 	{
 		if (DefferedDecider == 3 || DefferedDecider == 0) {
 
+			apiTracer.BeginRange(commandBuffer, "Brute force Direct Lighting ", 1, passIndex);
+
 			//TracyVkZone(tracyVkContext, commandBuffer, "RTX Lighting");
 
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, DeferedLightingPassPipeline);
@@ -3093,6 +3106,9 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 				commandBuffer,
 				DeferedLightingPassPipelineLayout,
 				currentFrame);
+
+			apiTracer.EndRange(commandBuffer, passIndex);
+
 		}
 	}
 	/////////////////// LIGHTING PASS END ///////////////////////// 

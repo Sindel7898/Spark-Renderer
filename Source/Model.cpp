@@ -578,8 +578,8 @@ void Model::UpdateUniformBuffer(uint32_t currentImage)
 	VertexData VertexData;
 	VertexData.ViewMatrix            = camera->GetViewMatrix();
 	VertexData.Prev_ViewMatrix       = camera->GetPrevViewMatrix();
-	VertexData.ProjectionMatrix      = camera->GetJitteredProjectionMatrix();
-	VertexData.Prev_ProjectionMatrix = camera->GetJitteredProjectionMatrix();
+	VertexData.ProjectionMatrix      = camera->GetProjectionMatrix();
+	VertexData.Prev_ProjectionMatrix = camera->GetPrevProjectionMatrix();
 
 	VertexData.Prev_ProjectionMatrix[1][1] *= -1;
 	VertexData.ProjectionMatrix[1][1] *= -1;
