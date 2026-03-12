@@ -470,6 +470,8 @@ void App::CreateDebugUtils()
 	DDGI_Sample_From_PorbeLabel.pLabelName       = "DDGI_Sample_From_PorbeLabel";
 	DDGI_Update_Probe_Status_Label.pLabelName    = "DDGI_Update_Probe_Status_Label";
 	ReSTIR_Label.pLabelName    = "ReSTIR_Label";
+	RayReconstruction.pLabelName = "Ray_Reconstruction";
+
 
 }
 
@@ -3062,6 +3064,8 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 
 			if (bUseDLSS)
 			{
+				vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, RayReconstruction);
+
 				vk::ImageMemoryBarrier barrier{};
 				barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
 				barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
@@ -3074,6 +3078,7 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 				vulkanContext.DLSS_IntergrationRef->render(commandBuffer   , Restir_DI->ReSTIRDI_Results, gbuffer,
 					                                       DepthTextureData, Restir_DI->ReSTIRDI_Denoised_Results,
 					                                       (VkFormat)vulkanContext.FindCompatableDepthFormat(), deltaTime);
+				vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 				ReSTIR_Image = &Restir_DI->ReSTIRDI_Denoised_Results;
 			}

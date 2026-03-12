@@ -68,10 +68,10 @@ void NvdiaDLSS_Intergration::init(vk::CommandPool commandPool) {
 
     NVSDK_NGX_PerfQuality_Value dlssQuality = NVSDK_NGX_PerfQuality_Value_Balanced;
 
-    paramsDLSS_->Set(NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_Quality, NVSDK_NGX_DLSS_Hint_Render_Preset_M);
-    paramsDLSS_->Set(NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_UltraQuality, NVSDK_NGX_DLSS_Hint_Render_Preset_M);
-    paramsDLSS_->Set(NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_Balanced, NVSDK_NGX_DLSS_Hint_Render_Preset_M);
-    paramsDLSS_->Set(NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_Performance, NVSDK_NGX_DLSS_Hint_Render_Preset_M);
+    paramsDLSS_->Set(NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_Quality, NVSDK_NGX_DLSS_Hint_Render_Preset_L);
+    paramsDLSS_->Set(NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_UltraQuality, NVSDK_NGX_DLSS_Hint_Render_Preset_L);
+    paramsDLSS_->Set(NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_Balanced, NVSDK_NGX_DLSS_Hint_Render_Preset_L);
+    paramsDLSS_->Set(NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_Performance, NVSDK_NGX_DLSS_Hint_Render_Preset_L);
 
     paramsDLSS_->Set(NVSDK_NGX_Parameter_RTXValue, NVSDK_NGX_RTX_Value_On);
 
