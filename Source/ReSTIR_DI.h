@@ -36,7 +36,7 @@ public:
     void DispatchResevoirCandidateCalcCompute(vk::CommandBuffer commandBuffer, vk::PipelineLayout pipelineLayout, uint32_t imageIndex);
     void Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, BufferData RayMisBuffer, vk::CommandBuffer commandbuffer, vk::PipelineLayout pipelinelayout, uint32_t imageIndex);
     uint32_t alignedSize(uint32_t value, uint32_t alignment);
-    //vk::DescriptorSetLayout RservoirSamplingDescriptorSetLayout;
+
     vk::DescriptorSetLayout RayTracingDescriptorSetLayout;
     vk::DescriptorSetLayout DDGIATLASDescriptorSetLayout;
 

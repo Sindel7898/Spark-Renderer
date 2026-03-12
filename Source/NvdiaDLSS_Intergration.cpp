@@ -155,8 +155,8 @@ void NvdiaDLSS_Intergration::render(VkCommandBuffer commandBuffer, ImageData InI
     evalParams.pInNormals = &normalsResource;
     evalParams.pInRoughness = &roughnessResource;
     evalParams.pInSpecularAlbedo = &specularAlbedoResource;
-    evalParams.InJitterOffsetX = -m_camera->GetjitterInPixelSpace().x;
-    evalParams.InJitterOffsetY = -m_camera->GetjitterInPixelSpace().y;
+    //evalParams.InJitterOffsetX = -m_camera->GetjitterInPixelSpace().x;
+    //evalParams.InJitterOffsetY = -m_camera->GetjitterInPixelSpace().y;
     evalParams.InRenderSubrectDimensions = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
     evalParams.InMVScaleX = 1;
     evalParams.InMVScaleY = 1;

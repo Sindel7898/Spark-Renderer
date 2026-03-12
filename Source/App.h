@@ -186,8 +186,9 @@ private:
 	vk::PipelineLayout         IrradianceComputePipelineLayout = nullptr;
 	vk::PipelineLayout         SampleDDGIComputePipelineLayout = nullptr;
 	vk::PipelineLayout         ProbeStatusPipelineLayout = nullptr;
-	//vk::PipelineLayout         ReSTIResevoirComputePipelineLayout = nullptr;
-     vk::PipelineLayout         ReSTIR_RT_PipelineLayout = nullptr;
+
+	vk::PipelineLayout         ReSTIR_Temporal_RT_PipelineLayout = nullptr;
+	vk::PipelineLayout         ReSTIR_Spatial_RT_PipelineLayout = nullptr;
 
 
 
@@ -211,8 +212,8 @@ private:
 	vk::Pipeline               IrradianceComputePassPipeline = nullptr;
 	vk::Pipeline               SampleDDGIComputePassPipeline = nullptr;
 	vk::Pipeline               ProbeStatusComputePassPipeline = nullptr;
-	//vk::Pipeline               ReSTIResevoirComputePassPipeline = nullptr;
-	vk::Pipeline               ReSTIR_RTPassPipeline = nullptr;
+	vk::Pipeline               ReSTIR_Temporal_RT_PassPipeline = nullptr;
+	vk::Pipeline               ReSTIR_SPATIAL_RT_PassPipeline = nullptr;
 
 
 	vk::CommandPool            commandPool = nullptr;
@@ -253,9 +254,13 @@ private:
 	BufferData	DDGI_hitShaderBindingTableBuffer;
 
 
-	BufferData	ReSTIR_DI_raygenShaderBindingTableBuffer;
-	BufferData	ReSTIR_DI_missShaderBindingTableBuffer;
-	BufferData	ReSTIR_DI_hitShaderBindingTableBuffer;
+	BufferData	ReSTIR_DI_Temporal_raygenShaderBindingTableBuffer;
+	BufferData	ReSTIR_DI_Temporal_missShaderBindingTableBuffer;
+	BufferData	ReSTIR_DI_Temporal_hitShaderBindingTableBuffer;
+
+	BufferData	ReSTIR_DI_Spatial_raygenShaderBindingTableBuffer;
+	BufferData	ReSTIR_DI_Spatial_missShaderBindingTableBuffer;
+	BufferData	ReSTIR_DI_Spatial_hitShaderBindingTableBuffer;
 
 	////DEBUGS
 	vk::DebugUtilsLabelEXT Gbuffer_Label;

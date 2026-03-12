@@ -28,44 +28,44 @@ void ReSTIR_DI::CreateImage() {
 	vk::Extent3D SampledImageExtent = vk::Extent3D(vulkanContext->swapchainExtent.width, vulkanContext->swapchainExtent.height, 1);
 
 	ResevoirImage.ImageID = " Resevoir  Image";
-	bufferManager->CreateImage(&ResevoirImage, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment);
-	ResevoirImage.imageView = bufferManager->CreateImageView(&ResevoirImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	ResevoirImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
+	bufferManager->CreateImage(&ResevoirImage, SampledImageExtent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment);
+	ResevoirImage.imageView = bufferManager->CreateImageView(&ResevoirImage, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
+	ResevoirImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 
 	PrevResevoirImage.ImageID = " Prev Resevoir  Image";
-	bufferManager->CreateImage(&PrevResevoirImage, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eColorAttachment);
-	PrevResevoirImage.imageView = bufferManager->CreateImageView(&PrevResevoirImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	PrevResevoirImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
+	bufferManager->CreateImage(&PrevResevoirImage, SampledImageExtent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eColorAttachment);
+	PrevResevoirImage.imageView = bufferManager->CreateImageView(&PrevResevoirImage, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
+	PrevResevoirImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 
 	ReSTIRDI_Results.ImageID = " Prev ReSTIRDI  Image";
-	bufferManager->CreateImage(&ReSTIRDI_Results, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eColorAttachment);
-	ReSTIRDI_Results.imageView = bufferManager->CreateImageView(&ReSTIRDI_Results, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	ReSTIRDI_Results.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
+	bufferManager->CreateImage(&ReSTIRDI_Results, SampledImageExtent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eColorAttachment);
+	ReSTIRDI_Results.imageView = bufferManager->CreateImageView(&ReSTIRDI_Results, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
+	ReSTIRDI_Results.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 
 	ReSTIRDI_Denoised_Results.ImageID = " Prev ReSTIR DI Denoised Image";
-	bufferManager->CreateImage(&ReSTIRDI_Denoised_Results, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eColorAttachment);
-	ReSTIRDI_Denoised_Results.imageView = bufferManager->CreateImageView(&ReSTIRDI_Denoised_Results, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	ReSTIRDI_Denoised_Results.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
+	bufferManager->CreateImage(&ReSTIRDI_Denoised_Results, SampledImageExtent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eColorAttachment);
+	ReSTIRDI_Denoised_Results.imageView = bufferManager->CreateImageView(&ReSTIRDI_Denoised_Results, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
+	ReSTIRDI_Denoised_Results.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 
 	GI_SamplePosImage.ImageID = "GI Sample Pos Image";
-	bufferManager->CreateImage(&GI_SamplePosImage, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
-	GI_SamplePosImage.imageView = bufferManager->CreateImageView(&GI_SamplePosImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	GI_SamplePosImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
+	bufferManager->CreateImage(&GI_SamplePosImage, SampledImageExtent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
+	GI_SamplePosImage.imageView = bufferManager->CreateImageView(&GI_SamplePosImage, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
+	GI_SamplePosImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 
 	GI_SampleFluxImage.ImageID = "GI Sample Flux Image";
-	bufferManager->CreateImage(&GI_SampleFluxImage, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
-	GI_SampleFluxImage.imageView = bufferManager->CreateImageView(&GI_SampleFluxImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	GI_SampleFluxImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
+	bufferManager->CreateImage(&GI_SampleFluxImage, SampledImageExtent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
+	GI_SampleFluxImage.imageView = bufferManager->CreateImageView(&GI_SampleFluxImage, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
+	GI_SampleFluxImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 
 	PrevGI_SamplePosImage.ImageID = "Prev GI Sample Pos Image";
-	bufferManager->CreateImage(&PrevGI_SamplePosImage, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
-	PrevGI_SamplePosImage.imageView = bufferManager->CreateImageView(&PrevGI_SamplePosImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	PrevGI_SamplePosImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
+	bufferManager->CreateImage(&PrevGI_SamplePosImage, SampledImageExtent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
+	PrevGI_SamplePosImage.imageView = bufferManager->CreateImageView(&PrevGI_SamplePosImage, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
+	PrevGI_SamplePosImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 
 	PrevGI_SampleFluxImage.ImageID = "Prev GI Sample Flux Image";
-	bufferManager->CreateImage(&PrevGI_SampleFluxImage, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
-	PrevGI_SampleFluxImage.imageView = bufferManager->CreateImageView(&PrevGI_SampleFluxImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
-	PrevGI_SampleFluxImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, true);
+	bufferManager->CreateImage(&PrevGI_SampleFluxImage, SampledImageExtent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
+	PrevGI_SampleFluxImage.imageView = bufferManager->CreateImageView(&PrevGI_SampleFluxImage, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
+	PrevGI_SampleFluxImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 
 
 
