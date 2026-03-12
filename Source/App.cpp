@@ -2410,11 +2410,13 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 	vk::CommandBufferBeginInfo begininfo{};
 	begininfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 	commandBuffer.begin(begininfo);
+#if ENABLE_NVPERF
 
 	auto& apiTracer = userinterface.m_apiTracers[currentFrame];
 
 	apiTracer.ClearData();
 	apiTracer.ResetQueries(commandBuffer);
+#endif
 
 	
 	size_t passIndex = 0;
@@ -2735,7 +2737,9 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 {
+#if ENABLE_NVPERF
 		apiTracer.BeginRange(commandBuffer, "DDGI", 1, passIndex);
+#endif
 
 		//TracyVkZone(tracyVkContext, commandBuffer, "DDGI Update Loop");
 	{
@@ -2988,16 +2992,16 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 		}
 		vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 	}
-
+#if ENABLE_NVPERF
 	apiTracer.EndRange(commandBuffer, passIndex);
-
+#endif
 }
 	vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, ReSTIR_Label);
 	{
 		if (DefferedDecider == 2) { /// if we are not looking at ReSTIR stop tracing
-
+#if ENABLE_NVPERF
 			apiTracer.BeginRange(commandBuffer, "ReSTIR DI", 3, passIndex);
-
+#endif
 			//TracyVkZone(tracyVkContext, commandBuffer, "ReSTIR DI");
 
 			ImageTransitionData TransitiontoGeneraRT{};
@@ -3067,9 +3071,9 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 				barrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
 				commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eRayTracingShaderKHR, vk::PipelineStageFlagBits::eComputeShader, {}, 0, nullptr, 0, nullptr, 1, & barrier);
 
-				vulkanContext.DLSS_IntergrationRef->render(commandBuffer, Restir_DI->ReSTIRDI_Results, gbuffer,
-					DepthTextureData, Restir_DI->ReSTIRDI_Denoised_Results,
-					(VkFormat)vulkanContext.FindCompatableDepthFormat(), deltaTime);
+				vulkanContext.DLSS_IntergrationRef->render(commandBuffer   , Restir_DI->ReSTIRDI_Results, gbuffer,
+					                                       DepthTextureData, Restir_DI->ReSTIRDI_Denoised_Results,
+					                                       (VkFormat)vulkanContext.FindCompatableDepthFormat(), deltaTime);
 
 				ReSTIR_Image = &Restir_DI->ReSTIRDI_Denoised_Results;
 			}
@@ -3078,8 +3082,10 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 				ReSTIR_Image = &Restir_DI->ReSTIRDI_Results;
 			}
 
-			apiTracer.EndRange(commandBuffer, passIndex);
+#if ENABLE_NVPERF
 
+			apiTracer.EndRange(commandBuffer, passIndex);
+#endif
 			////////////////////////////////////////////////////////////////////
 			vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
 			SkyBoxRenderAttachInfo.clearValue = clearColor;
@@ -3224,8 +3230,10 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 	/////////////////// LIGHTING PASS ///////////////////////// 
 	{
 		if (DefferedDecider == 3 || DefferedDecider == 0) {
+#if ENABLE_NVPERF
 
 			apiTracer.BeginRange(commandBuffer, "Brute force Direct Lighting ", 1, passIndex);
+#endif
 
 			//TracyVkZone(tracyVkContext, commandBuffer, "RTX Lighting");
 
@@ -3238,8 +3246,10 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 				commandBuffer,
 				DeferedLightingPassPipelineLayout,
 				currentFrame);
+#if ENABLE_NVPERF
 
 			apiTracer.EndRange(commandBuffer, passIndex);
+#endif
 
 		}
 	}
@@ -3247,6 +3257,7 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 	vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 	if (DefferedDecider != 2) {
+
 		if (DefferedDecider == 3 || DefferedDecider == 0) {
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, DeferedLightingPassPipeline);
 			lighting_RTX->Draw(Lighting_raygenShaderBindingTableBuffer, Lighting_hitShaderBindingTableBuffer,

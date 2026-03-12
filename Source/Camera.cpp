@@ -30,8 +30,6 @@ void Camera::Initialize(float Fov, float NearClip, float FarClip) {
     UpdateCameraVectors();
     UpdateViewMatrix();       
 
-    updateJitterMat(frameIndex, 64, swapchainWidth, swapchainHeight);
-    UpdateJitter(jitterVal_.x, jitterVal_.y);
    
     UpdateProjectionMatrix(); 
 
@@ -45,8 +43,7 @@ void Camera::Update(float deltaTime) {
     Prev_projectionMatrix = projectionMatrix;
 
     frameIndex = (frameIndex + 1) % 64;
-    updateJitterMat(frameIndex, 64, swapchainWidth, swapchainHeight);
-
+    halton(frameIndex);
 
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS && !mouseCaptured) {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -113,7 +110,6 @@ void Camera::Update(float deltaTime) {
     }
 
     UpdateProjectionMatrix();
-    UpdateJitter(jitterVal_.x, jitterVal_.y);
 }
 
 void Camera::UpdateCameraVectors() {
@@ -128,14 +124,6 @@ void Camera::UpdateCameraVectors() {
     right = glm::normalize(glm::cross(forward, worldUp));
     up = glm::normalize(glm::cross(right, forward));
 }
-
-void Camera::UpdateJitter(float jitterX, float jitterY) {
-    jitteredProjectionMatrix = projectionMatrix;
-
-    jitteredProjectionMatrix[2][0] += (2.0f * jitterX) / (float)swapchainWidth;
-    jitteredProjectionMatrix[2][1] -= (2.0f * jitterY) / (float)swapchainHeight;
-}
-
 
 void Camera::UpdateViewMatrix() {
     viewMatrix = glm::lookAt(position, position + forward, up);
@@ -237,29 +225,21 @@ void Camera::OnFrameStart() {
 }
 
 
-static float VanDerCorputGenerator(size_t base, size_t index) {
-    float ret = 0.0f;
-    float denominator = float(base);
-    while (index > 0) {
-        size_t multiplier = index % base;
-        ret += float(multiplier) / denominator;
-        index = index / base;
-        denominator *= base;
+// #DLSS_RR
+// halton low discrepancy sequence, from https://www.shadertoy.com/view/wdXSW8
+void Camera::halton(int index)
+{
+    const glm::vec2 coprimes = glm::vec2(2.0F, 3.0F);
+    glm::vec2       s = glm::vec2(index, index);
+    glm::vec4       a = glm::vec4(1, 1, 0, 0);
+    while (s.x > 0. && s.y > 0.)
+    {
+        a.x = a.x / coprimes.x;
+        a.y = a.y / coprimes.y;
+        a.z += a.x * fmod(s.x, coprimes.x);
+        a.w += a.y * fmod(s.y, coprimes.y);
+        s.x = floorf(s.x / coprimes.x);
+        s.y = floorf(s.y / coprimes.y);
     }
-    return ret;
-}
-
-void Camera::updateJitterMat(uint32_t frameIndex, int numSamples, int width, int height) {
-    uint32_t index = (frameIndex % numSamples) + 1;
-    auto x = VanDerCorputGenerator(2, index) - 0.5f;
-    auto y = VanDerCorputGenerator(3, index) - 0.5f;
-
-    float uvOffsetX = float(x) / width;
-    float uvOffsetY = float(y) / height;
-    float ndcOffsetX = uvOffsetX * 2.0f;
-    float ndcOffsetY = uvOffsetY * 2.0f;
-
-    jitterMat_[2][0] = ndcOffsetX;
-    jitterMat_[2][1] = ndcOffsetY;
-    jitterVal_ = glm::vec2(x, y);
+    Jitter = glm::vec2(a.z, a.w);
 }

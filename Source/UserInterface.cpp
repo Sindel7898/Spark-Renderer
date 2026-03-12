@@ -37,7 +37,7 @@ UserInterface::UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef,
 
 
 void UserInterface::InitNVPerf() {
-
+#if ENABLE_NVPERF
     auto onStopSampling = [this](const char* outputDirectory) {
         m_outputDirectory = outputDirectory;
         };
@@ -74,11 +74,13 @@ void UserInterface::InitNVPerf() {
     {
         apiTracer.Initialize(vulkancontext->VulkanInstance, vulkancontext->PhysicalDevice, vulkancontext->LogicalDevice, numRangesPerFrame);
     }
+#endif
 }
 
 #include <map>
 
 void UserInterface::SaveNVPerf() {
+#if ENABLE_NVPERF
     m_periodicSamplerOneShot.OnFrameEnd();
 
     {
@@ -129,6 +131,7 @@ void UserInterface::SaveNVPerf() {
             Save_To_File = false;
         }
     }
+#endif
 }
 
 
@@ -416,11 +419,14 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
     if (ImGui::IsKeyPressed(ImGuiKey_1)) { currentGizmoOperation = ImGuizmo::TRANSLATE; }
     if (ImGui::IsKeyPressed(ImGuiKey_2)) { currentGizmoOperation = ImGuizmo::ROTATE; }
     if (ImGui::IsKeyPressed(ImGuiKey_3)) { currentGizmoOperation = ImGuizmo::SCALE; }
+    
+#if ENABLE_NVPERF
+
     if (ImGui::IsKeyPressed(ImGuiKey_P)) { 
         m_periodicSamplerOneShot.StartCollectionOnFrameEnd();
         Save_To_File = true;
     }
-
+#endif
 
 
     bool isItemSelected = (UserInterfaceItemsIndex >= 0 && UserInterfaceItemsIndex < appref->UserInterfaceItems.size());
@@ -986,7 +992,10 @@ vk::Extent3D UserInterface::GetRenderTextureExtent()
 void UserInterface::CleanUp()
 {
 	vulkancontext->LogicalDevice.waitIdle();
+#if ENABLE_NVPERF
     m_periodicSamplerOneShot.Reset();
+#endif
+
 	ImGui_ImplVulkan_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
     ImPlot::DestroyContext();

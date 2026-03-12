@@ -169,7 +169,7 @@ void main() {
     if (bSpatialReuse) {
         int radius = 15; 
 
-        for(int i = 0; i < 4; i++){
+        for(int i = 0; i < 10; i++){
             vec2 offset = 2.0 * vec2(rand(seed), rand(seed)) - 1.0;
             ivec2 neighborCoord = clamp(ivec2(TextCoord + offset * float(radius)), ivec2(0), ivec2(pc.ScreenSize_Padding_FrameIndex_LightCount.xy - 1));
    
@@ -180,8 +180,6 @@ void main() {
             float planeDist = dot(neighborPos - surfaceData.worldPos, surfaceData.normal);
             if (abs(planeDist) > 0.05 * length(neighborPos - surfaceData.worldPos) + 0.01) continue;
    
-            //vec2 neighborVelocityUV = texelFetch(MotionVectorImage, neighborCoord, 0).rg;
-            //ivec2 prevNeighborCoord = ivec2(vec2(neighborCoord) - neighborVelocityUV);
             
             if (neighborCoord.x < 0 || neighborCoord.x >= int(pc.ScreenSize_Padding_FrameIndex_LightCount.x) ||
                 neighborCoord.y < 0 || neighborCoord.y >= int(pc.ScreenSize_Padding_FrameIndex_LightCount.y)) {
@@ -197,7 +195,7 @@ void main() {
             neighbourReservoir.Num_OF_Lights_In_Resevoir = NeighbourResData.w;
 
             if(neighbourReservoir.Light_Index == GIIndex) {
-                neighbourReservoir.Sample_Pos  = imageLoad(GI_SamplePosImage, neighborCoord).xyz;
+                neighbourReservoir.Sample_Pos  = imageLoad(GI_SamplePosImage , neighborCoord).xyz;
                 neighbourReservoir.Sample_Flux = imageLoad(GI_SampleFluxImage, neighborCoord).xyz;
             } else {
                  neighbourReservoir.Sample_Pos = vec3(0.0);

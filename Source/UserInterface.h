@@ -1,5 +1,7 @@
 #pragma once
 
+#define ENABLE_NVPERF 0
+
 #include <memory>
 #include <vulkan/vulkan.hpp>
 #include "BufferManager.h"
@@ -10,8 +12,9 @@
 #include "vulkanContext.h"
 #include "ImGuizmo.h"
 #include <glm/gtc/type_ptr.hpp>
+#if ENABLE_NVPERF
 #include "NvPerfPeriodicSamplerVulkan.h"
-
+#endif
 
 class Window;
 class BufferManager;
@@ -22,9 +25,11 @@ class SSA0_FullScreenQuad;
 class App;
 class SkyBox;
 
+#if ENABLE_NVPERF
 using namespace nv::perf;
 using namespace nv::perf::sampler;
 using namespace nv::perf::mini_trace;
+#endif
 
 class UserInterface
 {
@@ -53,7 +58,10 @@ public:
 
     ~UserInterface();
 
+#if ENABLE_NVPERF
     std::vector<APITracerVulkan> m_apiTracers;
+#endif
+
     bool Save_To_File = false;
 
 private:
@@ -99,8 +107,10 @@ private:
     int DLSSFRAMELIMIT = 10;
 
 
-
+#if ENABLE_NVPERF
     PeriodicSamplerOneShotVulkan m_periodicSamplerOneShot;
+#endif
+
     std::vector<size_t> m_frameLevelTraceIndice;
     std::string m_outputDirectory;
 };

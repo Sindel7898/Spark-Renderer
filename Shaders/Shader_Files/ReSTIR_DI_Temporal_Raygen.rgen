@@ -72,11 +72,7 @@ void main() {
 
  ivec2 TextCoord = ivec2(gl_LaunchIDEXT.xy);
   uint frameIndex = uint(pc.ScreenSize_Padding_FrameIndex_LightCount.z);
-  int noiseIndex = int(frameIndex % 63);
-  
-  ivec2 noiseSize = textureSize(BlueNoise[noiseIndex], 0);
-  vec2 noiseUV = vec2(TextCoord % noiseSize) / vec2(noiseSize);
-  vec4 blueSample = texture(BlueNoise[noiseIndex], noiseUV);
+
   
   uint pixel_index = gl_LaunchIDEXT.x + gl_LaunchIDEXT.y * uint(pc.ScreenSize_Padding_FrameIndex_LightCount.y);
   uint seed = pcg_hash(pixel_index ^ pcg_hash(frameIndex));
