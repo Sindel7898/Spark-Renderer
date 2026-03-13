@@ -48,6 +48,7 @@ void VulkanContext::InitVulkan()
 
     std::vector<const char*> nsightInstanceExtensions;
     nv::perf::VulkanAppendInstanceRequiredExtensions(nsightInstanceExtensions, VK_API_VERSION_1_3);
+    DLSS_IntergrationRef->requiredInstanceExtensions(nsightInstanceExtensions);
 
     std::unique_ptr<vkb::InstanceBuilder> builderPtr = std::make_unique<vkb::InstanceBuilder>();
 
@@ -93,8 +94,6 @@ void VulkanContext::SelectGPU_CreateDevice()
         VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME
     };
 
-    std::vector<const char*> dInstanceExtensions;
-	DLSS_IntergrationRef->requiredExtensions(dInstanceExtensions, deviceExtensions);
 
     vkb::PhysicalDeviceSelector selector{ VKB_Instance };
 
@@ -112,6 +111,7 @@ void VulkanContext::SelectGPU_CreateDevice()
 
     vkb::PhysicalDevice physicalDevice = physicalDeviceResult.value();
     PhysicalDevice = physicalDevice.physical_device;
+    DLSS_IntergrationRef->requiredDeviceExtensions(VulkanInstance, PhysicalDevice, deviceExtensions);
 
     nv::perf::VulkanAppendDeviceRequiredExtensions(
         (VkInstance)VulkanInstance,
@@ -194,6 +194,10 @@ void VulkanContext::SelectGPU_CreateDevice()
     }
 
     nv::perf::VulkanAppendDeviceRequiredExtensions((VkInstance)VulkanInstance, (VkPhysicalDevice)PhysicalDevice, (void*)vkGetInstanceProcAddr, extensionCStrings);
+
+    for (const auto& ext : deviceExtensions) {
+        extensionCStrings.push_back(ext);
+    }
 
     VkDeviceCreateInfo deviceCreateInfo{};
     deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

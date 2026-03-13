@@ -12,6 +12,9 @@ static void NVSDK_CONV LogCallback(const char* message, NVSDK_NGX_Logging_Level 
     std::cout << "[DLSS Output] " << message << std::endl;
 }
 
+const unsigned long long APP_ID = 0xbaadf00dbaadcafe;
+
+
 void NvdiaDLSS_Intergration::initializePointers(BufferManager* bufferManager, VulkanContext* vulkanContext, Camera* camera)
 {
     m_bufferManager = bufferManager;
@@ -27,7 +30,7 @@ void NvdiaDLSS_Intergration::initializePointers(BufferManager* bufferManager, Vu
     appId.v.ProjectDesc.EngineType = NVSDK_NGX_ENGINE_TYPE_CUSTOM;
     appId.v.ProjectDesc.ProjectId = "DLSSIntegration";
     appId.v.ProjectDesc.EngineVersion = "1.0.0";
-	appId.v.ApplicationId = 0x1234567890ABCDEF;
+	appId.v.ApplicationId = APP_ID;
 
     NVSDK_NGX_FeatureCommonInfo commonInfo = {};
     commonInfo.LoggingInfo.LoggingCallback = LogCallback;
@@ -68,10 +71,10 @@ void NvdiaDLSS_Intergration::init(vk::CommandPool commandPool) {
 
     NVSDK_NGX_PerfQuality_Value dlssQuality = NVSDK_NGX_PerfQuality_Value_Balanced;
 
-    paramsDLSS_->Set(NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_Quality, NVSDK_NGX_DLSS_Hint_Render_Preset_L);
-    paramsDLSS_->Set(NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_UltraQuality, NVSDK_NGX_DLSS_Hint_Render_Preset_L);
-    paramsDLSS_->Set(NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_Balanced, NVSDK_NGX_DLSS_Hint_Render_Preset_L);
-    paramsDLSS_->Set(NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_Performance, NVSDK_NGX_DLSS_Hint_Render_Preset_L);
+    paramsDLSS_->Set(NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_Quality, NVSDK_NGX_DLSS_Hint_Render_Preset_M);
+    paramsDLSS_->Set(NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_UltraQuality, NVSDK_NGX_DLSS_Hint_Render_Preset_M);
+    paramsDLSS_->Set(NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_Balanced, NVSDK_NGX_DLSS_Hint_Render_Preset_M);
+    paramsDLSS_->Set(NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_Performance, NVSDK_NGX_DLSS_Hint_Render_Preset_M);
 
     paramsDLSS_->Set(NVSDK_NGX_Parameter_RTXValue, NVSDK_NGX_RTX_Value_On);
 
@@ -162,8 +165,8 @@ void NvdiaDLSS_Intergration::render(VkCommandBuffer commandBuffer, ImageData InI
     //evalParams.InJitterOffsetX = -m_camera->Jitter.x;
     //evalParams.InJitterOffsetY = -m_camera->Jitter.y;
     evalParams.InRenderSubrectDimensions = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
-    evalParams.InMVScaleX = 1;
-    evalParams.InMVScaleY = 1;
+    evalParams.InMVScaleX = width;
+    evalParams.InMVScaleY = height;
     evalParams.InReset = SceneChangeNotifer;
     evalParams.InFrameTimeDeltaInMsec = deltaTime * 1000.0f;
     evalParams.InPreExposure = 1.0f;
@@ -188,45 +191,45 @@ void NvdiaDLSS_Intergration::render(VkCommandBuffer commandBuffer, ImageData InI
     }
 }
 
-void NvdiaDLSS_Intergration::requiredExtensions(std::vector<const char*>& instanceExtensions, std::vector<const char*>& deviceExtensions)
-{
-    unsigned int instanceExtCount;
-    const char** instanceExt;
-    unsigned int deviceExtCount;
-    const char** deviceExt;
 
-    NVSDK_NGX_Result result = NVSDK_NGX_VULKAN_RequiredExtensions(
-        &instanceExtCount, &instanceExt, &deviceExtCount, &deviceExt);
+void NvdiaDLSS_Intergration::requiredInstanceExtensions(std::vector<const char*>& instanceExts)
+{
+    NVSDK_NGX_FeatureCommonInfo commonInfo = {};
+    NVSDK_NGX_FeatureDiscoveryInfo info = {};
+    info.SDKVersion = NVSDK_NGX_Version_API;
+    info.FeatureID = NVSDK_NGX_Feature_RayReconstruction;
+    info.Identifier.IdentifierType = NVSDK_NGX_Application_Identifier_Type_Application_Id;
+    info.Identifier.v.ApplicationId = APP_ID;
+    info.FeatureInfo = &commonInfo;
+
+    uint32_t numInstExts = 0;
+    VkExtensionProperties* instProps = nullptr;
+    NVSDK_NGX_VULKAN_GetFeatureInstanceExtensionRequirements(&info, &numInstExts, &instProps);
+    for (uint32_t i = 0; i < numInstExts; i++) {
+        instanceExts.push_back(instProps[i].extensionName);
+    }
+}
+
+void NvdiaDLSS_Intergration::requiredDeviceExtensions(VkInstance instance, VkPhysicalDevice physicalDevice, std::vector<const char*>& deviceExts) {
+    NVSDK_NGX_FeatureCommonInfo commonInfo = {};
+    NVSDK_NGX_FeatureDiscoveryInfo info = {};
+    info.SDKVersion = NVSDK_NGX_Version_API;
+    info.FeatureID = NVSDK_NGX_Feature_RayReconstruction;
+    info.Identifier.IdentifierType = NVSDK_NGX_Application_Identifier_Type_Application_Id;
+    info.Identifier.v.ApplicationId = APP_ID;
+    info.ApplicationDataPath = L"";
+    info.FeatureInfo = &commonInfo;
+
+    uint32_t numDevExts = 0;
+    VkExtensionProperties* devProps = nullptr;
+    NVSDK_NGX_Result result = NVSDK_NGX_VULKAN_GetFeatureDeviceExtensionRequirements(instance, physicalDevice, &info, &numDevExts, &devProps);
 
     if (NVSDK_NGX_FAILED(result)) {
-        throw std::runtime_error("Failed to Find Required Extensions for DLSS");
+        throw std::runtime_error("Failed to get DLSS device extensions.");
     }
 
-    for (unsigned int i = 0; i < instanceExtCount; ++i) {
-        bool found = false;
-        for (const auto& existing : instanceExtensions) {
-            if (strcmp(existing, instanceExt[i]) == 0) found = true;
-        }
-        if (!found) instanceExtensions.push_back(instanceExt[i]);
-    }
-
-    // Add Device Extensions
-    for (unsigned int i = 0; i < deviceExtCount; ++i) {
-        std::string extName = deviceExt[i];
-
-        if (extName == "VK_EXT_buffer_device_address") {
-            continue;
-        }
-
-        // Check for duplicates
-        bool found = false;
-        for (const auto& existing : deviceExtensions) {
-            if (strcmp(existing, deviceExt[i]) == 0) found = true;
-        }
-
-        if (!found) {
-            deviceExtensions.push_back(deviceExt[i]);
-        }
+    for (uint32_t i = 0; i < numDevExts; i++) {
+        deviceExts.push_back(devProps[i].extensionName);
     }
 }
 
