@@ -3006,23 +3006,6 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 #endif
 			//TracyVkZone(tracyVkContext, commandBuffer, "ReSTIR DI");
 
-			ImageTransitionData TransitiontoGeneraRT{};
-			TransitiontoGeneraRT.oldlayout = vk::ImageLayout::eUndefined;
-			TransitiontoGeneraRT.newlayout = vk::ImageLayout::eGeneral;
-			TransitiontoGeneraRT.AspectFlag = vk::ImageAspectFlagBits::eColor;
-			TransitiontoGeneraRT.SourceAccessflag = vk::AccessFlagBits::eNone;
-			TransitiontoGeneraRT.DestinationAccessflag = vk::AccessFlagBits::eShaderWrite;
-			TransitiontoGeneraRT.SourceOnThePipeline = vk::PipelineStageFlagBits::eNone;
-			TransitiontoGeneraRT.DestinationOnThePipeline = vk::PipelineStageFlagBits::eRayTracingShaderKHR;
-
-			bufferManger.TransitionImage(commandBuffer, &Restir_DI->ResevoirImage, TransitiontoGeneraRT);
-			bufferManger.TransitionImage(commandBuffer, &Restir_DI->PrevResevoirImage, TransitiontoGeneraRT);
-
-			bufferManger.TransitionImage(commandBuffer, &Restir_DI->GI_SamplePosImage, TransitiontoGeneraRT);
-			bufferManger.TransitionImage(commandBuffer, &Restir_DI->GI_SampleFluxImage, TransitiontoGeneraRT);
-			bufferManger.TransitionImage(commandBuffer, &Restir_DI->PrevGI_SamplePosImage, TransitiontoGeneraRT);
-			bufferManger.TransitionImage(commandBuffer, &Restir_DI->PrevGI_SampleFluxImage, TransitiontoGeneraRT);
-
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, ReSTIR_Temporal_RT_PassPipeline);
 
 			Restir_DI->Draw(

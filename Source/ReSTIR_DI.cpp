@@ -37,14 +37,14 @@ void ReSTIR_DI::CreateImage() {
 	PrevResevoirImage.imageView = bufferManager->CreateImageView(&PrevResevoirImage, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
 	PrevResevoirImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 
-	ReSTIRDI_Results.ImageID = " Prev ReSTIRDI  Image";
-	bufferManager->CreateImage(&ReSTIRDI_Results, SampledImageExtent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eColorAttachment);
-	ReSTIRDI_Results.imageView = bufferManager->CreateImageView(&ReSTIRDI_Results, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
+	ReSTIRDI_Results.ImageID = " ReSTIRDI Results Image";
+	bufferManager->CreateImage(&ReSTIRDI_Results, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eColorAttachment);
+	ReSTIRDI_Results.imageView = bufferManager->CreateImageView(&ReSTIRDI_Results, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	ReSTIRDI_Results.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 
 	ReSTIRDI_Denoised_Results.ImageID = " Prev ReSTIR DI Denoised Image";
-	bufferManager->CreateImage(&ReSTIRDI_Denoised_Results, SampledImageExtent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eColorAttachment);
-	ReSTIRDI_Denoised_Results.imageView = bufferManager->CreateImageView(&ReSTIRDI_Denoised_Results, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
+	bufferManager->CreateImage(&ReSTIRDI_Denoised_Results, SampledImageExtent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eColorAttachment);
+	ReSTIRDI_Denoised_Results.imageView = bufferManager->CreateImageView(&ReSTIRDI_Denoised_Results, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
 	ReSTIRDI_Denoised_Results.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge, false);
 
 	GI_SamplePosImage.ImageID = "GI Sample Pos Image";

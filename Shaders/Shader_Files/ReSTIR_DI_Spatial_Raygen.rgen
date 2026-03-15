@@ -24,7 +24,7 @@ layout (binding = 6) uniform sampler2D BlueNoise[63];
 layout(set = 0, binding = 7) uniform accelerationStructureEXT topLevelAS;
 layout (binding = 16, rgba32f) uniform image2D PrevResevoirImage;
 layout (binding = 17) uniform sampler2D MotionVectorImage;
-layout (binding = 18, rgba32f) uniform image2D ReSTIR_DIImage;
+layout (binding = 18, rgba16f) uniform image2D ReSTIR_DIImage;
 layout (binding = 19) uniform sampler2D PrevNormalImage;
 layout(set = 1, binding = 0) uniform sampler2D  IrradianceStorageImage;
 layout(set = 1, binding = 1) uniform sampler2D  VisibilityStorageImage;
@@ -127,7 +127,6 @@ void main() {
  vec3 diffuse   = (vec3(1.0) - F) * (1.0 - surfaceData.metallic) * (surfaceData.albedo / 3.14159265359);
  vec3 rayOrigin = offsetPositionAlongNormal(surfaceData.worldPos, surfaceData.normal);
 
- vec3 DiffuseDirection = GetHemisphereSample(vec2(blueSample.x,blueSample.y), surfaceData.normal);
 
  vec2 velocityUV = texelFetch(MotionVectorImage, TextCoord, 0).rg;
  vec2 screenPosPrevious = TextCoord - (velocityUV * pc.ScreenSize_Padding_FrameIndex_LightCount.xy);
@@ -149,8 +148,6 @@ void main() {
    StoreageReservoir.Sample_Flux = imageLoad(GI_SampleFluxImage, TextCoord).xyz;
    float p_hat_Storage  = imageLoad(GI_SampleFluxImage, TextCoord).w;
 
-    ////TO DO IMPLMENT MULTIPLE IMPORTANCE SMAPLING( UNBIASED)
-
     //Spatial Reuse
     Reservoir spatialReservoir;
     spatialReservoir.Light_Index = 0;
@@ -167,16 +164,16 @@ void main() {
     }
    
     if (bSpatialReuse) {
-        int radius = 15; 
+        int radius = 30; 
 
-        for(int i = 0; i < 10; i++){
+        for(int i = 0; i < 6; i++){
             vec2 offset = 2.0 * vec2(rand(seed), rand(seed)) - 1.0;
             ivec2 neighborCoord = clamp(ivec2(TextCoord + offset * float(radius)), ivec2(0), ivec2(pc.ScreenSize_Padding_FrameIndex_LightCount.xy - 1));
    
             vec3 neighborPos    = texelFetch(WorldPositionImage, neighborCoord, 0).xyz;
             vec3 neighborNormal = texelFetch(NormalImage, neighborCoord, 0).xyz;
    
-            if (dot(neighborNormal, surfaceData.normal) < 0.9) continue;
+            if (dot(neighborNormal, surfaceData.normal) < 0.99) continue;
             float planeDist = dot(neighborPos - surfaceData.worldPos, surfaceData.normal);
             if (abs(planeDist) > 0.05 * length(neighborPos - surfaceData.worldPos) + 0.01) continue;
    
@@ -270,11 +267,13 @@ void main() {
    
     vec4 Res = vec4(spatialReservoir.Light_Index, spatialReservoir.Light_Weight, spatialReservoir.Sum_Of_All_Weights, spatialReservoir.Num_OF_Lights_In_Resevoir);
     
-    imageStore(PrevResevoirImage     , TextCoord, Res);
-    imageStore(PrevGI_SamplePosImage , TextCoord, vec4(spatialReservoir.Sample_Pos, 1.0));
-    imageStore(PrevGI_SampleFluxImage, TextCoord, vec4(spatialReservoir.Sample_Flux, 1.0));
    
      vec3 Emissive  = texelFetch(EmmisiveImage, TextCoord, 0).xyz;
+
+imageStore(PrevResevoirImage, TextCoord, Res);
+imageStore(PrevGI_SamplePosImage, TextCoord, vec4(spatialReservoir.Sample_Pos, 1.0));
+imageStore(PrevGI_SampleFluxImage, TextCoord, vec4(spatialReservoir.Sample_Flux, 1.0));
+
 
 if (DDGISamplingVertex == 0 && bDDGI) {
             vec3 VeiwDirection = normalize(pc.CameraPosition.xyz - surfaceData.worldPos);

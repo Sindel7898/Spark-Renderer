@@ -24,7 +24,7 @@ layout (binding = 6) uniform sampler2D BlueNoise[63];
 layout(set = 0, binding = 7) uniform accelerationStructureEXT topLevelAS;
 layout (binding = 16, rgba32f) uniform image2D PrevResevoirImage;
 layout (binding = 17) uniform sampler2D MotionVectorImage;
-layout (binding = 18, rgba32f) uniform image2D ReSTIR_DIImage;
+layout (binding = 18, rgba16f) uniform image2D ReSTIR_DIImage;
 layout (binding = 19) uniform sampler2D PrevNormalImage;
 layout(set = 1, binding = 0) uniform sampler2D  IrradianceStorageImage;
 layout(set = 1, binding = 1) uniform sampler2D  VisibilityStorageImage;
@@ -72,6 +72,11 @@ void main() {
 
  ivec2 TextCoord = ivec2(gl_LaunchIDEXT.xy);
   uint frameIndex = uint(pc.ScreenSize_Padding_FrameIndex_LightCount.z);
+   int noiseIndex = int(frameIndex % 63);
+  
+  ivec2 noiseSize = textureSize(BlueNoise[noiseIndex], 0);
+  vec2 noiseUV = vec2(TextCoord % noiseSize) / vec2(noiseSize);
+  vec4 blueSample = texture(BlueNoise[noiseIndex], noiseUV);
 
   
   uint pixel_index = gl_LaunchIDEXT.x + gl_LaunchIDEXT.y * uint(pc.ScreenSize_Padding_FrameIndex_LightCount.y);
