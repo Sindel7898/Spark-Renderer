@@ -212,50 +212,35 @@ void App::UpdateRayTracingDescriptors()
 	}
 }
 
-void App::SpawnLights(int NumOfLights)
-{
+void App::SpawnLights(int NumOfLights) {
 	vulkanContext.LogicalDevice.waitIdle();
 	UserInterfaceItems.clear();
 
-	if (currentSceneIndex == 0) {
-		for (auto& model : CornelSceneModels) UserInterfaceItems.push_back(model.get());
-	}
-	else if (currentSceneIndex == 1) {
-		for (auto& model : SponzaSceneModels) UserInterfaceItems.push_back(model.get());
-	}
-	else if (currentSceneIndex == 2) {
-		for (auto& model : AltCornelSceneModels) UserInterfaceItems.push_back(model.get());
+	switch (currentSceneIndex) {
+	case 0: for (auto& m : CornelSceneModels) UserInterfaceItems.push_back(m.get()); break;
+	case 1: for (auto& m : SponzaSceneModels) UserInterfaceItems.push_back(m.get()); break;
+	case 2: for (auto& m : AltCornelSceneModels) UserInterfaceItems.push_back(m.get()); break;
 	}
 
 	lights.clear();
 	lights.reserve(NumOfLights);
 
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_real_distribution<float> disXZ(-20, 20);
-	std::uniform_real_distribution<float> disY(0, 40);
-	std::uniform_real_distribution<float> disc(0, 1);
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+	std::uniform_real_distribution<float> disXZ(-20.0f, 20.0f);
+	std::uniform_real_distribution<float> disY(0.0f, 40.0f);
+	std::uniform_real_distribution<float> disc(0.0f, 1.0f);
 
 	for (int i = 0; i < NumOfLights; i++) {
 		auto light = std::make_unique<Light>(&vulkanContext, commandPool, &camera, &bufferManger);
 
-		float randX = disXZ(gen);
-		float randY = disY(gen);
-		float randZ = disXZ(gen);
-		float R = disc(gen);
-		float G = disc(gen);
-		float B = disc(gen);
-
-		light->SetPosition(glm::vec3(randX, randY, randZ));
-		light->color = glm::vec3(R, G, B);
+		light->SetPosition(glm::vec3(disXZ(gen), disY(gen), disXZ(gen)));
+		light->color = glm::vec3(disc(gen), disc(gen), disc(gen));
 		light->CastShadow = true;
 		light->createDescriptorSets(DescriptorPool);
 
+		UserInterfaceItems.push_back(light.get());
 		lights.push_back(std::move(light));
-	}
-
-	for (auto& l : lights) {
-		UserInterfaceItems.push_back(l.get());
 	}
 
 	UpdateRayTracingDescriptors();
@@ -2009,9 +1994,8 @@ void App::CreateGraphicsPipeline()
 
 		vulkanContext.LogicalDevice.destroyShaderModule(ComputeShaderModule);
 	}
-
-
 }
+
 
 uint32_t App::alignedSize(uint32_t value, uint32_t alignment)
 {
@@ -3640,53 +3624,34 @@ void App::DestroyBuffers()
 	//bufferManger.reset();
 }
 
-void App::destroyPipeline()
-{
-	vulkanContext.LogicalDevice.destroyPipeline(DeferedLightingPassPipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(FXAAPassPipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(LightgraphicsPipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(SkyBoxgraphicsPipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(geometryPassPipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(SSAOPipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(SSAOBlurPipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(SSRPipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(RT_ShadowsPassPipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(SSGIPipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(CombinedImagePassPipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(Gamma_Corrected_IMGUI_PassPipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(BluredRTreflectionPipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(DDGIProbePipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(GridComputePassPipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(RT_DDGIPassPipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(IrradianceComputePassPipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(SampleDDGIComputePassPipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(ProbeStatusComputePassPipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(ReSTIR_Temporal_RT_PassPipeline);
-	vulkanContext.LogicalDevice.destroyPipeline(ReSTIR_SPATIAL_RT_PassPipeline);
+void App::destroyPipeline() {
 
+	vk::Pipeline pipelines[] = {
+		DeferedLightingPassPipeline, FXAAPassPipeline, LightgraphicsPipeline, SkyBoxgraphicsPipeline,
+		geometryPassPipeline, SSAOPipeline, SSAOBlurPipeline, SSRPipeline, RT_ShadowsPassPipeline,
+		SSGIPipeline, CombinedImagePassPipeline, Gamma_Corrected_IMGUI_PassPipeline,
+		BluredRTreflectionPipeline, DDGIProbePipeline, GridComputePassPipeline, RT_DDGIPassPipeline,
+		IrradianceComputePassPipeline, SampleDDGIComputePassPipeline, ProbeStatusComputePassPipeline,
+		ReSTIR_Temporal_RT_PassPipeline, ReSTIR_SPATIAL_RT_PassPipeline
+	};
 
-	vulkanContext.LogicalDevice.destroyPipelineLayout(DeferedLightingPassPipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(FXAAPassPipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(LightpipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(SkyBoxpipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(geometryPassPipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(SSAOPipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(SSAOBlurPipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(SSRPipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(RT_ShadowsPipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(SSGIPipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(CombinedImagePipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(BluredRTreflectionsPipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(DDGIProbepipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(GridComputePipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(RT_DDGIPipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(IrradianceComputePipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(SampleDDGIComputePipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(ProbeStatusPipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(ReSTIR_Temporal_RT_PipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(ReSTIR_Spatial_RT_PipelineLayout);
-	vulkanContext.LogicalDevice.destroyPipelineLayout(Gamma_Corrected_IMGUI_PipelineLayout);
+	for (auto pipeline : pipelines) {
+		if (pipeline) vulkanContext.LogicalDevice.destroyPipeline(pipeline);
+	}
 
+	vk::PipelineLayout layouts[] = {
+		DeferedLightingPassPipelineLayout, FXAAPassPipelineLayout, LightpipelineLayout,
+		SkyBoxpipelineLayout, geometryPassPipelineLayout, SSAOPipelineLayout, SSAOBlurPipelineLayout,
+		SSRPipelineLayout, RT_ShadowsPipelineLayout, SSGIPipelineLayout, CombinedImagePipelineLayout,
+		BluredRTreflectionsPipelineLayout, DDGIProbepipelineLayout, GridComputePipelineLayout,
+		RT_DDGIPipelineLayout, IrradianceComputePipelineLayout, SampleDDGIComputePipelineLayout,
+		ProbeStatusPipelineLayout, ReSTIR_Temporal_RT_PipelineLayout, ReSTIR_Spatial_RT_PipelineLayout,
+		Gamma_Corrected_IMGUI_PipelineLayout
+	};
+
+	for (auto layout : layouts) {
+		if (layout) vulkanContext.LogicalDevice.destroyPipelineLayout(layout);
+	}
 }
 
 
