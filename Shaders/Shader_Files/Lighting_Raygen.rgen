@@ -218,7 +218,7 @@ void main() {
 
     vec3 indirectLighting = vec3(0);
 
-    if(PC.GI_Solution_Index_Padding.x == 3 || PC.GI_Solution_Index_Padding.x == 4){ 
+    if(PC.GI_Solution_Index_Padding.x == 1){ 
         indirectLighting = PathTraceGI(WorldPos, Normal) * Albedo;    
     }
 

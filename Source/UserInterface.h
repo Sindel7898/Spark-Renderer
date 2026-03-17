@@ -95,7 +95,9 @@ private:
     std::vector<std::string> DDGI_Vertex_Options{ "First Vertex", "Second Vertex" };
     std::string currentDDGIVertex = "First Vertex";
 
-    std::vector<std::string> GlobalIllumination_Solution{ "DDGI", "SSGI","DDGI + SSGI","PT","None"};
+    //std::vector<std::string> GlobalIllumination_Solution{ "DDGI", "SSGI","DDGI + SSGI","PT","None"};
+    std::vector<std::string> GlobalIllumination_Solution{ "DDGI","PT","None" };
+
     std::string currentGI_Solution = "DDGI";
 
     ImVec2 viewportSize;

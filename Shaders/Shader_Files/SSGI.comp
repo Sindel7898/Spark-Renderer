@@ -108,59 +108,59 @@ vec3 offsetPositionAlongNormal(vec3 ViewPosition, vec3 normal)
 layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
 void main() {
-
-   int   Width            = int(ubo.BlueNoiseImageIndex_DeltaTime_Width_Height.z);
-   int   Height           = int(ubo.BlueNoiseImageIndex_DeltaTime_Width_Height.w);
-
-    ivec2 TextlCord   = ivec2(gl_GlobalInvocationID.xy);
-    vec2 UV = (vec2(TextlCord * 2) + 0.5) / vec2(Width,Height); // + 0.5 gives us the middle of the TEXEL not the edge
-
-    vec3 Color      = texture(DirectLigtingTexture, UV).rgb;
-    vec3 Albedo     = texture(AlbedoTexture, UV).rgb;
-    vec4 VSposition = ubo.ViewMatrix * vec4(texture(WorldSpacePosition, UV).rgb,1);
-    vec3 Normal     = normalize(texture(NormalTexture, UV).xyz);
-    
-   
-
-    vec2 tiledUV = (vec2(TextlCord * 2) + 0.5) /  vec2(128,128);
-
-   
-    vec3 giContribution = vec3(0.00);
-    float brightness = luminance(Color);
-    
-    int NUM_RAYS = int(mix(MAX_RAYS, MIN_RAYS, brightness));
-   
-       for(int i = 0; i < NUM_RAYS; i++) {
-       
-            //vec2 noise = rand2(tiledUV + inTexCoord * 17.0, seed, float(i));
-           //int index = int(ubo.BlueNoiseImageIndex_DeltaTime_Width_Height.x);
-           //vec2 noise = texture(BlueNoise[index], tiledUV).rg;
-           //vec3 stochasticNormal = GetHemisphereSample(noise, Normal);
-       
-        uvec3 seed = uvec3(gl_GlobalInvocationID.xy, uint(i) + uint(ubo.BlueNoiseImageIndex_DeltaTime_Width_Height.x * 100.0));
-        uvec3 h = pcg3d(seed);
-        vec2 randVal = vec2(h.xy) * (1.0 / 4294967295.0); // scale between 0 and 1 
-
-        vec3 stochasticNormal = GetHemisphereSample(randVal, Normal);
-
-            if(dot(stochasticNormal, stochasticNormal) > 0.001){
-            
-              RayHit hit  = FindIntersectionPoint(
-                            offsetPositionAlongNormal(VSposition.xyz, Normal), 
-                            stochasticNormal, 
-                            200.0);
-   
-            if(hit.hit) {
-               vec4 RayPositionPS = ubo.ProjectionMatrix * vec4(hit.position, 1.0);
-               RayPositionPS.xyz /= RayPositionPS.w;
-               vec2 hitUV = RayPositionPS.xy * 0.5 + 0.5;
-   
-               vec3 Direct = texture(DirectLigtingTexture, hitUV).rgb;
-               giContribution += Direct;
-   
-            }
-      }
-}
-    vec3 finalGI = (giContribution / float(max(1, NUM_RAYS)));
-    imageStore(SSGITexture,ivec2(gl_GlobalInvocationID.xy), vec4(finalGI,1));
+//
+//   int   Width            = int(ubo.BlueNoiseImageIndex_DeltaTime_Width_Height.z);
+//   int   Height           = int(ubo.BlueNoiseImageIndex_DeltaTime_Width_Height.w);
+//
+//    ivec2 TextlCord   = ivec2(gl_GlobalInvocationID.xy);
+//    vec2 UV = (vec2(TextlCord * 2) + 0.5) / vec2(Width,Height); // + 0.5 gives us the middle of the TEXEL not the edge
+//
+//    vec3 Color      = texture(DirectLigtingTexture, UV).rgb;
+//    vec3 Albedo     = texture(AlbedoTexture, UV).rgb;
+//    vec4 VSposition = ubo.ViewMatrix * vec4(texture(WorldSpacePosition, UV).rgb,1);
+//    vec3 Normal     = normalize(texture(NormalTexture, UV).xyz);
+//    
+//   
+//
+//    vec2 tiledUV = (vec2(TextlCord * 2) + 0.5) /  vec2(128,128);
+//
+//   
+//    vec3 giContribution = vec3(0.00);
+//    float brightness = luminance(Color);
+//    
+//    int NUM_RAYS = int(mix(MAX_RAYS, MIN_RAYS, brightness));
+//   
+//       for(int i = 0; i < NUM_RAYS; i++) {
+//       
+//            //vec2 noise = rand2(tiledUV + inTexCoord * 17.0, seed, float(i));
+//           //int index = int(ubo.BlueNoiseImageIndex_DeltaTime_Width_Height.x);
+//           //vec2 noise = texture(BlueNoise[index], tiledUV).rg;
+//           //vec3 stochasticNormal = GetHemisphereSample(noise, Normal);
+//       
+//        uvec3 seed = uvec3(gl_GlobalInvocationID.xy, uint(i) + uint(ubo.BlueNoiseImageIndex_DeltaTime_Width_Height.x * 100.0));
+//        uvec3 h = pcg3d(seed);
+//        vec2 randVal = vec2(h.xy) * (1.0 / 4294967295.0); // scale between 0 and 1 
+//
+//        vec3 stochasticNormal = GetHemisphereSample(randVal, Normal);
+//
+//            if(dot(stochasticNormal, stochasticNormal) > 0.001){
+//            
+//              RayHit hit  = FindIntersectionPoint(
+//                            offsetPositionAlongNormal(VSposition.xyz, Normal), 
+//                            stochasticNormal, 
+//                            200.0);
+//   
+//            if(hit.hit) {
+//               vec4 RayPositionPS = ubo.ProjectionMatrix * vec4(hit.position, 1.0);
+//               RayPositionPS.xyz /= RayPositionPS.w;
+//               vec2 hitUV = RayPositionPS.xy * 0.5 + 0.5;
+//   
+//               vec3 Direct = texture(DirectLigtingTexture, hitUV).rgb;
+//               giContribution += Direct;
+//   
+//            }
+//      }
+//}
+//
+//    imageStore(SSGITexture,ivec2(gl_GlobalInvocationID.xy), vec4(giContribution,1));
 }

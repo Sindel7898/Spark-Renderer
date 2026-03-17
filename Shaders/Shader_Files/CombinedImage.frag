@@ -85,15 +85,15 @@ void main() {
         GI = DDGIresult;
      }
 
-     if(GISolution == 1) {
-        GI = SSGIGIresult;
-     }
+     //if(GISolution == 1) {
+     //   GI = SSGIGIresult;
+     //}
 
-     if(GISolution == 2) {
-        GI = DDGIresult + SSGIGIresult;
-     }
+    // if(GISolution == 2) {
+    //    GI = DDGIresult + SSGIGIresult;
+    // }
 
-    if(GISolution == 3) {
+    if(GISolution == 1) {
        vec4 curColor  = imageLoad(PTGI_Texture, texelCoord);
        
        vec2 Velocity = texture(MotionVectors, inTexCoord).rg;
@@ -133,5 +133,5 @@ void main() {
 
     vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, Brightness, Saturation, Concentration);
 
-    outFragColor = vec4(AO,AO,AO,AO);
+    outFragColor = vec4(FinalColor,1.0);
 }
