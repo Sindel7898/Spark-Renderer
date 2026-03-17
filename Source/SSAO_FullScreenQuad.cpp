@@ -50,7 +50,7 @@ void SSA0_FullScreenQuad::CreateUniformBuffer()
 		glm::vec4 noise(
 			randomFloats(generator) * 2.0 - 1.0,
 			randomFloats(generator) * 2.0 - 1.0,
-			0.0f, 0.0f);
+			randomFloats(generator), 0.0f);
 		ssaoNoise.push_back(noise);
 	}
 

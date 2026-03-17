@@ -133,5 +133,5 @@ void main() {
 
     vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, Brightness, Saturation, Concentration);
 
-    outFragColor = vec4(CorrectedColor, 1.0);
+    outFragColor = vec4(AO,AO,AO,AO);
 }
