@@ -83,8 +83,6 @@ App::App() : window(1920, 1080, "Spark Renderer")
 
 void App::LoadAllObjects()
 {
-
-
 	////Sponza SETUP
 	auto Sponza = std::shared_ptr<Model>(new Model("../Textures/PBR_Sponza/Sponza.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto Bunny = std::shared_ptr<Model>(new Model("../Textures/Bunny2/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
@@ -120,7 +118,6 @@ void App::LoadAllObjects()
 	auto Dragon2 = std::shared_ptr<Model>(new Model("../Textures/Dragon/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	auto CornelBox = std::shared_ptr<Model>(new Model("../Textures/CornelBox/Cornel.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 
-	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 	Bunny2->Instances[0]->SetPostion(glm::vec3(-5.936, 3.043, -9.525));
 	Bunny2->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
 	Bunny2->Instances[0]->SetScale(glm::vec3(0.082, 0.082, 0.082));
@@ -169,6 +166,27 @@ void App::LoadAllObjects()
 	AltCornelSceneModels.push_back(std::move(Bunny3));
 	AltCornelSceneModels.push_back(std::move(AltCornelBox));
 
+	////////////////////////////////////////////////////////
+		////Classroom SETUP
+	auto ClassRoom = std::shared_ptr<Model>(new Model("../Textures/Classroom/ClassRoom.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto TinyBunny = std::shared_ptr<Model>(new Model("../Textures/Bunny2/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+
+	TinyBunny->Instances[0]->SetPostion(glm::vec3(-11.466, -0.541, -73.483));
+	TinyBunny->Instances[0]->SetRotation(glm::vec3(-0.001, -2.316, 0.002));
+	TinyBunny->Instances[0]->SetScale(glm::vec3(0.040, 0.040, 0.040));
+	TinyBunny->Instances[0]->CubeMapReflectiveSwitch(false);
+	TinyBunny->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+
+	ClassRoom->Instances[0]->SetScale(glm::vec3(10, 10, 10));
+	ClassRoom->Instances[0]->SetRotation(glm::vec3(-2.000, 0, 0));
+	ClassRoom->Instances[0]->CubeMapReflectiveSwitch(false);
+	ClassRoom->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+
+	TinyBunny->createDescriptorSets(DescriptorPool);
+	ClassRoom->createDescriptorSets(DescriptorPool);
+
+	ClassRoomSceneModels.push_back(std::move(TinyBunny));
+	ClassRoomSceneModels.push_back(std::move(ClassRoom));
 }
 
 void App::UpdateRayTracingDescriptors()
@@ -220,6 +238,7 @@ void App::SpawnLights(int NumOfLights) {
 	case 0: for (auto& m : CornelSceneModels) UserInterfaceItems.push_back(m.get()); break;
 	case 1: for (auto& m : SponzaSceneModels) UserInterfaceItems.push_back(m.get()); break;
 	case 2: for (auto& m : AltCornelSceneModels) UserInterfaceItems.push_back(m.get()); break;
+	case 3: for (auto& m : ClassRoomSceneModels) UserInterfaceItems.push_back(m.get()); break;
 	}
 
 	lights.clear();
@@ -319,7 +338,7 @@ void App::SwitchScene(int index)
 			UserInterfaceItems.push_back(model.get());
 		}
 
-		int LightCount = 2;
+		int LightCount = 1;
 
 		lights.reserve(LightCount);
 
@@ -350,6 +369,10 @@ void App::SwitchScene(int index)
 
 			lights.push_back(std::move(light));
 		}
+
+		lights[0]->lightType = 0;
+		lights[0]->SetPosition(glm::vec3(-8.404, -89.175, -1.344));
+		lights[0]->color = glm::vec3(1, 1, 1);
 
 		if (dynamicDiffuse_RTGI)
 		{
@@ -418,6 +441,67 @@ void App::SwitchScene(int index)
 		camera.SetPosition(glm::vec3{ -0.896284, 12.566, -37.7205 });
 		camera.SetRotation(89.1, -2.5);
 		DefferedDecider = 3;
+	}
+
+	else if (index == 3)
+	{
+		for (auto& model : ClassRoomSceneModels) {
+			Models.push_back(model.get());
+			UserInterfaceItems.push_back(model.get());
+		}
+
+		int LightCount = 1;
+
+		lights.reserve(LightCount);
+
+		std::random_device rd;
+
+		std::mt19937 gen(rd());
+
+		std::uniform_real_distribution<float> disX(-20, 20);
+		std::uniform_real_distribution<float> disZ(-80, 0);
+		std::uniform_real_distribution<float> disY(0, 10);
+		std::uniform_real_distribution<float> disc(0, 1);
+
+		for (int i = 0; i < LightCount; i++) {
+			auto light = std::make_unique<Light>(&vulkanContext, commandPool, &camera, &bufferManger);
+
+			float randX = disX(gen);
+			float randY = disY(gen);
+			float randZ = disZ(gen);
+
+			light->SetPosition(glm::vec3(randX, randY, randZ));
+			light->CastShadow = true;
+			light->createDescriptorSets(DescriptorPool);
+
+			float R = disc(gen);
+			float G = disc(gen);
+			float B = disc(gen);
+
+			light->color = glm::vec3(R, G, B);
+
+			lights.push_back(std::move(light));
+		}
+
+		lights[0]->lightType = 0;
+		lights[0]->SetPosition(glm::vec3(285.855, -138.493, 23.834));
+		lights[0]->color = glm::vec3(1, 1, 1);
+
+		if (dynamicDiffuse_RTGI)
+		{
+			dynamicDiffuse_RTGI->NumOfProbesX = 13;
+			dynamicDiffuse_RTGI->NumOfProbesY = 13;
+			dynamicDiffuse_RTGI->NumOfProbesZ = 13;
+			dynamicDiffuse_RTGI->RaysPerProbe = 188;
+			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-45.000, -9.000, -79.000);
+			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(5.600, 2.300, 6.900);
+
+		}
+
+		camera.SetPosition(glm::vec3{ -15.6126,  5.40754,  -9.70955 });
+		camera.SetRotation(-84.8, -10.5);
+
+		DefferedDecider = 2;
 	}
 
 	for (auto& l : lights) {
@@ -693,7 +777,7 @@ void App::createDescriptorPool()
 
 	vk::DescriptorPoolSize Samplerpoolsize;
 	Samplerpoolsize.type = vk::DescriptorType::eCombinedImageSampler;
-	Samplerpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 300;
+	Samplerpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 600;
 
 	vk::DescriptorPoolSize AccelerationStructurepoolsize;
 	AccelerationStructurepoolsize.type = vk::DescriptorType::eAccelerationStructureKHR;
@@ -3605,6 +3689,11 @@ void App::DestroyBuffers()
 	}
 
 	for (auto& model : AltCornelSceneModels)
+	{
+		model.reset();
+	}
+	
+	for (auto& model : ClassRoomSceneModels)
 	{
 		model.reset();
 	}

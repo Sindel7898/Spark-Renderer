@@ -111,7 +111,7 @@ public:
 	void SwitchScene(int Index);
 
 	int currentSceneIndex = 2;
-	std::vector<std::string> SceneNames = { "Cornell", "Sponza" ,"Alt Cornell" };
+	std::vector<std::string> SceneNames = { "Cornell", "Sponza" ,"Alt Cornell","ClassRoom"};
 
 	bool framebufferResized = false;
 	int DefferedDecider = 3;
@@ -139,6 +139,7 @@ public:
 
 
 	std::vector<std::shared_ptr<Model>> SponzaSceneModels;
+	std::vector<std::shared_ptr<Model>> ClassRoomSceneModels;
 	std::vector<std::shared_ptr<Model>> CornelSceneModels;
 	std::vector<std::shared_ptr<Model>> AltCornelSceneModels;
 

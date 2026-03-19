@@ -158,7 +158,7 @@ if (DDGISamplingVertex > 0 && bDDGI) {
      traceRayEXT(topLevelAS, 
          gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsCullBackFacingTrianglesEXT, 
          0xFF, 0, 0, 0, 
-         rayOrigin, 0.01, DiffuseDirection, 1000.0, 0);
+         rayOrigin, 0.15, DiffuseDirection, 1000.0, 0);
 
      
      vec3 y_pos = payload.Position.xyz;
