@@ -3323,6 +3323,18 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, DeferedLightingPassPipeline);
 			lighting_RTX->Draw(Lighting_raygenShaderBindingTableBuffer, Lighting_hitShaderBindingTableBuffer,
 				Lighting_missShaderBindingTableBuffer, commandBuffer, DeferedLightingPassPipelineLayout, currentFrame);
+		
+			vk::MemoryBarrier2 memoryBarrier{};
+			memoryBarrier.srcStageMask = vk::PipelineStageFlagBits2::eRayTracingShaderKHR;
+			memoryBarrier.srcAccessMask = vk::AccessFlagBits2::eShaderWrite;
+			memoryBarrier.dstStageMask = vk::PipelineStageFlagBits2::eFragmentShader;
+			memoryBarrier.dstAccessMask = vk::AccessFlagBits2::eShaderRead;
+
+			vk::DependencyInfo dependencyInfo{};
+			dependencyInfo.memoryBarrierCount = 1;
+			dependencyInfo.pMemoryBarriers = &memoryBarrier;
+
+			commandBuffer.pipelineBarrier2(dependencyInfo);
 		}
 
 
@@ -3492,6 +3504,17 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 		/////////////////// FORWARD PASS END ///////////////////////// 
 		vulkanContext.vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
 
+		vk::MemoryBarrier2 memoryBarrier{};
+		memoryBarrier.srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput | vk::PipelineStageFlagBits2::eComputeShader | vk::PipelineStageFlagBits2::eRayTracingShaderKHR;
+		memoryBarrier.srcAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite | vk::AccessFlagBits2::eShaderWrite;
+		memoryBarrier.dstStageMask = vk::PipelineStageFlagBits2::eFragmentShader;
+		memoryBarrier.dstAccessMask = vk::AccessFlagBits2::eShaderRead;
+
+		vk::DependencyInfo dependencyInfo{};
+		dependencyInfo.memoryBarrierCount = 1;
+		dependencyInfo.pMemoryBarriers = &memoryBarrier;
+
+		commandBuffer.pipelineBarrier2(dependencyInfo);
 
 		userinterface.RenderUi(commandBuffer, imageIndex, Combined_FullScreenQuad->IMGUI_PRESENT_IMAGE);
 
