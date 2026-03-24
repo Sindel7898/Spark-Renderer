@@ -183,7 +183,7 @@ void main() {
                 continue;
             }
             
-            vec4 NeighbourResData = imageLoad(ResevoirImage, neighborCoord);
+            vec4 NeighbourResData = imageLoad(PrevResevoirImage, neighborCoord);
 
 
             Reservoir neighbourReservoir;
@@ -192,8 +192,8 @@ void main() {
             neighbourReservoir.Num_OF_Lights_In_Resevoir = NeighbourResData.w;
 
             if(neighbourReservoir.Light_Index == GIIndex) {
-                neighbourReservoir.Sample_Pos  = imageLoad(GI_SamplePosImage , neighborCoord).xyz;
-                neighbourReservoir.Sample_Flux = imageLoad(GI_SampleFluxImage, neighborCoord).xyz;
+                neighbourReservoir.Sample_Pos  = imageLoad(PrevGI_SamplePosImage , neighborCoord).xyz;
+                neighbourReservoir.Sample_Flux = imageLoad(PrevGI_SampleFluxImage, neighborCoord).xyz;
             } else {
                  neighbourReservoir.Sample_Pos = vec3(0.0);
                  neighbourReservoir.Sample_Flux = vec3(0.0);
