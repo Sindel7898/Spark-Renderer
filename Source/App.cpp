@@ -322,8 +322,8 @@ void App::SwitchScene(int index)
 			dynamicDiffuse_RTGI->NumOfProbesY = 10;
 			dynamicDiffuse_RTGI->NumOfProbesZ = 10;
 			dynamicDiffuse_RTGI->RaysPerProbe = 128;
-			dynamicDiffuse_RTGI->ProbeOffset  = glm::vec3(3.000, 3.000, 4.000);
-			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-13.000, -4.000, -20.000);
+			dynamicDiffuse_RTGI->ProbeOffset  = glm::vec3(3.000, 3.000, 3.00);
+			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-13.000, -4.000, -15);
 		}
 
 		camera.SetPosition(glm::vec3{ -0.896284, 12.566, -37.7205 });
