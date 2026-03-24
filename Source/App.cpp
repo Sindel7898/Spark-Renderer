@@ -3113,6 +3113,10 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 				ReSTIR_Spatial_RT_PipelineLayout,
 				currentFrame);
 
+#if ENABLE_NVPERF
+
+			apiTracer.EndRange(commandBuffer, passIndex);
+#endif
 			////////////////////////////////////////////////////////////////////////////
 
 
@@ -3120,6 +3124,11 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 
 			if (bUseDLSS)
 			{
+
+#if ENABLE_NVPERF
+				apiTracer.BeginRange(commandBuffer, "DLSS", 4, passIndex);
+#endif
+
 				vulkanContext.vkCmdBeginDebugUtilsLabelEXT(commandBuffer, RayReconstruction);
 
 				vk::ImageMemoryBarrier barrier{};
@@ -3137,16 +3146,17 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 				vulkanContext.vkCmdEndDebugUtilsLabelEXT(commandBuffer);
 
 				ReSTIR_Image = &Restir_DI->ReSTIRDI_Denoised_Results;
+#if ENABLE_NVPERF
+
+				apiTracer.EndRange(commandBuffer, passIndex);
+#endif
+
 			}
 			else
 			{
 				ReSTIR_Image = &Restir_DI->ReSTIRDI_Results;
 			}
 
-#if ENABLE_NVPERF
-
-			apiTracer.EndRange(commandBuffer, passIndex);
-#endif
 			////////////////////////////////////////////////////////////////////
 			vk::RenderingAttachmentInfo SkyBoxRenderAttachInfo;
 			SkyBoxRenderAttachInfo.clearValue = clearColor;
