@@ -1,6 +1,6 @@
 #pragma once
 
-#define ENABLE_NVPERF 0
+#define ENABLE_NVPERF 1
 
 #include <memory>
 #include <vulkan/vulkan.hpp>
