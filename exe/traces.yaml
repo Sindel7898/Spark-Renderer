@@ -1,0 +1,8 @@
+  - name: DDGI
+    avgFrameTime: 14.8937
+    samples: 2
+    nestingLevel: 1
+  - name: ReSTIR DI
+    avgFrameTime: 22.639
+    samples: 2
+    nestingLevel: 3

@@ -222,28 +222,28 @@ void main() {
         indirectLighting = PathTraceGI(WorldPos, Normal) * Albedo;    
     }
 
-    vec3 reflectionLighting = vec3(0.0);
-    if (Roughness < 1.0) {
-        vec3 refDir = reflect(-ViewDir, Normal);
-        
-        RTGIpayload.radiance = vec4(0.0);
-        RTGIpayload.normal = vec4(0.0);
-        
-        traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, 
-                    WorldPos + Normal * 0.001, 0.03, refDir, 100.0, 1);
-        
-        if (length(RTGIpayload.normal.xyz) < 0.1) {
-            reflectionLighting = texture(SamplerCubeMap, refDir).rgb;
-        } else {
-            reflectionLighting = RTGIpayload.radiance.rgb;
-        }
-        
-        vec3 F_reflect = fresnelSchlick(max(dot(Normal, ViewDir), 0.0), F0);
-        reflectionLighting *= F_reflect * (1.0 - Roughness);
-    }
+    //vec3 reflectionLighting = vec3(0.0);
+    //if (Roughness < 1.0) {
+    //    vec3 refDir = reflect(-ViewDir, Normal);
+    //    
+    //    RTGIpayload.radiance = vec4(0.0);
+    //    RTGIpayload.normal = vec4(0.0);
+    //    
+    //    traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, 
+    //                WorldPos + Normal * 0.001, 0.03, refDir, 100.0, 1);
+    //    
+    //    if (length(RTGIpayload.normal.xyz) < 0.1) {
+    //        reflectionLighting = texture(SamplerCubeMap, refDir).rgb;
+    //    } else {
+    //        reflectionLighting = RTGIpayload.radiance.rgb;
+    //    }
+    //    
+    //    vec3 F_reflect = fresnelSchlick(max(dot(Normal, ViewDir), 0.0), F0);
+    //    reflectionLighting *= F_reflect * (1.0 - Roughness);
+    //}
 
-    imageStore(OutputImage     , fullCoord, vec4(directLighting + Emmisive + reflectionLighting, 1.0));
-   //imageStore(OutputImage     , fullCoord, vec4(directLighting + Emmisive, 1.0));
+    //imageStore(OutputImage     , fullCoord, vec4(directLighting + Emmisive + reflectionLighting, 1.0));
+    imageStore(OutputImage     , fullCoord, vec4(directLighting + Emmisive, 1.0));
     imageStore(PTGI_OutputImage, fullCoord, vec4(indirectLighting, 1.0));
 }
 
