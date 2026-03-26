@@ -164,8 +164,7 @@ vec3 EvaluateCandidateRadiance(uint lightIndex, vec3 samplePos, vec3 sampleFlux,
 
         float G_Term   = min(Cos / max(Distance2, 0.001), a0);
 
-        vec3 bsdf = EvaluateBSDF(surface, ViewDir, lightVec);
-        return sampleFlux * bsdf * G_Term;
+        return sampleFlux * G_Term;
     }
 
     return GetLightRadiance(lights[lightIndex], cameraPos, surface, ViewDir, F, diffuse);
