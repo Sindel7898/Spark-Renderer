@@ -133,8 +133,8 @@ void main()
                 if(int(pc.UseInfiniteBounce_infinite_bounces_multiplier_DDGIMODE_LightCount.z) == 0){
                   L_Direct  += (Albedo / PI)  * NdotL * shadow_Payload.Shadow * radiance *  light.CameraPositionAndLightIntensity.a;
                 }else{
-                    //L_Direct += NdotL * shadow_Payload.Shadow * radiance *  light.CameraPositionAndLightIntensity.a;
-                  L_Direct  += (Albedo / PI)  * NdotL * shadow_Payload.Shadow * radiance *  light.CameraPositionAndLightIntensity.a;
+                    L_Direct += NdotL * shadow_Payload.Shadow * radiance *  light.CameraPositionAndLightIntensity.a;
+                  //L_Direct  += (Albedo / PI)  * NdotL * shadow_Payload.Shadow * radiance *  light.CameraPositionAndLightIntensity.a;
 
                 }                
             }
