@@ -166,27 +166,29 @@ void App::LoadAllObjects()
 	AltCornelSceneModels.push_back(std::move(Bunny3));
 	AltCornelSceneModels.push_back(std::move(AltCornelBox));
 
-	////////////////////////////////////////////////////////
-		////Classroom SETUP
-	auto ClassRoom = std::shared_ptr<Model>(new Model("../Textures/Classroom/ClassRoom.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
-	auto TinyBunny = std::shared_ptr<Model>(new Model("../Textures/Bunny2/scene.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	////////////////////
 
-	TinyBunny->Instances[0]->SetPostion(glm::vec3(-11.466, -0.541, -73.483));
-	TinyBunny->Instances[0]->SetRotation(glm::vec3(-0.001, -2.316, 0.002));
-	TinyBunny->Instances[0]->SetScale(glm::vec3(0.040, 0.040, 0.040));
-	TinyBunny->Instances[0]->CubeMapReflectiveSwitch(false);
-	TinyBunny->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	auto Bunny4 = std::shared_ptr<Model>(new Model("../Textures/Bunny2/WhiteBunny.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	auto AltCornelBoxColorFull = std::shared_ptr<Model>(new Model("../Textures/EmptyCornel/Cornel_ColorFull.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
 
-	ClassRoom->Instances[0]->SetScale(glm::vec3(10, 10, 10));
-	ClassRoom->Instances[0]->SetRotation(glm::vec3(-2.000, 0, 0));
-	ClassRoom->Instances[0]->CubeMapReflectiveSwitch(false);
-	ClassRoom->Instances[0]->ScreenSpaceReflectiveSwitch(false);
+	//auto model10 = std::shared_ptr<Model>(new Model("../Textures/Head/Untitled.gltf", &vulkanContext, commandPool, &camera, &bufferManger), ModelDeleter);
+	Bunny4->Instances[0]->SetPostion(glm::vec3(-1.185, -3.895, -1.218));
+	Bunny4->Instances[0]->SetRotation(glm::vec3(-179.998, -0.000, -180.000));
+	Bunny4->Instances[0]->SetScale(glm::vec3(0.190, 0.190, 0.190));
+	Bunny4->Instances[0]->CubeMapReflectiveSwitch(false);
+	Bunny4->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
-	TinyBunny->createDescriptorSets(DescriptorPool);
-	ClassRoom->createDescriptorSets(DescriptorPool);
+	AltCornelBoxColorFull->Instances[0]->SetPostion(glm::vec3(0, 0, 0));
+	AltCornelBoxColorFull->Instances[0]->SetScale(glm::vec3(1.5, 1.5, 1.5));
+	AltCornelBoxColorFull->Instances[0]->CubeMapReflectiveSwitch(false);
+	AltCornelBoxColorFull->Instances[0]->ScreenSpaceReflectiveSwitch(false);
 
-	ClassRoomSceneModels.push_back(std::move(TinyBunny));
-	ClassRoomSceneModels.push_back(std::move(ClassRoom));
+	Bunny4->createDescriptorSets(DescriptorPool);
+	AltCornelBoxColorFull->createDescriptorSets(DescriptorPool);
+
+	Alt_2_CornelSceneModels.push_back(std::move(Bunny4));
+	Alt_2_CornelSceneModels.push_back(std::move(AltCornelBoxColorFull));
+
 }
 
 void App::UpdateRayTracingDescriptors()
@@ -238,7 +240,7 @@ void App::SpawnLights(int NumOfLights) {
 	case 0: for (auto& m : CornelSceneModels) UserInterfaceItems.push_back(m.get()); break;
 	case 1: for (auto& m : SponzaSceneModels) UserInterfaceItems.push_back(m.get()); break;
 	case 2: for (auto& m : AltCornelSceneModels) UserInterfaceItems.push_back(m.get()); break;
-	case 3: for (auto& m : ClassRoomSceneModels) UserInterfaceItems.push_back(m.get()); break;
+	case 3: for (auto& m : Alt_2_CornelSceneModels) UserInterfaceItems.push_back(m.get()); break;
 	}
 
 	lights.clear();
@@ -396,7 +398,7 @@ void App::SwitchScene(int index)
 			UserInterfaceItems.push_back(model.get());
 		}
 
-		int LightCount = 8;
+		int LightCount = 1;
 
 		lights.reserve(LightCount);
 
@@ -428,14 +430,20 @@ void App::SwitchScene(int index)
 			lights.push_back(std::move(light));
 		}
 
+
+		lights[0]->lightType = 0;
+		lights[0]->SetPosition(glm::vec3(127.853, -215.645, 455.232));
+		lights[0]->color = glm::vec3(1, 1, 1);
+		lights[0]->lightIntensity = 1.5;
+
 		if (dynamicDiffuse_RTGI)
 		{
 			dynamicDiffuse_RTGI->NumOfProbesX = 10;
 			dynamicDiffuse_RTGI->NumOfProbesY = 10;
 			dynamicDiffuse_RTGI->NumOfProbesZ = 10;
 			dynamicDiffuse_RTGI->RaysPerProbe = 128;
-			dynamicDiffuse_RTGI->ProbeOffset  = glm::vec3(3.000, 3.000, 5.000);
-			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-13.000, -4.000, -20.000);
+			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(3.000, 3.100, 3.000);
+			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-13.000, -3.500, -15.000);
 		}
 
 		camera.SetPosition(glm::vec3{ -0.896284, 12.566, -37.7205 });
@@ -445,7 +453,7 @@ void App::SwitchScene(int index)
 
 	else if (index == 3)
 	{
-		for (auto& model : ClassRoomSceneModels) {
+		for (auto& model : Alt_2_CornelSceneModels) {
 			Models.push_back(model.get());
 			UserInterfaceItems.push_back(model.get());
 		}
@@ -484,22 +492,23 @@ void App::SwitchScene(int index)
 		}
 
 		lights[0]->lightType = 0;
-		lights[0]->SetPosition(glm::vec3(285.855, -138.493, 23.834));
+		lights[0]->SetPosition(glm::vec3(127.853, -215.645, 455.232));
 		lights[0]->color = glm::vec3(1, 1, 1);
+		lights[0]->lightIntensity = 1.5;
 
 		if (dynamicDiffuse_RTGI)
 		{
-			dynamicDiffuse_RTGI->NumOfProbesX = 13;
-			dynamicDiffuse_RTGI->NumOfProbesY = 13;
-			dynamicDiffuse_RTGI->NumOfProbesZ = 13;
-			dynamicDiffuse_RTGI->RaysPerProbe = 188;
-			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-45.000, -9.000, -79.000);
-			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(5.600, 2.300, 6.900);
+			dynamicDiffuse_RTGI->NumOfProbesX = 10;
+			dynamicDiffuse_RTGI->NumOfProbesY = 10;
+			dynamicDiffuse_RTGI->NumOfProbesZ = 10;
+			dynamicDiffuse_RTGI->RaysPerProbe = 128;
+			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(3.000, 3.100, 3.000);
+			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-13.000, -3.500, -15.000);
 
 		}
 
-		camera.SetPosition(glm::vec3{ -15.6126,  5.40754,  -9.70955 });
-		camera.SetRotation(-84.8, -10.5);
+		camera.SetPosition(glm::vec3{ -0.896284, 12.566, -37.7205 });
+		camera.SetRotation(89.1, -2.5);
 
 		DefferedDecider = 2;
 	}
@@ -3726,7 +3735,7 @@ void App::DestroyBuffers()
 		model.reset();
 	}
 	
-	for (auto& model : ClassRoomSceneModels)
+	for (auto& model : Alt_2_CornelSceneModels)
 	{
 		model.reset();
 	}
