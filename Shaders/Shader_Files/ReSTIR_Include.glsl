@@ -153,16 +153,10 @@ vec3 EvaluateCandidateRadiance(uint lightIndex, vec3 samplePos, vec3 sampleFlux,
    
    if (lightIndex == GIIndex) {
         vec3  lightVec   = normalize(samplePos - surface.worldPos);
-        float Distance   = distance(samplePos, surface.worldPos); 
-        float Distance2  = Distance * Distance;
-
+    
         float Cos = max(dot(surface.normal, lightVec), 0.0); // Lambert Diffuse
 
-        //Calculate the size the pixel can have in world space and clamp based on that
-        float camDist = distance(cameraPos, surface.worldPos);
-        float a0 = ((4 * PI ) * camDist * camDist) / max(dot(surface.normal, ViewDir), 0.001);
-
-        float G_Term   = min(Cos / max(Distance2, 0.001), a0);
+        float G_Term   = min(Cos, 1);
 
         return sampleFlux * G_Term;
     }

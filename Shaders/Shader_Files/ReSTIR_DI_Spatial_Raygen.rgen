@@ -164,7 +164,7 @@ void main() {
     }
    
     if (bSpatialReuse) {
-        int radius = 30; 
+        int radius = 15; 
 
         for(int i = 0; i < 6; i++){
             vec2 offset = 2.0 * vec2(rand(seed), rand(seed)) - 1.0;
