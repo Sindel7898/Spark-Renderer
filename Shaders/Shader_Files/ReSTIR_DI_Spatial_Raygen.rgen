@@ -228,10 +228,13 @@ void main() {
    
             if (light.positionAndLightType.w > 0.5) { 
                 tMax = length(light.positionAndLightType.xyz - surfaceData.worldPos);
-                shadowDir = SoftShadow(light.positionAndLightType.xyz, surfaceData.worldPos, 0.25, blueSample.x, blueSample.x);
+                shadowDir = normalize(light.positionAndLightType.xyz - surfaceData.worldPos);
+
+                //shadowDir = SoftShadow(light.positionAndLightType.xyz, surfaceData.worldPos, 0.25, blueSample.x, blueSample.x);
             } else { 
                 tMax = 10000.0;
-                shadowDir = DirectionalSoftShadow(normalize(-light.positionAndLightType.xyz), 0.009, blueSample.x, blueSample.x);
+                 shadowDir = normalize(-light.positionAndLightType.xyz);
+                //shadowDir = DirectionalSoftShadow(normalize(-light.positionAndLightType.xyz), 0.009, blueSample.x, blueSample.x);
             }
    
             isVisible = TraceShadow(rayOrigin, shadowDir, tMax);

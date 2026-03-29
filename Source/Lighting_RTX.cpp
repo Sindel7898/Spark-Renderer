@@ -48,13 +48,13 @@ void Lighting_RTX::CreateStorageImage() {
     ResultingStorageImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
     PTGI_StorageImage.ImageID = "PTGI Pass Image";
-    bufferManager->CreateImage(&PTGI_StorageImage, swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc, false);
-    PTGI_StorageImage.imageView = bufferManager->CreateImageView(&PTGI_StorageImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+    bufferManager->CreateImage(&PTGI_StorageImage, swapchainextent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc, false);
+    PTGI_StorageImage.imageView = bufferManager->CreateImageView(&PTGI_StorageImage, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
     PTGI_StorageImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 
     Prev_Frame_PTGI_StorageImage.ImageID = "Last Frame Pass Image";
-    bufferManager->CreateImage(&Prev_Frame_PTGI_StorageImage, swapchainextent, vk::Format::eR16G16B16A16Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc, false);
-    Prev_Frame_PTGI_StorageImage.imageView = bufferManager->CreateImageView(&Prev_Frame_PTGI_StorageImage, vk::Format::eR16G16B16A16Sfloat, vk::ImageAspectFlagBits::eColor);
+    bufferManager->CreateImage(&Prev_Frame_PTGI_StorageImage, swapchainextent, vk::Format::eR32G32B32A32Sfloat, vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc, false);
+    Prev_Frame_PTGI_StorageImage.imageView = bufferManager->CreateImageView(&Prev_Frame_PTGI_StorageImage, vk::Format::eR32G32B32A32Sfloat, vk::ImageAspectFlagBits::eColor);
     Prev_Frame_PTGI_StorageImage.imageSampler = bufferManager->CreateImageSampler(vk::SamplerAddressMode::eClampToEdge);
 }
 

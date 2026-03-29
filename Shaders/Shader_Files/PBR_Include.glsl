@@ -92,8 +92,8 @@ vec3 SoftShadow(vec3 LightPosition, vec3 WorldPosition,float radius,float rand1,
 
    float cosAngle = cos(coneAngle);
 
-    // Generate points on the spherical cap around the north pole [1].
-    // [1] See https://math.stackexchange.com/a/205589/81266
+    // Generate points on the spherical cap around the north pole.
+    // https://math.stackexchange.com/a/205589/81266
     float z   = rand1 * (1.0f - cosAngle) + cosAngle;
     float phi = rand2 * 2.0f * PI;
 
@@ -101,11 +101,11 @@ vec3 SoftShadow(vec3 LightPosition, vec3 WorldPosition,float radius,float rand1,
     float y = sqrt(1.0f - z * z) * sin(phi);
     vec3 north = vec3(0.f, 0.f, 1.f);
 
-    // Find the rotation axis `u` and rotation angle `rot` [1]
+    // Find the rotation axis `u` and rotation angle `rot`
     vec3 axis = normalize(cross(north, normalize(toLight)));
     float angle = acos(dot(normalize(toLight), north));
 
-    // Convert rotation axis and angle to 3x3 rotation matrix [2]
+    // Convert rotation axis and angle to 3x3 rotation matrix 
     mat3x3 R = AngleAxis3x3(angle, axis);
 
     return R * vec3(x, y, z);

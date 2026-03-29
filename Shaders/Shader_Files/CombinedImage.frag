@@ -7,8 +7,8 @@ layout (binding = 2) uniform sampler2D SSAOTexture;
 layout (binding = 3) uniform sampler2D MaterialsTexture;                
 layout (binding = 4) uniform sampler2D AlbedoTexture;                
 layout (binding = 5, rgba16f) readonly  uniform image2D  DDGITexture;
-layout (binding = 6, rgba16f) readonly  uniform image2D  PTGI_Texture;
-layout (binding = 7, rgba16f) uniform image2D PreviousPTGI_Texture;
+layout (binding = 6, rgba32f) readonly  uniform image2D  PTGI_Texture;
+layout (binding = 7, rgba32f) uniform image2D PreviousPTGI_Texture;
 layout (binding = 8) uniform sampler2D MotionVectors;                
 
 layout (location = 0) in vec2 inTexCoord;
