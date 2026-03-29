@@ -247,7 +247,7 @@ void main() {
            float tMax = length(spatialReservoir.Sample_Pos - surfaceData.worldPos);
            isVisible = TraceShadow(rayOrigin, lightVec, tMax); 
 
-           radiance *= surfaceData.albedo / 3.14159265359;
+           radiance *= surfaceData.albedo;
        }
    
        ////////////////////////////////////////////
