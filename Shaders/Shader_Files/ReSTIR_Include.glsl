@@ -151,12 +151,14 @@ vec3 GetRadiance(uint lightIndex, vec3 cameraPos, SurfaceData surface, vec3 View
 
 vec3 EvaluateCandidateRadiance(uint lightIndex, vec3 samplePos, vec3 sampleFlux, vec3 cameraPos, SurfaceData surface, vec3 ViewDir, vec3 F, vec3 diffuse) {
    
-   if (lightIndex == GIIndex) {
+    if (lightIndex == GIIndex) {
         vec3  lightVec   = normalize(samplePos - surface.worldPos);
-    
-        float Cos = max(dot(surface.normal, lightVec), 0.0); // Lambert Diffuse
+        float dist       = length(samplePos - surface.worldPos);
 
-        float G_Term   = min(Cos, 1);
+        float NdotL      = max(dot(surface.normal, lightVec), 0.0);
+
+        float Gmax       = 1.0;
+        float G_Term     = min(NdotL / max(dist * dist, 0.0001), Gmax);
 
         return sampleFlux * G_Term;
     }

@@ -212,12 +212,13 @@ void main() {
 
     //Final Shading
    vec3 FinalRadiance = vec3(0.0);
-   
+   float p_hat_final   = 0.0;
+
     if (spatialReservoir.Sum_Of_All_Weights > 0.0) {
 
         vec3 radiance = EvaluateCandidateRadiance(spatialReservoir.Light_Index, spatialReservoir.Sample_Pos, spatialReservoir.Sample_Flux, CameraPos, surfaceData, ViewDir, F, diffuse);
         
-        float p_hat_final = length(radiance);
+             p_hat_final = length(radiance);
         bool isVisible = true;
    
           ////////////////////////////////////////////
@@ -246,7 +247,7 @@ void main() {
            float tMax = length(spatialReservoir.Sample_Pos - surfaceData.worldPos);
            isVisible = TraceShadow(rayOrigin, lightVec, tMax); 
 
-           radiance *= surfaceData.albedo;
+           radiance *= surfaceData.albedo / 3.14159265359;
        }
    
        ////////////////////////////////////////////
