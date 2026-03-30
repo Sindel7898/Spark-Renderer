@@ -83,7 +83,7 @@ vec3 PathTraceGI(vec3 origin, vec3 normal) {
     vec3 currentOrigin = origin + normal * 0.01; 
     vec3 currentNormal = normal;
 
-    for (int bounce = 0; bounce < 8; bounce++) { 
+    for (int bounce = 0; bounce < 3; bounce++) { 
         float rx = rand_pcg(seed);
         float ry = rand_pcg(seed);
         
