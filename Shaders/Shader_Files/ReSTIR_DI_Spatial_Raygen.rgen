@@ -166,7 +166,7 @@ void main() {
     if (bSpatialReuse) {
         int radius = 15; 
 
-        for(int i = 0; i < 6; i++){
+        for(int i = 0; i < 5; i++){
             vec2 offset = 2.0 * vec2(rand(seed), rand(seed)) - 1.0;
             ivec2 neighborCoord = clamp(ivec2(TextCoord + offset * float(radius)), ivec2(0), ivec2(pc.ScreenSize_Padding_FrameIndex_LightCount.xy - 1));
    

@@ -106,8 +106,8 @@ public:
 
     int RaysPerProbe = 128;
 
-    glm::vec3 ProbeOffset      = glm::vec3(3.000, 3.000, 5.000);
-    glm::vec3 GridLocation     = glm::vec3(-13.000, -4.000, -20.000);
+    glm::vec3 ProbeOffset      = glm::vec3(3.000, 3.000, 3.00);
+    glm::vec3 GridLocation     = glm::vec3(-13.000, -4.000, -15);
 
     int ProbeSideLength = (6 * 6);
     int GutterSize = 2;
@@ -130,6 +130,8 @@ public:
     int  DDGIVertex = 0;
 
 	Lighting_RTX* lighting_RTX = nullptr;
+
+    int RESET_PROBE_STATUS = 0;
 private:
 
     VulkanContext*   vulkanContext = nullptr;

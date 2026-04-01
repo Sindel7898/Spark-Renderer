@@ -1558,19 +1558,22 @@ void DynamicDiffuse_RTGI::DispatchProbeStatus(vk::CommandBuffer commandBuffer, v
 {
 	if (lighting_RTX->GISolutionIndex == 0 || lighting_RTX->GISolutionIndex == 2) {
 
-		GeneralAtlasInfo generalAtlasInfo;
-		generalAtlasInfo.AtlasWidthSize = IradianceImageExtent.width;
-		generalAtlasInfo.ProbeSideLength = ProbeSideLength;
-		generalAtlasInfo.GutterSize = GutterSize;
-		generalAtlasInfo.RaysPerProbe = RaysPerProbe;
+		GeneralAtlasInfo_Status AtlasInfo;
+		AtlasInfo.generalAtlasInfo.AtlasWidthSize = IradianceImageExtent.width;
+		AtlasInfo.generalAtlasInfo.ProbeSideLength = ProbeSideLength;
+		AtlasInfo.generalAtlasInfo.GutterSize = GutterSize;
+		AtlasInfo.generalAtlasInfo.RaysPerProbe = RaysPerProbe;
+		AtlasInfo.ForecResetStatus_Padding = glm::vec4(RESET_PROBE_STATUS, 0, 0, 0);
 
-		commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(GeneralAtlasInfo), &generalAtlasInfo);
+		commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eCompute, 0, sizeof(GeneralAtlasInfo_Status), &AtlasInfo);
 
 		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, 0, 1, &ProbeStatusDescriptorSets[imageIndex], 0, nullptr);
 
 		uint32_t workGroupsX = (IradianceImageExtent.width + 7) / 8;
 		uint32_t workGroupsY = (IradianceImageExtent.height + 7) / 8;
 		commandBuffer.dispatch(workGroupsX, workGroupsY, 1);
+
+		RESET_PROBE_STATUS = 0;
 	}
 }
 

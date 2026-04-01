@@ -9,7 +9,7 @@ struct SurfaceData {
 
 const int GIIndex = 900;
 
- const float MaxResevoirVolume = 30.0; 
+ const float MaxResevoirVolume = 13.0; 
 
  ////////https://gist.github.com/JuanDiegoMontoya/f4226d0fa3c627bb78e82fda67057d6e
 uint pcg_hash(uint seed)
@@ -136,7 +136,8 @@ vec3 GetLightRadiance(LightData light, vec3 cameraPos, SurfaceData surface, vec3
     float G = GeometrySmith(surface.normal, ViewDir, LightDir, surface.roughness);
     vec3 numerator = NDF * G * F;
     float denominator = 4.0 * max(dot(surface.normal, ViewDir), 0.0) * max(dot(surface.normal, LightDir), 0.0) + 0.0001;
-    vec3 specular = (numerator / denominator);
+    float inv_denominator = 1.0 / denominator;
+    vec3 specular = numerator * inv_denominator;
 
     float NdotL = max(dot(surface.normal, LightDir), 0.0);
     return (diffuse + specular) * radiance * NdotL * light.CameraPositionAndLightIntensity.a;

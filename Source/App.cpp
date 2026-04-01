@@ -257,6 +257,7 @@ void App::SpawnLights(int NumOfLights) {
 
 		light->SetPosition(glm::vec3(disXZ(gen), disY(gen), disXZ(gen)));
 		light->color = glm::vec3(disc(gen), disc(gen), disc(gen));
+		light->lightIntensity = 0.3;
 		light->CastShadow = true;
 		light->createDescriptorSets(DescriptorPool);
 
@@ -378,12 +379,12 @@ void App::SwitchScene(int index)
 
 		if (dynamicDiffuse_RTGI)
 		{
-			dynamicDiffuse_RTGI->NumOfProbesX = 13;
-			dynamicDiffuse_RTGI->NumOfProbesY = 13;
-			dynamicDiffuse_RTGI->NumOfProbesZ = 13;
+			dynamicDiffuse_RTGI->NumOfProbesX = 12;
+			dynamicDiffuse_RTGI->NumOfProbesY = 5;
+			dynamicDiffuse_RTGI->NumOfProbesZ = 11;
 			dynamicDiffuse_RTGI->RaysPerProbe = 188;
 			dynamicDiffuse_RTGI->GridLocation = glm::vec3(-55.011, 1.300, -23.000);
-			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(8.500, 3.100, 3.600);
+			dynamicDiffuse_RTGI->ProbeOffset = glm::vec3(9.000, 10.000, 4.300);
 
 		}
 
@@ -966,6 +967,8 @@ void App::createGBuffer()
 
 void App::UpdateTextureID()
 {
+
+
 	if (bUseDLSS)
 	{
 		FinalRenderTextureId = ImGui_ImplVulkan_AddTexture(Combined_FullScreenQuad->Final_Denoised_Image.imageSampler,
@@ -2015,7 +2018,7 @@ void App::CreateGraphicsPipeline()
 
 		vk::PushConstantRange range{};
 		range.setOffset(0);
-		range.setSize(sizeof(GeneralAtlasInfo));
+		range.setSize(sizeof(GeneralAtlasInfo_Status));
 		range.setStageFlags(vk::ShaderStageFlagBits::eCompute);
 
 

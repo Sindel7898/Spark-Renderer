@@ -792,7 +792,6 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
                         if (model && SelectedInstanceIndex < model->Instances.size() && model->Instances[SelectedInstanceIndex]) {
 
                             modelMatrix = model->Instances[SelectedInstanceIndex]->GetTransformationMatrix();
-
                         }
                     }
                     else {
@@ -812,7 +811,7 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
                             if (model && SelectedInstanceIndex < model->Instances.size() && model->Instances[SelectedInstanceIndex]) {
 
                                 model->Instances[SelectedInstanceIndex]->SetTrasnformationMatrix(modelMatrix);
-
+                                appref->dynamicDiffuse_RTGI->RESET_PROBE_STATUS = 1;
                             }
                         }
                         else {

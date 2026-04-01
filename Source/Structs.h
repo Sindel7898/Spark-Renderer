@@ -142,3 +142,9 @@ struct GlobalTransformationMatrices {
 	glm::mat4 WorldMatrix;
 	glm::mat4 Transposed_Normalised_WorldMatrix;
 };
+
+struct GeneralAtlasInfo_Status
+{
+    GeneralAtlasInfo generalAtlasInfo;
+    glm::vec4 ForecResetStatus_Padding;
+};

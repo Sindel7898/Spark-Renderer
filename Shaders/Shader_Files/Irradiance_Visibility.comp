@@ -16,6 +16,7 @@ layout(push_constant) uniform PushConstants {
 } pc;
 
 struct ProbeInformation { vec4 probeLocationsXYZ_ProbeState; };
+
 layout(set = 0,binding = 6) buffer StorageBufferObject { ProbeInformation ProbeData[]; } SBO;
 
 shared vec3 RayDirections[256]; 
@@ -52,6 +53,21 @@ void main()
     ivec2 fragCoord = ivec2(gl_GlobalInvocationID.xy);
     int ProbeSideLength_With_Gutter = pc.ProbeSideLength + pc.GutterSize;
     int ProbeIndex = get_probe_index_from_pixels(fragCoord, pc.AtlasWidthSize, ProbeSideLength_With_Gutter);
+
+    ProbeInformation probe = SBO.ProbeData[ProbeIndex];
+    int probeState = int(probe.probeLocationsXYZ_ProbeState.w);
+    
+    if(probeState ==  PROBE_STATE_SLEEP){
+       
+       vec3 history_irradiance = imageLoad(Prev_Iradiance, fragCoord).rgb;
+
+       imageStore(Iradiance, fragCoord, vec4(history_irradiance, 1.0));
+       return;
+    }
+
+
+
+
     ivec2 localPos = fragCoord % ProbeSideLength_With_Gutter;
     int probe_last_pixel = ProbeSideLength_With_Gutter - 1;
 
