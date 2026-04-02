@@ -118,6 +118,7 @@ public:
 
 	bool bWireFrame = false;
 	bool bUseDLSS = false;
+	bool bHideLights = false;
 
 	//Drawables
 	std::unique_ptr<Lighting_RTX>                  lighting_RTX;

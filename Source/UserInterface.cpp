@@ -618,6 +618,9 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
                     appref->SpawnLights(NumberOfLights);
                 }
 
+                ImGui::Checkbox("Hide Lights", (bool*)&appref->bHideLights);
+
+
                 if (ImGui::CollapsingHeader("Ambient Occlusion (SSAO)", ImGuiTreeNodeFlags_DefaultOpen))
                 {
                     ImGui::Checkbox("Enable SSAO", (bool*)&appref->ssao_FullScreenQuad->bShouldSSAO);

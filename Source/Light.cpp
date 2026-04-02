@@ -106,6 +106,8 @@ void Light::createDescriptorSetLayout()
 
 void Light::createDescriptorSets(vk::DescriptorPool descriptorpool)
 {
+	this->descriptorPool = descriptorpool;
+
 	std::vector<vk::DescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
 
 	vk::DescriptorSetAllocateInfo allocinfo;
@@ -165,5 +167,10 @@ void Light::Draw(vk::CommandBuffer commandbuffer, vk::PipelineLayout  pipelinela
 
 void Light::CleanUp()
 {
+	if (!DescriptorSets.empty() && descriptorPool != VK_NULL_HANDLE)
+	{
+		vulkanContext->LogicalDevice.freeDescriptorSets(descriptorPool, DescriptorSets);
+		DescriptorSets.clear();
+	}
 	Drawable::Destructor();
 }

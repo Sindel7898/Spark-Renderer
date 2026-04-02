@@ -783,7 +783,7 @@ void App::createDescriptorPool()
 {
 	vk::DescriptorPoolSize Uniformpoolsize;
 	Uniformpoolsize.type = vk::DescriptorType::eUniformBuffer;
-	Uniformpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 100;
+	Uniformpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 1000;
 
 	vk::DescriptorPoolSize Samplerpoolsize;
 	Samplerpoolsize.type = vk::DescriptorType::eCombinedImageSampler;
@@ -3156,10 +3156,14 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, LightgraphicsPipeline);
 
-			for (auto& light : lights)
+			if (!bHideLights)
 			{
-				light->Draw(commandBuffer, LightpipelineLayout, currentFrame);
+				for (auto& light : lights)
+				{
+					light->Draw(commandBuffer, LightpipelineLayout, currentFrame);
+				}
 			}
+			
 
 			commandBuffer.endRendering();
 
@@ -3356,9 +3360,12 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, LightgraphicsPipeline);
 
-			for (auto& light : lights)
+			if (!bHideLights)
 			{
-				light->Draw(commandBuffer, LightpipelineLayout, currentFrame);
+				for (auto& light : lights)
+				{
+					light->Draw(commandBuffer, LightpipelineLayout, currentFrame);
+				}
 			}
 
 			commandBuffer.endRendering();

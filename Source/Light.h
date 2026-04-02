@@ -32,7 +32,7 @@ public:
 
     int        lightType;
     int        CastShadow;
-
+    vk::DescriptorPool descriptorPool = nullptr;
 private:
 
     const std::vector<VertexOnly> vertices = {
