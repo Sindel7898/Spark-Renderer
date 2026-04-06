@@ -158,7 +158,7 @@ if (DDGISamplingVertex > 0 && bDDGI) {
      traceRayEXT(topLevelAS, 
          gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsCullBackFacingTrianglesEXT, 
          0xFF, 0, 0, 0, 
-         rayOrigin, 0.005, DiffuseDirection, 1000.0, 0);
+         rayOrigin, 0.005, DiffuseDirection, 10000.0, 0);
 
      
      vec3 y_pos = payload.Position.xyz;
@@ -166,12 +166,15 @@ if (DDGISamplingVertex > 0 && bDDGI) {
      vec3 y_albedo = payload.Albedo.xyz;
      vec3 y_emissive = payload.Emissive.xyz;
     
-     vec3 newPos = y_pos - (DiffuseDirection * 0.3);
+     vec3 newPos = y_pos - (DiffuseDirection * 3.3);
 
-     vec3 y_irradiance = GetGIRadiance(newPos, y_norm);
-     vec3 y_radiance   = y_emissive + y_irradiance * (y_albedo / 3.14159265359);
+     vec3 y_radiance = GetGIRadiance(newPos, y_norm);
+     vec3 y_irradiance   = y_radiance * (y_albedo);
      
-     float p_hat_gi      = length(y_radiance);
+     vec3 evalRadiance = EvaluateCandidateRadiance(GIIndex, newPos, y_irradiance, CameraPos, surfaceData, ViewDir, F, diffuse);
+     evalRadiance += y_emissive;
+
+     float p_hat_gi      = length(evalRadiance);
      float WeightOfLight = p_hat_gi * initialReservoir.Num_OF_Lights_In_Resevoir; 
 
      
@@ -182,7 +185,7 @@ if (DDGISamplingVertex > 0 && bDDGI) {
              p_hat_current = p_hat_gi;
              
              initialReservoir.Sample_Pos = newPos;
-             initialReservoir.Sample_Flux = y_radiance;
+             initialReservoir.Sample_Flux = evalRadiance;
          }
      }
  }

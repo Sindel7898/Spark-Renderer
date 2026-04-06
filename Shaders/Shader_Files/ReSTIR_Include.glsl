@@ -158,8 +158,10 @@ vec3 EvaluateCandidateRadiance(uint lightIndex, vec3 samplePos, vec3 sampleFlux,
 
         float NdotL      = max(dot(surface.normal, lightVec), 0.0);
 
+        float Attenuation = 1.0 / (1.0 + 0.09 * dist + 0.032 * (dist * dist));
+
         float Gmax       = 1.0;
-        float G_Term     = min(NdotL / max(dist * dist, 0.0001), Gmax);
+        float G_Term     = min(NdotL * Attenuation, Gmax);
 
         return sampleFlux * G_Term;
     }
