@@ -8,6 +8,7 @@
 !External/DLSS/
 !External/DLSS/lib/
 !External/DLSS/lib/Windows_x86_64/
+!External\NVIDIA_Nsight_Perf\NvPerf\bin\x64
 
 # Allow ONLY these specific subfolders
 !External/DLSS/lib/Windows_x86_64/khr/
