@@ -43,7 +43,7 @@ vec2 oct_encode(in vec3 v) {
 }
 
 // Code adapted from:
-// "Mastering Graphics Programming with Vulkan" by Packt Publishing
+// "Mastering Graphics Programming with Vulkan (2023)" by  Marco Castorina and Gabriel Sassone 
 // GitHub repository: https://github.com/PacktPublishing/Mastering-Graphics-Programming-with-Vulkan
 // Source file: source/chapter14/shaders/ddgi.glsl and source/chapter14/shaders/ddgi.h
 // License: MIT License (see repository for details)
@@ -126,7 +126,7 @@ vec3 SampleIrradiance(sampler2D IrradianceTexture,
     vec3 Alpha = clamp((SamplePosition - BaseProbePos) / ProbeSpacing, vec3(0.0), vec3(1.0));
 
 
-
+    //Sample points Cage Offsets
     ivec3 Offsets[8] = ivec3[](
         ivec3(0,0,0), ivec3(1,0,0), ivec3(0,1,0), ivec3(1,1,0),
         ivec3(0,0,1), ivec3(1,0,1), ivec3(0,1,1), ivec3(1,1,1)
@@ -135,13 +135,16 @@ vec3 SampleIrradiance(sampler2D IrradianceTexture,
     vec4 Irradiance = vec4(0);
     vec2 Normaluv = (oct_encode(normalize(Normal)) * 0.5) + 0.5;
 
+    // Loop through the 8 probes to form the interpolation cage
     for(int i = 0; i < 8; i++){
+        //Locate probe in atlas
         ivec3 Offset = Offsets[i];
         ivec3 ProbeIndex = clamp((GridIndex + Offset), ivec3(0), ProbeCount - 1);
         vec3 ProbeWorldPosition = GridBaseLocation + (vec3(ProbeIndex) * ProbeSpacing);
 
         vec2 irradiance_uv = GetProbeUV(Normaluv, ProbeIndex, IrrSideLength, IrrGutterSize, IrrAtlasWidth, ProbeCount);
 
+        //Fetch probe irradiance and decode gamma mapping
         vec3 probeIrradiance = textureLod(IrradianceTexture, irradiance_uv, 0.0).rgb;
         probeIrradiance = sqrt(probeIrradiance);
 
@@ -149,6 +152,7 @@ vec3 SampleIrradiance(sampler2D IrradianceTexture,
         float distToProbe = length(probeToSample);
         vec3 dir = -probeToSample / distToProbe;
 
+        //Smooth backface weighting and trilinear spatial weighting
         float weight = (dot(dir, Normal) + 1.0) * 0.5;
         weight = (weight * weight) + 0.2; 
 
@@ -158,6 +162,7 @@ vec3 SampleIrradiance(sampler2D IrradianceTexture,
 
         vec2 Diruv = (oct_encode(normalize(-dir)) * 0.5) + 0.5;
         
+        //Visibility testing using Chebyshev test
         vec2 visibility_uv = GetProbeUV(Diruv, ProbeIndex, VisSideLength, VisGutterSize, VisAtlasWidth, ProbeCount);
         vec2 DepthInfo = textureLod(VisibilityTexture, visibility_uv, 0.0).rg;
 
@@ -177,6 +182,7 @@ vec3 SampleIrradiance(sampler2D IrradianceTexture,
         chebyshev_weight = max(0.05, chebyshev_weight);
         weight *= chebyshev_weight;
 
+        //Weight crushing to stop light leaking
         const float crushThreshold = 0.01;
         if (weight < crushThreshold) {
             weight *= (weight * weight) * (1.0 / (crushThreshold * crushThreshold)); 
@@ -185,6 +191,7 @@ vec3 SampleIrradiance(sampler2D IrradianceTexture,
         Irradiance += vec4(probeIrradiance * weight, weight);
     }
      
+
     vec3 ComputedIrradiance = (Irradiance.rgb * (1.0 / max(Irradiance.a, 0.0001)));
     
     ComputedIrradiance = ComputedIrradiance * ComputedIrradiance;

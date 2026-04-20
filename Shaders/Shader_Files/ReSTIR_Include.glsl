@@ -56,6 +56,7 @@ struct Reservoir {
     vec3  Sample_Flux;   
 };
 
+// Weighted Reservoir Sampling update through stochastic replacement strategy
 bool UpdateReservoir(inout Reservoir reservoir, uint LightIndex, float Weight, float c, inout uint seed) {
     reservoir.Sum_Of_All_Weights += Weight;
     reservoir.Num_OF_Lights_In_Resevoir += c;
@@ -67,10 +68,12 @@ bool UpdateReservoir(inout Reservoir reservoir, uint LightIndex, float Weight, f
     return false;
 }
 
+
 vec3 GetPerpendicularVector(vec3 v) {
     return normalize(cross(v, abs(v.x) > abs(v.z) ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0)));
 }
 
+// Cook-Torrance BRDF 
 vec3 EvaluateBSDF(SurfaceData surface, vec3 ViewDir, vec3 LightDir) {
 
     vec3 F0 = mix(vec3(0.04), surface.albedo, surface.metallic);
@@ -90,6 +93,7 @@ vec3 EvaluateBSDF(SurfaceData surface, vec3 ViewDir, vec3 LightDir) {
     return diffuse + specular;
 }
 
+// Cosine-weighted hemisphere sample in world space around HitNormal
 vec3 GetHemisphereSample(vec2 randVal, vec3 HitNormal) {
     vec3 bitangent = GetPerpendicularVector(HitNormal);
     vec3 tangent = cross(bitangent, HitNormal);
@@ -116,6 +120,7 @@ vec3 GetGIRadiance(vec3 worldPos, vec3 normal) {
     return Irradiance;
 }
 
+// Evaluates direct lighting
 vec3 GetLightRadiance(LightData light, vec3 cameraPos, SurfaceData surface, vec3 ViewDir, vec3 F, vec3 diffuse) {
     vec3 radiance   = vec3(0.0);
     vec3 LightDir   = vec3(0.0);
@@ -143,6 +148,7 @@ vec3 GetLightRadiance(LightData light, vec3 cameraPos, SurfaceData surface, vec3
     return (diffuse + specular) * radiance * NdotL * light.CameraPositionAndLightIntensity.a;
 }
 
+// Dispatches to GI or direct light radiance based on the light index
 vec3 GetRadiance(uint lightIndex, vec3 cameraPos, SurfaceData surface, vec3 ViewDir, vec3 F, vec3 diffuse) {
     if (lightIndex == GIIndex) {
         return GetGIRadiance(surface.worldPos, surface.normal);
@@ -150,6 +156,7 @@ vec3 GetRadiance(uint lightIndex, vec3 cameraPos, SurfaceData surface, vec3 View
     return GetLightRadiance(lights[lightIndex], cameraPos, surface, ViewDir, F, diffuse);
 }
 
+// Evaluates radiance for a reservoir candidate — uses virtual light data for GI, analytical for direct lights
 vec3 EvaluateCandidateRadiance(uint lightIndex, vec3 samplePos, vec3 sampleFlux, vec3 cameraPos, SurfaceData surface, vec3 ViewDir, vec3 F, vec3 diffuse) {
    
     if (lightIndex == GIIndex) {
@@ -160,7 +167,7 @@ vec3 EvaluateCandidateRadiance(uint lightIndex, vec3 samplePos, vec3 sampleFlux,
 
         float Attenuation = 1.0 / (1.0 + 0.09 * dist + 0.032 * (dist * dist));
 
-        float Gmax       = 1.0;
+        float Gmax       = 1.0;// Clamped geometry term to avoid overweighting
         float G_Term     = min(NdotL, Gmax);
 
         return sampleFlux * G_Term;

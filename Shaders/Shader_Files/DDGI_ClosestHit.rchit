@@ -58,12 +58,14 @@ void main()
     vec3 L_Direct     = vec3(0.0);
     vec3 L_Indirect   = vec3(0.0);
 
+    //detect if the ray hit the back facing triangle and negate its distance - this will be used to discard the probe in the next render pass
      if (gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT) {
         Distance = gl_RayTminEXT + gl_HitTEXT;
         Distance *= -0.1;        
     }
     else {
-
+        
+        //LOAD all data stored in buffer and get them based on the object and mesh ID
         uint packed = gl_InstanceCustomIndexEXT;
         uint meshBufferID = packed & 0xFFF;
         uint objectID   = packed >> 12;
@@ -102,7 +104,7 @@ void main()
 
         Le_Emissive = EmissiveTex;
 
-
+        // Compute lambert diffuse for this hit ibject 
         for (int i = 0; i < pc.UseInfiniteBounce_infinite_bounces_multiplier_DDGIMODE_LightCount.w; i++) {
             LightData light = lights[i];
             vec3 LightDir;
@@ -133,8 +135,7 @@ void main()
                 if(int(pc.UseInfiniteBounce_infinite_bounces_multiplier_DDGIMODE_LightCount.z) == 0){
                   L_Direct  += (Albedo / PI)  * NdotL * shadow_Payload.Shadow * radiance *  light.CameraPositionAndLightIntensity.a;
                 }else{
-                    L_Direct += NdotL * shadow_Payload.Shadow * radiance *  light.CameraPositionAndLightIntensity.a;
-                  //L_Direct  += (Albedo / PI)  * NdotL * shadow_Payload.Shadow * radiance *  light.CameraPositionAndLightIntensity.a;
+                    L_Direct += NdotL * shadow_Payload.Shadow * radiance *  light.CameraPositionAndLightIntensity.a;// store direct illumination only
 
                 }                
             }
@@ -142,10 +143,12 @@ void main()
 
         
         int UseInfiniteBounce = int(pc.UseInfiniteBounce_infinite_bounces_multiplier_DDGIMODE_LightCount.x);
+        //DDGI TEMPORAL MULTIBOUNCE FEEDING
         if(UseInfiniteBounce > 0.5) {
              vec3 BiasedPos = HitPosition + (WorldN * 0.5);
              vec3 CameraPos = lights[0].CameraPositionAndLightIntensity.xyz;
 
+             // sample gi and add it to the result
              vec3 Irradiance = SampleIrradiance(
                  IrradianceStorageImage, VisibilityStorageImage, BiasedPos, WorldN,
                  pc.GridBaseLocation_ScreenSizeWidth.xyz, pc.ProbeSpacing_ScreenSizeHeight.xyz,
@@ -156,7 +159,7 @@ void main()
              L_Indirect = (Albedo / PI) * Irradiance  * pc.UseInfiniteBounce_infinite_bounces_multiplier_DDGIMODE_LightCount.y;
         }
 
-        Distance = gl_RayTminEXT + gl_HitTEXT;
+        Distance = gl_RayTminEXT + gl_HitTEXT;// ray distance traveld
     }
 
     

@@ -75,39 +75,46 @@ vec3 GetHemisphereSample(vec2 randVal, vec3 HitNormal) {
 
 
 
+// Multi-bounce Path Traced Global Illumination
 vec3 PathTraceGI(vec3 origin, vec3 normal) {
 
     vec3 accumulatedIndirect = vec3(0.0);
     vec3 throughput = vec3(1.0); 
     
+    // Offset the ray origin slightly along the normal to prevent self-intersection
     vec3 currentOrigin = origin + normal * 0.01; 
     vec3 currentNormal = normal;
 
+    // Trace up to 5 indirect light bounces
     for (int bounce = 0; bounce < 5; bounce++) { 
+        // Generate random numbers for stochastic sampling
         float rx = rand_pcg(seed);
         float ry = rand_pcg(seed);
         
+        // Pick a random diffuse direction oriented around the normal
         vec3 direction = GetHemisphereSample(vec2(rx, ry), currentNormal);
 
+        //reset data
         RTGIpayload.radiance   = vec4(0.0);
-        RTGIpayload.albedo = vec4(0.0);
+        RTGIpayload.albedo     = vec4(0.0);
         RTGIpayload.normal     = vec4(0.0); 
         RTGIpayload.position   = vec4(0.0);
 
+        // Cast Ray
         traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, currentOrigin, 0.001, direction, 1000.0, 1);
         
         if (length(RTGIpayload.normal.xyz) < 0.1) {
              vec3 skyColor = texture(SamplerCubeMap, direction).rgb;
-                accumulatedIndirect += skyColor * throughput;
-          
-          break;
+             accumulatedIndirect += skyColor * throughput;
+             break; // End the path since the ray escaped the scene
         } 
         else {
-
+             // Accumulate the hit surface radiance
              accumulatedIndirect += RTGIpayload.radiance.rgb * throughput;
              
              throughput *= RTGIpayload.albedo.rgb; 
 
+             // Update the origin and normal for the next ray bounce
              currentOrigin = RTGIpayload.position.xyz + RTGIpayload.normal.xyz * 0.001;
              currentNormal = RTGIpayload.normal.xyz;
         }
@@ -191,14 +198,6 @@ void main() {
         vec3 softLightDir;
 
 
-       //f(light.positionAndLightType.w < 0.5) {
-       //  radius = 0.009; 
-       //  softLightDir = DirectionalSoftShadow(LightDir, radius, r1, r2);
-       // } else {
-       //   softLightDir = SoftShadow(light.positionAndLightType.xyz, WorldPos, radius, r1, r2);
-       // }
-
-
         shadowPayload.visibility = 0; 
 
             traceRayEXT(
@@ -222,57 +221,6 @@ void main() {
         indirectLighting = PathTraceGI(WorldPos, Normal) * Albedo;    
     }
 
-    //vec3 reflectionLighting = vec3(0.0);
-    //if (Roughness < 1.0) {
-    //    vec3 refDir = reflect(-ViewDir, Normal);
-    //    
-    //    RTGIpayload.radiance = vec4(0.0);
-    //    RTGIpayload.normal = vec4(0.0);
-    //    
-    //    traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, 
-    //                WorldPos + Normal * 0.001, 0.03, refDir, 100.0, 1);
-    //    
-    //    if (length(RTGIpayload.normal.xyz) < 0.1) {
-    //        reflectionLighting = texture(SamplerCubeMap, refDir).rgb;
-    //    } else {
-    //        reflectionLighting = RTGIpayload.radiance.rgb;
-    //    }
-    //    
-    //    vec3 F_reflect = fresnelSchlick(max(dot(Normal, ViewDir), 0.0), F0);
-    //    reflectionLighting *= F_reflect * (1.0 - Roughness);
-    //}
-
-    //imageStore(OutputImage     , fullCoord, vec4(directLighting + Emmisive + reflectionLighting, 1.0));
     imageStore(OutputImage     , fullCoord, vec4(directLighting + Emmisive, 1.0));
     imageStore(PTGI_OutputImage, fullCoord, vec4(indirectLighting, 1.0));
 }
-
-//
-//void main() {
-//    ivec2 fullCoord = ivec2(gl_LaunchIDEXT.xy);
-//
-//    vec3 TargetWorldPos = texelFetch(PositionImage, fullCoord, 0).rgb;
-//    
-//    vec3 CameraPos = lights[0].CameraPositionAndLightIntensity.xyz;
-//
-//    vec3 direction = normalize(TargetWorldPos - CameraPos);
-//
-//    RTGIpayload.radiance = vec4(0.0);
-//    RTGIpayload.albedo   = vec4(1.0, 0.0, 0.0, 1.0); 
-//    RTGIpayload.normal   = vec4(0.0);
-//    RTGIpayload.position = vec4(0.0);
-//
-//    traceRayEXT(
-//        topLevelAS, 
-//        gl_RayFlagsOpaqueEXT, 
-//        0xFF, 
-//        0, 0, 0, 
-//        CameraPos,    // Origin
-//        0.001,        // tMin
-//        direction,    // Direction
-//        10000.0,      // tMax
-//        1             // Payload Location 1 (RTGIPayload)
-//    );
-//
-//    imageStore(OutputImage, fullCoord, vec4(RTGIpayload.normal.rgb, 1.0));
-//}

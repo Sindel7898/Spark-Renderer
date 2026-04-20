@@ -2848,14 +2848,14 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 		vk::BufferMemoryBarrier barrier{};
 		barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
 		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-		barrier.buffer = dynamicDiffuse_RTGI->ProbeDataStorageBuffers[0].buffer;
+		barrier.buffer = dynamicDiffuse_RTGI->ProbeDataStorageBuffers.buffer;
 		barrier.offset = 0;
 		barrier.size = VK_WHOLE_SIZE;
 		commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eRayTracingShaderKHR, {}, 0, nullptr, 1, &barrier, 0, nullptr);
 		vk::BufferMemoryBarrier barrier2{};
 		barrier2.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
 		barrier2.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-		barrier2.buffer = dynamicDiffuse_RTGI->ProbeFibonacciDirectionsStorageBuffers[0].buffer;
+		barrier2.buffer = dynamicDiffuse_RTGI->ProbeFibonacciDirectionsStorageBuffers.buffer;
 		barrier2.offset = 0;
 		barrier2.size = VK_WHOLE_SIZE;
 		commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eRayTracingShaderKHR, {}, 0, nullptr, 1, &barrier2, 0, nullptr);
@@ -2919,7 +2919,7 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 		vk::BufferMemoryBarrier barrier3{};
 		barrier3.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
 		barrier3.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-		barrier3.buffer = dynamicDiffuse_RTGI->ProbeDataStorageBuffers[0].buffer;
+		barrier3.buffer = dynamicDiffuse_RTGI->ProbeDataStorageBuffers.buffer;
 		barrier3.offset = 0;
 		barrier3.size = VK_WHOLE_SIZE;
 		commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader, vk::PipelineStageFlagBits::eRayTracingShaderKHR, {}, 0, nullptr, 1, &barrier3, 0, nullptr);

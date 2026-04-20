@@ -108,7 +108,7 @@ void main()
     Vertex v1 = vertexBuffer.vertices[i1];
     Vertex v2 = vertexBuffer.vertices[i2];
 
-
+    //Calculate barycentric coordinates to interpolate triangle attributes
     vec3 bary = vec3(1.0 - attribs.x - attribs.y, attribs.x, attribs.y);
     
     vec3 VertexPosition = 

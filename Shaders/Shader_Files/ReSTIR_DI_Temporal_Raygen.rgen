@@ -62,8 +62,14 @@ struct UnifiedPayload {
 
 layout(location = 0) rayPayloadEXT UnifiedPayload payload;
 
+
+// Code adapted from:
+// "A gentler introduction to ReSTIR (2023)" by Kostas Anagnostou
+// Link:https://interplayoflight.wordpress.com/2023/12/17/a-gentler-introduction-to-restir/
+
 void main() {
 
+  // Unpack feature flags from push constant
  bool bTemporalReuse = (pc.Temporal_Spatial_Reuse_EnableDDGI_DDGI_Vertex_Flags).x > 0.5;
  bool bSpatialReuse  = (pc.Temporal_Spatial_Reuse_EnableDDGI_DDGI_Vertex_Flags).y > 0.5;
  bool bDDGI          = (pc.Temporal_Spatial_Reuse_EnableDDGI_DDGI_Vertex_Flags).z > 0.5;
@@ -72,17 +78,17 @@ void main() {
 
  ivec2 TextCoord = ivec2(gl_LaunchIDEXT.xy);
   uint frameIndex = uint(pc.ScreenSize_Padding_FrameIndex_LightCount.z);
-   int noiseIndex = int(frameIndex % 63);
+   int noiseIndex = int(frameIndex % 63);// Cycle through blue noise textures each frame
   
   ivec2 noiseSize = textureSize(BlueNoise[noiseIndex], 0);
   vec2 noiseUV = vec2(TextCoord % noiseSize) / vec2(noiseSize);
   vec4 blueSample = texture(BlueNoise[noiseIndex], noiseUV);
 
-  
+  // Per-pixel seed
   uint pixel_index = gl_LaunchIDEXT.x + gl_LaunchIDEXT.y * uint(pc.ScreenSize_Padding_FrameIndex_LightCount.y);
   uint seed = pcg_hash(pixel_index ^ pcg_hash(frameIndex));
 
-
+ //  G-Buffer Fetch 
  SurfaceData surfaceData;
  surfaceData.worldPos = texelFetch(WorldPositionImage, TextCoord, 0).xyz;
 
@@ -109,6 +115,7 @@ void main() {
 
  vec3 DiffuseDirection = GetHemisphereSample(vec2(rand(seed),rand(seed)), surfaceData.normal);
 
+ // Motion vector reprojection for temporal reuse
  vec2 velocityUV = texelFetch(MotionVectorImage, TextCoord, 0).rg;
  vec2 screenPosPrevious = TextCoord - (velocityUV * pc.ScreenSize_Padding_FrameIndex_LightCount.xy);
  ivec2 prevCoord = ivec2(TextCoord - velocityUV);
@@ -130,7 +137,7 @@ void main() {
  float pdf = 1.0 / float(TotalNumOfLights); 
  float p_hat_current = 0.0; 
 
- //Initial Candidates Lights
+   // Sample N random lights and use WRS to find the best candidate
  for (uint i = 0; i < initial_sample_count; i++) {  
      uint lightIndex = min(uint(rand(seed) * float(TotalNumOfLights)), uint(TotalNumOfLights - 1)); 
      vec3 RadianceCandidate = GetLightRadiance(lights[lightIndex], CameraPos, surfaceData, ViewDir, F, diffuse);  
@@ -166,8 +173,10 @@ if (DDGISamplingVertex > 0 && bDDGI) {
      vec3 y_albedo = payload.Albedo.xyz;
      vec3 y_emissive = payload.Emissive.xyz;
     
+     // Step back slightly from the hit to avoid surface self-occlusion
      vec3 newPos = y_pos - (DiffuseDirection * 0.3);
 
+     // Evaluate DDGI irradiance at the secondary hit
      vec3 y_radiance = GetGIRadiance(newPos, y_norm);
      vec3 y_irradiance   = y_radiance * (y_albedo / PI);
      
@@ -254,17 +263,19 @@ if (DDGISamplingVertex > 0 && bDDGI) {
         }
     }
    
-
+       // Recompute final weight after temporal merge
     vec3 tempRadiance = EvaluateCandidateRadiance(temporalReservoir.Light_Index, temporalReservoir.Sample_Pos, temporalReservoir.Sample_Flux, CameraPos, surfaceData, ViewDir, F, diffuse);
    float p_hat_temporal = length(tempRadiance);
    temporalReservoir.Light_Weight = (p_hat_temporal > 0.0) ? (1.0 / p_hat_temporal) * (temporalReservoir.Sum_Of_All_Weights / temporalReservoir.Num_OF_Lights_In_Resevoir) : 0.0;
    
+       // Clamp reservoir size 
    if (temporalReservoir.Num_OF_Lights_In_Resevoir > MaxResevoirVolume) {
        float scale = MaxResevoirVolume / temporalReservoir.Num_OF_Lights_In_Resevoir;
        temporalReservoir.Sum_Of_All_Weights *= scale;
        temporalReservoir.Num_OF_Lights_In_Resevoir = MaxResevoirVolume;
    }
    
+    // Write reservoir and GI sample data for this frame 
    vec4 Res = vec4(temporalReservoir.Light_Index, temporalReservoir.Light_Weight, temporalReservoir.Sum_Of_All_Weights, temporalReservoir.Num_OF_Lights_In_Resevoir);
    imageStore(ResevoirImage, TextCoord, Res);
    imageStore(GI_SamplePosImage , TextCoord, vec4(temporalReservoir.Sample_Pos , 1.0));

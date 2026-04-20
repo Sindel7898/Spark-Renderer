@@ -36,7 +36,7 @@ layout(location = 1) out vec2 TexCoord;
 layout(location = 2) out  flat int ProbeStatus;
 
 void main() {
-     ProbeInformation probe = SBO.ProbeData[gl_InstanceIndex];
+     ProbeInformation probe = SBO.ProbeData[gl_InstanceIndex]; //instanced draw data
 
      vec4 vertexInWorldSpace = pc.model * vec4(inPosition, 1.0);
 

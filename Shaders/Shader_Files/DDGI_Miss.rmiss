@@ -9,6 +9,7 @@ struct Payload {
 
 layout(location = 0) rayPayloadInEXT Payload payload;
 
+//Default data for missed ray
 void main() {
     payload.Color        =  vec3(0);
     payload.Distance     =  1000.0f;
