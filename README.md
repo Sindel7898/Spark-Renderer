@@ -1,20 +1,23 @@
 # Spark Renderer
 
-**Spark** is an experimental 3D renderer built with **Vulkan**, aimed at finding a balance between **real-time performance** and **high-quality rendering**.  
-It serves as a **Test Bed** for experimenting with modern rendering techniques.  
+Spark is an experimental 3D renderer built with Vulkan, aimed at finding a balance between real-time performance and high-quality rendering.
+It serves as a test bed for experimenting with modern rendering techniques.
 
 ### Purpose
-Spark is a renderer And **testbed** for prototype and implement new graphics techniques without rebuilding core systems from scratch.  
+Spark is a renderer and testbed for prototyping and implementing new graphics techniques without rebuilding core systems from scratch.
 
 ## Core Features
+- **Mix of Raytraced and Rasterised Rendering**
+- **Reservoir-based SpatioTemporal Importance Resampling -  Direct Illumination (ReSTIR DI)** for efficient ray-traced shadows
 
-### Hybrid Rendering Pipeline
-- **Ray tracing** for accurate Shadows
-- **Rasterization** for high-performance rendering
-- Adaptive quality system that balances visual fidelity and frame rate
+### Global Illumination
+- **Probe-based Dynamic Diffuse Global Illumination (DDGI)** — real-time indirect lighting via raytraced irradiance probes
+- **DDGI Resampling** — Efficient blending of ReSTIR DI and DDGI for more accurate indirect illumination
 
+### Neural Rendering Features
+- **Nvidia Ray Reconstruction** — Real-time Neueal Denoiser
+  
 ### Screen-Space Effects
-- Screen-space reflections (SSR)
 - Screen-space ambient occlusion (SSAO)
 - Screen-space global illumination (SSGI)
 
@@ -50,6 +53,5 @@ Spark is a renderer And **testbed** for prototype and implement new graphics tec
 ```bash
 git clone https://github.com/Sindel7898/Spark-Renderer.git
 cd Spark-Renderer
-mkdir build && cd build
 cmake ..
-make -j8
+
