@@ -28,14 +28,16 @@ Spark is a renderer and testbed for prototyping and implementing new graphics te
 ## Media
 
 *(Development previews - more coming soon)* 
+### 300 raytraced shadow casting point lights
 ![GI Screenshot](https://github.com/Sindel7898/Spark-Renderer/blob/2d39aed7d3a47194528df01d15a12ed505914e8a/GitHub%20Doc/Screenshot%202026-04-21%20135936.png)
 
+### Probe Based Dynamic Diffuse Global Illumination
 ![Spark Renderer Screenshot](https://github.com/Sindel7898/Spark-Renderer/blob/2d39aed7d3a47194528df01d15a12ed505914e8a/GitHub%20Doc/Screenshot%202026-04-21%20140125.png)
 
-
+### Probe Based Dynamic Diffuse Global Illumination Resampling
 ![Spark Renderer Screenshot](https://github.com/Sindel7898/Spark-Renderer/blob/2d39aed7d3a47194528df01d15a12ed505914e8a/GitHub%20Doc/Screenshot%202026-04-21%20135819.png)
 
-
+### Probe Based Dynamic Diffuse Global Illumination
 ![Spark Renderer Screenshot](https://github.com/Sindel7898/Spark-Renderer/blob/2d39aed7d3a47194528df01d15a12ed505914e8a/GitHub%20Doc/Screenshot%202026-04-21%20135700.png)
 
 
