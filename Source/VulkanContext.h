@@ -60,7 +60,7 @@ public:
 
 	std::vector<vk::SurfaceFormatKHR> SurfaceFormat;
 
-	Window window; 
+	Window& window; 
 	vk::PhysicalDeviceRayTracingPipelinePropertiesKHR RayTracingPipelineProperties{};
 
 

@@ -58,8 +58,15 @@ struct Reservoir {
 
 // Weighted Reservoir Sampling update through stochastic replacement strategy
 bool UpdateReservoir(inout Reservoir reservoir, uint LightIndex, float Weight, float c, inout uint seed) {
+    if (Weight <= 0.0 || isnan(Weight) || isinf(Weight)) {
+        return false;
+    }
     reservoir.Sum_Of_All_Weights += Weight;
     reservoir.Num_OF_Lights_In_Resevoir += c;
+
+    if (reservoir.Sum_Of_All_Weights <= 0.0) {
+        return false;
+    }
 
     if (rand(seed) < (Weight / reservoir.Sum_Of_All_Weights)) {
         reservoir.Light_Index = LightIndex;

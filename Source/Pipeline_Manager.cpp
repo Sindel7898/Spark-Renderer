@@ -39,7 +39,6 @@ FullScreen_Quad_Pipeline_Data PipelineManager::create_FQ_Pipeline(std::string Pa
 
 	vk::PipelineViewportStateCreateInfo viewportState{};
 	viewportState.setViewportCount(1);
-	viewportState.setViewportCount(1);
 	viewportState.setScissorCount(1);
 	viewportState.setViewports(viewport);
 	viewportState.setScissors(scissor);

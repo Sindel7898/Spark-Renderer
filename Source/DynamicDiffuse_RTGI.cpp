@@ -1553,9 +1553,9 @@ void DynamicDiffuse_RTGI::DispatchProbeStatus(vk::CommandBuffer commandBuffer, v
 
 		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipelineLayout, 0, 1, &ProbeStatusDescriptorSets[imageIndex], 0, nullptr);
 
-		uint32_t workGroupsX = (IradianceImageExtent.width + 7) / 8;
-		uint32_t workGroupsY = (IradianceImageExtent.height + 7) / 8;
-		commandBuffer.dispatch(workGroupsX, workGroupsY, 1);
+		uint32_t totalProbes = static_cast<uint32_t>(NumOfProbesX * NumOfProbesY * NumOfProbesZ);
+		uint32_t workGroupsX = (totalProbes + 63) / 64;
+		commandBuffer.dispatch(workGroupsX, 1, 1);
 
 		RESET_PROBE_STATUS = 0; 
 	}

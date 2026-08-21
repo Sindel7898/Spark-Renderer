@@ -71,8 +71,7 @@ void main() {
      
      vec3 DDGI = imageLoad(DDGITexture, texelCoord).rgb;
      
-     float AO     = SSAO * MaterialAO;
-     if(AO < 0.1){AO = 1;}
+     float AO     = clamp(SSAO * MaterialAO, 0.0, 1.0);
 
      vec3 DDGIresult   = DDGI  * Albedo / PI;
      vec3 SSGIGIresult = SSGI  * Albedo / PI;

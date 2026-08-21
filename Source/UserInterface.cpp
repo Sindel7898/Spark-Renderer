@@ -1,5 +1,9 @@
 #include "UserInterface.h"
 #include <stdexcept>
+#include <sstream>
+#include <fstream>
+#include <algorithm>
+#include <map>
 #include "Window.h"
 #include "Camera.h"
 #include "Model.h"
@@ -8,8 +12,6 @@
 #include "App.h"
 #include "FXAA_FullScreenQuad.h"
 #include "CombinedResult_FullScreenQuad.h"
-
-
 
 #include <nvperf_host_impl.h>
 #include <NvPerfHudDataModel.h>
@@ -20,7 +22,6 @@
 
 #define RYML_SINGLE_HDR_DEFINE_NOW
 #include <ryml_all.hpp>
-
 
 UserInterface::UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef, BufferManager* Buffermanager)
 {
@@ -34,53 +35,71 @@ UserInterface::UserInterface(VulkanContext* vulkancontextRef, Window* WindowRef,
     InitNVPerf();
 }
 
-
-
 void UserInterface::InitNVPerf() {
 #if ENABLE_NVPERF
     auto onStopSampling = [this](const char* outputDirectory) {
         m_outputDirectory = outputDirectory;
-        };
+    };
 
     const size_t numRangesPerFrame = 15;
     const size_t samplingIntervalInNanoSeconds = 1024 * 16;
     const size_t maxIntervalPerFrameInNanoSeconds = 100 * 1000 * 1000; // 100ms
     const size_t numFramesToSample = 20;
 
-    nv::perf::DeviceIdentifiers deviceIdentifiers = nv::perf::VulkanGetDeviceIdentifiers(vulkancontext->VulkanInstance, vulkancontext->PhysicalDevice, vulkancontext->LogicalDevice);
-    deviceIdentifiers.pChipName;
+    try {
+        nv::perf::DeviceIdentifiers deviceIdentifiers = nv::perf::VulkanGetDeviceIdentifiers(
+            vulkancontext->VulkanInstance, vulkancontext->PhysicalDevice, vulkancontext->LogicalDevice);
 
-    nv::perf::hud::HudPresets hudPresets;
-    hudPresets.Initialize(deviceIdentifiers.pChipName);
-    const std::string hudConfigurationName = "Graphics High Speed Triage";
-    nv::perf::hud::HudDataModel hudDataModel;
-    hudDataModel.Load(hudPresets.GetPreset(hudConfigurationName));
+        nv::perf::hud::HudPresets hudPresets;
+        hudPresets.Initialize(deviceIdentifiers.pChipName);
+        const std::string hudConfigurationName = "Graphics High Speed Triage";
+        nv::perf::hud::HudDataModel hudDataModel;
+        hudDataModel.Load(hudPresets.GetPreset(hudConfigurationName));
 
-    // Load metric configuration
-    std::string metricConfigName;
-    nv::perf::MetricConfigurations::GetMetricConfigNameBasedOnHudConfigurationName(metricConfigName, deviceIdentifiers.pChipName, hudConfigurationName);
-    nv::perf::MetricConfigObject metricConfigObject;
-    nv::perf::MetricConfigurations::LoadMetricConfigObject(metricConfigObject, deviceIdentifiers.pChipName, metricConfigName);
+        std::string metricConfigName;
+        nv::perf::MetricConfigurations::GetMetricConfigNameBasedOnHudConfigurationName(
+            metricConfigName, deviceIdentifiers.pChipName, hudConfigurationName);
+        nv::perf::MetricConfigObject metricConfigObject;
+        nv::perf::MetricConfigurations::LoadMetricConfigObject(
+            metricConfigObject, deviceIdentifiers.pChipName, metricConfigName);
 
-    hudDataModel.Initialize(metricConfigObject);
+        hudDataModel.Initialize(metricConfigObject);
 
-    m_periodicSamplerOneShot.Initialize(vulkancontext->VulkanInstance, vulkancontext->PhysicalDevice, vulkancontext->LogicalDevice, samplingIntervalInNanoSeconds, maxIntervalPerFrameInNanoSeconds, numFramesToSample, onStopSampling, hudDataModel.GetCounterConfiguration());
-    m_periodicSamplerOneShot.m_outputOption.directoryName = "TEST";
+        bool initOk = m_periodicSamplerOneShot.Initialize(
+            vulkancontext->VulkanInstance, vulkancontext->PhysicalDevice, vulkancontext->LogicalDevice,
+            samplingIntervalInNanoSeconds, maxIntervalPerFrameInNanoSeconds,
+            numFramesToSample, onStopSampling, hudDataModel.GetCounterConfiguration());
 
-    m_frameLevelTraceIndice.resize(numFramesToSample, 0);
-    m_apiTracers.resize(numFramesToSample);
+        if (!initOk) {
+            // NVPA_STATUS_INSUFFICIENT_PRIVILEGE: GPU performance counters require
+            // admin rights or a driver registry setting.
+            // Run once as admin, or set: HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\NVrmAllowedClients = NVSDK_NGX_ApplicationId
+            printf("[NVPerf] WARNING: GPU performance counters unavailable (insufficient privilege).\n");
+            printf("[NVPerf] Profiling disabled. To enable, run as Administrator or set driver registry key.\n");
+            return;
+        }
 
-    for (auto& apiTracer : m_apiTracers)
-    {
-        apiTracer.Initialize(vulkancontext->VulkanInstance, vulkancontext->PhysicalDevice, vulkancontext->LogicalDevice, numRangesPerFrame);
+        m_periodicSamplerOneShot.m_outputOption.directoryName = "TEST";
+        m_frameLevelTraceIndice.resize(numFramesToSample, 0);
+        m_apiTracers.resize(numFramesToSample);
+
+        for (auto& apiTracer : m_apiTracers) {
+            apiTracer.Initialize(vulkancontext->VulkanInstance, vulkancontext->PhysicalDevice,
+                                 vulkancontext->LogicalDevice, numRangesPerFrame);
+        }
+
+        m_nvperfReady = true;
+    }
+    catch (const std::exception& e) {
+        printf("[NVPerf] Initialization failed: %s\n", e.what());
+        printf("[NVPerf] Profiling will be unavailable this session.\n");
     }
 #endif
 }
 
-#include <map>
-
 void UserInterface::SaveNVPerf() {
 #if ENABLE_NVPERF
+    if (!m_nvperfReady) return; // NVPerf didn't initialize (e.g. insufficient privilege)
     m_periodicSamplerOneShot.OnFrameEnd();
 
     {
@@ -98,7 +117,6 @@ void UserInterface::SaveNVPerf() {
         std::map<std::string, PassStats> aggregatedStats;
 
         for (const auto& trace : apiTraceData) {
-
             double startMs = static_cast<double>(trace.startTimestamp) /  1000000.0;
             double endMs   = static_cast<double>(trace.endTimestamp  )  / 1000000.0;
 
@@ -110,7 +128,6 @@ void UserInterface::SaveNVPerf() {
         std::stringstream yamlStream;
 
         for (const auto& pair : aggregatedStats) {
-
             double avgTimeMs = pair.second.totalTimeMs / pair.second.count;
 
             yamlStream << "  - name: "         << pair.first               << "\n"
@@ -134,100 +151,117 @@ void UserInterface::SaveNVPerf() {
 #endif
 }
 
+void UserInterface::ApplyModernTheme()
+{
+    ImGuiStyle& style = ImGui::GetStyle();
 
+    // Rounding & Sizing
+    style.WindowRounding    = 6.0f;
+    style.ChildRounding     = 5.0f;
+    style.FrameRounding     = 4.0f;
+    style.PopupRounding     = 5.0f;
+    style.ScrollbarRounding = 4.0f;
+    style.GrabRounding      = 4.0f;
+    style.TabRounding       = 5.0f;
 
+    style.WindowPadding     = ImVec2(10.0f, 10.0f);
+    style.FramePadding      = ImVec2(8.0f, 5.0f);
+    style.ItemSpacing       = ImVec2(8.0f, 6.0f);
+    style.ItemInnerSpacing  = ImVec2(6.0f, 6.0f);
+    style.IndentSpacing     = 20.0f;
+    style.ScrollbarSize     = 12.0f;
+    style.GrabMinSize       = 10.0f;
+
+    style.WindowBorderSize  = 1.0f;
+    style.ChildBorderSize   = 1.0f;
+    style.PopupBorderSize   = 1.0f;
+    style.FrameBorderSize   = 0.0f;
+    style.TabBorderSize     = 0.0f;
+
+    style.WindowTitleAlign  = ImVec2(0.0f, 0.5f);
+
+    ImVec4* colors = style.Colors;
+
+    // True-Black Palette — near-void backgrounds with blue accent
+    const ImVec4 bgVoid         = ImVec4(0.02f, 0.02f, 0.03f, 1.00f); // main window bg
+    const ImVec4 bgPanel        = ImVec4(0.05f, 0.05f, 0.06f, 1.00f); // child panels
+    const ImVec4 bgFrame        = ImVec4(0.09f, 0.09f, 0.11f, 1.00f); // input fields, combos
+    const ImVec4 bgFrameHover   = ImVec4(0.13f, 0.13f, 0.16f, 1.00f);
+    const ImVec4 bgFrameActive  = ImVec4(0.17f, 0.17f, 0.21f, 1.00f);
+    const ImVec4 bgHeader       = ImVec4(0.07f, 0.07f, 0.09f, 1.00f); // collapsing headers
+    const ImVec4 bgHeaderHover  = ImVec4(0.12f, 0.12f, 0.16f, 1.00f);
+    const ImVec4 accentPrimary  = ImVec4(0.20f, 0.48f, 0.92f, 1.00f); // Spark Blue
+    const ImVec4 accentHover    = ImVec4(0.30f, 0.56f, 1.00f, 1.00f);
+    const ImVec4 accentActive   = ImVec4(0.14f, 0.38f, 0.78f, 1.00f);
+    const ImVec4 textPrimary    = ImVec4(0.88f, 0.88f, 0.90f, 1.00f);
+    const ImVec4 textDim        = ImVec4(0.38f, 0.38f, 0.42f, 1.00f);
+    const ImVec4 borderCol      = ImVec4(0.13f, 0.13f, 0.17f, 1.00f);
+    const ImVec4 borderHover    = ImVec4(0.25f, 0.25f, 0.32f, 1.00f);
+    const ImVec4 tabBg          = ImVec4(0.04f, 0.04f, 0.05f, 1.00f);
+    const ImVec4 tabActive      = ImVec4(0.08f, 0.08f, 0.10f, 1.00f);
+    const ImVec4 menuBg         = ImVec4(0.02f, 0.02f, 0.03f, 1.00f);
+
+    colors[ImGuiCol_Text]                  = textPrimary;
+    colors[ImGuiCol_TextDisabled]          = textDim;
+    colors[ImGuiCol_WindowBg]              = bgVoid;
+    colors[ImGuiCol_ChildBg]               = bgPanel;
+    colors[ImGuiCol_PopupBg]               = ImVec4(0.04f, 0.04f, 0.05f, 0.98f);
+    colors[ImGuiCol_Border]                = borderCol;
+    colors[ImGuiCol_BorderShadow]          = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+
+    colors[ImGuiCol_FrameBg]               = bgFrame;
+    colors[ImGuiCol_FrameBgHovered]        = bgFrameHover;
+    colors[ImGuiCol_FrameBgActive]         = bgFrameActive;
+
+    colors[ImGuiCol_TitleBg]               = bgVoid;
+    colors[ImGuiCol_TitleBgActive]         = ImVec4(0.05f, 0.05f, 0.07f, 1.00f);
+    colors[ImGuiCol_TitleBgCollapsed]      = bgVoid;
+
+    colors[ImGuiCol_MenuBarBg]             = menuBg;
+    colors[ImGuiCol_ScrollbarBg]           = ImVec4(0.02f, 0.02f, 0.03f, 0.60f);
+    colors[ImGuiCol_ScrollbarGrab]         = ImVec4(0.15f, 0.15f, 0.20f, 1.00f);
+    colors[ImGuiCol_ScrollbarGrabHovered]  = ImVec4(0.22f, 0.22f, 0.28f, 1.00f);
+    colors[ImGuiCol_ScrollbarGrabActive]   = accentPrimary;
+
+    colors[ImGuiCol_CheckMark]             = accentPrimary;
+    colors[ImGuiCol_SliderGrab]            = accentPrimary;
+    colors[ImGuiCol_SliderGrabActive]      = accentActive;
+
+    colors[ImGuiCol_Button]                = bgFrame;
+    colors[ImGuiCol_ButtonHovered]         = bgFrameHover;
+    colors[ImGuiCol_ButtonActive]          = bgFrameActive;
+
+    colors[ImGuiCol_Header]                = bgHeader;
+    colors[ImGuiCol_HeaderHovered]         = bgHeaderHover;
+    colors[ImGuiCol_HeaderActive]          = accentPrimary;
+
+    colors[ImGuiCol_Separator]             = borderCol;
+    colors[ImGuiCol_SeparatorHovered]      = borderHover;
+    colors[ImGuiCol_SeparatorActive]       = accentPrimary;
+
+    colors[ImGuiCol_ResizeGrip]            = ImVec4(0.10f, 0.10f, 0.14f, 0.50f);
+    colors[ImGuiCol_ResizeGripHovered]     = accentHover;
+    colors[ImGuiCol_ResizeGripActive]      = accentActive;
+
+    colors[ImGuiCol_Tab]                   = tabBg;
+    colors[ImGuiCol_TabHovered]            = ImVec4(0.12f, 0.12f, 0.16f, 1.00f);
+    colors[ImGuiCol_TabActive]             = tabActive;
+    colors[ImGuiCol_TabUnfocused]          = ImVec4(0.03f, 0.03f, 0.04f, 1.00f);
+    colors[ImGuiCol_TabUnfocusedActive]    = ImVec4(0.06f, 0.06f, 0.08f, 1.00f);
+
+    colors[ImGuiCol_DockingPreview]        = ImVec4(0.20f, 0.48f, 0.92f, 0.35f);
+    colors[ImGuiCol_DockingEmptyBg]        = ImVec4(0.01f, 0.01f, 0.02f, 1.00f);
+}
 
 void UserInterface::InitImgui()
 {
-	//Imgui Initialisation
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
-	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;      // Enable Docking
-	///////////////////////////////////////////////////////
-	//Imgui Style Setup
-	ImGui::StyleColorsDark();
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-
-	if (io.ConfigFlags)
-	{
-		ImGuiStyle& style = ImGui::GetStyle();
-		style.WindowRounding = 10.0f;
-
-		ImVec4* colors = style.Colors;
-
-		colors[ImGuiCol_WindowBg] = ImVec4{ 0.01f, 0.01f, 0.01f, 1.0f };
-
-		// Headers
-		colors[ImGuiCol_Header] = ImVec4{ 0.02f, 0.02f, 0.02f, 1.0f };
-		colors[ImGuiCol_HeaderHovered] = ImVec4{ 0.02f, 0.02f, 0.02f, 1.0f };
-		colors[ImGuiCol_HeaderActive] = ImVec4{ 0.00f, 0.00f, 0.00f, 1.0f };
-
-		// Buttons
-		colors[ImGuiCol_Button] = ImVec4{ 0.02f, 0.02f, 0.02f, 1.0f };
-		colors[ImGuiCol_ButtonHovered] = ImVec4{ 0.03f, 0.03f, 0.03f, 1.0f };
-		colors[ImGuiCol_ButtonActive] = ImVec4{ 0.00f, 0.00f, 0.00f, 1.0f };
-
-		// Frame BG
-		colors[ImGuiCol_FrameBg] = ImVec4{ 0.03f, 0.03f, 0.03f, 1.0f };
-		colors[ImGuiCol_FrameBgHovered] = ImVec4{ 0.02f, 0.02f, 0.02f, 1.0f };
-		colors[ImGuiCol_FrameBgActive] = ImVec4{ 0.00f, 0.00f, 0.00f, 1.0f };
-
-		// Tabs
-		colors[ImGuiCol_Tab] = ImVec4{ 0.03f, 0.03f, 0.03f, 1.0f };
-		colors[ImGuiCol_TabHovered] = ImVec4{ 0.07f, 0.07f, 0.07f, 1.0f };
-		colors[ImGuiCol_TabActive] = ImVec4{ 0.03f, 0.03f, 0.03f, 1.0f };
-		colors[ImGuiCol_TabUnfocused] = ImVec4{ 0.02f, 0.02f, 0.02f, 1.0f };
-		colors[ImGuiCol_TabUnfocusedActive] = ImVec4{ 0.01f, 0.01f, 0.01f, 1.0f };
-
-		// Title
-		colors[ImGuiCol_TitleBg] = ImVec4{ 0.01f, 0.01, 0.01f, 1.0f };
-		colors[ImGuiCol_TitleBgActive] = ImVec4{ 0.02f, 0.02f, 0.02f, 1.0f };
-		colors[ImGuiCol_TitleBgCollapsed] = ImVec4{ 0.00f, 0.00f, 0.00f, 1.0f };
-
-		// Borders
-		colors[ImGuiCol_Border] = ImVec4{ 0.08f, 0.08f, 0.08f, 1.0f };
-		colors[ImGuiCol_BorderShadow] = ImVec4{ 0.00f, 0.00f, 0.00f, 0.0f };
-
-		// Scrollbars
-		colors[ImGuiCol_ScrollbarBg] = ImVec4{ 0.01f, 0.01f, 0.01f, 1.0f };
-		colors[ImGuiCol_ScrollbarGrab] = ImVec4{ 0.10f, 0.10f, 0.10f, 1.0f };
-		colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4{ 0.15f, 0.15f, 0.15f, 1.0f };
-		colors[ImGuiCol_ScrollbarGrabActive] = ImVec4{ 0.20f, 0.20f, 0.20f, 1.0f };
-
-		colors[ImGuiCol_CheckMark] = ImVec4{ 0.80f, 0.80f, 0.80f, 1.0f };
-		colors[ImGuiCol_SliderGrab] = ImVec4{ 0.35f, 0.35f, 0.35f, 1.0f };
-		colors[ImGuiCol_SliderGrabActive] = ImVec4{ 0.50f, 0.50f, 0.50f, 1.0f };
-
-		colors[ImGuiCol_Separator] = ImVec4{ 0.20f, 0.20f, 0.20f, 1.0f };
-		colors[ImGuiCol_SeparatorHovered] = ImVec4{ 0.35f, 0.35f, 0.35f, 1.0f };
-		colors[ImGuiCol_SeparatorActive] = ImVec4{ 0.50f, 0.50f, 0.50f, 1.0f };
-
-		colors[ImGuiCol_ResizeGrip] = ImVec4{ 0.25f, 0.25f, 0.25f, 1.0f };
-		colors[ImGuiCol_ResizeGripHovered] = ImVec4{ 0.40f, 0.40f, 0.40f, 1.0f };
-		colors[ImGuiCol_ResizeGripActive] = ImVec4{ 0.60f, 0.60f, 0.60f, 1.0f };
-
-
-		colors[ImGuiCol_MenuBarBg] = ImVec4{ 0.02f, 0.02f, 0.02f, 1.0f };
-
-		// Popup
-		colors[ImGuiCol_PopupBg] = ImVec4{ 0.05f, 0.05f, 0.05f, 0.94f };
-
-
-		// Style adjustments
-		//style.WindowRounding = 5.3f;
-		style.FrameRounding = 2.3f;
-		style.ScrollbarRounding = 0;
-
-		style.WindowTitleAlign = ImVec2(0.50f, 0.50f);
-		style.WindowPadding = ImVec2(8.0f, 8.0f);
-		style.FramePadding = ImVec2(5.0f, 5.0f);
-		style.ItemSpacing = ImVec2(6.0f, 6.0f);
-		style.ItemInnerSpacing = ImVec2(6.0f, 6.0f);
-		style.IndentSpacing = 25.0f;
-	}
-	/////////////////////////////////////////////////////
+	ApplyModernTheme();
 
 	// Create descriptor pool for ImGui
 	std::vector<vk::DescriptorPoolSize> pool_sizes =
@@ -252,7 +286,7 @@ void UserInterface::InitImgui()
 	pool_info.pPoolSizes = pool_sizes.data();
 
 	ImGuiDescriptorPool = vulkancontext->LogicalDevice.createDescriptorPool(pool_info);
-	// Initialize ImGui for Vulkan
+
 	vk::PipelineRenderingCreateInfoKHR pipeline_rendering_create_info;
 	pipeline_rendering_create_info.colorAttachmentCount = 1;
     static const vk::Format uiFormat = vk::Format::eR16G16B16A16Sfloat;
@@ -277,7 +311,214 @@ void UserInterface::InitImgui()
 
 	ImGui_ImplVulkan_Init(&init_info);
 	ImGui_ImplVulkan_CreateFontsTexture();
+}
 
+bool UserInterface::DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue, float columnWidth)
+{
+    bool changed = false;
+    ImGui::PushID(label.c_str());
+
+    ImGui::Columns(2, nullptr, false);
+    ImGui::SetColumnWidth(0, columnWidth);
+    ImGui::Text("%s", label.c_str());
+    ImGui::NextColumn();
+
+    ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(2, 2));
+
+    float lineHeight = ImGui::GetFrameHeight();
+    ImVec2 buttonSize = { lineHeight + 2.0f, lineHeight };
+
+    // X Component (Red)
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.75f, 0.15f, 0.20f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.90f, 0.20f, 0.25f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.60f, 0.10f, 0.15f, 1.0f));
+    if (ImGui::Button("X", buttonSize)) { values.x = resetValue; changed = true; }
+    ImGui::PopStyleColor(3);
+
+    ImGui::SameLine();
+    if (ImGui::DragFloat("##X", &values.x, 0.1f, 0.0f, 0.0f, "%.2f")) changed = true;
+    ImGui::PopItemWidth();
+    ImGui::SameLine();
+
+    // Y Component (Green)
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.15f, 0.65f, 0.25f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.20f, 0.80f, 0.30f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.10f, 0.50f, 0.20f, 1.0f));
+    if (ImGui::Button("Y", buttonSize)) { values.y = resetValue; changed = true; }
+    ImGui::PopStyleColor(3);
+
+    ImGui::SameLine();
+    if (ImGui::DragFloat("##Y", &values.y, 0.1f, 0.0f, 0.0f, "%.2f")) changed = true;
+    ImGui::PopItemWidth();
+    ImGui::SameLine();
+
+    // Z Component (Blue)
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.15f, 0.40f, 0.85f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.20f, 0.50f, 1.00f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.10f, 0.30f, 0.70f, 1.0f));
+    if (ImGui::Button("Z", buttonSize)) { values.z = resetValue; changed = true; }
+    ImGui::PopStyleColor(3);
+
+    ImGui::SameLine();
+    if (ImGui::DragFloat("##Z", &values.z, 0.1f, 0.0f, 0.0f, "%.2f")) changed = true;
+    ImGui::PopItemWidth();
+
+    ImGui::PopStyleVar();
+    ImGui::Columns(1);
+    ImGui::PopID();
+
+    return changed;
+}
+
+void UserInterface::DrawMenuBar(App* appref, SkyBox* skyBox, VulkanContext* vulkanContext)
+{
+    if (ImGui::BeginMainMenuBar())
+    {
+        if (ImGui::BeginMenu("File"))
+        {
+            if (ImGui::MenuItem("Reload Shaders", "F5")) {
+                appref->recreatePipeline();
+            }
+            ImGui::Separator();
+            if (ImGui::BeginMenu("Scenes")) {
+                for (int i = 0; i < appref->SceneNames.size(); i++) {
+                    bool isSelected = (appref->currentSceneIndex == i);
+                    if (ImGui::MenuItem(appref->SceneNames[i].c_str(), nullptr, isSelected)) {
+                        if (appref->currentSceneIndex != i) {
+                            appref->SwitchScene(i);
+                            appref->DLSS_Intergration.SceneChangeNotifer = 1;
+                        }
+                    }
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Exit", "Alt+F4")) {
+                glfwSetWindowShouldClose(window->GetWindow(), GLFW_TRUE);
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("View"))
+        {
+            ImGui::MenuItem("Scene Outliner", nullptr, &showOutliner);
+            ImGui::MenuItem("Details Panel", nullptr, &showDetails);
+            ImGui::MenuItem("Settings", nullptr, &showSettings);
+            ImGui::MenuItem("DDGI Atlases", nullptr, &showDDGIAtlas);
+            ImGui::MenuItem("Performance Overlay", nullptr, &showPerformanceOverlay);
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Gizmo"))
+        {
+            if (ImGui::MenuItem("Translate", "1", currentGizmoOperation == ImGuizmo::TRANSLATE)) {
+                currentGizmoOperation = ImGuizmo::TRANSLATE;
+            }
+            if (ImGui::MenuItem("Rotate", "2", currentGizmoOperation == ImGuizmo::ROTATE)) {
+                currentGizmoOperation = ImGuizmo::ROTATE;
+            }
+            if (ImGui::MenuItem("Scale", "3", currentGizmoOperation == ImGuizmo::SCALE)) {
+                currentGizmoOperation = ImGuizmo::SCALE;
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("World Space", nullptr, currentGizmoMode == ImGuizmo::WORLD)) {
+                currentGizmoMode = ImGuizmo::WORLD;
+            }
+            if (ImGui::MenuItem("Local Space", nullptr, currentGizmoMode == ImGuizmo::LOCAL)) {
+                currentGizmoMode = ImGuizmo::LOCAL;
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Renderer"))
+        {
+            ImGui::MenuItem("Wireframe Mode", nullptr, &appref->bWireFrame);
+            ImGui::MenuItem("DLSS Ray Reconstruction", nullptr, &appref->bUseDLSS);
+            ImGui::MenuItem("FXAA Anti-Aliasing", nullptr, (bool*)&appref->fxaa_FullScreenQuad->bFXAA);
+            ImGui::MenuItem("Hide Light Indicators", nullptr, &appref->bHideLights);
+            ImGui::EndMenu();
+        }
+
+        // Top-Right Quick Stats
+        ImGuiIO& io = ImGui::GetIO();
+        std::string statsStr = "FPS: " + std::to_string(static_cast<int>(io.Framerate)) + " | " + appref->SceneNames[appref->currentSceneIndex];
+        float statsWidth = ImGui::CalcTextSize(statsStr.c_str()).x;
+        ImGui::SetCursorPosX(ImGui::GetWindowWidth() - statsWidth - 20.0f);
+        ImGui::TextDisabled("%s", statsStr.c_str());
+
+        ImGui::EndMainMenuBar();
+    }
+}
+
+void UserInterface::DrawViewportToolbar(App* appref, VulkanContext* vulkanContext)
+{
+    ImVec2 toolbarPos = ImGui::GetCursorScreenPos();
+    toolbarPos.x += 12.0f;
+    toolbarPos.y += 12.0f;
+
+    ImGui::SetNextWindowPos(toolbarPos);
+    ImGui::SetNextWindowBgAlpha(0.75f);
+
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+                             ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
+                             ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking;
+
+    if (ImGui::Begin("##ViewportToolbar", nullptr, flags))
+    {
+        auto DrawToolBtn = [&](const char* label, bool active, auto onClick) {
+            if (active) {
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.24f, 0.52f, 0.95f, 1.0f));
+            }
+            if (ImGui::Button(label)) {
+                onClick();
+            }
+            if (active) {
+                ImGui::PopStyleColor();
+            }
+            ImGui::SameLine();
+        };
+
+        DrawToolBtn("Translate [1]", currentGizmoOperation == ImGuizmo::TRANSLATE, [&]() {
+            currentGizmoOperation = ImGuizmo::TRANSLATE;
+        });
+        DrawToolBtn("Rotate [2]", currentGizmoOperation == ImGuizmo::ROTATE, [&]() {
+            currentGizmoOperation = ImGuizmo::ROTATE;
+        });
+        DrawToolBtn("Scale [3]", currentGizmoOperation == ImGuizmo::SCALE, [&]() {
+            currentGizmoOperation = ImGuizmo::SCALE;
+        });
+
+        ImGui::SameLine(0, 10.0f);
+        ImGui::TextUnformatted("|");
+        ImGui::SameLine(0, 10.0f);
+
+        DrawToolBtn(currentGizmoMode == ImGuizmo::WORLD ? "World" : "Local", false, [&]() {
+            currentGizmoMode = (currentGizmoMode == ImGuizmo::WORLD) ? ImGuizmo::LOCAL : ImGuizmo::WORLD;
+        });
+
+        ImGui::SameLine(0, 10.0f);
+        ImGui::TextUnformatted("| Pass:");
+        ImGui::SameLine();
+
+        ImGui::SetNextItemWidth(130.0f);
+        if (ImGui::BeginCombo("##QuickPass", currentPass.c_str()))
+        {
+            for (int i = 0; i < Passes.size(); i++)
+            {
+                bool isSelected = (currentPass == Passes[i]);
+                if (ImGui::Selectable(Passes[i].c_str(), isSelected))
+                {
+                    currentPass = Passes[i];
+                    appref->DefferedDecider = i;
+                    appref->DLSS_Intergration.SceneChangeNotifer = 1;
+                    vulkanContext->ResetFrameCount();
+                }
+            }
+            ImGui::EndCombo();
+        }
+    }
+    ImGui::End();
 }
 
 void UserInterface::SetupDockingEnvironment()
@@ -287,16 +528,13 @@ void UserInterface::SetupDockingEnvironment()
 	ImGui::NewFrame();
 	ImGuizmo::BeginFrame();
 
-	// Get the main viewport
 	ImGuiViewport* viewport = ImGui::GetMainViewport();
-
-	// Set up the main dockspace window
 	ImGui::SetNextWindowPos(viewport->Pos);
 	ImGui::SetNextWindowSize(viewport->Size);
 	ImGui::SetNextWindowViewport(viewport->ID);
 
-	// Set up the window flags
 	ImGuiWindowFlags window_flags =
+		ImGuiWindowFlags_MenuBar |
 		ImGuiWindowFlags_NoDocking |
 		ImGuiWindowFlags_NoTitleBar |
 		ImGuiWindowFlags_NoCollapse |
@@ -306,41 +544,34 @@ void UserInterface::SetupDockingEnvironment()
 		ImGuiWindowFlags_NoNavFocus |
 		ImGuiWindowFlags_NoBackground;
 
-
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(-0.5f, -0.5f));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 	ImGui::Begin("DockSpace", nullptr, window_flags);
 	ImGui::PopStyleVar();
 
-	// Submit the DockSpace
 	ImGuiID dock_main_id = ImGui::GetID("MyDockSpace");
 	ImGui::DockSpace(dock_main_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
 
-	// Set up the initial layout (only once)
 	static bool first_time = true;
-
     if (first_time)
     {
         first_time = false;
 
-        ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.25f, nullptr, &dock_main_id);
+        ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.28f, nullptr, &dock_main_id);
+        ImGuiID dock_right_bottom_id;
+        ImGuiID dock_right_top_id;
+        ImGui::DockBuilderSplitNode(dock_right_id, ImGuiDir_Down, 0.50f, &dock_right_bottom_id, &dock_right_top_id);
 
-        ImGuiID dock_Settings_id;
-        ImGuiID dock_right_temp_id;
-
-        ImGui::DockBuilderSplitNode(dock_right_id, ImGuiDir_Down, 0.53f, &dock_Settings_id, &dock_right_temp_id);
-
-        ImGuiID dock_DetailsPanel_id;
-        ImGuiID dock_OutlinerPanel_id;
-        ImGui::DockBuilderSplitNode(dock_right_temp_id, ImGuiDir_Down, 0.6f, &dock_DetailsPanel_id, &dock_OutlinerPanel_id);
+        ImGuiID dock_outliner_id;
+        ImGuiID dock_details_id;
+        ImGui::DockBuilderSplitNode(dock_right_top_id, ImGuiDir_Down, 0.55f, &dock_details_id, &dock_outliner_id);
 
         ImGui::DockBuilderDockWindow("Main Viewport", dock_main_id);
+        ImGui::DockBuilderDockWindow("Scene Outliner", dock_outliner_id);
+        ImGui::DockBuilderDockWindow("Details Panel", dock_details_id);
+        ImGui::DockBuilderDockWindow("Settings", dock_right_bottom_id);
 
-        ImGui::DockBuilderDockWindow("Settings", dock_Settings_id);
-        ImGui::DockBuilderDockWindow("Details Panel", dock_DetailsPanel_id);
-
-        ImGui::DockBuilderDockWindow("DDGI Visibility Atlas", dock_OutlinerPanel_id);
-        ImGui::DockBuilderDockWindow("DDGI Irradiance Atlas", dock_OutlinerPanel_id);
-        ImGui::DockBuilderDockWindow("Scene Outliner", dock_OutlinerPanel_id);
+        ImGui::DockBuilderDockWindow("DDGI Irradiance Atlas", dock_right_bottom_id);
+        ImGui::DockBuilderDockWindow("DDGI Visibility Atlas", dock_right_bottom_id);
 
         ImGui::DockBuilderFinish(dock_main_id);
     }
@@ -348,9 +579,8 @@ void UserInterface::SetupDockingEnvironment()
 	ImGui::End();
 }
 
-void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex,ImageData& DrawingImage)
+void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex, ImageData& DrawingImage)
 {
-
 	ImageTransitionData TransitionSwapchainToWriteData;
 	TransitionSwapchainToWriteData.oldlayout = vk::ImageLayout::eUndefined;
 	TransitionSwapchainToWriteData.newlayout = vk::ImageLayout::eGeneral;
@@ -369,7 +599,7 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex,Im
 		ImGui::UpdatePlatformWindows();
 		ImGui::RenderPlatformWindowsDefault();
 	}
-	//// Begin rendering for ImGui
+
 	vk::RenderingAttachmentInfo imguiColorAttachment{};
 	imguiColorAttachment.imageView = DrawingImage.imageView;
 	imguiColorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
@@ -394,10 +624,7 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex,Im
 	ImguiViewPort.minDepth = 0.0f;
 	ImguiViewPort.maxDepth = 1.0f;
 
-	vk::Offset2D imguiOffset{};
-	imguiOffset.x = 0;
-	imguiOffset.y = 0;
-
+	vk::Offset2D imguiOffset{ 0, 0 };
 	vk::Rect2D ImguiScissor{};
 	ImguiScissor.offset = imguiOffset;
 	ImguiScissor.extent = vulkancontext->swapchainExtent;
@@ -407,48 +634,55 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex,Im
 
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), CommandBuffer);
 	CommandBuffer.endRendering();
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 
 void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanContext)
 {
     SetupDockingEnvironment();
+    DrawMenuBar(appref, skyBox, vulkanContext);
 
-    // Handle gizmo mode changes
+    // Keyboard Shortcuts
     if (ImGui::IsKeyPressed(ImGuiKey_1)) { currentGizmoOperation = ImGuizmo::TRANSLATE; }
     if (ImGui::IsKeyPressed(ImGuiKey_2)) { currentGizmoOperation = ImGuizmo::ROTATE; }
     if (ImGui::IsKeyPressed(ImGuiKey_3)) { currentGizmoOperation = ImGuizmo::SCALE; }
     
 #if ENABLE_NVPERF
-
     if (ImGui::IsKeyPressed(ImGuiKey_P)) { 
         m_periodicSamplerOneShot.StartCollectionOnFrameEnd();
         Save_To_File = true;
     }
 #endif
 
-
     bool isItemSelected = (UserInterfaceItemsIndex >= 0 && UserInterfaceItemsIndex < appref->UserInterfaceItems.size());
     glm::mat4 modelMatrix;
     float matrixTranslation[3], matrixRotation[3], matrixScale[3];
 
+    // ==========================================
+    // 1. SCENE OUTLINER
+    // ==========================================
+    if (showOutliner)
     {
-        ImGui::Begin("Scene Outliner");
+        ImGui::Begin("Scene Outliner", &showOutliner);
+
+        static char searchFilter[64] = "";
+        ImGui::InputTextWithHint("##SearchFilter", "Search items...", searchFilter, IM_ARRAYSIZE(searchFilter));
+        ImGui::Separator();
 
         for (int i = 0; i < appref->UserInterfaceItems.size(); ++i)
         {
             if (!appref->UserInterfaceItems[i]) continue;
 
-            // Try to cast to Model
             Model* model = dynamic_cast<Model*>(appref->UserInterfaceItems[i]);
 
             if (model)
             {
-                // Model with instances
-                bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)i,
-                    ImGuiTreeNodeFlags_OpenOnArrow | (UserInterfaceItemsIndex == i ? ImGuiTreeNodeFlags_Selected : 0),
-                    "Model %d", i);
+                std::string nodeName = "Model " + std::to_string(i);
+                if (searchFilter[0] != '\0' && nodeName.find(searchFilter) == std::string::npos) continue;
+
+                ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+                if (UserInterfaceItemsIndex == i && SelectedInstanceIndex == -1) flags |= ImGuiTreeNodeFlags_Selected;
+
+                bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)i, flags, "[M] %s", nodeName.c_str());
 
                 if (ImGui::IsItemClicked()) {
                     UserInterfaceItemsIndex = i;
@@ -462,30 +696,29 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
                         if (!model->Instances[j]) continue;
 
                         bool isInstanceSelected = (UserInterfaceItemsIndex == i && SelectedInstanceIndex == j);
-                        if (ImGui::Selectable(("Instance " + std::to_string(j)).c_str(), isInstanceSelected))
+                        std::string instName = "  - Instance " + std::to_string(j);
+
+                        if (ImGui::Selectable(instName.c_str(), isInstanceSelected))
                         {
                             UserInterfaceItemsIndex = i;
                             SelectedInstanceIndex = j;
                         }
                     }
-
                     ImGui::TreePop();
                 }
             }
             else
             {
-
                 Light* light = dynamic_cast<Light*>(appref->UserInterfaceItems[i]);
-
-                std::string name = "Unknown Item " + std::to_string(i);
-
+                std::string name = "Item " + std::to_string(i);
                 if (light) {
-                    name = (light->lightType == 0 ? "Directional Light " : "Point Light ") + std::to_string(i);
+                    name = (light->lightType == 0 ? "[Dir Light] Light " : "[Point Light] Light ") + std::to_string(i);
                 }
 
-                bool isItemSelected = (UserInterfaceItemsIndex == i && SelectedInstanceIndex == -1);
+                if (searchFilter[0] != '\0' && name.find(searchFilter) == std::string::npos) continue;
 
-                if (ImGui::Selectable(name.c_str(), isItemSelected))
+                bool isSelected = (UserInterfaceItemsIndex == i && SelectedInstanceIndex == -1);
+                if (ImGui::Selectable(name.c_str(), isSelected))
                 {
                     UserInterfaceItemsIndex = i;
                     SelectedInstanceIndex = -1;
@@ -495,25 +728,21 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
         ImGui::End();
     }
 
-
-
-    (DLSSFRAMELIMIT + 1) % 25;
-
-    if (DLSSFRAMELIMIT == 25)
+    // ==========================================
+    // 2. SETTINGS PANEL
+    // ==========================================
+    if (showSettings)
     {
-        appref->DLSS_Intergration.SceneChangeNotifer = 1;
-    }
-
-    {
-        ImGui::Begin("Settings");
+        ImGui::Begin("Settings", &showSettings);
 
         if (ImGui::BeginTabBar("SettingsTabs", ImGuiTabBarFlags_None))
         {
-            if (ImGui::BeginTabItem("General"))
+            // --- TAB: General & Scene ---
+            if (ImGui::BeginTabItem("Environment"))
             {
-                ImGui::SeparatorText("Application");
+                ImGui::SeparatorText("Scene Selection");
 
-                if (ImGui::BeginCombo("Select Scene", appref->SceneNames[appref->currentSceneIndex].c_str()))
+                if (ImGui::BeginCombo("Active Scene", appref->SceneNames[appref->currentSceneIndex].c_str()))
                 {
                     for (int i = 0; i < appref->SceneNames.size(); i++)
                     {
@@ -521,168 +750,73 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
                         if (ImGui::Selectable(appref->SceneNames[i].c_str(), is_selected))
                         {
                             if (appref->currentSceneIndex != i) {
-                                 appref->SwitchScene(i);
-								 appref->DLSS_Intergration.SceneChangeNotifer = 1; // Notify DLSS integration of scene change
+                                appref->SwitchScene(i);
+                                appref->DLSS_Intergration.SceneChangeNotifer = 1;
                             }
                         }
-                        if (is_selected) {
-                            ImGui::SetItemDefaultFocus();
-                        }
+                        if (is_selected) ImGui::SetItemDefaultFocus();
                     }
                     ImGui::EndCombo();
                 }
 
-                if (ImGui::Button("Refresh Shaders", ImVec2(100, 30))) {
-
-                    appref->recreatePipeline();
-
-                }
-
-                ImGuiIO& io = ImGui::GetIO();
-                ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-
-                ImGui::SeparatorText("Scene");
-
-                if (ImGui::BeginCombo("Render Passes", currentPass.c_str())) {
-
-                    for (int i = 0; i < Passes.size(); i++) {
-
-                        bool is_selected = (currentPass == Passes[i]);
-
-                        if (ImGui::Selectable(Passes[i].c_str(), is_selected)) {
-
-                            currentPass = Passes[i];
-                            appref->DefferedDecider = i;
-                            appref->DLSS_Intergration.SceneChangeNotifer = 1; // Notify DLSS integration of scene change
-                            vulkanContext->ResetFrameCount();
-
-                        }
-                    }
-
-                    ImGui::EndCombo();
-                }
-
-                if (ImGui::BeginCombo("SkyBox", currentSkyBox.c_str())) {
-               
+                if (ImGui::BeginCombo("SkyBox Environment", currentSkyBox.c_str())) {
                     for (int i = 0; i < SkyBoxs.size(); i++) {
-               
                         bool is_selected = (currentSkyBox == SkyBoxs[i]);
-               
                         if (ImGui::Selectable(SkyBoxs[i].c_str(), is_selected)) {
-               
                             currentSkyBox = SkyBoxs[i];
                             skyBox->SkyBoxIndex = i;
                             vulkanContext->ResetFrameCount();
-               
                         }
                     }
                     ImGui::EndCombo();
+                }
+
+                ImGui::Spacing();
+                ImGui::SeparatorText("Pipeline Actions");
+                if (ImGui::Button("Reload Shaders (F5)", ImVec2(-1, 28))) {
+                    appref->recreatePipeline();
                 }
 
                 ImGui::EndTabItem();
             }
 
-            if (ImGui::BeginTabItem("Rendering"))
+            // --- TAB: Rendering & Post Processing ---
+            if (ImGui::BeginTabItem("Post-Processing"))
             {
-                ImGui::SeparatorText("General");
-                ImGui::Checkbox("Wire Frame", &appref->bWireFrame);
+                ImGui::SeparatorText("Anti-Aliasing & Upscaling");
+                ImGui::Checkbox("FXAA Enabled", (bool*)&appref->fxaa_FullScreenQuad->bFXAA);
 
-                ImGui::SeparatorText("Post-Processing");
-                ImGui::Checkbox("FXAA", (bool*)&appref->fxaa_FullScreenQuad->bFXAA);
-
-                if (ImGui::Checkbox("Ray Reconstruction", (bool*)&appref->bUseDLSS))
+                if (ImGui::Checkbox("NVIDIA DLSS (Ray Reconstruction)", (bool*)&appref->bUseDLSS))
                 {
                     appref->UpdateTextureID();
                 }
 
-                if (ImGui::CollapsingHeader("Color Settings", ImGuiTreeNodeFlags_DefaultOpen))
-                {
-                    ImGui::SliderFloat("Brightness", &appref->Combined_FullScreenQuad->Brightness, 0.0f, 2.0f, "%.2f");
-                    ImGui::SliderFloat("Saturation", &appref->Combined_FullScreenQuad->Saturation, 0.0f, 2.0f, "%.2f");
-                    ImGui::SliderFloat("Concentration", &appref->Combined_FullScreenQuad->Concentration, 0.0f, 2.0f, "%.2f");
-                    ImGui::SliderFloat("Max Gamma", &appref->Combined_FullScreenQuad->MaxGamma, 0.1f, 4.0f, "%.2f");
-                    ImGui::SliderFloat("Min Gamma", &appref->Combined_FullScreenQuad->MinGamma, 0.1f, 4.0f, "%.2f");
-                    ImGui::SliderFloat("GI Boost", &appref->Combined_FullScreenQuad->GIBoost, 0.1f, 10.0f, "%.2f");
-                }
+                ImGui::SeparatorText("Color Grading");
+                ImGui::SliderFloat("Brightness", &appref->Combined_FullScreenQuad->Brightness, 0.0f, 2.0f, "%.2f");
+                ImGui::SliderFloat("Saturation", &appref->Combined_FullScreenQuad->Saturation, 0.0f, 2.0f, "%.2f");
+                ImGui::SliderFloat("Contrast", &appref->Combined_FullScreenQuad->Concentration, 0.0f, 2.0f, "%.2f");
+                ImGui::SliderFloat("Max Gamma", &appref->Combined_FullScreenQuad->MaxGamma, 0.1f, 4.0f, "%.2f");
+                ImGui::SliderFloat("Min Gamma", &appref->Combined_FullScreenQuad->MinGamma, 0.1f, 4.0f, "%.2f");
+                ImGui::SliderFloat("GI Boost", &appref->Combined_FullScreenQuad->GIBoost, 0.1f, 10.0f, "%.2f");
 
                 ImGui::EndTabItem();
             }
 
-            if (ImGui::BeginTabItem("Lighting"))
+            // --- TAB: Global Illumination & DDGI ---
+            if (ImGui::BeginTabItem("Lighting & GI"))
             {
-                if (ImGui::InputInt("Lights in Scene", &NumberOfLights, 1, 10))
+                ImGui::SeparatorText("Scene Lights");
+                if (ImGui::SliderInt("Total Lights", &NumberOfLights, 0, MAX_LIGHT_COUNT))
                 {
-                    if (NumberOfLights < 0) NumberOfLights = 0;
-                    if (NumberOfLights > MAX_LIGHT_COUNT) NumberOfLights = MAX_LIGHT_COUNT;
-
                     appref->SpawnLights(NumberOfLights);
                 }
+                ImGui::Checkbox("Hide Light Indicators", (bool*)&appref->bHideLights);
 
-                ImGui::Checkbox("Hide Lights", (bool*)&appref->bHideLights);
-
-
-                if (ImGui::CollapsingHeader("Ambient Occlusion (SSAO)", ImGuiTreeNodeFlags_DefaultOpen))
-                {
-                    ImGui::Checkbox("Enable SSAO", (bool*)&appref->ssao_FullScreenQuad->bShouldSSAO);
-                    ImGui::InputInt("Kernel Size", &appref->ssao_FullScreenQuad->KernelSize);
-                    ImGui::InputFloat("Radius", &appref->ssao_FullScreenQuad->Radius);
-                    ImGui::InputFloat("Bias", &appref->ssao_FullScreenQuad->Bias);
-                }
-
-                if (ImGui::CollapsingHeader("Global Illumination (DDGI)", ImGuiTreeNodeFlags_DefaultOpen))
-                {
-                    ImGui::TextDisabled("Adjust probe parameters:");
-                    ImGui::Checkbox("Draw Debug Probes", (bool*)&appref->dynamicDiffuse_RTGI->DrawDEBUG_Probes);
-
-                    if (appref->dynamicDiffuse_RTGI->DrawDEBUG_Probes) {
-                        ImGui::Checkbox("Show Debug Status", (bool*)&appref->dynamicDiffuse_RTGI->ShowDEBUG_Status);
-                    }
-
-                    ImGui::Checkbox("Use Infinite Bounces", (bool*)&appref->dynamicDiffuse_RTGI->UseinfiniteBounce);
-                    ImGui::SliderFloat("Bounce Multiplier", &appref->dynamicDiffuse_RTGI->infiniteBounceMultiplyer, 0, 1, "%.1f");
-                    ImGui::SliderInt("Rays Per Probe", &appref->dynamicDiffuse_RTGI->RaysPerProbe, 1, 300, "%d");
-
-                    ImGui::SeparatorText("Probe Grid");
-                    ImGui::SliderInt("X Count", &appref->dynamicDiffuse_RTGI->NumOfProbesX, 1, 22, "%d");
-                    ImGui::SliderInt("Y Count", &appref->dynamicDiffuse_RTGI->NumOfProbesY, 1, 22, "%d");
-                    ImGui::SliderInt("Z Count", &appref->dynamicDiffuse_RTGI->NumOfProbesZ, 1, 22, "%d");
-                    ImGui::SliderFloat3("Grid Location", glm::value_ptr(appref->dynamicDiffuse_RTGI->GridLocation), -1000, 1000, "%.0005f");
-                    ImGui::SliderFloat3("Probe Offset", glm::value_ptr(appref->dynamicDiffuse_RTGI->ProbeOffset), -300, 300, "%.0005f");
-                    ImGui::InputFloat3("Grid Location Input", glm::value_ptr(appref->dynamicDiffuse_RTGI->GridLocation));
-                    ImGui::InputFloat3("Probe Offset Input", glm::value_ptr(appref->dynamicDiffuse_RTGI->ProbeOffset));
-
-                }
-
-                if (ImGui::CollapsingHeader("ReSTIR DI", ImGuiTreeNodeFlags_DefaultOpen)){
-                    ImGui::Checkbox("Enable ReSTIR Temporal Reuse", (bool*)&appref->Restir_DI->bTemporalReuse);
-                    ImGui::Checkbox("Enable ReSTIR Spatial  Reuse", (bool*)&appref->Restir_DI->bSpatialReuse);
-                    ImGui::Checkbox("Enable ReSTIR DDGI"          , (bool*)&appref->Restir_DI->bDDGI);
-                }
-
-                if (ImGui::BeginCombo("DDGI Sampling Vertex", currentDDGIVertex.c_str())) {
-
-                    for (int i = 0; i < DDGI_Vertex_Options.size(); i++) {
-
-                        bool is_selected = (currentDDGIVertex == DDGI_Vertex_Options[i]);
-
-                        if (ImGui::Selectable(DDGI_Vertex_Options[i].c_str(), is_selected)) {
-
-                            currentDDGIVertex = DDGI_Vertex_Options[i];
-                            appref->dynamicDiffuse_RTGI->DDGIVertex = i;
-
-                        }
-                    }
-                    ImGui::EndCombo();
-                }
-
-                if (ImGui::BeginCombo("GI Solution", currentGI_Solution.c_str())) {
-
+                ImGui::SeparatorText("Global Illumination Solution");
+                if (ImGui::BeginCombo("GI Method", currentGI_Solution.c_str())) {
                     for (int i = 0; i < GlobalIllumination_Solution.size(); i++) {
-
                         bool is_selected = (currentGI_Solution == GlobalIllumination_Solution[i]);
-
                         if (ImGui::Selectable(GlobalIllumination_Solution[i].c_str(), is_selected)) {
-
                             currentGI_Solution = GlobalIllumination_Solution[i];
                             appref->lighting_RTX->GISolutionIndex = i;
                             vulkanContext->ResetFrameCount();
@@ -691,54 +825,120 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
                     ImGui::EndCombo();
                 }
 
+                if (ImGui::CollapsingHeader("Dynamic Diffuse GI (DDGI)", ImGuiTreeNodeFlags_DefaultOpen))
+                {
+                    ImGui::Checkbox("Debug Probes", (bool*)&appref->dynamicDiffuse_RTGI->DrawDEBUG_Probes);
+                    if (appref->dynamicDiffuse_RTGI->DrawDEBUG_Probes) {
+                        ImGui::SameLine();
+                        ImGui::Checkbox("Show Status", (bool*)&appref->dynamicDiffuse_RTGI->ShowDEBUG_Status);
+                    }
 
-                //if (ImGui::CollapsingHeader("RT Reflections", ImGuiTreeNodeFlags_DefaultOpen)) {
-                //    ImGui::Checkbox("Enable Raytraced Reflections", (bool*)&appref->RT_Reflection->bReflections);
-                //
-                //}
+                    ImGui::Checkbox("Infinite Bounces", (bool*)&appref->dynamicDiffuse_RTGI->UseinfiniteBounce);
+                    ImGui::SliderFloat("Bounce Weight", &appref->dynamicDiffuse_RTGI->infiniteBounceMultiplyer, 0.0f, 1.0f, "%.2f");
+                    ImGui::SliderInt("Rays / Probe", &appref->dynamicDiffuse_RTGI->RaysPerProbe, 8, 256);
+
+                    ImGui::Spacing();
+                    ImGui::TextDisabled("Probe Grid Dimensions:");
+                    ImGui::SliderInt("X Probes", &appref->dynamicDiffuse_RTGI->NumOfProbesX, 1, 22);
+                    ImGui::SliderInt("Y Probes", &appref->dynamicDiffuse_RTGI->NumOfProbesY, 1, 22);
+                    ImGui::SliderInt("Z Probes", &appref->dynamicDiffuse_RTGI->NumOfProbesZ, 1, 22);
+
+                    DrawVec3Control("Grid Origin", appref->dynamicDiffuse_RTGI->GridLocation);
+                    DrawVec3Control("Probe Spacing", appref->dynamicDiffuse_RTGI->ProbeOffset, 3.0f);
+                }
+
+                if (ImGui::CollapsingHeader("ReSTIR Direct Illumination"))
+                {
+                    ImGui::Checkbox("Temporal Reservoir Reuse", (bool*)&appref->Restir_DI->bTemporalReuse);
+                    ImGui::Checkbox("Spatial Reservoir Reuse", (bool*)&appref->Restir_DI->bSpatialReuse);
+                    ImGui::Checkbox("ReSTIR DDGI Injection", (bool*)&appref->Restir_DI->bDDGI);
+                }
+
+                if (ImGui::CollapsingHeader("Ambient Occlusion (SSAO)"))
+                {
+                    ImGui::Checkbox("Enable SSAO", (bool*)&appref->ssao_FullScreenQuad->bShouldSSAO);
+                    ImGui::SliderInt("Kernel Size", &appref->ssao_FullScreenQuad->KernelSize, 8, 64);
+                    ImGui::SliderFloat("Radius", &appref->ssao_FullScreenQuad->Radius, 0.1f, 3.0f, "%.2f");
+                    ImGui::SliderFloat("Bias", &appref->ssao_FullScreenQuad->Bias, 0.001f, 0.2f, "%.3f");
+                }
 
                 ImGui::EndTabItem();
             }
 
+#if ENABLE_NVPERF
+            // --- TAB: Performance Profiler ---
+            if (ImGui::BeginTabItem("Profiler"))
+            {
+                ImGui::SeparatorText("NVIDIA Nsigt Perf");
+                if (ImGui::Button("Capture Frame Traces (P)", ImVec2(-1, 30))) {
+                    m_periodicSamplerOneShot.StartCollectionOnFrameEnd();
+                    Save_To_File = true;
+                }
+                ImGui::TextDisabled("Output: traces.yaml in working directory");
+                ImGui::EndTabItem();
+            }
+#endif
+
             ImGui::EndTabBar();
         }
-
         ImGui::End();
     }
 
+    // ==========================================
+    // 3. MAIN VIEWPORT
+    // ==========================================
     {
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::Begin("Main Viewport");
+        ImGui::PopStyleVar();
 
-        ImGui::SetCursorPos(ImVec2(0, 0));
-
-        // 2. Get the image's top-left screen position AND its size
         ImVec2 imageTopLeft = ImGui::GetCursorScreenPos();
-        viewportSize = ImGui::GetContentRegionAvail(); // This is the image size
+        viewportSize = ImGui::GetContentRegionAvail();
 
-        // Display the appropriate texture based on current render pass
         switch (appref->DefferedDecider) {
-                case 0: ImGui::Image((ImTextureID)appref->SSGITextureId, viewportSize); break;
-                case 1: ImGui::Image((ImTextureID)appref->Sampled_GI_ID, viewportSize); break;
-                case 2: ImGui::Image((ImTextureID)appref->ReSTIR_DITextureId, viewportSize); break;
-                case 3: ImGui::Image((ImTextureID)appref->FinalRenderTextureId, viewportSize); break;
+            case 0: ImGui::Image((ImTextureID)appref->SSGITextureId, viewportSize); break;
+            case 1: ImGui::Image((ImTextureID)appref->Sampled_GI_ID, viewportSize); break;
+            case 2: ImGui::Image((ImTextureID)appref->ReSTIR_DITextureId, viewportSize); break;
+            case 3: ImGui::Image((ImTextureID)appref->FinalRenderTextureId, viewportSize); break;
+        }
+
+        // Viewport Overlay Toolbar
+        DrawViewportToolbar(appref, vulkanContext);
+
+        // Performance Badge Overlay
+        if (showPerformanceOverlay)
+        {
+            ImVec2 badgePos = imageTopLeft;
+            badgePos.x += viewportSize.x - 180.0f;
+            badgePos.y += 12.0f;
+
+            ImGui::SetNextWindowPos(badgePos);
+            ImGui::SetNextWindowBgAlpha(0.65f);
+
+            ImGuiWindowFlags overlayFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize |
+                                            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
+                                            ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDocking;
+
+            if (ImGui::Begin("##PerfBadge", nullptr, overlayFlags))
+            {
+                ImGuiIO& io = ImGui::GetIO();
+                ImGui::TextColored(ImVec4(0.35f, 0.85f, 0.45f, 1.0f), "%.1f FPS", io.Framerate);
+                ImGui::Text("%.2f ms", 1000.0f / io.Framerate);
+                ImGui::TextDisabled("%dx%d", (int)viewportSize.x, (int)viewportSize.y);
+            }
+            ImGui::End();
         }
 
         ImGuizmo::SetRect(imageTopLeft.x, imageTopLeft.y, viewportSize.x, viewportSize.y);
-
         ImGuizmo::SetOrthographic(false);
         ImGuizmo::SetDrawlist();
 
-        if (appref->UserInterfaceItems.empty()) {
-
-            ImGui::End();
-        }
-        else
+        if (!appref->UserInterfaceItems.empty())
         {
             glm::mat4 cameraprojection = appref->camera.GetProjectionMatrix();
             glm::mat4 cameraview = appref->camera.GetViewMatrix();
 
             if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(0) && !ImGuizmo::IsOver()) {
-
                 SelectedInstanceIndex = -1;
                 UserInterfaceItemsIndex = -1;
 
@@ -746,9 +946,7 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
                     Model* model = dynamic_cast<Model*>(item);
                     if (model) {
                         for (size_t i = 0; i < model->Instances.size(); i++) {
-
                             if (!model->Instances[i]) continue;
-
                             glm::vec3 ModelInstancePosition = model->Instances[i]->GetPostion();
                             float distance = CalculateDistanceInScreenSpace(cameraprojection, cameraview, ModelInstancePosition);
 
@@ -764,12 +962,9 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
 
                 if (SelectedInstanceIndex == -1) {
                     for (size_t i = 0; i < appref->UserInterfaceItems.size(); i++) {
-
                         if (!appref->UserInterfaceItems[i]) continue;
-
                         glm::vec3 itemPosition = appref->UserInterfaceItems[i]->position;
                         float distance = CalculateDistanceInScreenSpace(cameraprojection, cameraview, itemPosition);
-
                         if (distance < 100.0f) {
                             UserInterfaceItemsIndex = i;
                             break;
@@ -778,22 +973,14 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
                 }
             }
 
-            // Handle gizmo manipulation
             isItemSelected = (UserInterfaceItemsIndex >= 0 && UserInterfaceItemsIndex < appref->UserInterfaceItems.size());
-
             if (isItemSelected) {
-
                 auto& item = appref->UserInterfaceItems[UserInterfaceItemsIndex];
-
                 if (item)
                 {
-                    // Get the correct matrix
                     if (SelectedInstanceIndex != -1) {
-
                         Model* model = dynamic_cast<Model*>(item);
-
                         if (model && SelectedInstanceIndex < model->Instances.size() && model->Instances[SelectedInstanceIndex]) {
-
                             modelMatrix = model->Instances[SelectedInstanceIndex]->GetTransformationMatrix();
                         }
                     }
@@ -801,58 +988,48 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
                         modelMatrix = item->GetModelMatrix();
                     }
 
-                    // Manipulate in the viewport window
                     ImGuizmo::Manipulate(glm::value_ptr(cameraview), glm::value_ptr(cameraprojection),
-                                         currentGizmoOperation, ImGuizmo::LOCAL, glm::value_ptr(modelMatrix));
+                                         currentGizmoOperation, currentGizmoMode, glm::value_ptr(modelMatrix));
 
                     if (ImGuizmo::IsUsing()) {
-                        // Apply changes
                         if (SelectedInstanceIndex != -1) {
-
                             Model* model = dynamic_cast<Model*>(item);
-
                             if (model && SelectedInstanceIndex < model->Instances.size() && model->Instances[SelectedInstanceIndex]) {
-
                                 model->Instances[SelectedInstanceIndex]->SetTrasnformationMatrix(modelMatrix);
                                 appref->dynamicDiffuse_RTGI->RESET_PROBE_STATUS = 1;
                             }
                         }
                         else {
-
                             item->SetModelMatrix(modelMatrix);
-
                         }
                     }
-                    // Decompose matrix for the Details Panel
                     ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(modelMatrix), matrixTranslation, matrixRotation, matrixScale);
                 }
-                else
-                {
-                    isItemSelected = false; // Item is null, deselect
+                else {
+                    isItemSelected = false;
                 }
             }
         }
         ImGui::End();
     }
 
-
+    // ==========================================
+    // 4. DETAILS PANEL
+    // ==========================================
+    if (showDetails)
     {
-        ImGui::Begin("Details Panel");
+        ImGui::Begin("Details Panel", &showDetails);
 
         if (!isItemSelected)
         {
-            ImGui::Text("No item selected.");
+            ImGui::TextDisabled("Select an object in the Outliner or Viewport.");
         }
         else
         {
             auto& item = appref->UserInterfaceItems[UserInterfaceItemsIndex];
 
-            // Recompose matrix from any changes made in the input boxes
-            ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, glm::value_ptr(modelMatrix));
-
             if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
             {
-                bool matrixChanged = false;
                 if (SelectedInstanceIndex != -1)
                 {
                     Model* model = dynamic_cast<Model*>(item);
@@ -862,82 +1039,50 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
                         glm::vec3 rot = model->Instances[SelectedInstanceIndex]->GetRotation();
                         glm::vec3 scl = model->Instances[SelectedInstanceIndex]->GetScale();
 
-                        if (ImGui::InputFloat3("Position", glm::value_ptr(pos))) { model->Instances[SelectedInstanceIndex]->SetPostion(pos); }
-                        if (ImGui::InputFloat3("Rotation", glm::value_ptr(rot))) { model->Instances[SelectedInstanceIndex]->SetRotation(rot); }
-                        if (ImGui::InputFloat3("Scale", glm::value_ptr(scl))) { model->Instances[SelectedInstanceIndex]->SetScale(scl); }
+                        if (DrawVec3Control("Position", pos)) model->Instances[SelectedInstanceIndex]->SetPostion(pos);
+                        if (DrawVec3Control("Rotation", rot)) model->Instances[SelectedInstanceIndex]->SetRotation(rot);
+                        if (DrawVec3Control("Scale", scl, 1.0f)) model->Instances[SelectedInstanceIndex]->SetScale(scl);
                     }
                 }
                 else
                 {
-                    // Handle non-instanced items like lights
-                    if (ImGui::InputFloat3("Position", matrixTranslation)) { matrixChanged = true; }
-                    if (ImGui::InputFloat3("Rotation", matrixRotation)) { matrixChanged = true; }
-                    if (ImGui::InputFloat3("Scale", matrixScale)) { matrixChanged = true; }
+                    glm::vec3 pos = { matrixTranslation[0], matrixTranslation[1], matrixTranslation[2] };
+                    glm::vec3 rot = { matrixRotation[0], matrixRotation[1], matrixRotation[2] };
+                    glm::vec3 scl = { matrixScale[0], matrixScale[1], matrixScale[2] };
 
-                    if (matrixChanged)
+                    bool changed = false;
+                    if (DrawVec3Control("Position", pos)) { matrixTranslation[0] = pos.x; matrixTranslation[1] = pos.y; matrixTranslation[2] = pos.z; changed = true; }
+                    if (DrawVec3Control("Rotation", rot)) { matrixRotation[0] = rot.x; matrixRotation[1] = rot.y; matrixRotation[2] = rot.z; changed = true; }
+                    if (DrawVec3Control("Scale", scl, 1.0f)) { matrixScale[0] = scl.x; matrixScale[1] = scl.y; matrixScale[2] = scl.z; changed = true; }
+
+                    if (changed)
                     {
                         ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, glm::value_ptr(modelMatrix));
                         item->SetModelMatrix(modelMatrix);
-                        LastModelMatrix = modelMatrix; // Update last matrix
+                        LastModelMatrix = modelMatrix;
                     }
                 }
             }
 
-            // --- Model-Specific Section ---
-            if (SelectedInstanceIndex != -1)
+            Light* light = dynamic_cast<Light*>(item);
+            if (light && SelectedInstanceIndex == -1)
             {
-                Model* model = dynamic_cast<Model*>(item);
-
-                if (model && SelectedInstanceIndex < model->Instances.size() && model->Instances[SelectedInstanceIndex])
+                if (ImGui::CollapsingHeader("Light Component", ImGuiTreeNodeFlags_DefaultOpen))
                 {
-                   // if (ImGui::CollapsingHeader("Rendering", ImGuiTreeNodeFlags_DefaultOpen))
-                   // {
-                   //     //ImGui::Checkbox("Cube Map Reflections", (bool*)&model->Instances[SelectedInstanceIndex]->bCubeMapReflection);
-                   //     //ImGui::Checkbox("Screen Space Reflections", (bool*)&model->Instances[SelectedInstanceIndex]->bScreenSpaceReflection);
-                   //     model->Instances[SelectedInstanceIndex]->UpdateGPU_ReflectionFlags();
-                   // }
+                    ImGui::ColorEdit3("Color", glm::value_ptr(light->color));
+                    ImGui::DragFloat("Intensity", &light->lightIntensity, 0.5f, 0.0f, 100.0f, "%.1f");
+                    ImGui::DragFloat("Ambience", &light->ambientStrength, 0.01f, 0.0f, 1.0f, "%.2f");
+                    ImGui::Checkbox("Cast Shadow", (bool*)&light->CastShadow);
 
-                    //if (ImGui::CollapsingHeader("Actions", ImGuiTreeNodeFlags_DefaultOpen))
-                    //{
-                    //    if (ImGui::Button("Instantiate")) { model->Instantiate(); }
-                    //        ImGui::SameLine();
-                    //
-                    //    if (ImGui::Button("Destroy"))
-                    //    {
-                    //        model->Destroy(SelectedInstanceIndex);
-                    //        UserInterfaceItemsIndex = -1; 
-                    //        SelectedInstanceIndex = -1;
-                    //    }
-                    //}
-                }
-            }
-            else
-            {
-                Light* light = dynamic_cast<Light*>(item);
-
-                if (light)
-                {
-                    if (ImGui::CollapsingHeader("Light Properties", ImGuiTreeNodeFlags_DefaultOpen))
-                    {
-                        ImGui::ColorEdit3("Color", glm::value_ptr(light->color));
-                        ImGui::InputFloat("Light Intensity", &light->lightIntensity);
-                        ImGui::InputFloat("Ambience Value", &light->ambientStrength);
-                        ImGui::Checkbox("Cast Shadow", (bool*)&light->CastShadow);
-
-                        if (ImGui::BeginCombo("Light Type", items[light->lightType].c_str())) {
-
-                            for (int i = 0; i < items.size(); i++) {
-
-                                bool is_selected = (currentItem == items[i]);
-
-                                if (ImGui::Selectable(items[i].c_str(), is_selected)) {
-
-                                    currentItem = items[i];
-                                    light->lightType = i;
-                                }
+                    if (ImGui::BeginCombo("Light Type", items[light->lightType].c_str())) {
+                        for (int i = 0; i < items.size(); i++) {
+                            bool is_selected = (currentItem == items[i]);
+                            if (ImGui::Selectable(items[i].c_str(), is_selected)) {
+                                currentItem = items[i];
+                                light->lightType = i;
                             }
-                            ImGui::EndCombo();
                         }
+                        ImGui::EndCombo();
                     }
                 }
             }
@@ -945,20 +1090,21 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
         ImGui::End();
     }
 
+    // ==========================================
+    // 5. DDGI ATLAS DEBUG VIEWERS
+    // ==========================================
+    if (showDDGIAtlas)
     {
-        ImGui::Begin("DDGI Visibility Atlas");
-        viewportSize = ImGui::GetContentRegionAvail();
-        ImGui::Image((ImTextureID)appref->DDGIIVisibilityAtlasID, viewportSize);
+        ImGui::Begin("DDGI Visibility Atlas", &showDDGIAtlas);
+        ImVec2 atlasSize = ImGui::GetContentRegionAvail();
+        ImGui::Image((ImTextureID)appref->DDGIIVisibilityAtlasID, atlasSize);
+        ImGui::End();
+
+        ImGui::Begin("DDGI Irradiance Atlas", &showDDGIAtlas);
+        atlasSize = ImGui::GetContentRegionAvail();
+        ImGui::Image((ImTextureID)appref->DDGIIrradianceAtlasID, atlasSize);
         ImGui::End();
     }
-
-    {
-        ImGui::Begin("DDGI Irradiance Atlas");
-        viewportSize = ImGui::GetContentRegionAvail();
-        ImGui::Image((ImTextureID)appref->DDGIIrradianceAtlasID, viewportSize);
-        ImGui::End();
-    }
-
 }
 
 float UserInterface::CalculateDistanceInScreenSpace(glm::mat4 CameraProjection, glm::mat4 cameraview, glm::vec3 position)
@@ -973,7 +1119,6 @@ float UserInterface::CalculateDistanceInScreenSpace(glm::mat4 CameraProjection, 
 	mousePos.x -= viewportPos.x;
 	mousePos.y -= viewportPos.y;
 
-
 	glm::vec4 clipSpacePos = CameraProjection * cameraview * glm::vec4(position, 1.0f);
 	glm::vec3 ndcSpacePos = glm::vec3(clipSpacePos) / clipSpacePos.w;
 
@@ -982,7 +1127,6 @@ float UserInterface::CalculateDistanceInScreenSpace(glm::mat4 CameraProjection, 
 	screenSpacePos.y = (1.0f - ndcSpacePos.y) * 0.5f * windowHeight;
 
 	float distance = glm::distance(glm::vec2(mousePos.x, mousePos.y), screenSpacePos);
-
 	return distance;
 }
 

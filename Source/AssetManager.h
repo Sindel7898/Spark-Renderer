@@ -20,8 +20,10 @@ public:
           return instance;
       }
 
-    void ParseModelData(const std::string& filePath, StoredModelData modeldata);
-    void ParseTextureData(const std::string& filePath, std::vector<StoredImageData> Textures);
+    void ParseModelData(const std::string& filePath, const StoredModelData& modeldata);
+    void ParseModelData(const std::string& filePath, StoredModelData&& modeldata);
+    void ParseTextureData(const std::string& filePath, const std::vector<StoredImageData>& Textures);
+    void ParseTextureData(const std::string& filePath, std::vector<StoredImageData>&& Textures);
 
     const std::vector<StoredImageData>& GetStoredImageData(const std::string& MeshFilePath);
     const StoredModelData& GetStoredModelData(const std::string& FilePath);

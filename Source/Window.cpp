@@ -30,18 +30,26 @@ Window::Window(int W, int H, std::string WN) : Width(W),Height(H),WindowName(WN)
 
     window = glfwCreateWindow(Width, Height, WindowName.c_str(), nullptr, nullptr);
 
-    int Height; 
-    int Width;
-    int texchannels;
+    if (!window) {
+        glfwTerminate();
+        throw std::runtime_error("Failed to create GLFW window");
+    }
 
-    unsigned char* pixels =  stbi_load("../Textures/WindowLogo/PlaceHolder.JPG", &Width, &Height,&texchannels, STBI_rgb_alpha);
+    int iconHeight = 0; 
+    int iconWidth = 0;
+    int texchannels = 0;
 
-    GLFWimage image;
-    image.height = 600;
-    image.width  = 900;
-    image.pixels = pixels;
+    unsigned char* pixels = stbi_load("../Textures/WindowLogo/PlaceHolder.JPG", &iconWidth, &iconHeight, &texchannels, STBI_rgb_alpha);
 
-    glfwSetWindowIcon(window, 1, &image);
+    if (pixels) {
+        GLFWimage image;
+        image.height = iconHeight;
+        image.width  = iconWidth;
+        image.pixels = pixels;
+
+        glfwSetWindowIcon(window, 1, &image);
+        stbi_image_free(pixels);
+    }
 
 #ifdef _WIN32
     HWND hwnd = glfwGetWin32Window(window);
@@ -50,12 +58,6 @@ Window::Window(int W, int H, std::string WN) : Width(W),Height(H),WindowName(WN)
     DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &isTransparent, sizeof(isTransparent));
 
 #endif
-
-    if (!window) {
-
-        throw std::runtime_error("Failed to create GLFW window");
-        delete this;
-    }
 }
 
 
@@ -68,6 +70,7 @@ void Window::CleanUp()
 {
     if (window) {
         glfwDestroyWindow(window);
+        window = nullptr;
     }
     glfwTerminate();
 }

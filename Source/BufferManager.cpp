@@ -1,12 +1,13 @@
+#define VMA_IMPLEMENTATION
+// VMA debug logging intentionally disabled to avoid console spam
+// #define VMA_DEBUG_LOG(format, ...) printf(format, __VA_ARGS__)
+// #define VMA_DEBUG_MARGIN 16
+// #define VMA_DEBUG_DETECT_CORRUPTION 1
+// #define VMA_DEBUG_INITIALIZE_ALLOCATIONS 1
+
 #include "BufferManager.h"
 #include "VulkanContext.h"
 #include "Model.h"
-
-#define VMA_IMPLEMENTATION
-#define VMA_DEBUG_LOG(format, ...) printf(format, __VA_ARGS__)
-#define VMA_DEBUG_MARGIN 16
-#define VMA_DEBUG_DETECT_CORRUPTION 1
-#define VMA_DEBUG_INITIALIZE_ALLOCATIONS 1
 
 BufferManager::BufferManager(VulkanContext* VulkanContext) : 
                                                             logicalDevice(VulkanContext->LogicalDevice),

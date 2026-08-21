@@ -47,11 +47,13 @@ public:
 
     vk::DescriptorSetLayout SSAOBlurDescriptorSetLayout;
     std::vector<vk::DescriptorSet> SSAOBlurDescriptorSet;
+    std::vector<vk::DescriptorSet> SSAOBlurVerticalDescriptorSet;
 
     vk::Extent3D SSAOImageSize;
     vk::Extent3D BluredSSAOImageSize;
 
     ImageData SSAOImage;
+    ImageData IntermediateBlurImage;
     ImageData BluredSSAOImage;
 
 private:

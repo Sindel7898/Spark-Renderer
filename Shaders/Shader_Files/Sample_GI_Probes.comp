@@ -30,11 +30,14 @@ void main()
 
    int   Width            = int(pc.GridBaseLocation_ScreenSizeWidth.w);
    int   Height           = int(pc.ProbeSpacing_ScreenSizeHeight.w);
-  
 
+   if (gl_GlobalInvocationID.x >= uint(Width) || gl_GlobalInvocationID.y >= uint(Height)) {
+       return;
+   }
+  
    ivec2 TextlCord        = ivec2(gl_GlobalInvocationID.xy);
 
-   vec2 UV = (vec2(TextlCord) + 0.) / vec2(Width,Height); // + 0.5 gives us the middle of the TEXEL not the edge
+   vec2 UV = (vec2(TextlCord) + 0.5) / vec2(Width,Height); // + 0.5 gives us the middle of the TEXEL not the edge
 
    vec3 Position = texture(PositionImage,UV).rgb;
    vec3 Normal   = texture(NormalImage,  UV).rgb;

@@ -21,73 +21,66 @@ layout(set = 0,binding = 0) buffer StorageBufferObject {
       ProbeInformation  ProbeData[];
 }SBO;
 
-layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
-    if (gl_LocalInvocationIndex == 0) {
-        int ProbeSideLength_With_Gutter = pc.ProbeSideLength + pc.GutterSize;
-        int probeIndex = get_probe_index_from_pixels(ivec2(gl_WorkGroupID.xy * 8), pc.AtlasWidthSize,ProbeSideLength_With_Gutter);
-        int numProbes = SBO.ProbeData.length();
-        
+    uint probeIndex = gl_GlobalInvocationID.x;
+    uint numProbes = SBO.ProbeData.length();
+    if (probeIndex >= numProbes) return;
 
-        int RESETFLAG = int(pc.ForecResetStatus_Padding.x);
+    int RESETFLAG = int(pc.ForecResetStatus_Padding.x);
 
-       if (RESETFLAG == 1) {
-            
-            ProbeInformation probe = SBO.ProbeData[probeIndex];
-            probe.probeLocationsXYZ_ProbeState.w = PROBE_STATE_ACTIVE;
-            SBO.ProbeData[probeIndex] = probe;
-            return;
-        }
-
-
-        if (probeIndex >= numProbes) return;
-
-        int skyHits = 0;
-        int insideHits = 0;
-        const float SkyDistance = 1000.0;
-        const float Inside = 0.1;
-
-        for (int RayIndex = 0; RayIndex < pc.NumRays; RayIndex++) {
-            ivec2 TexCoord = ivec2(RayIndex, probeIndex);
-            float Distance = imageLoad(Radiance_Visibility, TexCoord).a;
-
-            if (Distance >= SkyDistance) { 
-                skyHits++;
-            } else if (Distance > 0.0 && Distance < Inside) { 
-                insideHits++;
-            }
-        }
-
-        float SkyPercent    = float(skyHits)    / float(pc.NumRays);
-        float InsidePercent = float(insideHits) / float(pc.NumRays);
-
-        const float SLEEP_THRESHOLD   = 0.70; 
-        const float WAKE_THRESHOLD    = 0.50; 
-        const float DISABLE_THRESHOLD = 0.90;
-        const float ENABLE_THRESHOLD  = 0.50; 
-
+    if (RESETFLAG == 1) {
         ProbeInformation probe = SBO.ProbeData[probeIndex];
-        int currentState = int(probe.probeLocationsXYZ_ProbeState.w);
-        int ProbeState = currentState;
-
-        if (currentState == PROBE_STATE_ACTIVE) {
-            if (InsidePercent > DISABLE_THRESHOLD) {
-                ProbeState = PROBE_STATE_DISABLED;
-            } else if (SkyPercent > SLEEP_THRESHOLD) {
-                ProbeState = PROBE_STATE_SLEEP;
-            }
-        } else if (currentState == PROBE_STATE_SLEEP) {
-            if (SkyPercent < WAKE_THRESHOLD) { 
-                ProbeState = PROBE_STATE_ACTIVE;
-            }
-        } else if (currentState == PROBE_STATE_DISABLED) {
-            if (InsidePercent < ENABLE_THRESHOLD) {
-                ProbeState = PROBE_STATE_ACTIVE;
-            }
-        }
-
-        probe.probeLocationsXYZ_ProbeState.w = float(ProbeState);
+        probe.probeLocationsXYZ_ProbeState.w = PROBE_STATE_ACTIVE;
         SBO.ProbeData[probeIndex] = probe;
+        return;
     }
+
+    int skyHits = 0;
+    int insideHits = 0;
+    const float SkyDistance = 1000.0;
+    const float Inside = 0.1;
+
+    for (int RayIndex = 0; RayIndex < pc.NumRays; RayIndex++) {
+        ivec2 TexCoord = ivec2(RayIndex, probeIndex);
+        float Distance = imageLoad(Radiance_Visibility, TexCoord).a;
+
+        if (Distance >= SkyDistance) { 
+            skyHits++;
+        } else if (Distance > 0.0 && Distance < Inside) { 
+            insideHits++;
+        }
+    }
+
+    float SkyPercent    = float(skyHits)    / float(pc.NumRays);
+    float InsidePercent = float(insideHits) / float(pc.NumRays);
+
+    const float SLEEP_THRESHOLD   = 0.70; 
+    const float WAKE_THRESHOLD    = 0.50; 
+    const float DISABLE_THRESHOLD = 0.90;
+    const float ENABLE_THRESHOLD  = 0.50; 
+
+    ProbeInformation probe = SBO.ProbeData[probeIndex];
+    int currentState = int(probe.probeLocationsXYZ_ProbeState.w);
+    int ProbeState = currentState;
+
+    if (currentState == PROBE_STATE_ACTIVE) {
+        if (InsidePercent > DISABLE_THRESHOLD) {
+            ProbeState = PROBE_STATE_DISABLED;
+        } else if (SkyPercent > SLEEP_THRESHOLD) {
+            ProbeState = PROBE_STATE_SLEEP;
+        }
+    } else if (currentState == PROBE_STATE_SLEEP) {
+        if (SkyPercent < WAKE_THRESHOLD) { 
+            ProbeState = PROBE_STATE_ACTIVE;
+        }
+    } else if (currentState == PROBE_STATE_DISABLED) {
+        if (InsidePercent < ENABLE_THRESHOLD) {
+            ProbeState = PROBE_STATE_ACTIVE;
+        }
+    }
+
+    probe.probeLocationsXYZ_ProbeState.w = float(ProbeState);
+    SBO.ProbeData[probeIndex] = probe;
 }

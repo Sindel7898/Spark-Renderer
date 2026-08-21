@@ -124,12 +124,12 @@ public:
     int ProbeSideLength = (6 * 6);//probe sample size
     int GutterSize = 2; // Texel border around each probe 
 
-    int Last_NumOfProbesX;
-    int Last_NumOfProbesY;
-    int Last_NumOfProbesZ;
-    int Last_RaysPerProbe;
-    glm::vec3 Last_ProbeOffset;
-    glm::vec3 Last_GridLocation;
+    int Last_NumOfProbesX = 0;
+    int Last_NumOfProbesY = 0;
+    int Last_NumOfProbesZ = 0;
+    int Last_RaysPerProbe = 0;
+    glm::vec3 Last_ProbeOffset = glm::vec3(0.0f);
+    glm::vec3 Last_GridLocation = glm::vec3(0.0f);
 
     BufferData ProbeDataStorageBuffers;                // Per-probe position
     BufferData ProbeFibonacciDirectionsStorageBuffers; //Fibonacci sphere directions
@@ -139,7 +139,7 @@ public:
 
     float infiniteBounceMultiplyer = 0.75f;
     int UseinfiniteBounce = 1;
-    int LightCount;
+    int LightCount = 0;
     int  DDGIVertex = 0;
 
     Lighting_RTX* lighting_RTX = nullptr;
@@ -162,5 +162,5 @@ private:
 
     SkyBox* skyboxRef = nullptr;
 
-    int UpdateGrid;
+    int UpdateGrid = 1;
 };

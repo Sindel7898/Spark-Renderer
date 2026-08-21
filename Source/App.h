@@ -120,25 +120,20 @@ public:
 	bool bUseDLSS = false;
 	bool bHideLights = false;
 
-	//Drawables
-	std::unique_ptr<Lighting_RTX>                  lighting_RTX;
-	std::unique_ptr<SSA0_FullScreenQuad>           ssao_FullScreenQuad;
-	std::unique_ptr<FXAA_FullScreenQuad>           fxaa_FullScreenQuad;
-	std::unique_ptr<SSGI>                          SSGI_FullScreenQuad;
-	std::unique_ptr<CombinedResult_FullScreenQuad> Combined_FullScreenQuad;
-	std::unique_ptr<DynamicDiffuse_RTGI>           dynamicDiffuse_RTGI;
-	std::unique_ptr<ReSTIR_DI>                     Restir_DI;
+	// Core backend and context (declared first so they are destructed last)
+	Window                 window;
+	NvdiaDLSS_Intergration DLSS_Intergration;
+	VulkanContext          vulkanContext;
+	BufferManager          bufferManger;
+public:
+	Camera                 camera;
+private:
+	UserInterface          userinterface;
+	PipelineManager        pipelineManager;
+	std::shared_ptr<SkyBox> skyBox = nullptr;
 
-
-	VkDescriptorSet FinalRenderTextureId;
-	VkDescriptorSet SSGITextureId;
-	VkDescriptorSet ReSTIR_DITextureId;
-	VkDescriptorSet DDGI_Radiance;
-	VkDescriptorSet DDGIIrradianceAtlasID;
-	VkDescriptorSet Sampled_GI_ID;
-	VkDescriptorSet DDGIIVisibilityAtlasID;
-
-
+public:
+	// Scene Models and Lights
 	std::vector<std::shared_ptr<Model>> SponzaSceneModels;
 	std::vector<std::shared_ptr<Model>> Alt_2_CornelSceneModels;
 	std::vector<std::shared_ptr<Model>> CornelSceneModels;
@@ -148,18 +143,22 @@ public:
 	std::vector<std::unique_ptr<Light>> lights;
 	std::vector<Drawable*> UserInterfaceItems;
 
-	NvdiaDLSS_Intergration DLSS_Intergration;
-private:
-	Window          window;
-	VulkanContext   vulkanContext;
-	BufferManager   bufferManger;
-	UserInterface   userinterface;
-	PipelineManager pipelineManager;
-public:
-	Camera camera;
-private:
+	// Drawables & Render Passes
+	std::unique_ptr<Lighting_RTX>                  lighting_RTX;
+	std::unique_ptr<SSA0_FullScreenQuad>           ssao_FullScreenQuad;
+	std::unique_ptr<FXAA_FullScreenQuad>           fxaa_FullScreenQuad;
+	std::unique_ptr<SSGI>                          SSGI_FullScreenQuad;
+	std::unique_ptr<CombinedResult_FullScreenQuad> Combined_FullScreenQuad;
+	std::unique_ptr<DynamicDiffuse_RTGI>           dynamicDiffuse_RTGI;
+	std::unique_ptr<ReSTIR_DI>                     Restir_DI;
 
-	std::shared_ptr<SkyBox> skyBox = nullptr;
+	VkDescriptorSet FinalRenderTextureId;
+	VkDescriptorSet SSGITextureId;
+	VkDescriptorSet ReSTIR_DITextureId;
+	VkDescriptorSet DDGI_Radiance;
+	VkDescriptorSet DDGIIrradianceAtlasID;
+	VkDescriptorSet Sampled_GI_ID;
+	VkDescriptorSet DDGIIVisibilityAtlasID;
 
 
 #ifdef NDEBUG

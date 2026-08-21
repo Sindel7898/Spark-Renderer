@@ -49,33 +49,41 @@ public:
     vk::Extent3D GetRenderTextureExtent();
 
     BufferManager* buffermanager = nullptr;
-    // VkDescriptorSet RenderTextureId;
     VulkanContext* vulkancontext = nullptr;
     vk::DescriptorPool  ImGuiDescriptorPool = nullptr;
 
-
     void CleanUp();
-
     ~UserInterface();
+
+    static bool DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue = 0.0f, float columnWidth = 80.0f);
 
 #if ENABLE_NVPERF
     std::vector<APITracerVulkan> m_apiTracers;
+    bool m_nvperfReady = false;
 #endif
 
     bool Save_To_File = false;
 
+    // Panel visibility
+    bool showOutliner = true;
+    bool showDetails = true;
+    bool showSettings = true;
+    bool showDDGIAtlas = false;
+    bool showPerformanceOverlay = true;
+
 private:
     void InitImgui();
+    void ApplyModernTheme();
     void SetupDockingEnvironment();
-
+    void DrawMenuBar(App* appref, SkyBox* skyBox, VulkanContext* vulkanContext);
+    void DrawViewportToolbar(App* appref, VulkanContext* vulkanContext);
 
     Window* window = nullptr;
-    vk::Extent3D RenderTextureExtent = (0, 0, 0);
+    vk::Extent3D RenderTextureExtent = {0, 0, 0};
 
     int UserInterfaceItemsIndex = -1;
     int selectedLightIndex = -1;
     int SelectedInstanceIndex = -1;
-
 
     bool useSnap = false;
     float snap[3] = { 1.f, 1.f, 1.f };
@@ -95,19 +103,14 @@ private:
     std::vector<std::string> DDGI_Vertex_Options{ "First Vertex", "Second Vertex" };
     std::string currentDDGIVertex = "First Vertex";
 
-    //std::vector<std::string> GlobalIllumination_Solution{ "DDGI", "SSGI","DDGI + SSGI","PT","None"};
     std::vector<std::string> GlobalIllumination_Solution{ "DDGI","PT","None" };
-
     std::string currentGI_Solution = "DDGI";
 
     ImVec2 viewportSize;
-
     glm::mat4 LastModelMatrix;
 
-	int NumberOfLights = 0;
-
+    int NumberOfLights = 0;
     int DLSSFRAMELIMIT = 10;
-
 
 #if ENABLE_NVPERF
     PeriodicSamplerOneShotVulkan m_periodicSamplerOneShot;
@@ -118,11 +121,8 @@ private:
 };
 
 static inline void UserInterfaceDeleter(UserInterface* userInterface) {
-
     if (userInterface) {
-
         userInterface->CleanUp();
         delete userInterface;
     }
-
 };

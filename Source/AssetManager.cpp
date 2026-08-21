@@ -7,21 +7,31 @@ AssetManager::AssetManager() {
 
 
 
-void AssetManager::ParseModelData(const std::string& filePath, StoredModelData modeldata)
+void AssetManager::ParseModelData(const std::string& filePath, const StoredModelData& modeldata)
 {
-	//// If file path is not in the Map Add it and the Data
 	if (LoadedModelData.find(filePath) == LoadedModelData.end()) {
-		
 		LoadedModelData.emplace(filePath, modeldata);
 	}
 }
 
-void AssetManager::ParseTextureData(const std::string& filePath, std::vector<StoredImageData> Textures)
+void AssetManager::ParseModelData(const std::string& filePath, StoredModelData&& modeldata)
 {
-	//// If file path is not in the Map Add it and the Data
-	if (LoadedTextureData.find(filePath) == LoadedTextureData.end()) {
+	if (LoadedModelData.find(filePath) == LoadedModelData.end()) {
+		LoadedModelData.emplace(filePath, std::move(modeldata));
+	}
+}
 
+void AssetManager::ParseTextureData(const std::string& filePath, const std::vector<StoredImageData>& Textures)
+{
+	if (LoadedTextureData.find(filePath) == LoadedTextureData.end()) {
 		LoadedTextureData.emplace(filePath, Textures);
+	}
+}
+
+void AssetManager::ParseTextureData(const std::string& filePath, std::vector<StoredImageData>&& Textures)
+{
+	if (LoadedTextureData.find(filePath) == LoadedTextureData.end()) {
+		LoadedTextureData.emplace(filePath, std::move(Textures));
 	}
 }
 

@@ -173,8 +173,10 @@ void NvdiaDLSS_Intergration::render(VkCommandBuffer commandBuffer, ImageData InI
 
 
 
-    evalParams.pInWorldToViewMatrix = const_cast<float*>(glm::value_ptr(m_camera->GetViewMatrix()));
-    evalParams.pInViewToClipMatrix = const_cast<float*>(glm::value_ptr(m_camera->GetProjectionMatrix()));
+    glm::mat4 viewMatrix = m_camera->GetViewMatrix();
+    glm::mat4 projMatrix = m_camera->GetProjectionMatrix();
+    evalParams.pInWorldToViewMatrix = glm::value_ptr(viewMatrix);
+    evalParams.pInViewToClipMatrix = glm::value_ptr(projMatrix);
 
 	SceneChangeNotifer = 0;
 
@@ -236,6 +238,13 @@ void NvdiaDLSS_Intergration::requiredDeviceExtensions(VkInstance instance, VkPhy
 
 void NvdiaDLSS_Intergration::CleanUp()
 {
-    NVSDK_NGX_VULKAN_DestroyParameters(paramsDLSS_);
+    if (dlssFeatureHandle_) {
+        NVSDK_NGX_VULKAN_ReleaseFeature(dlssFeatureHandle_);
+        dlssFeatureHandle_ = nullptr;
+    }
+    if (paramsDLSS_) {
+        NVSDK_NGX_VULKAN_DestroyParameters(paramsDLSS_);
+        paramsDLSS_ = nullptr;
+    }
     NVSDK_NGX_VULKAN_Shutdown1(nullptr);
 }

@@ -1,7 +1,6 @@
 #define _CRTDBG_MAP_ALLOC
 #include "App.h"
 #include <optional>
-#define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 #include "Window.h"
 #include "Camera.h"
@@ -783,23 +782,23 @@ void App::createDescriptorPool()
 {
 	vk::DescriptorPoolSize Uniformpoolsize;
 	Uniformpoolsize.type = vk::DescriptorType::eUniformBuffer;
-	Uniformpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 1000;
+	Uniformpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 2000;
 
 	vk::DescriptorPoolSize Samplerpoolsize;
 	Samplerpoolsize.type = vk::DescriptorType::eCombinedImageSampler;
-	Samplerpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 600;
+	Samplerpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 2000;
 
 	vk::DescriptorPoolSize AccelerationStructurepoolsize;
 	AccelerationStructurepoolsize.type = vk::DescriptorType::eAccelerationStructureKHR;
-	AccelerationStructurepoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 2;
+	AccelerationStructurepoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 16;
 
 	vk::DescriptorPoolSize StorageImagepoolsize;
 	StorageImagepoolsize.type = vk::DescriptorType::eStorageImage;
-	StorageImagepoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 20;
+	StorageImagepoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 64;
 
 	vk::DescriptorPoolSize StorageBufferpoolsize;
 	StorageBufferpoolsize.type = vk::DescriptorType::eStorageBuffer;
-	StorageBufferpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 5;
+	StorageBufferpoolsize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 64;
 
 	std::array<	vk::DescriptorPoolSize, 5> poolSizes{ Uniformpoolsize ,Samplerpoolsize,
 													  AccelerationStructurepoolsize,StorageImagepoolsize,StorageBufferpoolsize };
@@ -808,7 +807,7 @@ void App::createDescriptorPool()
 	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 	poolInfo.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
 	poolInfo.pPoolSizes = poolSizes.data();
-	poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 1000;
+	poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 2000;
 
 	DescriptorPool = vulkanContext.LogicalDevice.createDescriptorPool(poolInfo, nullptr);
 
@@ -945,6 +944,7 @@ void App::createGBuffer()
 	bufferManger.TransitionImage(cmd, &Combined_FullScreenQuad->Final_Denoised_Image, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &SSGI_FullScreenQuad->SSGIPassImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &ssao_FullScreenQuad->SSAOImage, TransitionToGeneral);
+	bufferManger.TransitionImage(cmd, &ssao_FullScreenQuad->IntermediateBlurImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &ssao_FullScreenQuad->BluredSSAOImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &fxaa_FullScreenQuad->FxaaImage, TransitionToGeneral);
 	bufferManger.TransitionImage(cmd, &dynamicDiffuse_RTGI->Probe_Sampled_GI_Image, TransitionToGeneral);
@@ -2308,22 +2308,20 @@ void App::createCommandBuffer()
 
 }
 void App::createSyncObjects() {
-	// Present complete semaphores - one per swapchain image
-	presentCompleteSemaphores.resize(vulkanContext.swapchainImageData.size());
+	// Present complete semaphores - one per frame in flight
+	presentCompleteSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 
-	// Render complete semaphores 
-	renderCompleteSemaphores.resize(vulkanContext.swapchainImageData.size());
+	// Render complete semaphores - one per frame in flight
+	renderCompleteSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 
 	// Fences - one per frame in flight
 	waitFences.resize(MAX_FRAMES_IN_FLIGHT);
 
-	for (size_t i = 0; i < vulkanContext.swapchainImageData.size(); i++) {
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		vk::SemaphoreCreateInfo semaphoreInfo{};
 		vulkanContext.LogicalDevice.createSemaphore(&semaphoreInfo, nullptr, &presentCompleteSemaphores[i]);
 		vulkanContext.LogicalDevice.createSemaphore(&semaphoreInfo, nullptr, &renderCompleteSemaphores[i]);
-	}
 
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		vk::FenceCreateInfo fenceInfo{};
 		fenceInfo.flags = vk::FenceCreateFlagBits::eSignaled;
 		vulkanContext.LogicalDevice.createFence(&fenceInfo, nullptr, &waitFences[i]);
@@ -2396,7 +2394,7 @@ void App::Draw()
 
 	vk::Semaphore waitSemaphores[] = { presentCompleteSemaphores[currentFrame] };
 	vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput }; 
-	vk::Semaphore submitSemaphores[] = { renderCompleteSemaphores[imageIndex] };
+	vk::Semaphore submitSemaphores[] = { renderCompleteSemaphores[currentFrame] };
 
 	vk::SubmitInfo submitInfo{};
 	submitInfo.sType = vk::StructureType::eSubmitInfo;
@@ -2493,11 +2491,25 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 	begininfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
 	commandBuffer.begin(begininfo);
 #if ENABLE_NVPERF
+    // Only access m_apiTracers when NVPerf successfully initialized
+    // (may fail due to NVPA_STATUS_INSUFFICIENT_PRIVILEGE on non-admin sessions)
+    const bool nvperfActive = userinterface.m_nvperfReady &&
+                              (currentFrame < userinterface.m_apiTracers.size());
+    nv::perf::mini_trace::APITracerVulkan* apiTracerPtr =
+        nvperfActive ? &userinterface.m_apiTracers[currentFrame] : nullptr;
 
-	auto& apiTracer = userinterface.m_apiTracers[currentFrame];
+    struct ScopedApiTracer {
+        nv::perf::mini_trace::APITracerVulkan* ptr;
+        void ClearData()  { if (ptr) ptr->ClearData(); }
+        void ResetQueries(vk::CommandBuffer cb) { if (ptr) ptr->ResetQueries(cb); }
+        void BeginRange(vk::CommandBuffer cb, const char* name, int n, size_t& idx)
+                       { if (ptr) ptr->BeginRange(cb, name, n, idx); }
+        void EndRange(vk::CommandBuffer cb, size_t& idx)
+                     { if (ptr) ptr->EndRange(cb, idx); }
+    } apiTracer{ apiTracerPtr };
 
-	apiTracer.ClearData();
-	apiTracer.ResetQueries(commandBuffer);
+    apiTracer.ClearData();
+    apiTracer.ResetQueries(commandBuffer);
 #endif
 
 	
@@ -2752,12 +2764,12 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 	}
 
 	{
-		vk::RenderingAttachmentInfo SSAOBluredColorAttachment{};
-		SSAOBluredColorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
-		SSAOBluredColorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
-		SSAOBluredColorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		SSAOBluredColorAttachment.imageView = ssao_FullScreenQuad->BluredSSAOImage.imageView;
-		SSAOBluredColorAttachment.clearValue = clearColor;
+		vk::RenderingAttachmentInfo SSAOIntermediateColorAttachment{};
+		SSAOIntermediateColorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+		SSAOIntermediateColorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+		SSAOIntermediateColorAttachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		SSAOIntermediateColorAttachment.imageView = ssao_FullScreenQuad->IntermediateBlurImage.imageView;
+		SSAOIntermediateColorAttachment.clearValue = clearColor;
 
 		vk::RenderingInfo renderingInfo{};
 		renderingInfo.renderArea.offset = imageoffset;
@@ -2765,7 +2777,7 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 		renderingInfo.renderArea.extent.width = ssao_FullScreenQuad->BluredSSAOImageSize.width;
 		renderingInfo.layerCount = 1;
 		renderingInfo.colorAttachmentCount = 1;
-		renderingInfo.pColorAttachments = &SSAOBluredColorAttachment;
+		renderingInfo.pColorAttachments = &SSAOIntermediateColorAttachment;
 
 		vk::Viewport SSAOviewport{};
 		SSAOviewport.x = 0.0f;
@@ -2789,6 +2801,16 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 		ssao_FullScreenQuad->DrawSSAOBlurHorizontal(commandBuffer, SSAOBlurPipelineLayout, currentFrame);
 		commandBuffer.endRendering();
 
+		vk::ImageMemoryBarrier intermediateBarrier{};
+		intermediateBarrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+		intermediateBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+		intermediateBarrier.oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		intermediateBarrier.newLayout = vk::ImageLayout::eGeneral;
+		intermediateBarrier.image = ssao_FullScreenQuad->IntermediateBlurImage.image;
+		intermediateBarrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
+
+		commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader, {}, 0, nullptr, 0, nullptr, 1, &intermediateBarrier);
+
 		{
 			vk::RenderingAttachmentInfo SSAOBluredColorAttachment{};
 			SSAOBluredColorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
@@ -2797,15 +2819,15 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			SSAOBluredColorAttachment.imageView = ssao_FullScreenQuad->BluredSSAOImage.imageView;
 			SSAOBluredColorAttachment.clearValue = clearColor;
 
-			vk::RenderingInfo renderingInfo{};
-			renderingInfo.renderArea.offset = imageoffset;
-			renderingInfo.renderArea.extent.height = ssao_FullScreenQuad->BluredSSAOImageSize.height;
-			renderingInfo.renderArea.extent.width = ssao_FullScreenQuad->BluredSSAOImageSize.width;
-			renderingInfo.layerCount = 1;
-			renderingInfo.colorAttachmentCount = 1;
-			renderingInfo.pColorAttachments = &SSAOBluredColorAttachment;
+			vk::RenderingInfo blurRenderingInfo{};
+			blurRenderingInfo.renderArea.offset = imageoffset;
+			blurRenderingInfo.renderArea.extent.height = ssao_FullScreenQuad->BluredSSAOImageSize.height;
+			blurRenderingInfo.renderArea.extent.width = ssao_FullScreenQuad->BluredSSAOImageSize.width;
+			blurRenderingInfo.layerCount = 1;
+			blurRenderingInfo.colorAttachmentCount = 1;
+			blurRenderingInfo.pColorAttachments = &SSAOBluredColorAttachment;
 
-			commandBuffer.beginRendering(renderingInfo);
+			commandBuffer.beginRendering(blurRenderingInfo);
 			commandBuffer.setViewport(0, 1, &SSAOviewport);
 			commandBuffer.setScissor(0, 1, &SSAOscissor);
 			commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, SSAOBlurPipeline);
@@ -2813,6 +2835,16 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			ssao_FullScreenQuad->DrawSSAOBlurVertical(commandBuffer, SSAOBlurPipelineLayout, currentFrame);
 
 			commandBuffer.endRendering();
+
+			vk::ImageMemoryBarrier finalBlurBarrier{};
+			finalBlurBarrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+			finalBlurBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+			finalBlurBarrier.oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			finalBlurBarrier.newLayout = vk::ImageLayout::eGeneral;
+			finalBlurBarrier.image = ssao_FullScreenQuad->BluredSSAOImage.image;
+			finalBlurBarrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
+
+			commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader, {}, 0, nullptr, 0, nullptr, 1, &finalBlurBarrier);
 		}
 	}
 }
