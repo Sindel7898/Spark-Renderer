@@ -2364,9 +2364,7 @@ void App::CalculateFps(FramesPerSecondCounter& fpsCounter)
 }
 void App::Draw()
 {
-
 	vulkanContext.LogicalDevice.waitForFences(1, &waitFences[currentFrame], vk::True, UINT64_MAX);
-	vulkanContext.LogicalDevice.resetFences(1, &waitFences[currentFrame]);
 
 	// --- Swapchain Acquisition ---
 	uint32_t imageIndex;
@@ -2384,16 +2382,25 @@ void App::Draw()
 	catch (const std::exception& e) {
 		std::cerr << "Exception: " << e.what() << std::endl;
 		std::cerr << "Attempting to recreate swap chain..." << std::endl;
+		// NOTE: Do NOT resetFences here — the fence is still in signaled state
+		// from the previous waitForFences, so the next frame's wait will work correctly.
 		recreateSwapChain();
 		framebufferResized = false;
 		return;
 	}
 
+	// Only reset the fence AFTER we know we're going to submit work for this frame.
+	// Resetting before acquireNextImage would leave it unsignaled if we early-return on resize.
+	vulkanContext.LogicalDevice.resetFences(1, &waitFences[currentFrame]);
+
 	updateUniformBuffer(currentFrame);
 	recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
 	vk::Semaphore waitSemaphores[] = { presentCompleteSemaphores[currentFrame] };
-	vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput }; 
+	// Wait at ALL_COMMANDS to cover RT, compute, and graphics stages.
+	// eColorAttachmentOutput alone is insufficient for a pipeline that uses
+	// ray tracing and compute shaders which also read swapchain-adjacent images.
+	vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eAllCommands };
 	vk::Semaphore submitSemaphores[] = { renderCompleteSemaphores[currentFrame] };
 
 	vk::SubmitInfo submitInfo{};
@@ -2589,6 +2596,39 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 			gbuffer.PrevNormal, vk::ImageLayout::eGeneral, SrcSubresourceLayers,
 			ImageSize, vulkanContext.graphicsQueue);
 
+		std::array<ImageData*, 8> gbufferAttachments = {
+			&gbuffer.Position,
+			&gbuffer.Normal,
+			&gbuffer.ViewSpaceNormal,
+			&gbuffer.Albedo,
+			&gbuffer.Materials,
+			&gbuffer.Emissive,
+			&gbuffer.MotionVector,
+			&gbuffer.SpecularAlbedo
+		};
+
+		std::vector<vk::ImageMemoryBarrier> toColorAttachmentBarriers;
+		toColorAttachmentBarriers.reserve(gbufferAttachments.size());
+		for (auto* img : gbufferAttachments) {
+			vk::ImageMemoryBarrier b{};
+			b.srcAccessMask = vk::AccessFlagBits::eNone;
+			b.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+			b.oldLayout = vk::ImageLayout::eUndefined;
+			b.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			b.image = img->image;
+			b.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
+			toColorAttachmentBarriers.push_back(b);
+		}
+
+		commandBuffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eTopOfPipe,
+			vk::PipelineStageFlagBits::eColorAttachmentOutput,
+			{},
+			0, nullptr,
+			0, nullptr,
+			static_cast<uint32_t>(toColorAttachmentBarriers.size()), toColorAttachmentBarriers.data()
+		);
+
 
 		vk::RenderingAttachmentInfo PositioncolorAttachmentInfo{};
 		PositioncolorAttachmentInfo.imageView = gbuffer.Position.imageView;
@@ -2690,6 +2730,30 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 
 		commandBuffer.endRendering();
 
+		// Transition all G-Buffer attachments from eColorAttachmentOptimal to eGeneral
+		// so that downstream SSAO, RayTracing, Compute, ReSTIR, and Direct Lighting passes
+		// can safely sample and read them without layout mismatches or data races.
+		std::vector<vk::ImageMemoryBarrier> toGeneralBarriers;
+		toGeneralBarriers.reserve(gbufferAttachments.size());
+		for (auto* img : gbufferAttachments) {
+			vk::ImageMemoryBarrier b{};
+			b.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+			b.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+			b.oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			b.newLayout = vk::ImageLayout::eGeneral;
+			b.image = img->image;
+			b.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
+			toGeneralBarriers.push_back(b);
+		}
+
+		commandBuffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eColorAttachmentOutput,
+			vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eComputeShader | vk::PipelineStageFlagBits::eRayTracingShaderKHR,
+			{},
+			0, nullptr,
+			0, nullptr,
+			static_cast<uint32_t>(toGeneralBarriers.size()), toGeneralBarriers.data()
+		);
 	}
 		
 
@@ -2753,14 +2817,14 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 		commandBuffer.endRendering();
 
 		vk::ImageMemoryBarrier barrier{};
-		barrier.srcAccessMask = vk::AccessFlagBits::eShaderWrite;
+		barrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
 		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-		barrier.oldLayout = vk::ImageLayout::eGeneral;
+		barrier.oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		barrier.newLayout = vk::ImageLayout::eGeneral;
 		barrier.image = ssao_FullScreenQuad->SSAOImage.image;
 		barrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
 
-		commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eFragmentShader, vk::PipelineStageFlagBits::eFragmentShader, {}, 0, nullptr, 0, nullptr, 1, & barrier);
+		commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader, {}, 0, nullptr, 0, nullptr, 1, &barrier);
 	}
 
 	{
@@ -3459,9 +3523,29 @@ void App::recordCommandBuffer(vk::CommandBuffer commandBuffer, uint32_t imageInd
 		dependencyInfo.memoryBarrierCount = 1;
 		dependencyInfo.pMemoryBarriers = &memoryBarrier;
 
-		commandBuffer.pipelineBarrier2(dependencyInfo);
-
 		userinterface.RenderUi(commandBuffer, imageIndex, Combined_FullScreenQuad->IMGUI_PRESENT_IMAGE);
+
+		// Transition IMGUI_PRESENT_IMAGE from eColorAttachmentOptimal to eGeneral so Gamma correction pass can sample it safely without RAW hazard
+		{
+			vk::ImageMemoryBarrier uiBarrier{};
+			uiBarrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+			uiBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+			uiBarrier.oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			uiBarrier.newLayout = vk::ImageLayout::eGeneral;
+			uiBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			uiBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			uiBarrier.image = Combined_FullScreenQuad->IMGUI_PRESENT_IMAGE.image;
+			uiBarrier.subresourceRange = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
+
+			commandBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eColorAttachmentOutput,
+				vk::PipelineStageFlagBits::eFragmentShader,
+				{},
+				0, nullptr,
+				0, nullptr,
+				1, &uiBarrier
+			);
+		}
 
 		{
 			vk::ImageMemoryBarrier barrier{};
@@ -3581,13 +3665,16 @@ void App::recreateSwapChain() {
 		glfwWaitEvents();
 	}
 
+	// Wait for ALL frames in flight to finish, not just one idle call.
+	// This ensures no command buffer is still executing against old images.
+	vulkanContext.LogicalDevice.waitForFences(
+		static_cast<uint32_t>(waitFences.size()), waitFences.data(),
+		vk::True, UINT64_MAX);
 	vulkanContext.LogicalDevice.waitIdle();
 
 	vulkanContext.destroy_swapchain();
 	destroy_DepthImage();
 	destroy_GbufferImages();
-
-	vulkanContext.LogicalDevice.waitIdle();
 
 	vulkanContext.create_swapchain();
 

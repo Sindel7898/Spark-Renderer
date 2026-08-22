@@ -132,7 +132,7 @@ void NvdiaDLSS_Intergration::render(VkCommandBuffer commandBuffer, ImageData InI
 
     NVSDK_NGX_Resource_VK diffuseAlbedoResource = NVSDK_NGX_Create_ImageView_Resource_VK(
         inColorTexture.Albedo.imageView, inColorTexture.Albedo.image,
-        { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_FORMAT_R16G16B16A16_SFLOAT,
+        { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }, VK_FORMAT_R8G8B8A8_SRGB,
         m_vulkanContext->swapchainExtent.width, m_vulkanContext->swapchainExtent.height, false);
 
     NVSDK_NGX_Resource_VK normalsResource = NVSDK_NGX_Create_ImageView_Resource_VK(

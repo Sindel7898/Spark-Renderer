@@ -583,7 +583,7 @@ void UserInterface::RenderUi(vk::CommandBuffer& CommandBuffer, int imageIndex, I
 {
 	ImageTransitionData TransitionSwapchainToWriteData;
 	TransitionSwapchainToWriteData.oldlayout = vk::ImageLayout::eUndefined;
-	TransitionSwapchainToWriteData.newlayout = vk::ImageLayout::eGeneral;
+	TransitionSwapchainToWriteData.newlayout = vk::ImageLayout::eColorAttachmentOptimal;
 	TransitionSwapchainToWriteData.SourceAccessflag = vk::AccessFlagBits::eNone;
 	TransitionSwapchainToWriteData.DestinationAccessflag = vk::AccessFlagBits::eColorAttachmentWrite;
 	TransitionSwapchainToWriteData.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;

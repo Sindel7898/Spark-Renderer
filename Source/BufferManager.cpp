@@ -18,7 +18,7 @@ BufferManager::BufferManager(VulkanContext* VulkanContext) :
 
 
 	VmaAllocatorCreateInfo allocatorInfo = {};
-	allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_0; // Use the appropriate Vulkan API version
+	allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3; // Use Vulkan 1.3 API version
 	allocatorInfo.physicalDevice = physicalDevice;
 	allocatorInfo.device = logicalDevice;
 	allocatorInfo.instance = vulkanInstance;
@@ -145,7 +145,7 @@ void BufferManager::AddBufferLog(BufferData* bufferData)
 	}
 }
 
-void BufferManager::RemoveBufferLog(BufferData bufferData)
+void BufferManager::RemoveBufferLog(const BufferData& bufferData)
 {
 	if (bufferData.BufferID.empty())
 	{
@@ -313,6 +313,98 @@ void BufferManager::CreateTextureImage(ImageData* Image, const void* pixeldata, 
 
 	Image->imageView = CreateImageView(Image, ImageFormat, vk::ImageAspectFlagBits::eColor);
 	Image->imageSampler = CreateImageSampler();
+}
+
+UploadBatch BufferManager::BeginUploadBatch(vk::CommandPool commandpool)
+{
+	UploadBatch batch;
+	batch.commandPool = commandpool;
+	batch.commandBuffer = CreateSingleUseCommandBuffer(commandpool);
+	return batch;
+}
+
+void BufferManager::StageTextureToBatch(UploadBatch& batch, ImageData* Image, const void* pixeldata, vk::DeviceSize imagesize, int texWidth, int textHeight, vk::Format ImageFormat)
+{
+	vk::BufferCreateInfo StagingBufferCreateInfo = {};
+	StagingBufferCreateInfo.size = imagesize;
+	StagingBufferCreateInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
+	StagingBufferCreateInfo.sharingMode = vk::SharingMode::eExclusive;
+
+	VmaAllocationCreateInfo AllocCreateInfo = {};
+	AllocCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+	AllocCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
+		VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+	VkBuffer cStagingBuffer;
+	VmaAllocation StagingBufferAllocation;
+	VkBufferCreateInfo cStagingBufferCreateInfo = static_cast<VkBufferCreateInfo>(StagingBufferCreateInfo);
+
+	if (vmaCreateBuffer(allocator, &cStagingBufferCreateInfo, &AllocCreateInfo, &cStagingBuffer, &StagingBufferAllocation, nullptr) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create staging buffer for batch upload!");
+	}
+
+	BufferData stagingBuffer;
+	stagingBuffer.buffer = vk::Buffer(cStagingBuffer);
+	stagingBuffer.size = imagesize;
+	stagingBuffer.allocation = StagingBufferAllocation;
+	stagingBuffer.usage = vk::BufferUsageFlagBits::eTransferSrc;
+	stagingBuffer.BufferID = "Batched Texture Staging Buffer";
+	AddBufferLog(&stagingBuffer);
+
+	CopyDataToBuffer(pixeldata, stagingBuffer);
+
+	vk::Extent3D imageExtent = { static_cast<uint32_t>(texWidth), static_cast<uint32_t>(textHeight), 1 };
+	CreateImage(Image, imageExtent, ImageFormat, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
+
+	ImageTransitionData DataToTransitionInfo;
+	DataToTransitionInfo.oldlayout = vk::ImageLayout::eUndefined;
+	DataToTransitionInfo.newlayout = vk::ImageLayout::eTransferDstOptimal;
+	DataToTransitionInfo.SourceAccessflag = vk::AccessFlagBits::eNone;
+	DataToTransitionInfo.DestinationAccessflag = vk::AccessFlagBits::eTransferWrite;
+	DataToTransitionInfo.AspectFlag = vk::ImageAspectFlagBits::eColor;
+	DataToTransitionInfo.SourceOnThePipeline = vk::PipelineStageFlagBits::eTopOfPipe;
+	DataToTransitionInfo.DestinationOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
+
+	TransitionImage(batch.commandBuffer, Image, DataToTransitionInfo);
+
+	vk::BufferImageCopy copyRegion = {};
+	copyRegion.bufferOffset = 0;
+	copyRegion.bufferRowLength = 0;
+	copyRegion.bufferImageHeight = 0;
+	copyRegion.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+	copyRegion.imageSubresource.mipLevel = 0;
+	copyRegion.imageSubresource.baseArrayLayer = 0;
+	copyRegion.imageSubresource.layerCount = 1;
+	copyRegion.imageOffset = vk::Offset3D{ 0, 0, 0 };
+	copyRegion.imageExtent = imageExtent;
+
+	batch.commandBuffer.copyBufferToImage(stagingBuffer.buffer, Image->image, vk::ImageLayout::eTransferDstOptimal, 1, &copyRegion);
+
+	ImageTransitionData TransitionImageToShaderData;
+	TransitionImageToShaderData.oldlayout = vk::ImageLayout::eTransferDstOptimal;
+	TransitionImageToShaderData.newlayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+	TransitionImageToShaderData.SourceAccessflag = vk::AccessFlagBits::eTransferWrite;
+	TransitionImageToShaderData.DestinationAccessflag = vk::AccessFlagBits::eShaderRead;
+	TransitionImageToShaderData.AspectFlag = vk::ImageAspectFlagBits::eColor;
+	TransitionImageToShaderData.SourceOnThePipeline = vk::PipelineStageFlagBits::eTransfer;
+	TransitionImageToShaderData.DestinationOnThePipeline = vk::PipelineStageFlagBits::eFragmentShader;
+
+	TransitionImage(batch.commandBuffer, Image, TransitionImageToShaderData);
+
+	Image->imageView = CreateImageView(Image, ImageFormat, vk::ImageAspectFlagBits::eColor);
+	Image->imageSampler = CreateImageSampler();
+
+	batch.stagingBuffers.push_back(stagingBuffer);
+}
+
+void BufferManager::EndAndSubmitUploadBatch(UploadBatch& batch, vk::Queue Queue)
+{
+	SubmitAndDestoyCommandBuffer(batch.commandPool, batch.commandBuffer, Queue);
+
+	for (auto& stagingBuffer : batch.stagingBuffers) {
+		DestroyBuffer(stagingBuffer);
+	}
+	batch.stagingBuffers.clear();
 }
 
 ImageData BufferManager::LoadTextureImage(std::string FilePath, vk::Format ImageFormat, vk::CommandPool commandpool, vk::Queue Queue)
@@ -784,7 +876,7 @@ void BufferManager::AddImageLog(ImageData* imageData)
 	}
 }
 
-void BufferManager::RemoveImageLog(ImageData imageData)
+void BufferManager::RemoveImageLog(const ImageData& imageData)
 {
 	if (imageData.ImageID.empty())
 	{
@@ -817,7 +909,7 @@ void BufferManager::CreateSharedBuffers(vk::CommandPool& commandPool)
 		for (size_t i = 0; i < AllScene_IndexStorageBuffers.size(); i++)
 		{
 			BufferData bufferdata;
-			bufferdata.BufferID = "RayGen Index Storage Buffer" + i;
+			bufferdata.BufferID = "RayGen Index Storage Buffer " + std::to_string(i);
 			CreateBuffer(&bufferdata, RayGenIndexStorageBufferSize, vk::BufferUsageFlagBits::eStorageBuffer, commandPool, vulkanContext->graphicsQueue);
 			AllScene_IndexStorageBuffers[i] = bufferdata;
 
@@ -840,7 +932,7 @@ void BufferManager::CreateSharedBuffers(vk::CommandPool& commandPool)
 		for (size_t i = 0; i < AllScene_VertexStorageBuffers.size(); i++)
 		{
 			BufferData bufferdata;
-			bufferdata.BufferID = "RayGen Vertex Storage Buffer" + i;
+			bufferdata.BufferID = "RayGen Vertex Storage Buffer " + std::to_string(i);
 			CreateBuffer(&bufferdata, RayGenIndexStorageBufferSize, vk::BufferUsageFlagBits::eStorageBuffer, commandPool, vulkanContext->graphicsQueue);
 			AllScene_VertexStorageBuffers[i] = bufferdata;
 
@@ -862,7 +954,7 @@ void BufferManager::CreateSharedBuffers(vk::CommandPool& commandPool)
 		for (size_t i = 0; i < AllScene_OffsetStorageBuffers.size(); i++)
 		{
 			BufferData bufferdata;
-			bufferdata.BufferID = "RayGen Offset Storage Buffer" + i;
+			bufferdata.BufferID = "RayGen Offset Storage Buffer " + std::to_string(i);
 			CreateBuffer(&bufferdata, RayGenIndexStorageBufferSize, vk::BufferUsageFlagBits::eStorageBuffer, commandPool, vulkanContext->graphicsQueue);
 			AllScene_OffsetStorageBuffers[i] = bufferdata;
 
@@ -884,7 +976,7 @@ void BufferManager::CreateSharedBuffers(vk::CommandPool& commandPool)
 		for (size_t i = 0; i < AllScene_TransformationUniformBuffers.size(); i++)
 		{
 			BufferData bufferdata;
-			bufferdata.BufferID = "RayGen Transformation Uniform Buffer" + i;
+			bufferdata.BufferID = "RayGen Transformation Uniform Buffer " + std::to_string(i);
 			CreateBuffer(&bufferdata, RayGenIndexStorageBufferSize, vk::BufferUsageFlagBits::eUniformBuffer, commandPool, vulkanContext->graphicsQueue);
 			AllScene_TransformationUniformBuffers[i] = bufferdata;
 
@@ -1085,13 +1177,13 @@ void BufferManager::SubmitAndDestoyCommandBuffer(vk::CommandPool commandpool,vk:
 }
 
 
-void BufferManager::CopyDataToBuffer(const void* data,  BufferData Buffer) {
+void BufferManager::CopyDataToBuffer(const void* data, const BufferData& Buffer) {
 	void* mappedData = MapMemory(Buffer);
 	memcpy(mappedData, data, static_cast<size_t>(Buffer.size));
 	UnmapMemory(Buffer);
 }
 
-void BufferManager::CopyBufferToAnotherBuffer(vk::CommandPool commandpool , BufferData Buffer1, BufferData Buffer2, vk::Queue Queue) {
+void BufferManager::CopyBufferToAnotherBuffer(vk::CommandPool commandpool, const BufferData& Buffer1, const BufferData& Buffer2, vk::Queue Queue) {
 
 	vk::CommandBuffer commandBuffer = CreateSingleUseCommandBuffer(commandpool);
 
@@ -1106,8 +1198,8 @@ void BufferManager::CopyBufferToAnotherBuffer(vk::CommandPool commandpool , Buff
 }
 
 void BufferManager::CopyImageToAnotherImage(vk::CommandBuffer commandbuffer,
-	                                        ImageData SrcImage, vk::ImageLayout SrcImageLayout, vk::ImageSubresourceLayers SrcSubresourceLayers, 
-	                                        ImageData DstImage, vk::ImageLayout DstImageLayout, vk::ImageSubresourceLayers DstSubresourceLayers, 
+	                                        const ImageData& SrcImage, vk::ImageLayout SrcImageLayout, vk::ImageSubresourceLayers SrcSubresourceLayers, 
+	                                        const ImageData& DstImage, vk::ImageLayout DstImageLayout, vk::ImageSubresourceLayers DstSubresourceLayers, 
 	                                        vk::Extent3D ImageExtent, vk::Queue Queue) {
 
 
@@ -1198,6 +1290,5 @@ void BufferManager::DeleteAllocation(VmaAllocation allocation)
 {
 	if (allocation) {
 		vmaFreeMemory(allocator, allocation);
-		delete allocation;
 	}
 }

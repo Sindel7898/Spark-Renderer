@@ -194,7 +194,15 @@ target_link_libraries(Spark PRIVATE
 )
 
 # ------------------------------------------------------------
-# Post Build Copy DLLs
+# Visual Studio Debugger Working Directory
+# ------------------------------------------------------------
+
+set_target_properties(Spark PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/exe"
+)
+
+# ------------------------------------------------------------
+# Post Build Copy DLLs & Executable to exe/
 # ------------------------------------------------------------
 
 add_custom_command(TARGET Spark POST_BUILD
@@ -215,5 +223,9 @@ add_custom_command(TARGET Spark POST_BUILD
     "${NVPERF_NVPERF_DIR}/bin/x64/nvperf_grfx_host.dll"
     $<TARGET_FILE_DIR:Spark>
 
-    COMMENT "Copying DLSS + NvPerf DLLs"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    $<TARGET_FILE:Spark>
+    "${CMAKE_SOURCE_DIR}/exe/Spark.exe"
+
+    COMMENT "Copying DLSS + NvPerf DLLs and Spark.exe to exe/"
 )

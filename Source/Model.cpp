@@ -32,63 +32,49 @@ void Model::LoadTextures()
 
     materialCount = ModelTextures.size() / 5;
 
-	for (size_t i = 0; i < materialCount; i++) {
+	if (materialCount > 0)
+	{
+		UploadBatch batch = bufferManager->BeginUploadBatch(commandPool);
 
+		for (size_t i = 0; i < materialCount; i++) {
 
-		ImageData  albedoTextureData;
+			ImageData albedoTextureData;
+			albedoTextureData.ImageID = FilePath + "Albedo Image" + std::to_string(i);
+			StoredImageData AlbedoImageData = ModelTextures[i * 5 + 0];
+			vk::DeviceSize AlbedoImagesize = AlbedoImageData.imageWidth * AlbedoImageData.imageHeight * 4;
+			bufferManager->StageTextureToBatch(batch, &albedoTextureData, AlbedoImageData.imageData, AlbedoImagesize, AlbedoImageData.imageWidth, AlbedoImageData.imageHeight, vk::Format::eR8G8B8A8Srgb);
+			AlbedoTextures.push_back(albedoTextureData);
 
-		albedoTextureData.ImageID = FilePath + "Albedo Image" + std::to_string(i);
+			ImageData normalTextureData;
+			normalTextureData.ImageID = FilePath + "Normal Image" + std::to_string(i);
+			StoredImageData NormalImageData = ModelTextures[i * 5 + 1];
+			vk::DeviceSize NormalImagesize = NormalImageData.imageWidth * NormalImageData.imageHeight * 4;
+			bufferManager->StageTextureToBatch(batch, &normalTextureData, NormalImageData.imageData, NormalImagesize, NormalImageData.imageWidth, NormalImageData.imageHeight, vk::Format::eR8G8B8A8Unorm);
+			NormalTextures.push_back(normalTextureData);
 
-		StoredImageData AlbedoImageData = ModelTextures[i * 5 + 0];
-		vk::DeviceSize AlbedoImagesize = AlbedoImageData.imageWidth * AlbedoImageData.imageHeight * 4;
+			ImageData MetallicRoughnessTextureData;
+			MetallicRoughnessTextureData.ImageID = FilePath + "Metallic Roughness Image" + std::to_string(i);
+			StoredImageData MetallicRoughnessImageData = ModelTextures[i * 5 + 2];
+			vk::DeviceSize MetallicRoughnessImagesize = MetallicRoughnessImageData.imageWidth * MetallicRoughnessImageData.imageHeight * 4;
+			bufferManager->StageTextureToBatch(batch, &MetallicRoughnessTextureData, MetallicRoughnessImageData.imageData, MetallicRoughnessImagesize, MetallicRoughnessImageData.imageWidth, MetallicRoughnessImageData.imageHeight, vk::Format::eR8G8B8A8Unorm);
+			MetallicRoughnessTextures.push_back(MetallicRoughnessTextureData);
 
-		bufferManager->CreateTextureImage(&albedoTextureData,AlbedoImageData.imageData, AlbedoImagesize, AlbedoImageData.imageWidth, AlbedoImageData.imageHeight, vk::Format::eR8G8B8A8Srgb, commandPool, vulkanContext->graphicsQueue);
+			ImageData AOTextureData;
+			AOTextureData.ImageID = FilePath + "AO Image" + std::to_string(i);
+			StoredImageData AOImageData = ModelTextures[i * 5 + 3];
+			vk::DeviceSize AOImagesize = AOImageData.imageWidth * AOImageData.imageHeight * 4;
+			bufferManager->StageTextureToBatch(batch, &AOTextureData, AOImageData.imageData, AOImagesize, AOImageData.imageWidth, AOImageData.imageHeight, vk::Format::eR8G8B8A8Unorm);
+			AOTextures.push_back(AOTextureData);
 
-		AlbedoTextures.push_back(albedoTextureData);
+			ImageData EmissiveTextureData;
+			EmissiveTextureData.ImageID = FilePath + "Emissive Image" + std::to_string(i);
+			StoredImageData EmissiveImageData = ModelTextures[i * 5 + 4];
+			vk::DeviceSize EmissiveImagesize = EmissiveImageData.imageWidth * EmissiveImageData.imageHeight * 4;
+			bufferManager->StageTextureToBatch(batch, &EmissiveTextureData, EmissiveImageData.imageData, EmissiveImagesize, EmissiveImageData.imageWidth, EmissiveImageData.imageHeight, vk::Format::eR8G8B8A8Srgb);
+			EmissiveTextures.push_back(EmissiveTextureData);
+		}
 
-
-		ImageData  normalTextureData;
-		normalTextureData.ImageID = FilePath + "Normal Image" + std::to_string(i);
-
-		StoredImageData NormalImageData = ModelTextures[i * 5 + 1];
-		vk::DeviceSize NormalImagesize = NormalImageData.imageWidth * NormalImageData.imageHeight * 4;
-
-		 bufferManager->CreateTextureImage(&normalTextureData,NormalImageData.imageData, NormalImagesize, NormalImageData.imageWidth, NormalImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
-
-		NormalTextures.push_back(normalTextureData);
-
-
-		ImageData  MetallicRoughnessTextureData;
-		MetallicRoughnessTextureData.ImageID = FilePath + "Metallic Roughness Image" + std::to_string(i);
-
-		StoredImageData MetallicRoughnessImageData = ModelTextures[i * 5 + 2];
-		vk::DeviceSize  MetallicRoughnessImagesize = MetallicRoughnessImageData.imageWidth * MetallicRoughnessImageData.imageHeight * 4;
-
-		bufferManager->CreateTextureImage(&MetallicRoughnessTextureData,MetallicRoughnessImageData.imageData, MetallicRoughnessImagesize, MetallicRoughnessImageData.imageWidth, MetallicRoughnessImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
-
-		MetallicRoughnessTextures.push_back(MetallicRoughnessTextureData);
-
-
-		ImageData  AOTextureData;
-		AOTextureData.ImageID = FilePath + "AO Image" + std::to_string(i);
-
-		StoredImageData AOImageData = ModelTextures[i * 5 + 3];
-		vk::DeviceSize  AOImagesize = AOImageData.imageWidth * AOImageData.imageHeight * 4;
-
-		bufferManager->CreateTextureImage(&AOTextureData,AOImageData.imageData, AOImagesize, AOImageData.imageWidth, AOImageData.imageHeight, vk::Format::eR8G8B8A8Unorm, commandPool, vulkanContext->graphicsQueue);
-
-		AOTextures.push_back(AOTextureData);
-
-
-		ImageData  EmissiveTextureData;
-		EmissiveTextureData.ImageID = FilePath + "Emissive Image" + std::to_string(i);
-
-		StoredImageData EmissiveImageData = ModelTextures[i * 5 + 4];
-		vk::DeviceSize  EmissiveImagesize = EmissiveImageData.imageWidth * EmissiveImageData.imageHeight * 4;
-
-		bufferManager->CreateTextureImage(&EmissiveTextureData, EmissiveImageData.imageData, EmissiveImagesize, EmissiveImageData.imageWidth, EmissiveImageData.imageHeight, vk::Format::eR8G8B8A8Srgb, commandPool, vulkanContext->graphicsQueue);
-
-		EmissiveTextures.push_back(EmissiveTextureData);
+		bufferManager->EndAndSubmitUploadBatch(batch, vulkanContext->graphicsQueue);
 	}
 
 	for (ImageData& albedo : AlbedoTextures)

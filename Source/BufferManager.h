@@ -15,6 +15,12 @@ class VulkanContext;
 class Model;
 
 
+struct UploadBatch {
+    vk::CommandBuffer commandBuffer;
+    vk::CommandPool commandPool;
+    std::vector<BufferData> stagingBuffers;
+};
+
 class BufferManager
 {
 public:
@@ -24,12 +30,12 @@ public:
     void CreateGPU_Only_Buffer(BufferData* bufferData, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
     void CreateDeviceBuffer(BufferData* bufferData, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
     void AddBufferLog(BufferData* bufferdata);
-    void RemoveBufferLog(BufferData bufferdata);
+    void RemoveBufferLog(const BufferData& bufferdata);
 
     void CreateImage(ImageData* imageData, vk::Extent3D imageExtent, vk::Format imageFormat, vk::ImageUsageFlags UsageFlag, bool bMipMaps = false);
 
     void AddImageLog(ImageData* imageData);
-    void RemoveImageLog(ImageData imageData);
+    void RemoveImageLog(const ImageData& imageData);
 
     void CreateSharedBuffers(vk::CommandPool& commandPool);
 
@@ -55,7 +61,10 @@ public:
     vk::CommandBuffer CreateSingleUseCommandBuffer(vk::CommandPool commandpool);
     void SubmitAndDestoyCommandBuffer(vk::CommandPool commandpool, vk::CommandBuffer CommandBuffer, vk::Queue Queue);
 
-
+    // Batched texture uploading system
+    UploadBatch BeginUploadBatch(vk::CommandPool commandpool);
+    void StageTextureToBatch(UploadBatch& batch, ImageData* Image, const void* pixeldata, vk::DeviceSize imagesize, int texWidth, int textHeight, vk::Format ImageFormat);
+    void EndAndSubmitUploadBatch(UploadBatch& batch, vk::Queue Queue);
 
     void CreateGPUOptimisedBuffer(BufferData* bufferData, const void* Data, VkDeviceSize BufferSize, vk::BufferUsageFlags BufferUse, vk::CommandPool commandpool, vk::Queue queue);
 
@@ -68,10 +77,10 @@ public:
 
     void DestroyImage(const ImageData& buffer);
 
-    void CopyDataToBuffer(const void* data, BufferData Buffer);
-    void CopyBufferToAnotherBuffer(vk::CommandPool commandpool, BufferData Buffer1, BufferData Buffer2, vk::Queue Queue);
+    void CopyDataToBuffer(const void* data, const BufferData& Buffer);
+    void CopyBufferToAnotherBuffer(vk::CommandPool commandpool, const BufferData& Buffer1, const BufferData& Buffer2, vk::Queue Queue);
 
-    void CopyImageToAnotherImage(vk::CommandBuffer commandbuffer, ImageData SrcImage, vk::ImageLayout SrcImageLayout, vk::ImageSubresourceLayers SrcSubresourceLayers, ImageData DstImage, vk::ImageLayout DstImageLayout, vk::ImageSubresourceLayers DstSubresourceLayers, vk::Extent3D ImageExtent, vk::Queue Queue);
+    void CopyImageToAnotherImage(vk::CommandBuffer commandbuffer, const ImageData& SrcImage, vk::ImageLayout SrcImageLayout, vk::ImageSubresourceLayers SrcSubresourceLayers, const ImageData& DstImage, vk::ImageLayout DstImageLayout, vk::ImageSubresourceLayers DstSubresourceLayers, vk::Extent3D ImageExtent, vk::Queue Queue);
 
 
 
