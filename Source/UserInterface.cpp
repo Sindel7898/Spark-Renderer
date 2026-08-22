@@ -7,6 +7,7 @@
 #include "Window.h"
 #include "Camera.h"
 #include "Model.h"
+#include "MeshLoader.h"
 #include "Light.h"
 #include "SSAO_FullScreenQuad.h"
 #include "App.h"
@@ -159,7 +160,7 @@ void UserInterface::ApplyModernTheme()
     style.WindowRounding    = 6.0f;
     style.ChildRounding     = 5.0f;
     style.FrameRounding     = 4.0f;
-    style.PopupRounding     = 5.0f;
+    style.PopupRounding     = 6.0f;
     style.ScrollbarRounding = 4.0f;
     style.GrabRounding      = 4.0f;
     style.TabRounding       = 5.0f;
@@ -169,7 +170,7 @@ void UserInterface::ApplyModernTheme()
     style.ItemSpacing       = ImVec2(8.0f, 6.0f);
     style.ItemInnerSpacing  = ImVec2(6.0f, 6.0f);
     style.IndentSpacing     = 20.0f;
-    style.ScrollbarSize     = 12.0f;
+    style.ScrollbarSize     = 11.0f;
     style.GrabMinSize       = 10.0f;
 
     style.WindowBorderSize  = 1.0f;
@@ -182,30 +183,30 @@ void UserInterface::ApplyModernTheme()
 
     ImVec4* colors = style.Colors;
 
-    // True-Black Palette — near-void backgrounds with blue accent
-    const ImVec4 bgVoid         = ImVec4(0.02f, 0.02f, 0.03f, 1.00f); // main window bg
-    const ImVec4 bgPanel        = ImVec4(0.05f, 0.05f, 0.06f, 1.00f); // child panels
-    const ImVec4 bgFrame        = ImVec4(0.09f, 0.09f, 0.11f, 1.00f); // input fields, combos
-    const ImVec4 bgFrameHover   = ImVec4(0.13f, 0.13f, 0.16f, 1.00f);
-    const ImVec4 bgFrameActive  = ImVec4(0.17f, 0.17f, 0.21f, 1.00f);
-    const ImVec4 bgHeader       = ImVec4(0.07f, 0.07f, 0.09f, 1.00f); // collapsing headers
-    const ImVec4 bgHeaderHover  = ImVec4(0.12f, 0.12f, 0.16f, 1.00f);
-    const ImVec4 accentPrimary  = ImVec4(0.20f, 0.48f, 0.92f, 1.00f); // Spark Blue
-    const ImVec4 accentHover    = ImVec4(0.30f, 0.56f, 1.00f, 1.00f);
-    const ImVec4 accentActive   = ImVec4(0.14f, 0.38f, 0.78f, 1.00f);
-    const ImVec4 textPrimary    = ImVec4(0.88f, 0.88f, 0.90f, 1.00f);
-    const ImVec4 textDim        = ImVec4(0.38f, 0.38f, 0.42f, 1.00f);
-    const ImVec4 borderCol      = ImVec4(0.13f, 0.13f, 0.17f, 1.00f);
-    const ImVec4 borderHover    = ImVec4(0.25f, 0.25f, 0.32f, 1.00f);
-    const ImVec4 tabBg          = ImVec4(0.04f, 0.04f, 0.05f, 1.00f);
-    const ImVec4 tabActive      = ImVec4(0.08f, 0.08f, 0.10f, 1.00f);
-    const ImVec4 menuBg         = ImVec4(0.02f, 0.02f, 0.03f, 1.00f);
+    // Pitch Obsidian / True-Black Palette
+    const ImVec4 bgVoid         = ImVec4(0.020f, 0.020f, 0.025f, 1.00f); // #050506 True Black
+    const ImVec4 bgPanel        = ImVec4(0.040f, 0.040f, 0.048f, 1.00f); // #0a0a0c Child Panels
+    const ImVec4 bgFrame        = ImVec4(0.065f, 0.065f, 0.078f, 1.00f); // #101014 Input Frames & Combos
+    const ImVec4 bgFrameHover   = ImVec4(0.105f, 0.105f, 0.125f, 1.00f);
+    const ImVec4 bgFrameActive  = ImVec4(0.145f, 0.145f, 0.175f, 1.00f);
+    const ImVec4 bgHeader       = ImVec4(0.055f, 0.055f, 0.068f, 1.00f); // Collapsing Headers
+    const ImVec4 bgHeaderHover  = ImVec4(0.095f, 0.095f, 0.118f, 1.00f);
+    const ImVec4 accentPrimary  = ImVec4(0.220f, 0.500f, 0.950f, 1.00f); // Electric Spark Blue
+    const ImVec4 accentHover    = ImVec4(0.320f, 0.600f, 1.000f, 1.00f);
+    const ImVec4 accentActive   = ImVec4(0.160f, 0.400f, 0.820f, 1.00f);
+    const ImVec4 textPrimary    = ImVec4(0.920f, 0.930f, 0.950f, 1.00f); // Crisp White/Slate
+    const ImVec4 textDim        = ImVec4(0.420f, 0.440f, 0.490f, 1.00f);
+    const ImVec4 borderCol      = ImVec4(0.100f, 0.100f, 0.125f, 0.85f); // Subtle Sharp Border
+    const ImVec4 borderHover    = ImVec4(0.200f, 0.220f, 0.280f, 1.00f);
+    const ImVec4 tabBg          = ImVec4(0.030f, 0.030f, 0.038f, 1.00f);
+    const ImVec4 tabActive      = ImVec4(0.070f, 0.070f, 0.088f, 1.00f);
+    const ImVec4 menuBg         = ImVec4(0.015f, 0.015f, 0.020f, 1.00f);
 
     colors[ImGuiCol_Text]                  = textPrimary;
     colors[ImGuiCol_TextDisabled]          = textDim;
     colors[ImGuiCol_WindowBg]              = bgVoid;
     colors[ImGuiCol_ChildBg]               = bgPanel;
-    colors[ImGuiCol_PopupBg]               = ImVec4(0.04f, 0.04f, 0.05f, 0.98f);
+    colors[ImGuiCol_PopupBg]               = ImVec4(0.030f, 0.030f, 0.038f, 0.98f);
     colors[ImGuiCol_Border]                = borderCol;
     colors[ImGuiCol_BorderShadow]          = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
 
@@ -214,13 +215,13 @@ void UserInterface::ApplyModernTheme()
     colors[ImGuiCol_FrameBgActive]         = bgFrameActive;
 
     colors[ImGuiCol_TitleBg]               = bgVoid;
-    colors[ImGuiCol_TitleBgActive]         = ImVec4(0.05f, 0.05f, 0.07f, 1.00f);
+    colors[ImGuiCol_TitleBgActive]         = ImVec4(0.045f, 0.045f, 0.055f, 1.00f);
     colors[ImGuiCol_TitleBgCollapsed]      = bgVoid;
 
     colors[ImGuiCol_MenuBarBg]             = menuBg;
-    colors[ImGuiCol_ScrollbarBg]           = ImVec4(0.02f, 0.02f, 0.03f, 0.60f);
-    colors[ImGuiCol_ScrollbarGrab]         = ImVec4(0.15f, 0.15f, 0.20f, 1.00f);
-    colors[ImGuiCol_ScrollbarGrabHovered]  = ImVec4(0.22f, 0.22f, 0.28f, 1.00f);
+    colors[ImGuiCol_ScrollbarBg]           = ImVec4(0.015f, 0.015f, 0.020f, 0.60f);
+    colors[ImGuiCol_ScrollbarGrab]         = ImVec4(0.120f, 0.120f, 0.150f, 1.00f);
+    colors[ImGuiCol_ScrollbarGrabHovered]  = ImVec4(0.180f, 0.180f, 0.220f, 1.00f);
     colors[ImGuiCol_ScrollbarGrabActive]   = accentPrimary;
 
     colors[ImGuiCol_CheckMark]             = accentPrimary;
@@ -239,18 +240,90 @@ void UserInterface::ApplyModernTheme()
     colors[ImGuiCol_SeparatorHovered]      = borderHover;
     colors[ImGuiCol_SeparatorActive]       = accentPrimary;
 
-    colors[ImGuiCol_ResizeGrip]            = ImVec4(0.10f, 0.10f, 0.14f, 0.50f);
+    colors[ImGuiCol_ResizeGrip]            = ImVec4(0.080f, 0.080f, 0.110f, 0.50f);
     colors[ImGuiCol_ResizeGripHovered]     = accentHover;
     colors[ImGuiCol_ResizeGripActive]      = accentActive;
 
     colors[ImGuiCol_Tab]                   = tabBg;
-    colors[ImGuiCol_TabHovered]            = ImVec4(0.12f, 0.12f, 0.16f, 1.00f);
+    colors[ImGuiCol_TabHovered]            = ImVec4(0.100f, 0.100f, 0.130f, 1.00f);
     colors[ImGuiCol_TabActive]             = tabActive;
-    colors[ImGuiCol_TabUnfocused]          = ImVec4(0.03f, 0.03f, 0.04f, 1.00f);
-    colors[ImGuiCol_TabUnfocusedActive]    = ImVec4(0.06f, 0.06f, 0.08f, 1.00f);
+    colors[ImGuiCol_TabUnfocused]          = ImVec4(0.025f, 0.025f, 0.032f, 1.00f);
+    colors[ImGuiCol_TabUnfocusedActive]    = ImVec4(0.050f, 0.050f, 0.065f, 1.00f);
 
-    colors[ImGuiCol_DockingPreview]        = ImVec4(0.20f, 0.48f, 0.92f, 0.35f);
-    colors[ImGuiCol_DockingEmptyBg]        = ImVec4(0.01f, 0.01f, 0.02f, 1.00f);
+    colors[ImGuiCol_DockingPreview]        = ImVec4(0.220f, 0.500f, 0.950f, 0.35f);
+    colors[ImGuiCol_DockingEmptyBg]        = ImVec4(0.010f, 0.010f, 0.015f, 1.00f);
+}
+
+void UserInterface::SetLightingMode(LightingMode mode, App* appref, VulkanContext* vulkanContext)
+{
+    currentLightingMode = mode;
+    switch (mode)
+    {
+    case LightingMode::PathTraced:
+        appref->DefferedDecider = 3;
+        appref->lighting_RTX->GISolutionIndex = 1;
+        currentPass = "Lighting Pass";
+        currentGI_Solution = "PT";
+        currentLightingModeName = "Path Traced Lighting";
+        break;
+    case LightingMode::BruteForce:
+        appref->DefferedDecider = 3;
+        appref->lighting_RTX->GISolutionIndex = 0;
+        currentPass = "Lighting Pass";
+        currentGI_Solution = "DDGI";
+        currentLightingModeName = "Brute Force Lighting";
+        break;
+    case LightingMode::ReSTIR:
+        appref->DefferedDecider = 2;
+        currentPass = "ReSTIR DI";
+        currentLightingModeName = "ReSTIR DI";
+        break;
+    }
+    appref->DLSS_Intergration.SceneChangeNotifer = 1;
+    vulkanContext->ResetFrameCount();
+}
+
+void UserInterface::DrawNodeTree(const std::shared_ptr<Node>& node, Model* model, const std::string& filter, VulkanContext* vulkanContext, App* appref)
+{
+    if (!node) return;
+
+    std::string displayName = node->name;
+    if (displayName.empty()) {
+        displayName = "Node_" + std::to_string(node->id);
+    }
+
+    bool hasChildren = !node->children.empty();
+    bool matchesFilter = filter.empty() || displayName.find(filter) != std::string::npos;
+
+    ImGuiTreeNodeFlags nodeFlags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+    if (!hasChildren) {
+        nodeFlags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+    }
+    if (selectedNode == node.get()) {
+        nodeFlags |= ImGuiTreeNodeFlags_Selected;
+    }
+
+    bool isOpened = ImGui::TreeNodeEx((void*)(intptr_t)node->id, nodeFlags, "[Obj] %s", displayName.c_str());
+
+    if (ImGui::IsItemClicked()) {
+        selectedNode = node.get();
+        selectedModel = model;
+        selectedLightIndex = -1;
+        for (size_t m = 0; m < appref->UserInterfaceItems.size(); ++m) {
+            if (appref->UserInterfaceItems[m] == model) {
+                UserInterfaceItemsIndex = static_cast<int>(m);
+                SelectedInstanceIndex = 0;
+                break;
+            }
+        }
+    }
+
+    if (hasChildren && isOpened) {
+        for (const auto& child : node->children) {
+            DrawNodeTree(child, model, filter, vulkanContext, appref);
+        }
+        ImGui::TreePop();
+    }
 }
 
 void UserInterface::InitImgui()
@@ -433,6 +506,20 @@ void UserInterface::DrawMenuBar(App* appref, SkyBox* skyBox, VulkanContext* vulk
 
         if (ImGui::BeginMenu("Renderer"))
         {
+            if (ImGui::BeginMenu("Lighting Mode"))
+            {
+                if (ImGui::MenuItem("Path Traced Lighting", nullptr, currentLightingMode == LightingMode::PathTraced)) {
+                    SetLightingMode(LightingMode::PathTraced, appref, vulkanContext);
+                }
+                if (ImGui::MenuItem("Brute Force Lighting", nullptr, currentLightingMode == LightingMode::BruteForce)) {
+                    SetLightingMode(LightingMode::BruteForce, appref, vulkanContext);
+                }
+                if (ImGui::MenuItem("ReSTIR DI", nullptr, currentLightingMode == LightingMode::ReSTIR)) {
+                    SetLightingMode(LightingMode::ReSTIR, appref, vulkanContext);
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::Separator();
             ImGui::MenuItem("Wireframe Mode", nullptr, &appref->bWireFrame);
             ImGui::MenuItem("DLSS Ray Reconstruction", nullptr, &appref->bUseDLSS);
             ImGui::MenuItem("FXAA Anti-Aliasing", nullptr, (bool*)&appref->fxaa_FullScreenQuad->bFXAA);
@@ -498,6 +585,25 @@ void UserInterface::DrawViewportToolbar(App* appref, VulkanContext* vulkanContex
         });
 
         ImGui::SameLine(0, 10.0f);
+        ImGui::TextUnformatted("| Mode:");
+        ImGui::SameLine();
+
+        ImGui::SetNextItemWidth(165.0f);
+        if (ImGui::BeginCombo("##LightingModeCombo", currentLightingModeName.c_str()))
+        {
+            for (size_t i = 0; i < LightingModes.size(); i++)
+            {
+                bool isSelected = (static_cast<size_t>(currentLightingMode) == i);
+                if (ImGui::Selectable(LightingModes[i].c_str(), isSelected))
+                {
+                    SetLightingMode(static_cast<LightingMode>(i), appref, vulkanContext);
+                }
+                if (isSelected) ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+
+        ImGui::SameLine(0, 10.0f);
         ImGui::TextUnformatted("| Pass:");
         ImGui::SameLine();
 
@@ -511,6 +617,18 @@ void UserInterface::DrawViewportToolbar(App* appref, VulkanContext* vulkanContex
                 {
                     currentPass = Passes[i];
                     appref->DefferedDecider = i;
+                    if (i == 2) {
+                        currentLightingMode = LightingMode::ReSTIR;
+                        currentLightingModeName = "ReSTIR DI";
+                    } else if (i == 3) {
+                        if (appref->lighting_RTX->GISolutionIndex == 1) {
+                            currentLightingMode = LightingMode::PathTraced;
+                            currentLightingModeName = "Path Traced Lighting";
+                        } else {
+                            currentLightingMode = LightingMode::BruteForce;
+                            currentLightingModeName = "Brute Force Lighting";
+                        }
+                    }
                     appref->DLSS_Intergration.SceneChangeNotifer = 1;
                     vulkanContext->ResetFrameCount();
                 }
@@ -677,31 +795,59 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
             if (model)
             {
                 std::string nodeName = "Model " + std::to_string(i);
+                if (!model->GetFilePath().empty()) {
+                    std::string fp = model->GetFilePath();
+                    size_t slash = fp.find_last_of("/\\");
+                    if (slash != std::string::npos) nodeName = fp.substr(slash + 1);
+                }
                 if (searchFilter[0] != '\0' && nodeName.find(searchFilter) == std::string::npos) continue;
 
                 ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
-                if (UserInterfaceItemsIndex == i && SelectedInstanceIndex == -1) flags |= ImGuiTreeNodeFlags_Selected;
+                if (UserInterfaceItemsIndex == i && selectedNode == nullptr && SelectedInstanceIndex == -1) flags |= ImGuiTreeNodeFlags_Selected;
 
-                bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)i, flags, "[M] %s", nodeName.c_str());
+                bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)(i * 10000), flags, "[M] %s", nodeName.c_str());
 
                 if (ImGui::IsItemClicked()) {
                     UserInterfaceItemsIndex = i;
+                    selectedModel = model;
+                    selectedNode = nullptr;
                     SelectedInstanceIndex = -1;
                 }
 
                 if (node_open)
                 {
-                    for (int j = 0; j < model->Instances.size(); ++j)
+                    if (model->Instances.size() > 1)
                     {
-                        if (!model->Instances[j]) continue;
-
-                        bool isInstanceSelected = (UserInterfaceItemsIndex == i && SelectedInstanceIndex == j);
-                        std::string instName = "  - Instance " + std::to_string(j);
-
-                        if (ImGui::Selectable(instName.c_str(), isInstanceSelected))
+                        if (ImGui::TreeNodeEx("Instances", ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_DefaultOpen))
                         {
-                            UserInterfaceItemsIndex = i;
-                            SelectedInstanceIndex = j;
+                            for (int j = 0; j < model->Instances.size(); ++j)
+                            {
+                                if (!model->Instances[j]) continue;
+
+                                bool isInstanceSelected = (UserInterfaceItemsIndex == i && SelectedInstanceIndex == j && selectedNode == nullptr);
+                                std::string instName = "Instance " + std::to_string(j);
+
+                                if (ImGui::Selectable(instName.c_str(), isInstanceSelected))
+                                {
+                                    UserInterfaceItemsIndex = i;
+                                    selectedModel = model;
+                                    SelectedInstanceIndex = j;
+                                    selectedNode = nullptr;
+                                }
+                            }
+                            ImGui::TreePop();
+                        }
+                    }
+
+                    if (model->storedModelData)
+                    {
+                        if (ImGui::TreeNodeEx("Objects / Nodes", ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_DefaultOpen))
+                        {
+                            for (const auto& rootNode : model->storedModelData->nodes)
+                            {
+                                DrawNodeTree(rootNode, model, searchFilter, vulkanContext, appref);
+                            }
+                            ImGui::TreePop();
                         }
                     }
                     ImGui::TreePop();
@@ -717,10 +863,12 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
 
                 if (searchFilter[0] != '\0' && name.find(searchFilter) == std::string::npos) continue;
 
-                bool isSelected = (UserInterfaceItemsIndex == i && SelectedInstanceIndex == -1);
+                bool isSelected = (UserInterfaceItemsIndex == i && SelectedInstanceIndex == -1 && selectedNode == nullptr);
                 if (ImGui::Selectable(name.c_str(), isSelected))
                 {
                     UserInterfaceItemsIndex = i;
+                    selectedModel = nullptr;
+                    selectedNode = nullptr;
                     SelectedInstanceIndex = -1;
                 }
             }
@@ -805,6 +953,40 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
             // --- TAB: Global Illumination & DDGI ---
             if (ImGui::BeginTabItem("Lighting & GI"))
             {
+                ImGui::SeparatorText("Primary Lighting Mode");
+                int currentModeInt = static_cast<int>(currentLightingMode);
+                bool modeChanged = false;
+                if (ImGui::RadioButton("Path Traced Lighting", &currentModeInt, 0)) modeChanged = true;
+                ImGui::SameLine(0, 15.0f);
+                if (ImGui::RadioButton("Brute Force Lighting", &currentModeInt, 1)) modeChanged = true;
+                ImGui::SameLine(0, 15.0f);
+                if (ImGui::RadioButton("ReSTIR DI", &currentModeInt, 2)) modeChanged = true;
+
+                if (modeChanged) {
+                    SetLightingMode(static_cast<LightingMode>(currentModeInt), appref, vulkanContext);
+                }
+
+                if (currentLightingMode == LightingMode::PathTraced)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.35f, 0.75f, 1.0f, 1.0f));
+                    ImGui::TextUnformatted("Active: Multi-bounce Path Tracing GI with Progressive Temporal Accumulation.");
+                    ImGui::PopStyleColor();
+                    ImGui::TextDisabled("Accumulated Frames: %d", vulkanContext->frameIndex);
+                }
+                else if (currentLightingMode == LightingMode::BruteForce)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.45f, 0.90f, 0.55f, 1.0f));
+                    ImGui::TextUnformatted("Active: Direct Ray-Traced Lighting with Dynamic Diffuse GI (DDGI).");
+                    ImGui::PopStyleColor();
+                }
+                else if (currentLightingMode == LightingMode::ReSTIR)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.70f, 0.35f, 1.0f));
+                    ImGui::TextUnformatted("Active: Spatio-Temporal Reservoir Sampling Direct Illumination (ReSTIR DI).");
+                    ImGui::PopStyleColor();
+                }
+
+                ImGui::Spacing();
                 ImGui::SeparatorText("Scene Lights");
                 if (ImGui::SliderInt("Total Lights", &NumberOfLights, 0, MAX_LIGHT_COUNT))
                 {
@@ -819,6 +1001,15 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
                         if (ImGui::Selectable(GlobalIllumination_Solution[i].c_str(), is_selected)) {
                             currentGI_Solution = GlobalIllumination_Solution[i];
                             appref->lighting_RTX->GISolutionIndex = i;
+                            if (i == 1) {
+                                currentLightingMode = LightingMode::PathTraced;
+                                currentLightingModeName = "Path Traced Lighting";
+                                appref->DefferedDecider = 3;
+                            } else if (i == 0) {
+                                currentLightingMode = LightingMode::BruteForce;
+                                currentLightingModeName = "Brute Force Lighting";
+                                appref->DefferedDecider = 3;
+                            }
                             vulkanContext->ResetFrameCount();
                         }
                     }
@@ -974,7 +1165,25 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
             }
 
             isItemSelected = (UserInterfaceItemsIndex >= 0 && UserInterfaceItemsIndex < appref->UserInterfaceItems.size());
-            if (isItemSelected) {
+            if (selectedNode != nullptr && selectedModel != nullptr)
+            {
+                glm::mat4 modelTransform = selectedModel->Instances[0]->GetTransformationMatrix();
+                modelMatrix = selectedNode->GetWorldMatrix(modelTransform);
+
+                ImGuizmo::Manipulate(glm::value_ptr(cameraview), glm::value_ptr(cameraprojection),
+                                     currentGizmoOperation, currentGizmoMode, glm::value_ptr(modelMatrix));
+
+                if (ImGuizmo::IsUsing()) {
+                    glm::mat4 parentWorld = selectedNode->GetParentWorldMatrix(modelTransform);
+                    glm::mat4 localMatrix = glm::inverse(parentWorld) * modelMatrix;
+                    selectedNode->SetLocalMatrix(localMatrix);
+                    vulkanContext->ResetFrameCount();
+                    appref->DLSS_Intergration.SceneChangeNotifer = 1;
+                    appref->dynamicDiffuse_RTGI->RESET_PROBE_STATUS = 1;
+                }
+                ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(modelMatrix), matrixTranslation, matrixRotation, matrixScale);
+            }
+            else if (isItemSelected) {
                 auto& item = appref->UserInterfaceItems[UserInterfaceItemsIndex];
                 if (item)
                 {
@@ -996,11 +1205,16 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
                             Model* model = dynamic_cast<Model*>(item);
                             if (model && SelectedInstanceIndex < model->Instances.size() && model->Instances[SelectedInstanceIndex]) {
                                 model->Instances[SelectedInstanceIndex]->SetTrasnformationMatrix(modelMatrix);
+                                vulkanContext->ResetFrameCount();
+                                appref->DLSS_Intergration.SceneChangeNotifer = 1;
                                 appref->dynamicDiffuse_RTGI->RESET_PROBE_STATUS = 1;
                             }
                         }
                         else {
                             item->SetModelMatrix(modelMatrix);
+                            vulkanContext->ResetFrameCount();
+                            appref->DLSS_Intergration.SceneChangeNotifer = 1;
+                            appref->dynamicDiffuse_RTGI->RESET_PROBE_STATUS = 1;
                         }
                     }
                     ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(modelMatrix), matrixTranslation, matrixRotation, matrixScale);
@@ -1020,9 +1234,53 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
     {
         ImGui::Begin("Details Panel", &showDetails);
 
-        if (!isItemSelected)
+        if (selectedNode != nullptr && selectedModel != nullptr)
         {
-            ImGui::TextDisabled("Select an object in the Outliner or Viewport.");
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.35f, 0.75f, 1.0f, 1.0f));
+            ImGui::TextUnformatted("Selected glTF Object");
+            ImGui::PopStyleColor();
+            ImGui::Text("Node: %s (ID: %u)", selectedNode->name.c_str(), selectedNode->id);
+            ImGui::Separator();
+
+            if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen))
+            {
+                bool changed = false;
+                if (DrawVec3Control("Position", selectedNode->translation)) changed = true;
+                if (DrawVec3Control("Rotation", selectedNode->rotation)) changed = true;
+                if (DrawVec3Control("Scale", selectedNode->scale, 1.0f)) changed = true;
+
+                if (changed) {
+                    selectedNode->UpdateLocalMatrix();
+                    vulkanContext->ResetFrameCount();
+                    appref->DLSS_Intergration.SceneChangeNotifer = 1;
+                    appref->dynamicDiffuse_RTGI->RESET_PROBE_STATUS = 1;
+                }
+
+                ImGui::Spacing();
+                if (ImGui::Button("Reset to glTF Default", ImVec2(-1, 26))) {
+                    selectedNode->ResetTransform();
+                    vulkanContext->ResetFrameCount();
+                    appref->DLSS_Intergration.SceneChangeNotifer = 1;
+                    appref->dynamicDiffuse_RTGI->RESET_PROBE_STATUS = 1;
+                }
+            }
+
+            if (!selectedNode->meshPrimitives.empty())
+            {
+                if (ImGui::CollapsingHeader("Mesh Primitives", ImGuiTreeNodeFlags_DefaultOpen))
+                {
+                    ImGui::Text("Primitives: %zu", selectedNode->meshPrimitives.size());
+                    for (size_t p = 0; p < selectedNode->meshPrimitives.size(); p++)
+                    {
+                        const auto& prim = selectedNode->meshPrimitives[p];
+                        ImGui::BulletText("Prim %zu: %u indices, Material %u", p, prim.numIndices, prim.materialIndex);
+                    }
+                }
+            }
+        }
+        else if (!isItemSelected)
+        {
+            ImGui::TextDisabled("Select an object or node in the Outliner or Viewport.");
         }
         else
         {
@@ -1060,6 +1318,9 @@ void UserInterface::DrawUi(App* appref, SkyBox* skyBox, VulkanContext* vulkanCon
                         ImGuizmo::RecomposeMatrixFromComponents(matrixTranslation, matrixRotation, matrixScale, glm::value_ptr(modelMatrix));
                         item->SetModelMatrix(modelMatrix);
                         LastModelMatrix = modelMatrix;
+                        vulkanContext->ResetFrameCount();
+                        appref->DLSS_Intergration.SceneChangeNotifer = 1;
+                        appref->dynamicDiffuse_RTGI->RESET_PROBE_STATUS = 1;
                     }
                 }
             }

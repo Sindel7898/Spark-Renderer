@@ -25,7 +25,9 @@
 #include "ReSTIR_DI.h"
 
 
+#ifndef TRACY_ENABLE
 #define TRACY_ENABLE
+#endif
 #include "TracyVulkan.hpp"
 
 class MeshLoader;

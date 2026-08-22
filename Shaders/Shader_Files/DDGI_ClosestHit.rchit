@@ -24,7 +24,7 @@ layout(set = 0, binding = 5) buffer VertexBufferSSBO { Vertex vertices[]; } vert
 layout(set = 0, binding = 6) buffer VertexIndexOffsetBufferSSBO { VertexAndIndexOffsets Offsets[]; } OffsetBuffer;
 
 struct Transformations { mat4 WorldMatrix; mat4 Inverese_Transposed_WorldMatrix; };
-layout(set = 0, binding = 7) uniform Transformation { Transformations transformations[100]; };
+layout(set = 0, binding = 7) uniform Transformation { Transformations transformations[1000]; };
 
 struct LightData { vec4 positionAndLightType; vec4 colorAndAmbientStrength; vec4 CameraPositionAndLightIntensity; };
 layout(set = 0, binding = 11) uniform LightUniformBuffer { LightData lights[1000]; };

@@ -214,17 +214,26 @@ StoredImageData MeshLoader::ReadTexture(const tinygltf::Material& gltfMaterial, 
     return TextureData;
 }
 
+static uint32_t s_globalNodeId = 1;
+
 std::unique_ptr<Node> MeshLoader::loadNode(const tinygltf::Node&      inputNode, 
                                            const tinygltf::Model&     model,
                                            std::vector<ModelVertex>&  vertices, 
                                            std::vector<uint32_t >&    indices,
-                                                              Node*   parent)
+                                                             Node*   parent)
 {
-
-    std::unique_ptr<Node> node = std::make_unique<Node>();;
+    std::unique_ptr<Node> node = std::make_unique<Node>();
     node->parent = parent;
-    node->matrix  = glm::mat4(1.0f);
+    node->id = s_globalNodeId++;
+    node->matrix = glm::mat4(1.0f);
 
+    if (!inputNode.name.empty()) {
+        node->name = inputNode.name;
+    } else if (inputNode.mesh > -1 && !model.meshes[inputNode.mesh].name.empty()) {
+        node->name = model.meshes[inputNode.mesh].name;
+    } else {
+        node->name = "Node_" + std::to_string(node->id);
+    }
   
     if (inputNode.translation.size() == 3)
     {
@@ -247,26 +256,23 @@ std::unique_ptr<Node> MeshLoader::loadNode(const tinygltf::Node&      inputNode,
         node->matrix = glm::make_mat4x4(inputNode.matrix.data());
     }
 
+    node->initialMatrix = node->matrix;
+    node->DecomposeLocalMatrix();
 
     if (inputNode.mesh > -1)
     {
         const tinygltf::Mesh mesh = model.meshes[inputNode.mesh];
 
         for (size_t i = 0; i < mesh.primitives.size(); i++) {
-
             const tinygltf::Primitive& glTFPrimitive = mesh.primitives[i];
-            
             node->meshPrimitives.push_back(ProcessPrimitive(glTFPrimitive, model, vertices, indices));
         }
     }
 
     for (int childIndex : inputNode.children) {
-
         if (auto rootNode = loadNode(model.nodes[childIndex], model, vertices, indices, node.get())) {
-
             node->children.push_back(std::move(rootNode));
         }
-
     }
 
     return node;

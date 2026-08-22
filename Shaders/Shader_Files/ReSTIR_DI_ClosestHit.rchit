@@ -42,7 +42,7 @@ struct Transformations {
 };
 
 layout(set = 0, binding = 15) uniform Transformation {
-    Transformations transformations[100];
+    Transformations transformations[1000];
 };
 
 struct UnifiedPayload {

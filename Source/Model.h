@@ -20,6 +20,7 @@ struct BLASDATA {
     BufferData BLAS_ScratchBuffer;
     glm::mat4 ModelMatrix = glm::mat4(0);
     uint32_t GlobalPrimitiveIndex = 0;
+    Node* node = nullptr;
 };
 
 struct VertexData {
@@ -180,6 +181,10 @@ public:
 
     void CleanUp() ;
 
+    std::string GetFilePath() const { return FilePath; }
+    Node* FindNodeById(uint32_t id);
+    void GetAllNodes(std::vector<Node*>& outNodes);
+
     vk::DescriptorSetLayout  RayTracingDescriptorSetLayout;
 
     std::vector<ImageData> AlbedoTextures;
@@ -207,7 +212,6 @@ public:
     const StoredModelData* storedModelData = nullptr;
 
 private:
-
 
     std::string FilePath;
 };

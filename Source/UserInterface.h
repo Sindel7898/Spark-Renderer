@@ -24,6 +24,7 @@ class Light;
 class SSA0_FullScreenQuad;
 class App;
 class SkyBox;
+struct Node;
 
 #if ENABLE_NVPERF
 using namespace nv::perf;
@@ -84,12 +85,29 @@ private:
     int UserInterfaceItemsIndex = -1;
     int selectedLightIndex = -1;
     int SelectedInstanceIndex = -1;
+    Node* selectedNode = nullptr;
+    Model* selectedModel = nullptr;
+
+    void DrawNodeTree(const std::shared_ptr<Node>& node, Model* model, const std::string& filter, VulkanContext* vulkanContext, App* appref);
 
     bool useSnap = false;
     float snap[3] = { 1.f, 1.f, 1.f };
 
     ImGuizmo::OPERATION currentGizmoOperation;
     ImGuizmo::MODE currentGizmoMode;
+
+    // Lighting Modes
+    enum class LightingMode {
+        PathTraced = 0,
+        BruteForce = 1,
+        ReSTIR = 2
+    };
+
+    LightingMode currentLightingMode = LightingMode::PathTraced;
+    void SetLightingMode(LightingMode mode, App* appref, VulkanContext* vulkanContext);
+
+    std::vector<std::string> LightingModes{ "Path Traced Lighting", "Brute Force Lighting", "ReSTIR DI" };
+    std::string currentLightingModeName = "Path Traced Lighting";
 
     std::vector<std::string> Passes{"SSGI Pass","DDGI Pass","ReSTIR DI","Lighting Pass"};
     std::string currentPass = "Lighting Pass";
@@ -104,7 +122,7 @@ private:
     std::string currentDDGIVertex = "First Vertex";
 
     std::vector<std::string> GlobalIllumination_Solution{ "DDGI","PT","None" };
-    std::string currentGI_Solution = "DDGI";
+    std::string currentGI_Solution = "PT";
 
     ImVec2 viewportSize;
     glm::mat4 LastModelMatrix;

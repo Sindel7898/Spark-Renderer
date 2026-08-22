@@ -467,7 +467,7 @@ void Lighting_RTX::UpdateDescrptorSets()
         vk::DescriptorBufferInfo TransformUniformBuffersInfo{};
         TransformUniformBuffersInfo.buffer = bufferManager->AllScene_TransformationUniformBuffers[i].buffer;
         TransformUniformBuffersInfo.offset = 0;
-        TransformUniformBuffersInfo.range = sizeof(GlobalTransformationMatrices) * 100;
+        TransformUniformBuffersInfo.range = VK_WHOLE_SIZE;
 
         vk::WriteDescriptorSet TransformUniformBufferdescriptorWrite{};
         TransformUniformBufferdescriptorWrite.dstSet = DescriptorSets[i];
@@ -574,7 +574,7 @@ void Lighting_RTX::Draw(BufferData RayGenBuffer, BufferData RayHitBuffer, Buffer
     vk::StridedDeviceAddressRegionKHR missShaderSbtEntry{};
     missShaderSbtEntry.deviceAddress = missShaderBindingTableAdress;
     missShaderSbtEntry.stride = handleSizeAligned;
-    missShaderSbtEntry.size = handleSizeAligned;
+    missShaderSbtEntry.size = handleSizeAligned * 2;
 
     vk::StridedDeviceAddressRegionKHR hitShaderSbtEntry{};
     hitShaderSbtEntry.deviceAddress = hitShaderBindingTableAdress;

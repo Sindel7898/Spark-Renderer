@@ -971,7 +971,7 @@ void BufferManager::CreateSharedBuffers(vk::CommandPool& commandPool)
 		AllScene_TransformationUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		AllScene_TransformationUniformMappedMem.resize(MAX_FRAMES_IN_FLIGHT);
 
-		VkDeviceSize RayGenIndexStorageBufferSize = sizeof(GlobalTransformationMatrices) * 100;
+		VkDeviceSize RayGenIndexStorageBufferSize = sizeof(GlobalTransformationMatrices) * 1000;
 
 		for (size_t i = 0; i < AllScene_TransformationUniformBuffers.size(); i++)
 		{
@@ -991,22 +991,29 @@ void BufferManager::Update_Raytracing_Data(uint32_t currentImage, std::vector<Mo
 {
 	std::vector<GlobalTransformationMatrices> ModelTransfomations;
 
-	for (int i = 0; i < Modelref.size(); i++)
+	for (size_t i = 0; i < Modelref.size(); i++)
 	{
-
 		if (Modelref[i])
 		{
-			glm::mat4 projmodelInstanceTransformection = Modelref[i]->Instances[0]->GetTransformationMatrix();
+			glm::mat4 modelInstanceTransform = Modelref[i]->Instances[0]->GetTransformationMatrix();
 
-			GlobalTransformationMatrices model;
-			model.WorldMatrix = projmodelInstanceTransformection;
-			model.Transposed_Normalised_WorldMatrix = glm::transpose(glm::inverse(projmodelInstanceTransformection));
-			ModelTransfomations.push_back(model);
+			for (size_t j = 0; j < Modelref[i]->BLAS_Datas.size(); j++)
+			{
+				Node* node = Modelref[i]->BLAS_Datas[j].node;
+				glm::mat4 nodeWorldTransform = node ? node->GetWorldMatrix(modelInstanceTransform) : modelInstanceTransform;
 
+				GlobalTransformationMatrices model;
+				model.WorldMatrix = nodeWorldTransform;
+				model.Transposed_Normalised_WorldMatrix = glm::transpose(glm::inverse(nodeWorldTransform));
+				ModelTransfomations.push_back(model);
+			}
 		}
 	}
 
-	memcpy(AllScene_TransformationUniformMappedMem[currentImage], ModelTransfomations.data(), ModelTransfomations.size() * sizeof(GlobalTransformationMatrices));
+	if (!ModelTransfomations.empty())
+	{
+		memcpy(AllScene_TransformationUniformMappedMem[currentImage], ModelTransfomations.data(), ModelTransfomations.size() * sizeof(GlobalTransformationMatrices));
+	}
 }
 
 

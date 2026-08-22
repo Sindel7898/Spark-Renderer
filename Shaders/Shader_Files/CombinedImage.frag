@@ -93,18 +93,16 @@ void main() {
     // }
 
     if(GISolution == 1) {
-       vec4 curColor  = imageLoad(PTGI_Texture, texelCoord);
+       ivec2 ptgiSize = imageSize(PTGI_Texture);
+       ivec2 ptgiCoord = ivec2(inTexCoord * vec2(ptgiSize));
+       vec4 curColor  = imageLoad(PTGI_Texture, ptgiCoord);
        
        vec2 Velocity = texture(MotionVectors, inTexCoord).rg;
        ivec2 historySize = imageSize(PreviousPTGI_Texture);
 
-       
        vec2 currentPixelPos = inTexCoord * vec2(historySize);
-
        vec2 motionInPixels = Velocity * vec2(historySize);
-
        vec2 screenPosPrevious = currentPixelPos - motionInPixels;
-
 
        ivec2 PrevTexelCoord = ivec2(screenPosPrevious);
 
@@ -114,7 +112,7 @@ void main() {
        vec4 prevColor = vec4(0.0);
        float AccumeCount = pc.MaxGamma_MinGamma_GISolution_gAccumCount.w;
 
-       if (validHistory) {
+       if (validHistory && AccumeCount > 0.5) {
            prevColor = imageLoad(PreviousPTGI_Texture, PrevTexelCoord);
        } else {
            AccumeCount = 0.0;
@@ -123,7 +121,7 @@ void main() {
 
        vec4 blendedColor = (AccumeCount * prevColor + curColor) / (AccumeCount + 1.0);
 
-       imageStore(PreviousPTGI_Texture, texelCoord, blendedColor);
+       imageStore(PreviousPTGI_Texture, ptgiCoord, blendedColor);
        
        GI = blendedColor.rgb;
      }
@@ -132,5 +130,5 @@ void main() {
 
     vec3 CorrectedColor   = ContrastSaturationBrightness(FinalColor, Brightness, Saturation, Concentration);
 
-    outFragColor = vec4(FinalColor,1.0);
+    outFragColor = vec4(CorrectedColor, 1.0);
 }

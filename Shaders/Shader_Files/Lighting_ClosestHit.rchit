@@ -45,7 +45,7 @@ struct Transformations {
 };
 
 layout(set = 0, binding = 16) uniform Transformation {
-    Transformations transformations[100];
+    Transformations transformations[1000];
 };
 
 struct LightData{
@@ -56,7 +56,7 @@ struct LightData{
 };
 
 layout(set = 0, binding = 7) uniform LightUniformBuffer {
-         LightData lights[4];
+         LightData lights[1000];
 };
 
 layout(binding  = 8) uniform accelerationStructureEXT topLevelAS;
@@ -85,13 +85,17 @@ layout(location = 1) rayPayloadInEXT RTGIPayload payload;
 hitAttributeEXT vec2 attribs;
 
 
+bool TraceShadow(vec3 origin, vec3 direction, float maxDistance) {
+    rayQueryEXT rq;
+    rayQueryInitializeEXT(rq, topLevelAS,
+        gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT,
+        0xFF, origin, 0.001, direction, maxDistance);
+    while (rayQueryProceedEXT(rq)) {}
+    return rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT;
+}
+
 void main()
 {
-    vec3  Radiance    = vec3(0.0);
-    vec3  HitNormal   = vec3(0.0);
-    vec3  HitPosition = vec3(0.0);
-    float Distance    = 0;
-
     uint packed = gl_InstanceCustomIndexEXT;
     uint meshBufferID = packed & 0xFFF;
     uint objectID     = packed >> 12;
@@ -108,7 +112,7 @@ void main()
     Vertex v1 = vertexBuffer.vertices[i1];
     Vertex v2 = vertexBuffer.vertices[i2];
 
-    //Calculate barycentric coordinates to interpolate triangle attributes
+    // Calculate barycentric coordinates to interpolate triangle attributes
     vec3 bary = vec3(1.0 - attribs.x - attribs.y, attribs.x, attribs.y);
     
     vec3 VertexPosition = 
@@ -127,88 +131,73 @@ void main()
         v1.tangent_Padding.xyz * bary.y +
         v2.tangent_Padding.xyz * bary.z
     );
+
+    vec2 TexCoord = 
+        v0.texCoord_Padding.xy * bary.x +
+        v1.texCoord_Padding.xy * bary.y +
+        v2.texCoord_Padding.xy * bary.z;
     
+    mat3 normalMatrix  = mat3(transformations[objectID].Inverese_Transposed_WorldMatrix);
 
-  vec2 TexCoord = 
-    v0.texCoord_Padding.xy * bary.x +
-    v1.texCoord_Padding.xy * bary.y +
-    v2.texCoord_Padding.xy * bary.z;
+    vec3 WorldN        = normalize(normalMatrix * Normal);
+    vec3 WorldT        = normalize(normalMatrix * Tangent);
+    vec3 WorldB        = cross(WorldN, WorldT);
+    mat3 WorldSpaceTBN = mat3(WorldT, WorldB, WorldN);
     
-     mat3 normalMatrix  = mat3(transformations[objectID].Inverese_Transposed_WorldMatrix);
+    uint matID = offsets.MaterialIndex;
 
-     vec3 WorldN        = normalize(normalMatrix * Normal);
-     vec3 WorldT        = normalize(normalMatrix * Tangent);
-     vec3 WorldB        = cross(WorldN, WorldT);
-     mat3 WorldSpaceTBN = mat3(WorldT, WorldB, WorldN);
-    
-      uint matID = offsets.MaterialIndex;
+    vec3  Albedo     = texture(Albedo_AssetImages[nonuniformEXT(matID)], TexCoord).rgb;
+    float Metallic   = texture(MetalicRoughness_AssetImages[nonuniformEXT(matID)], TexCoord).r;
+    float Roughness  = texture(MetalicRoughness_AssetImages[nonuniformEXT(matID)], TexCoord).g;
+    vec3  Emissive   = texture(Emmisive_AssetImages[nonuniformEXT(matID)], TexCoord).rgb;
 
-     vec3  Albedo     = texture(Albedo_AssetImages          [nonuniformEXT(matID)], TexCoord).rgb;
-     float Metallic   = texture(MetalicRoughness_AssetImages[nonuniformEXT(matID)], TexCoord).r;
-     float Roughness  = texture(MetalicRoughness_AssetImages[nonuniformEXT(matID)], TexCoord).r;
-     vec3  Emissive   = texture(Emmisive_AssetImages        [nonuniformEXT(matID)], TexCoord).rgb;
+    vec3 textureMap  = texture(Normal_AssetImages[nonuniformEXT(matID)], TexCoord).rgb;
+    vec3 NormalTexture = textureMap * 2.0 - vec3(1.0);
+    vec3 HitNormal   = normalize(WorldSpaceTBN * NormalTexture);
 
-     vec3 textureMap = texture(Normal_AssetImages[nonuniformEXT(matID)], TexCoord).rgb;
-    
-     vec3 NormalTexture = textureMap * 2.0 - vec3(1.0);
-     HitNormal = normalize(WorldSpaceTBN * NormalTexture);
- 
-     vec4 WorldPos =  transformations[objectID].WorldMatrix * vec4(VertexPosition,1.0);
-     HitPosition   =  WorldPos.xyz;
+    vec4 WorldPos    = transformations[objectID].WorldMatrix * vec4(VertexPosition, 1.0);
+    vec3 HitPosition = WorldPos.xyz;
 
- 
-vec3 directLighting = vec3(0.0);
+    vec3 directLighting = vec3(0.0);
+    vec3 shadowOrigin   = HitPosition + (HitNormal * 0.01);
+
+    const float Constant   = 1.0;
+    const float Linear     = 0.09;
+    const float Quadratic  = 0.032;
 
     for (int i = 0; i < PC.LightCount; i++) {
         LightData light = lights[i];
 
-        const float Constant = 1.0;
-        const float Linear = 0.09;
-        const float Quadratic = 0.032;
-
         vec3 Radiance = vec3(0.0);
         vec3 LightDir = vec3(0.0);
-        vec3 Lo = vec3(0.0);
-        float tMax = 10000.0;
-        float Distance = 0.0; 
+        float maxDist = 10000.0;
 
         if (light.positionAndLightType.w < 0.5) {
            LightDir = normalize(-light.positionAndLightType.xyz);
            Radiance = light.colorAndAmbientStrength.rgb;
-        } else if (light.positionAndLightType.w > 0.5) {
-           vec3 LightPos = light.positionAndLightType.xyz;
-           LightDir = normalize(LightPos - HitPosition);
-           Distance = length(LightPos - HitPosition);
+           maxDist  = 10000.0;
+        } else {
+           vec3 toLight = light.positionAndLightType.xyz - HitPosition;
+           float Distance = length(toLight);
+           LightDir = normalize(toLight);
            float Attenuation = 1.0 / (Constant + Linear * Distance + Quadratic * (Distance * Distance));
            Radiance = light.colorAndAmbientStrength.rgb * Attenuation;
-           tMax = Distance;
+           maxDist  = max(0.001, Distance - 0.02);
         }  
     
-        vec3 diffuse = Albedo / PI;
-        float NdotL = max(dot(HitNormal, LightDir), 0.0);        
-        Lo += (diffuse) * Radiance * NdotL;
+        float NdotL = max(dot(HitNormal, LightDir), 0.0);
+        if (NdotL <= 0.0) continue;
 
-        vec3 shadowOrigin = HitPosition + (HitNormal * 0.001); 
-    
-        shadowPayload.visibility = 0; 
+        vec3 diffuse = (Albedo / PI) * Radiance * NdotL;
 
-        traceRayEXT(
-            topLevelAS, 
-            gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT, 
-            0xFF, 
-            0, 0, 0, 
-            shadowOrigin, 
-            0.1, 
-            LightDir, 
-            tMax, 
-            0 
-        );
-
-        directLighting += (Lo * lights[i].CameraPositionAndLightIntensity.a) * shadowPayload.visibility;
+        bool isVisible = TraceShadow(shadowOrigin, LightDir, maxDist);
+        if (isVisible) {
+            directLighting += diffuse * light.CameraPositionAndLightIntensity.a;
+        }
     }
 
-    payload.radiance = vec4(directLighting + Emissive,0); 
-    payload.normal   = vec4(HitNormal.xyz,0);
-    payload.position = vec4(HitPosition,0);
-    payload.albedo   = vec4(Albedo,0);
+    payload.radiance = vec4(directLighting + Emissive, 0.0); 
+    payload.normal   = vec4(HitNormal, 0.0);
+    payload.position = vec4(HitPosition, 0.0);
+    payload.albedo   = vec4(Albedo, 0.0);
 }
