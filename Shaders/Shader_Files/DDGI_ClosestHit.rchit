@@ -48,6 +48,26 @@ layout(location = 1) rayPayloadEXT Shadow_Payload shadow_Payload;
 
 hitAttributeEXT vec2 attribs;
 
+uint pcg_hash(uint seed) {
+    uint state = seed * 747796405u + 2891336453u;
+    uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+    return (word >> 22u) ^ word;
+}
+
+float random_float(inout uint seed) {
+    seed = pcg_hash(seed);
+    return float(seed) / 4294967295.0;
+}
+
+bool QueryShadowVisibility(vec3 origin, vec3 dir, float maxDist) {
+    rayQueryEXT rq;
+    rayQueryInitializeEXT(rq, topLevelAS,
+        gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT,
+        0xFF, origin, 0.001, dir, maxDist);
+    while (rayQueryProceedEXT(rq)) {}
+    return rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT;
+}
+
 void main()
 {
     vec3  HitNormal   = vec3(0.0);
@@ -104,40 +124,82 @@ void main()
 
         Le_Emissive = EmissiveTex;
 
-        // Compute lambert diffuse for this hit ibject 
-        for (int i = 0; i < pc.UseInfiniteBounce_infinite_bounces_multiplier_DDGIMODE_LightCount.w; i++) {
+        int totalLights = int(pc.UseInfiniteBounce_infinite_bounces_multiplier_DDGIMODE_LightCount.w);
+        vec3 shadowOrigin = HitPosition + (WorldN * 0.05);
+        bool bDirectOnly = (int(pc.UseInfiniteBounce_infinite_bounces_multiplier_DDGIMODE_LightCount.z) != 0);
+
+        // 1. Evaluate Directional Lights (e.g. Sun) deterministically
+        for (int i = 0; i < totalLights; i++) {
+            if (lights[i].positionAndLightType.w >= 0.5) continue; // Skip point lights
+
             LightData light = lights[i];
-            vec3 LightDir;
-            float lightDist;
-            vec3 radiance;
-
-            if(light.positionAndLightType.w < 0.5) { // Directional
-                LightDir = normalize(-light.positionAndLightType.xyz);
-                radiance = light.colorAndAmbientStrength.rgb;
-                lightDist = 10000.0;
-            } else { // Point
-                vec3 lightVec = light.positionAndLightType.xyz - WorldPos.xyz;
-                LightDir = normalize(lightVec);
-                lightDist = length(lightVec);
-
-                float att = 1.0 / (1.0 + 0.09 * lightDist + 0.032 * lightDist * lightDist);
-                radiance = light.colorAndAmbientStrength.rgb * att;
-            }
-
+            vec3 LightDir = normalize(-light.positionAndLightType.xyz);
             float NdotL = max(dot(HitNormal, LightDir), 0.0);
             
             if (NdotL > 0.0) {
+                if (QueryShadowVisibility(shadowOrigin, LightDir, 10000.0)) {
+                    vec3 radiance = light.colorAndAmbientStrength.rgb;
+                    if (!bDirectOnly) {
+                        L_Direct += (Albedo / PI) * NdotL * radiance * light.CameraPositionAndLightIntensity.a;
+                    } else {
+                        L_Direct += NdotL * radiance * light.CameraPositionAndLightIntensity.a;
+                    }
+                }
+            }
+        }
 
-                vec3 shadowOrigin = HitPosition + (WorldN * 0.05);
-                shadow_Payload.Shadow = 0;
-                traceRayEXT(topLevelAS, gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT, 0xFF, 0, 0, 1, shadowOrigin, 0.0, LightDir, lightDist, 1);
-                
-                if(int(pc.UseInfiniteBounce_infinite_bounces_multiplier_DDGIMODE_LightCount.z) == 0){
-                  L_Direct  += (Albedo / PI)  * NdotL * shadow_Payload.Shadow * radiance *  light.CameraPositionAndLightIntensity.a;
-                }else{
-                    L_Direct += NdotL * shadow_Payload.Shadow * radiance *  light.CameraPositionAndLightIntensity.a;// store direct illumination only
+        // 2. High-Performance Stochastic Point Light Sampling (O(1) Ray Tracing for 1000 Lights)
+        uint raySeed = pcg_hash(gl_LaunchIDEXT.x + gl_LaunchIDEXT.y * uint(pc.AtlasWidthSize) + uint(gl_PrimitiveID) * 2654435761u);
+        float totalPointWeight = 0.0;
+        int candidatePointLight = -1;
+        float candidateWeight = 0.0;
 
-                }                
+        for (int i = 0; i < totalLights; i++) {
+            if (lights[i].positionAndLightType.w < 0.5) continue; // Skip directional lights
+
+            LightData light = lights[i];
+            vec3 lightVec = light.positionAndLightType.xyz - WorldPos.xyz;
+            float distSq = dot(lightVec, lightVec);
+            
+            // Attenuation cutoff: if distance > 60 units, light contribution is negligible
+            if (distSq > 3600.0) continue;
+
+            float lightDist = sqrt(distSq);
+            vec3 LightDir = lightVec / lightDist;
+            float NdotL = max(dot(HitNormal, LightDir), 0.0);
+            if (NdotL <= 0.0) continue;
+
+            float att = 1.0 / (1.0 + 0.09 * lightDist + 0.032 * distSq);
+            float maxColor = max(light.colorAndAmbientStrength.r, max(light.colorAndAmbientStrength.g, light.colorAndAmbientStrength.b));
+            float weight = NdotL * att * maxColor * light.CameraPositionAndLightIntensity.a;
+
+            if (weight > 1e-5) {
+                totalPointWeight += weight;
+                if (random_float(raySeed) * totalPointWeight <= weight) {
+                    candidatePointLight = i;
+                    candidateWeight = weight;
+                }
+            }
+        }
+
+        // Trace exactly 1 inline shadow ray for the sampled candidate point light and scale by importance weight
+        if (candidatePointLight >= 0 && candidateWeight > 0.0) {
+            LightData light = lights[candidatePointLight];
+            vec3 lightVec = light.positionAndLightType.xyz - WorldPos.xyz;
+            float lightDist = length(lightVec);
+            vec3 LightDir = lightVec / lightDist;
+            float NdotL = max(dot(HitNormal, LightDir), 0.0);
+
+            if (QueryShadowVisibility(shadowOrigin, LightDir, lightDist)) {
+                float att = 1.0 / (1.0 + 0.09 * lightDist + 0.032 * lightDist * lightDist);
+                vec3 radiance = light.colorAndAmbientStrength.rgb * att;
+                float invProb = totalPointWeight / candidateWeight;
+
+                if (!bDirectOnly) {
+                    L_Direct += (Albedo / PI) * NdotL * radiance * light.CameraPositionAndLightIntensity.a * invProb;
+                } else {
+                    L_Direct += NdotL * radiance * light.CameraPositionAndLightIntensity.a * invProb;
+                }
             }
         }
 
