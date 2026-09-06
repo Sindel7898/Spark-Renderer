@@ -53,60 +53,45 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
     );
 }
 
-vec3 DirectionalSoftShadow(vec3 LightDirection, float radius, float rand1, float rand2) {
-    // L is the normalized direction TO the light source
-    float cosAngle = cos(radius);
-
-    // Sample local cone around Z-axis
-    float z = rand1 * (1.0 - cosAngle) + cosAngle;
-    float phi = rand2 * 2.0 * PI;
+vec3 DirectionalSoftShadow(vec3 LightDir, float angleDegrees, float r1, float r2) {
+    // Convert degrees to radians
+    float cosAngle = cos(radians(angleDegrees));
     
-    float x = sqrt(1.0f - z * z) * cos(phi);
-    float y = sqrt(1.0f - z * z) * sin(phi);
+    float z = r1 * (1.0 - cosAngle) + cosAngle;
+    float phi = r2 * 2.0 * 3.14159265359;
+    
+    float sinTheta = sqrt(1.0 - z * z);
+    float x = sinTheta * cos(phi);
+    float y = sinTheta * sin(phi);
 
-    vec3 north = vec3(0.0, 0.0, 1.0);
-    float d = dot(north, LightDirection);
+    // Safely build an orthonormal basis to avoid NaN singularities
+    vec3 up = abs(LightDir.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangent = normalize(cross(up, LightDir));
+    vec3 bitangent = cross(LightDir, tangent);
 
-    vec3 axis = normalize(cross(north, LightDirection));
-    float angle = acos(clamp(d, -1.0, 1.0));
-    mat3 R = AngleAxis3x3(angle, axis);
-
-    return R * vec3(x, y, z);
+    // Transform local sampled cone vector to world space
+    return tangent * x + bitangent * y + LightDir * z;
 }
 
 
-vec3 SoftShadow(vec3 LightPosition, vec3 WorldPosition,float radius,float rand1,float rand2)     {
+vec3 SoftShadow(vec3 LightPos, vec3 WorldPos, float radius, float r1, float r2) {
+    vec3 toLight = LightPos - WorldPos;
+    float distToLight = length(toLight);
+    vec3 L = toLight / distToLight;
 
-   // Calculate a vector perpendicular to L
-   vec3 toLight = normalize(LightPosition - WorldPosition);
+    float sinAngle = clamp(radius / distToLight, 0.0, 1.0);
+    float cosAngle = sqrt(1.0 - sinAngle * sinAngle);
 
-   vec3 perpL = cross(toLight, vec3(0.f, 1.0f, 0.f));
+    float z = r1 * (1.0 - cosAngle) + cosAngle;
+    float phi = r2 * 2.0 * 3.14159265359;
 
-   // Handle case where L = up -> perpL should then be (1,0,0)
-   if (perpL.x == 0.0f || perpL.y == 0.0f || perpL.z == 0.0f ) {
-       perpL.x = 1.0;
-     }
+    float sinTheta = sqrt(1.0 - z * z);
+    float x = sinTheta * cos(phi);
+    float y = sinTheta * sin(phi);
 
-   vec3 toLightEdge = normalize((LightPosition + perpL * radius) - WorldPosition);
-   float coneAngle = acos(dot(toLight, toLightEdge)) * 2.0f;
+    vec3 up = abs(L.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+    vec3 tangent = normalize(cross(up, L));
+    vec3 bitangent = cross(L, tangent);
 
-   float cosAngle = cos(coneAngle);
-
-    // Generate points on the spherical cap around the north pole.
-    // https://math.stackexchange.com/a/205589/81266
-    float z   = rand1 * (1.0f - cosAngle) + cosAngle;
-    float phi = rand2 * 2.0f * PI;
-
-    float x = sqrt(1.0f - z * z) * cos(phi);
-    float y = sqrt(1.0f - z * z) * sin(phi);
-    vec3 north = vec3(0.f, 0.f, 1.f);
-
-    // Find the rotation axis `u` and rotation angle `rot`
-    vec3 axis = normalize(cross(north, normalize(toLight)));
-    float angle = acos(dot(normalize(toLight), north));
-
-    // Convert rotation axis and angle to 3x3 rotation matrix 
-    mat3x3 R = AngleAxis3x3(angle, axis);
-
-    return R * vec3(x, y, z);
+    return tangent * x + bitangent * y + L * z;
 }

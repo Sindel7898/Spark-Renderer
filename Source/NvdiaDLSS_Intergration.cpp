@@ -69,7 +69,7 @@ void NvdiaDLSS_Intergration::init(vk::CommandPool commandPool) {
     uint32_t displayWidth = m_vulkanContext->swapchainExtent.width;
     uint32_t displayHeight = m_vulkanContext->swapchainExtent.height;
 
-    NVSDK_NGX_PerfQuality_Value dlssQuality = NVSDK_NGX_PerfQuality_Value_Balanced;
+    NVSDK_NGX_PerfQuality_Value dlssQuality = NVSDK_NGX_PerfQuality_Value_MaxQuality;
 
     paramsDLSS_->Set(NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_Quality, NVSDK_NGX_DLSS_Hint_Render_Preset_M);
     paramsDLSS_->Set(NVSDK_NGX_Parameter_RayReconstruction_Hint_Render_Preset_UltraQuality, NVSDK_NGX_DLSS_Hint_Render_Preset_M);
